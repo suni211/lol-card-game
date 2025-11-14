@@ -4,7 +4,7 @@ import { Search, Trash2, TrendingUp } from 'lucide-react';
 import type { UserCard } from '../types';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
-import { getPlayerImageUrl, getPlayerPlaceholder } from '../utils/playerImage';
+import { getPlayerImageUrl } from '../utils/playerImage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 

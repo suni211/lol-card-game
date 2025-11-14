@@ -4,7 +4,7 @@ import { Save, Info, Target, Users, Map } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
-import { getPlayerImageUrl, getPlayerPlaceholder } from '../utils/playerImage';
+import { getPlayerImageUrl } from '../utils/playerImage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 

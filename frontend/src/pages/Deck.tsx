@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Info } from 'lucide-react';
+import { Save, Info, Target, Users, Map } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
@@ -31,6 +31,30 @@ interface DeckSlot {
   card: UserCard | null;
 }
 
+const LANING_STRATEGIES = [
+  { value: 'AGGRESSIVE', label: '공격적', description: '적극적인 라인전으로 초반 우위 확보' },
+  { value: 'SAFE', label: '안전한', description: '안정적인 성장으로 후반 대비' },
+  { value: 'ROAMING', label: '로밍', description: '라인을 빠르게 밀고 다른 라인 지원' },
+  { value: 'SCALING', label: '성장', description: '극후반 캐리를 위한 성장 집중' },
+  { value: 'PUSH', label: '푸쉬', description: '지속적인 라인 푸쉬로 타워 압박' },
+];
+
+const TEAMFIGHT_STRATEGIES = [
+  { value: 'ENGAGE', label: '이니시에이팅', description: '적극적인 교전 시작' },
+  { value: 'DISENGAGE', label: '디스인게이지', description: '불리한 교전 회피 및 역관광' },
+  { value: 'POKE', label: '포킹', description: '원거리 견제로 상대 소모' },
+  { value: 'PROTECT', label: '보호', description: '캐리 보호 중심의 플레이' },
+  { value: 'SPLIT', label: '분산', description: '다수의 라인에서 동시 압박' },
+];
+
+const MACRO_STRATEGIES = [
+  { value: 'OBJECTIVE', label: '오브젝트', description: '드래곤/바론 등 중요 목표 확보' },
+  { value: 'VISION', label: '시야', description: '맵 장악 및 시야 싸움' },
+  { value: 'SPLITPUSH', label: '스플릿', description: '1-4 스플릿 푸쉬 운영' },
+  { value: 'GROUPING', label: '그룹핑', description: '5인 뭉쳐서 한 방향 압박' },
+  { value: 'PICK', label: '픽', description: '고립된 적 척살' },
+];
+
 export default function Deck() {
   const { token } = useAuthStore();
   const [deckSlots, setDeckSlots] = useState<DeckSlot[]>([
@@ -42,6 +66,9 @@ export default function Deck() {
   ]);
   const [myCards, setMyCards] = useState<UserCard[]>([]);
   const [selectedPosition, setSelectedPosition] = useState<'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT' | null>(null);
+  const [laningStrategy, setLaningStrategy] = useState('SAFE');
+  const [teamfightStrategy, setTeamfightStrategy] = useState('ENGAGE');
+  const [macroStrategy, setMacroStrategy] = useState('OBJECTIVE');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -53,7 +80,6 @@ export default function Deck() {
     try {
       setLoading(true);
 
-      // Fetch user's cards
       const cardsRes = await axios.get(`${API_URL}/gacha/my-cards`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -62,7 +88,6 @@ export default function Deck() {
         setMyCards(cardsRes.data.data);
       }
 
-      // Fetch current deck
       const deckRes = await axios.get(`${API_URL}/deck`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -76,13 +101,16 @@ export default function Deck() {
             const cardData = deck[posKey];
 
             if (cardData) {
-              // Find full card info from myCards
               const fullCard = cardsRes.data.data.find((c: UserCard) => c.id === cardData.id);
               return { ...slot, card: fullCard || null };
             }
             return slot;
           })
         );
+
+        setLaningStrategy(deck.laningStrategy || 'SAFE');
+        setTeamfightStrategy(deck.teamfightStrategy || 'ENGAGE');
+        setMacroStrategy(deck.macroStrategy || 'OBJECTIVE');
       }
     } catch (error: any) {
       console.error('Fetch deck error:', error);
@@ -99,7 +127,6 @@ export default function Deck() {
   const handleCardSelect = (card: UserCard) => {
     if (!selectedPosition) return;
 
-    // Check if card is already in deck
     const alreadyInDeck = deckSlots.some((slot) => slot.card?.id === card.id);
     if (alreadyInDeck) {
       toast.error('이 카드는 이미 덱에 있습니다');
@@ -134,6 +161,9 @@ export default function Deck() {
         midCardId: deckSlots.find((s) => s.position === 'MID')?.card?.id || null,
         adcCardId: deckSlots.find((s) => s.position === 'ADC')?.card?.id || null,
         supportCardId: deckSlots.find((s) => s.position === 'SUPPORT')?.card?.id || null,
+        laningStrategy,
+        teamfightStrategy,
+        macroStrategy,
       };
 
       const response = await axios.put(`${API_URL}/deck`, payload, {
@@ -149,6 +179,19 @@ export default function Deck() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const calculateCardOVR = (card: UserCard, position: string) => {
+    const baseStat = card.player.overall;
+    const positionMatch = card.player.position === position;
+    return positionMatch ? baseStat : baseStat - 10;
+  };
+
+  const calculateTotalOVR = () => {
+    return deckSlots.reduce((total, slot) => {
+      if (!slot.card) return total;
+      return total + calculateCardOVR(slot.card, slot.position);
+    }, 0);
   };
 
   const getTierColor = (tier: string) => {
@@ -192,6 +235,9 @@ export default function Deck() {
     );
   }
 
+  const totalOVR = calculateTotalOVR();
+  const filledSlots = deckSlots.filter(s => s.card).length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -201,13 +247,13 @@ export default function Deck() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 덱 편성
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-400">
-                최강의 5인 로스터를 구성하세요
+                최강의 5인 로스터와 전략을 구성하세요
               </p>
             </div>
             <button
@@ -218,6 +264,24 @@ export default function Deck() {
               <Save className="w-5 h-5" />
               <span>{saving ? '저장 중...' : '덱 저장'}</span>
             </button>
+          </div>
+
+          {/* Deck Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 OVR</p>
+              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{totalOVR}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">평균 OVR</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                {filledSlots > 0 ? Math.round(totalOVR / filledSlots) : 0}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">덱 완성도</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{filledSlots}/5</p>
+            </div>
           </div>
         </motion.div>
 
@@ -231,18 +295,19 @@ export default function Deck() {
             <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
               <p>• 각 포지션을 클릭하여 카드를 선택하세요</p>
-              <p>• 같은 카드는 중복으로 배치할 수 없습니다</p>
-              <p>• 잘못된 포지션에 배치하면 경기에서 -10 OVR 페널티가 적용됩니다</p>
+              <p>• 잘못된 포지션에 배치하면 **OVR -10 페널티**가 적용됩니다</p>
+              <p>• 전략을 선택하면 경기에서 보너스를 받을 수 있습니다</p>
             </div>
           </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Deck Slots */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Cards */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                현재 덱
+                카드 구성
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,11 +323,9 @@ export default function Deck() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <span className={`${getPositionColor(slot.position)} text-white text-xs font-bold px-3 py-1 rounded-full`}>
-                          {slot.label}
-                        </span>
-                      </div>
+                      <span className={`${getPositionColor(slot.position)} text-white text-xs font-bold px-3 py-1 rounded-full`}>
+                        {slot.label}
+                      </span>
                       {slot.card && (
                         <button
                           onClick={(e) => {
@@ -287,9 +350,16 @@ export default function Deck() {
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {slot.card.player.team} • {slot.card.player.position}
                         </p>
-                        <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-2">
-                          {slot.card.player.overall} OVR
-                        </p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <p className={`text-2xl font-bold ${slot.card.player.position === slot.position ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                            {calculateCardOVR(slot.card, slot.position)} OVR
+                          </p>
+                          {slot.card.player.position !== slot.position && (
+                            <span className="text-xs text-orange-600 dark:text-orange-400 font-bold bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">
+                              -10 페널티
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div className="h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
@@ -300,6 +370,96 @@ export default function Deck() {
                     )}
                   </motion.div>
                 ))}
+              </div>
+            </div>
+
+            {/* Strategies */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                전략 선택
+              </h2>
+
+              <div className="space-y-6">
+                {/* Laning Strategy */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Target className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">라인전 전략</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {LANING_STRATEGIES.map((strategy) => (
+                      <button
+                        key={strategy.value}
+                        onClick={() => setLaningStrategy(strategy.value)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          laningStrategy === strategy.value
+                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-red-400'
+                        }`}
+                        title={strategy.description}
+                      >
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{strategy.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    {LANING_STRATEGIES.find(s => s.value === laningStrategy)?.description}
+                  </p>
+                </div>
+
+                {/* Teamfight Strategy */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">한타 전략</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {TEAMFIGHT_STRATEGIES.map((strategy) => (
+                      <button
+                        key={strategy.value}
+                        onClick={() => setTeamfightStrategy(strategy.value)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          teamfightStrategy === strategy.value
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                        }`}
+                        title={strategy.description}
+                      >
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{strategy.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    {TEAMFIGHT_STRATEGIES.find(s => s.value === teamfightStrategy)?.description}
+                  </p>
+                </div>
+
+                {/* Macro Strategy */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Map className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">운영 전략</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {MACRO_STRATEGIES.map((strategy) => (
+                      <button
+                        key={strategy.value}
+                        onClick={() => setMacroStrategy(strategy.value)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          macroStrategy === strategy.value
+                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-green-400'
+                        }`}
+                        title={strategy.description}
+                      >
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{strategy.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    {MACRO_STRATEGIES.find(s => s.value === macroStrategy)?.description}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -315,38 +475,43 @@ export default function Deck() {
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {myCards
                     .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
-                    .map((card) => (
-                      <motion.div
-                        key={card.id}
-                        whileHover={{ scale: 1.02 }}
-                        onClick={() => handleCardSelect(card)}
-                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                          card.player.position !== selectedPosition
-                            ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-400'
-                        }`}
-                      >
-                        <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(card.player.tier)} rounded text-white text-xs font-bold mb-1`}>
-                          {card.player.tier}
-                        </div>
-                        <p className="font-bold text-gray-900 dark:text-white text-sm">
-                          {card.player.name}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {card.player.team} • {card.player.position}
-                        </p>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                            {card.player.overall}
-                          </span>
-                          {card.player.position !== selectedPosition && (
-                            <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
-                              포지션 불일치 -10
+                    .map((card) => {
+                      const positionMatch = card.player.position === selectedPosition;
+                      const displayOVR = calculateCardOVR(card, selectedPosition);
+
+                      return (
+                        <motion.div
+                          key={card.id}
+                          whileHover={{ scale: 1.02 }}
+                          onClick={() => handleCardSelect(card)}
+                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                            !positionMatch
+                              ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-primary-400'
+                          }`}
+                        >
+                          <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(card.player.tier)} rounded text-white text-xs font-bold mb-1`}>
+                            {card.player.tier}
+                          </div>
+                          <p className="font-bold text-gray-900 dark:text-white text-sm">
+                            {card.player.name}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            {card.player.team} • {card.player.position}
+                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className={`text-lg font-bold ${positionMatch ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                              {displayOVR}
                             </span>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
+                            {!positionMatch && (
+                              <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                                -10 페널티
+                              </span>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
 
                   {myCards.filter((card) => !deckSlots.some((s) => s.card?.id === card.id)).length === 0 && (
                     <p className="text-center text-gray-500 dark:text-gray-400 py-8">

@@ -13,6 +13,7 @@ export default function Collection() {
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedPosition, setSelectedPosition] = useState<string>('ALL');
   const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
+  const [selectedSeason, setSelectedSeason] = useState<string>('ALL');
   const [cards, setCards] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuthStore();
@@ -72,8 +73,9 @@ export default function Collection() {
     const matchesTier = selectedTier === 'ALL' || card.player.tier === selectedTier;
     const matchesPosition = selectedPosition === 'ALL' || card.player.position === selectedPosition;
     const matchesRegion = selectedRegion === 'ALL' || card.player.region === selectedRegion;
+    const matchesSeason = selectedSeason === 'ALL' || card.player.season === selectedSeason;
 
-    return matchesSearch && matchesTier && matchesPosition && matchesRegion;
+    return matchesSearch && matchesTier && matchesPosition && matchesRegion && matchesSeason;
   });
 
   return (
@@ -99,7 +101,7 @@ export default function Collection() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-200 dark:border-gray-700"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -110,6 +112,20 @@ export default function Collection() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
+            </div>
+
+            {/* Season Filter */}
+            <div>
+              <select
+                value={selectedSeason}
+                onChange={(e) => setSelectedSeason(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="ALL">모든 시즌</option>
+                {Array.from(new Set(cards.map(card => card.player.season).filter(Boolean))).sort().reverse().map((season) => (
+                  <option key={season} value={season}>{season}</option>
+                ))}
+              </select>
             </div>
 
             {/* Tier Filter */}

@@ -73,6 +73,7 @@ export default function Deck() {
   const [macroStrategy, setMacroStrategy] = useState('OBJECTIVE');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [seasonFilter, setSeasonFilter] = useState<string>('ALL');
 
   useEffect(() => {
     fetchDeckAndCards();
@@ -478,10 +479,28 @@ export default function Deck() {
                 {selectedPosition ? `${deckSlots.find(s => s.position === selectedPosition)?.label} 선택` : '내 카드'}
               </h2>
 
+              {/* Season Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  시즌 필터
+                </label>
+                <select
+                  value={seasonFilter}
+                  onChange={(e) => setSeasonFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="ALL">전체</option>
+                  {Array.from(new Set(myCards.map(card => card.player.season).filter(Boolean))).sort().reverse().map((season) => (
+                    <option key={season} value={season}>{season}</option>
+                  ))}
+                </select>
+              </div>
+
               {selectedPosition ? (
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {myCards
                     .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
+                    .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
                     .map((card) => {
                       const positionMatch = card.player.position === selectedPosition;
                       const displayOVR = calculateCardOVR(card, selectedPosition);

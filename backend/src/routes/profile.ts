@@ -165,6 +165,7 @@ router.get('/:userId', authMiddleware, async (req: AuthRequest, res) => {
           p.overall,
           p.region,
           p.tier,
+          p.season,
           uc.level,
           CASE
             WHEN d.top_card_id = uc.id THEN 'TOP'

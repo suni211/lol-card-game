@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trophy, Swords, TrendingUp, Layers } from 'lucide-react';
+import { Users, Trophy, Swords, TrendingUp, Layers, Zap, Shield, MapPin } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
@@ -46,6 +46,9 @@ export default function Practice() {
   const [matching, setMatching] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
   const [queueSize, setQueueSize] = useState(0);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState(0);
+  const [simulatedPhases, setSimulatedPhases] = useState<any[]>([]);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -149,8 +152,50 @@ export default function Practice() {
 
     socket.on('match_result', async (result) => {
       console.log('Match result:', result);
-      setMatchResult(result);
-      setMatching(false);
+
+      // Start simulation if phases exist
+      if (result.phases && result.phases.length > 0) {
+        setIsSimulating(true);
+        setSimulatedPhases([]);
+        setCurrentPhase(0);
+
+        // Calculate time per game (6 seconds each for best-of-5)
+        const timePerGame = 6000; // 6 seconds per game
+        const totalGames = result.phases.length;
+
+        // Simulate phases (each game takes 6 seconds)
+        for (let i = 0; i < totalGames; i++) {
+          setTimeout(() => {
+            setSimulatedPhases(prev => [...prev, result.phases[i]]);
+            setCurrentPhase(i + 1);
+
+            // After last phase, show final result
+            if (i === totalGames - 1) {
+              setTimeout(() => {
+                setIsSimulating(false);
+                setMatchResult(result);
+                setMatching(false);
+
+                if (result.won) {
+                  toast.success(`승리! +${result.pointsChange} 포인트`);
+                } else {
+                  toast.error(`패배! +${result.pointsChange} 포인트`);
+                }
+              }, 2000); // 2 second pause before showing result
+            }
+          }, i * timePerGame); // 6 seconds per game
+        }
+      } else {
+        // No phases, show result immediately
+        setMatchResult(result);
+        setMatching(false);
+
+        if (result.won) {
+          toast.success(`승리! +${result.pointsChange} 포인트`);
+        } else {
+          toast.error(`패배! +${result.pointsChange} 포인트`);
+        }
+      }
 
       // Fetch updated user data from server
       try {
@@ -163,12 +208,6 @@ export default function Practice() {
         }
       } catch (error) {
         console.error('Failed to fetch updated user data:', error);
-      }
-
-      if (result.won) {
-        toast.success(`승리! +${result.pointsChange} 포인트`);
-      } else {
-        toast.error(`패배! +${result.pointsChange} 포인트`);
       }
     });
 
@@ -310,8 +349,95 @@ export default function Practice() {
                 </div>
               </div>
 
+              {/* Match Simulation */}
+              {isSimulating && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">경기 진행 중</h3>
+                    <p className="text-gray-600 dark:text-gray-400">실시간 전투 중...</p>
+                  </div>
+
+                  {/* Game Progress (Bo5) */}
+                  <div className="mb-6">
+                    <div className="text-center mb-3">
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white">5판 3선승</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        진행중: {currentPhase} / {simulatedPhases.length > 0 ? simulatedPhases[simulatedPhases.length - 1].gameNumber : '?'}게임
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+                      {[1, 2, 3, 4, 5].map((gameNum) => (
+                        <div
+                          key={gameNum}
+                          className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${
+                            gameNum < currentPhase
+                              ? 'bg-green-500 text-white'
+                              : gameNum === currentPhase
+                              ? 'bg-blue-500 text-white animate-pulse'
+                              : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {gameNum}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Game Results */}
+                  <AnimatePresence>
+                    <div className="space-y-3">
+                      {simulatedPhases.map((phase, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5 }}
+                          className={`p-4 rounded-xl border-2 ${
+                            phase.advantage === 'player1'
+                              ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                              : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {phase.phase === 'LANING' && <Zap className="w-5 h-5 text-yellow-600" />}
+                              {phase.phase === 'TEAMFIGHT' && <Shield className="w-5 h-5 text-blue-600" />}
+                              {phase.phase === 'MACRO' && <MapPin className="w-5 h-5 text-purple-600" />}
+                              <h5 className="text-lg font-bold text-gray-900 dark:text-white">
+                                {phase.name}
+                              </h5>
+                            </div>
+                            <div className={`text-xl font-bold ${
+                              phase.advantage === 'player1'
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {phase.advantage === 'player1' ? '승리!' : '패배'}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-center gap-3 text-2xl font-bold text-gray-900 dark:text-white">
+                            <span className="text-blue-600 dark:text-blue-400">{phase.score.player1}</span>
+                            <span className="text-gray-400">-</span>
+                            <span className="text-red-600 dark:text-red-400">{phase.score.player2}</span>
+                          </div>
+
+                          {phase.strategyWon && (
+                            <div className="mt-2 text-center">
+                              <span className="inline-block px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full text-xs font-medium">
+                                전략 카운터 성공!
+                              </span>
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  </AnimatePresence>
+                </div>
+              )}
+
               {/* Match Controls */}
-              {!matching && !matchResult && (
+              {!matching && !matchResult && !isSimulating && (
                 <motion.button
                   initial={{ scale: 0.95 }}
                   animate={{ scale: 1 }}
@@ -324,7 +450,7 @@ export default function Practice() {
                 </motion.button>
               )}
 
-              {matching && !matchResult && (
+              {matching && !matchResult && !isSimulating && (
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mb-4"></div>

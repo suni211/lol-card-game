@@ -85,19 +85,15 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
   try {
     await connection.beginTransaction();
 
-    // Calculate powers
-    const player1Power = await calculateDeckPower(player1.deckId);
-    const player2Power = await calculateDeckPower(player2.deckId);
+    // Import simulateMatch from match routes
+    const { simulateMatch } = require('../routes/match');
 
-    // Determine winner
-    const randomFactor1 = 0.9 + Math.random() * 0.2;
-    const randomFactor2 = 0.9 + Math.random() * 0.2;
-    const player1FinalPower = player1Power * randomFactor1;
-    const player2FinalPower = player2Power * randomFactor2;
+    // Simulate match with detailed phases
+    const matchSimulation = await simulateMatch(connection, player1.deckId, player2.deckId);
 
-    const winnerId = player1FinalPower > player2FinalPower ? player1.userId : player2.userId;
-    const player1Score = player1FinalPower > player2FinalPower ? 3 : 1;
-    const player2Score = player1FinalPower > player2FinalPower ? 1 : 3;
+    const winnerId = matchSimulation.winnerId === 1 ? player1.userId : player2.userId;
+    const player1Score = matchSimulation.finalScore.player1;
+    const player2Score = matchSimulation.finalScore.player2;
 
     // Create match record
     const [matchResult]: any = await connection.query(`
@@ -203,7 +199,7 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
     const player1RatingChange = isPractice ? 0 : (player1Won ? 25 : -15);
     const player2RatingChange = isPractice ? 0 : (player2Won ? 25 : -15);
 
-    // Send results to both players
+    // Send results to both players (with phases for 30-second simulation)
     io.to(player1.socketId).emit('match_result', {
       opponent: {
         id: player2.userId,
@@ -216,6 +212,7 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
       pointsChange: player1PointsChange,
       ratingChange: player1RatingChange,
       isPractice,
+      phases: matchSimulation.phases,
     });
 
     io.to(player2.socketId).emit('match_result', {
@@ -230,6 +227,7 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
       pointsChange: player2PointsChange,
       ratingChange: player2RatingChange,
       isPractice,
+      phases: matchSimulation.phases,
     });
 
   } catch (error) {

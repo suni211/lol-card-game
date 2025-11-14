@@ -407,4 +407,7 @@ router.get('/history', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Export simulateMatch for use in socket matchmaking
+export { simulateMatch };
+
 export default router;

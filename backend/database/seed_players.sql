@@ -307,8 +307,16 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 ('ShiauC', 'DCG', 'SUPPORT', 63, 'LCP', 'COMMON');
 
 -- ============================================
--- LTA (15 TEAMS)
+-- LTA (16 TEAMS)
 -- ============================================
+
+-- FlyQuest
+INSERT INTO players (name, team, position, overall, region, tier) VALUES
+('bwipo', 'FLY', 'TOP', 80, 'LTA', 'RARE'),
+('inspired', 'FLY', 'JUNGLE', 81, 'LTA', 'EPIC'),
+('Quad', 'FLY', 'MID', 76, 'LTA', 'RARE'),
+('Massu', 'FLY', 'ADC', 74, 'LTA', 'RARE'),
+('Busio', 'FLY', 'SUPPORT', 75, 'LTA', 'RARE');
 
 -- TL
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
@@ -460,6 +468,10 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
 ('YellowYoshi', 'SHG', 'TOP', 65, 'LCP', 'COMMON'),
 ('Yohan', 'SHG', 'JUNGLE', 62, 'LCP', 'COMMON');
+
+-- FlyQuest substitutes
+INSERT INTO players (name, team, position, overall, region, tier) VALUES
+('Gakgos', 'FLY', 'TOP', 78, 'LTA', 'RARE');
 
 -- 100T substitutes
 INSERT INTO players (name, team, position, overall, region, tier) VALUES

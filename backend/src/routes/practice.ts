@@ -63,23 +63,37 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
       }
     }
 
-    // If no one in queue, add self to queue and wait
+    // If no one in queue, find any random online player
     if (!opponent) {
-      // Add to queue
-      practiceQueue.push({
-        userId,
-        username,
-        deckId: userDeck.id,
-        timestamp: Date.now()
-      });
+      // Find random opponent (not self, has active deck, different from recent opponents)
+      const [opponents]: any = await connection.query(`
+        SELECT u.id, u.username, u.rating, d.id as deck_id
+        FROM users u
+        JOIN decks d ON u.id = d.user_id AND d.is_active = 1
+        WHERE u.id != ?
+        ORDER BY RAND()
+        LIMIT 1
+      `, [userId]);
 
-      await connection.rollback();
-      return res.status(404).json({
-        success: false,
-        error: '매칭 대기 중... 다른 플레이어를 기다리는 중입니다.',
-        inQueue: true,
-        queueSize: practiceQueue.length
-      });
+      if (opponents.length === 0) {
+        // Still no one, add to queue as fallback
+        practiceQueue.push({
+          userId,
+          username,
+          deckId: userDeck.id,
+          timestamp: Date.now()
+        });
+
+        await connection.rollback();
+        return res.status(404).json({
+          success: false,
+          error: '대전 상대를 찾는 중입니다...',
+          inQueue: true,
+          queueSize: practiceQueue.length
+        });
+      }
+
+      opponent = opponents[0];
     }
 
     // Calculate deck powers

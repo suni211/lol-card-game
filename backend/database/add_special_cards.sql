@@ -1,7 +1,7 @@
 -- Add special player cards for 2025 Worlds
 
 -- Remove overall constraint to allow values above 100
-ALTER TABLE players DROP CHECK players_chk_1;
+ALTER TABLE players DROP CONSTRAINT `players.overall`;
 
 -- 2025 Worlds Winner (25WW) Cards
 INSERT INTO players (name, team, position, overall, region, tier, image_url) VALUES

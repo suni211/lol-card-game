@@ -162,11 +162,17 @@ function findMatch(player: MatchmakingPlayer, io: Server): boolean {
   const minRating = player.rating - RATING_RANGE;
   const maxRating = player.rating + RATING_RANGE;
 
-  const opponentIndex = matchmakingQueue.findIndex((p) =>
+  // First try to find opponent with similar rating
+  let opponentIndex = matchmakingQueue.findIndex((p) =>
     p.userId !== player.userId &&
     p.rating >= minRating &&
     p.rating <= maxRating
   );
+
+  // If no similar rating opponent, just get first available (선착순)
+  if (opponentIndex === -1 && matchmakingQueue.length > 0) {
+    opponentIndex = matchmakingQueue.findIndex((p) => p.userId !== player.userId);
+  }
 
   if (opponentIndex !== -1) {
     const opponent = matchmakingQueue[opponentIndex];

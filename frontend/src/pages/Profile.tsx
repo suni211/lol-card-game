@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Target, Flame, Award, TrendingUp } from 'lucide-react';
+import { Trophy, Target, Flame, Award, TrendingUp, Calendar, Gift } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Profile() {
-  const { user, token } = useAuthStore();
+  const { user, token, updateUser } = useAuthStore();
   const [stats, setStats] = useState({
     totalMatches: 0,
     wins: 0,
@@ -18,9 +19,13 @@ export default function Profile() {
     totalCards: 0,
     legendaryCards: 0,
   });
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [canCheckIn, setCanCheckIn] = useState(true);
+  const [consecutiveDays, setConsecutiveDays] = useState(0);
 
   useEffect(() => {
     fetchStats();
+    checkCanCheckIn();
   }, []);
 
   const fetchStats = async () => {
@@ -43,6 +48,68 @@ export default function Profile() {
       });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  const checkCanCheckIn = () => {
+    if (!user?.lastCheckIn) {
+      setCanCheckIn(true);
+      setConsecutiveDays(user?.consecutiveDays || 0);
+      return;
+    }
+
+    const lastCheckIn = new Date(user.lastCheckIn);
+    const today = new Date();
+    lastCheckIn.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    setCanCheckIn(lastCheckIn.getTime() < today.getTime());
+    setConsecutiveDays(user?.consecutiveDays || 0);
+  };
+
+  const handleCheckIn = async () => {
+    try {
+      setCheckingIn(true);
+
+      const response = await axios.post(
+        `${API_URL}/profile/checkin`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        const { reward, milestone, milestoneBonus, consecutiveDays } = response.data.data;
+
+        // Update user data
+        const userResponse = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (userResponse.data.success) {
+          updateUser(userResponse.data.data);
+        }
+
+        setCanCheckIn(false);
+        setConsecutiveDays(consecutiveDays);
+
+        if (milestone) {
+          toast.success(`🎉 ${milestone} 달성! +${reward}P (보너스 +${milestoneBonus}P)`, {
+            duration: 5000,
+          });
+        } else {
+          toast.success(`출석 체크 완료! +${reward}P`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Check-in error:', error);
+      if (error.response?.data?.error === 'Already checked in today') {
+        toast.error('오늘 이미 출석 체크를 했습니다!');
+      } else {
+        toast.error('출석 체크 실패');
+      }
+    } finally {
+      setCheckingIn(false);
     }
   };
 
@@ -113,6 +180,44 @@ export default function Profile() {
                   <div className="text-2xl font-bold mb-1">{stats.wins}</div>
                   <div className="text-xs text-white/80">총 승리</div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Check-in Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 mb-8 text-white"
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="flex items-center space-x-4 mb-4 md:mb-0">
+              <div className="p-4 bg-white/20 backdrop-blur rounded-full">
+                <Calendar className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold mb-1">출석 체크</h3>
+                <p className="text-white/90 text-sm">
+                  연속 {consecutiveDays}일째 출석 중
+                </p>
+                <p className="text-white/70 text-xs mt-1">
+                  다음 마일스톤: {consecutiveDays < 7 ? '7일' : consecutiveDays < 30 ? '30일' : consecutiveDays < 90 ? '90일' : consecutiveDays < 180 ? '180일' : '365일'}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center space-y-2">
+              <button
+                onClick={handleCheckIn}
+                disabled={!canCheckIn || checkingIn}
+                className="px-8 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <Gift className="w-5 h-5" />
+                <span>{canCheckIn ? '출석 체크' : '체크 완료'}</span>
+              </button>
+              <div className="text-center">
+                <div className="text-sm text-white/90">기본 50P + 마일스톤 보너스 500P</div>
+                <div className="text-xs text-white/70">(7, 30, 90, 180, 365일)</div>
               </div>
             </div>
           </div>

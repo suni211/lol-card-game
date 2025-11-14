@@ -120,8 +120,31 @@ router.post('/checkin', authMiddleware, async (req: AuthRequest, res) => {
       consecutiveDays = (user.consecutive_days || 0) + 1;
     }
 
-    // Calculate reward (50 base + 10 per consecutive day, max 200)
-    const reward = Math.min(50 + (consecutiveDays - 1) * 10, 200);
+    // Base reward: 50P
+    let reward = 50;
+
+    // Milestone bonuses (7, 30, 90, 180, 365 days)
+    let milestoneBonus = 0;
+    let milestone = null;
+
+    if (consecutiveDays === 7) {
+      milestoneBonus = 500;
+      milestone = '7일 연속';
+    } else if (consecutiveDays === 30) {
+      milestoneBonus = 500;
+      milestone = '30일 연속';
+    } else if (consecutiveDays === 90) {
+      milestoneBonus = 500;
+      milestone = '90일 연속';
+    } else if (consecutiveDays === 180) {
+      milestoneBonus = 500;
+      milestone = '180일 연속';
+    } else if (consecutiveDays === 365) {
+      milestoneBonus = 500;
+      milestone = '365일 연속';
+    }
+
+    const totalReward = reward + milestoneBonus;
 
     // Update user
     await connection.query(`
@@ -131,14 +154,17 @@ router.post('/checkin', authMiddleware, async (req: AuthRequest, res) => {
         consecutive_days = ?,
         points = points + ?
       WHERE id = ?
-    `, [consecutiveDays, reward, userId]);
+    `, [consecutiveDays, totalReward, userId]);
 
     await connection.commit();
 
     res.json({
       success: true,
       data: {
-        reward,
+        reward: totalReward,
+        baseReward: reward,
+        milestoneBonus,
+        milestone,
         consecutiveDays,
       },
     });

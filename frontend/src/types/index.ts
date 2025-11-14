@@ -37,6 +37,8 @@ export interface User {
   rating: number;
   isAdmin: boolean;
   createdAt: string;
+  lastCheckIn?: string;
+  consecutiveDays?: number;
 }
 
 export type UserTier = 'IRON' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'MASTER' | 'CHALLENGER';

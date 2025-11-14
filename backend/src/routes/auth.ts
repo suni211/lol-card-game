@@ -57,10 +57,12 @@ router.post('/register', async (req, res) => {
     );
 
     // Generate token
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    const jwtExpire = process.env.JWT_EXPIRE || '7d';
     const token = jwt.sign(
       { id: userId, username, email, isAdmin: false },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: process.env.JWT_EXPIRE || '7d' }
+      jwtSecret,
+      { expiresIn: jwtExpire }
     );
 
     // Get user data
@@ -116,10 +118,12 @@ router.post('/login', async (req, res) => {
     }
 
     // Generate token
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    const jwtExpire = process.env.JWT_EXPIRE || '7d';
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email, isAdmin: user.is_admin === 1 },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: process.env.JWT_EXPIRE || '7d' }
+      jwtSecret,
+      { expiresIn: jwtExpire }
     );
 
     const userData = {

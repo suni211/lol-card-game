@@ -9,6 +9,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 interface AIStats {
   currentDifficulty: number;
   totalWins: number;
+  battlesRemaining?: number;
+  maxBattles?: number;
 }
 
 interface BattleResult {
@@ -21,11 +23,26 @@ interface BattleResult {
   aiDifficulty: number;
 }
 
+interface AutoBattleResult {
+  totalBattles: number;
+  totalWins: number;
+  totalLosses: number;
+  totalPointsEarned: number;
+  results: {
+    battleNumber: number;
+    won: boolean;
+    aiDifficulty: number;
+    pointsEarned: number;
+  }[];
+}
+
 export default function AIBattle() {
   const [aiStats, setAiStats] = useState<AIStats | null>(null);
   const [battling, setBattling] = useState(false);
   const [result, setResult] = useState<BattleResult | null>(null);
+  const [autoResult, setAutoResult] = useState<AutoBattleResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [autoBattleCount, setAutoBattleCount] = useState(10);
   const { token, user, updateUser } = useAuthStore();
 
   useEffect(() => {
@@ -51,6 +68,7 @@ export default function AIBattle() {
     try {
       setBattling(true);
       setResult(null);
+      setAutoResult(null);
 
       const response = await axios.post(
         `${API_URL}/ai/battle`,
@@ -76,7 +94,43 @@ export default function AIBattle() {
       }
     } catch (error: any) {
       console.error('AI battle error:', error);
-      alert(error.response?.data?.error || 'AI 배틀 실패');
+      alert(error.response?.data?.message || error.response?.data?.error || 'AI 배틀 실패');
+    } finally {
+      setBattling(false);
+    }
+  };
+
+  const startAutoBattle = async () => {
+    try {
+      setBattling(true);
+      setResult(null);
+      setAutoResult(null);
+
+      const response = await axios.post(
+        `${API_URL}/ai/auto-battle`,
+        { count: autoBattleCount },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        setAutoResult(response.data.data);
+
+        // Fetch updated user data
+        const userResponse = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (userResponse.data.success) {
+          updateUser(userResponse.data.data);
+        }
+
+        // Refresh AI stats
+        await fetchAIStats();
+      }
+    } catch (error: any) {
+      console.error('Auto battle error:', error);
+      alert(error.response?.data?.message || error.response?.data?.error || '자동 배틀 실패');
     } finally {
       setBattling(false);
     }
@@ -119,7 +173,7 @@ export default function AIBattle() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-200 dark:border-gray-700"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Current Difficulty */}
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-3">
@@ -146,6 +200,19 @@ export default function AIBattle() {
               </div>
             </div>
 
+            {/* Battles Remaining */}
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-3">
+                <Swords className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {aiStats?.battlesRemaining || 0} / {aiStats?.maxBattles || 30}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                남은 배틀 수
+              </div>
+            </div>
+
             {/* User Points */}
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-3">
@@ -161,30 +228,54 @@ export default function AIBattle() {
           </div>
         </motion.div>
 
-        {/* Battle Button */}
-        {!result && (
+        {/* Battle Buttons */}
+        {!result && !autoResult && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
+            className="mb-8"
           >
-            <button
-              onClick={startBattle}
-              disabled={battling}
-              className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {battling ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                  <span>배틀 중...</span>
-                </>
-              ) : (
-                <>
-                  <Swords className="w-6 h-6" />
-                  <span>AI 배틀 시작</span>
-                </>
-              )}
-            </button>
+            <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
+              {/* Single Battle */}
+              <button
+                onClick={startBattle}
+                disabled={battling}
+                className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {battling ? (
+                  <>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    <span>배틀 중...</span>
+                  </>
+                ) : (
+                  <>
+                    <Swords className="w-6 h-6" />
+                    <span>단일 배틀</span>
+                  </>
+                )}
+              </button>
+
+              {/* Auto Battle */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={autoBattleCount}
+                  onChange={(e) => setAutoBattleCount(Math.min(30, Math.max(1, parseInt(e.target.value) || 1)))}
+                  disabled={battling}
+                  className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center font-bold"
+                />
+                <button
+                  onClick={startAutoBattle}
+                  disabled={battling}
+                  className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  <Zap className="w-5 h-5" />
+                  <span>자동 돌리기</span>
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -260,6 +351,79 @@ export default function AIBattle() {
           </motion.div>
         )}
 
+        {/* Auto Battle Result */}
+        {autoResult && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-2xl p-8 mb-8 text-white"
+          >
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">📊</div>
+              <h2 className="text-4xl font-bold mb-2">자동 배틀 완료!</h2>
+              <p className="text-xl opacity-90">{autoResult.totalBattles}번의 배틀 결과</p>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4 text-center">
+                <div className="text-sm opacity-80 mb-1">승리</div>
+                <div className="text-3xl font-bold text-green-300">{autoResult.totalWins}</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4 text-center">
+                <div className="text-sm opacity-80 mb-1">패배</div>
+                <div className="text-3xl font-bold text-red-300">{autoResult.totalLosses}</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4 text-center">
+                <div className="text-sm opacity-80 mb-1">승률</div>
+                <div className="text-3xl font-bold">{((autoResult.totalWins / autoResult.totalBattles) * 100).toFixed(1)}%</div>
+              </div>
+            </div>
+
+            {/* Total Points */}
+            <div className="bg-white/20 backdrop-blur rounded-lg p-6 text-center mb-6">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <TrendingUp className="w-6 h-6" />
+                <span className="text-lg font-semibold">총 획득 포인트</span>
+              </div>
+              <div className="text-5xl font-bold">+{autoResult.totalPointsEarned}P</div>
+            </div>
+
+            {/* Detailed Results */}
+            <div className="mb-6">
+              <h3 className="text-lg font-bold mb-3">배틀 상세 결과</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 max-h-60 overflow-y-auto">
+                {autoResult.results.map((battle) => (
+                  <div
+                    key={battle.battleNumber}
+                    className={`p-2 rounded-lg text-center text-sm ${
+                      battle.won
+                        ? 'bg-green-500/30 border border-green-400'
+                        : 'bg-red-500/30 border border-red-400'
+                    }`}
+                  >
+                    <div className="font-bold">#{battle.battleNumber}</div>
+                    <div className="text-xs opacity-80">{battle.won ? '승' : '패'}</div>
+                    <div className="text-xs">+{battle.pointsEarned}P</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Continue Button */}
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setAutoResult(null);
+                }}
+                className="px-8 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                계속하기
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Info Box */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -272,7 +436,7 @@ export default function AIBattle() {
           <ul className="space-y-2 text-blue-800 dark:text-blue-200">
             <li className="flex items-start space-x-2">
               <span className="text-blue-500 mt-1">•</span>
-              <span>무제한으로 플레이 가능합니다</span>
+              <span>1시간에 최대 30번 플레이 가능합니다</span>
             </li>
             <li className="flex items-start space-x-2">
               <span className="text-blue-500 mt-1">•</span>
@@ -281,6 +445,10 @@ export default function AIBattle() {
             <li className="flex items-start space-x-2">
               <span className="text-blue-500 mt-1">•</span>
               <span>난이도가 높을수록 더 많은 포인트를 획득합니다</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="text-blue-500 mt-1">•</span>
+              <span>자동 돌리기로 한번에 여러 배틀을 진행할 수 있습니다</span>
             </li>
             <li className="flex items-start space-x-2">
               <span className="text-blue-500 mt-1">•</span>

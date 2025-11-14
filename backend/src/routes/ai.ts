@@ -4,6 +4,9 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+const AI_BATTLE_LIMIT = 30; // Max AI battles per hour
+const AI_BATTLE_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+
 // Calculate deck power (same as matchmaking)
 async function calculateDeckPower(deckId: number): Promise<number> {
   const connection = await pool.getConnection();
@@ -85,6 +88,24 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
   try {
     const userId = req.user!.id;
 
+    // Check AI battle limit (30 per hour)
+    const oneHourAgo = new Date(Date.now() - AI_BATTLE_WINDOW);
+    const [recentBattles]: any = await connection.query(`
+      SELECT COUNT(*) as count
+      FROM user_stats_history
+      WHERE user_id = ?
+      AND battle_type = 'AI'
+      AND created_at >= ?
+    `, [userId, oneHourAgo]);
+
+    if (recentBattles[0].count >= AI_BATTLE_LIMIT) {
+      return res.status(400).json({
+        success: false,
+        error: 'AI battle limit reached',
+        message: `1시간에 최대 ${AI_BATTLE_LIMIT}번의 AI 배틀만 가능합니다.`,
+      });
+    }
+
     await connection.beginTransaction();
 
     // Get active deck
@@ -149,6 +170,12 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
         losses = losses + ?
     `, [userId, won ? 1 : 0, won ? 0 : 1, won ? 1 : 0, won ? 0 : 1]);
 
+    // Record AI battle in history for rate limiting
+    await connection.query(`
+      INSERT INTO user_stats_history (user_id, battle_type, result, points_change, ai_difficulty)
+      VALUES (?, 'AI', ?, ?, ?)
+    `, [userId, won ? 'WIN' : 'LOSE', pointsReward, aiBasePower]);
+
     await connection.commit();
 
     res.json({
@@ -192,11 +219,25 @@ router.get('/stats', authMiddleware, async (req: AuthRequest, res: Response) => 
     const aiWins = stats.length > 0 ? stats[0].wins : 0;
     const nextAIDifficulty = calculateAIDifficulty(aiWins);
 
+    // Get recent battles count (last hour)
+    const oneHourAgo = new Date(Date.now() - AI_BATTLE_WINDOW);
+    const [recentBattles]: any = await connection.query(`
+      SELECT COUNT(*) as count
+      FROM user_stats_history
+      WHERE user_id = ?
+      AND battle_type = 'AI'
+      AND created_at >= ?
+    `, [userId, oneHourAgo]);
+
+    const battlesRemaining = AI_BATTLE_LIMIT - recentBattles[0].count;
+
     res.json({
       success: true,
       data: {
         currentDifficulty: nextAIDifficulty,
         totalWins: aiWins,
+        battlesRemaining,
+        maxBattles: AI_BATTLE_LIMIT,
       },
     });
 
@@ -205,6 +246,150 @@ router.get('/stats', authMiddleware, async (req: AuthRequest, res: Response) => 
     res.status(500).json({
       success: false,
       error: 'Failed to get AI stats',
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// Auto battle (multiple battles at once)
+router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const userId = req.user!.id;
+    const { count } = req.body; // Number of battles to run
+
+    if (!count || count < 1 || count > 30) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid count (1-30)',
+      });
+    }
+
+    // Check remaining battles
+    const oneHourAgo = new Date(Date.now() - AI_BATTLE_WINDOW);
+    const [recentBattles]: any = await connection.query(`
+      SELECT COUNT(*) as count
+      FROM user_stats_history
+      WHERE user_id = ?
+      AND battle_type = 'AI'
+      AND created_at >= ?
+    `, [userId, oneHourAgo]);
+
+    const battlesRemaining = AI_BATTLE_LIMIT - recentBattles[0].count;
+
+    if (battlesRemaining < count) {
+      return res.status(400).json({
+        success: false,
+        error: 'Not enough battles remaining',
+        message: `${battlesRemaining}번의 배틀만 남았습니다.`,
+      });
+    }
+
+    // Get active deck
+    const [decks]: any = await connection.query(
+      'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',
+      [userId]
+    );
+
+    if (decks.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No active deck found',
+      });
+    }
+
+    const deckId = decks[0].id;
+
+    // Get user stats for AI difficulty
+    const [stats]: any = await connection.query(
+      'SELECT wins FROM user_stats WHERE user_id = ?',
+      [userId]
+    );
+
+    let aiWins = stats.length > 0 ? stats[0].wins : 0;
+
+    // Calculate player power once
+    const playerPower = await calculateDeckPower(deckId);
+
+    const results = [];
+    let totalPointsEarned = 0;
+    let totalWins = 0;
+    let totalLosses = 0;
+
+    await connection.beginTransaction();
+
+    for (let i = 0; i < count; i++) {
+      const aiBasePower = calculateAIDifficulty(aiWins);
+      const aiRandomFactor = 0.9 + Math.random() * 0.2;
+      const aiPower = Math.floor(aiBasePower * aiRandomFactor);
+
+      const playerRandomFactor = 0.9 + Math.random() * 0.2;
+      const playerFinalPower = playerPower * playerRandomFactor;
+      const aiFinalPower = aiPower * aiRandomFactor;
+
+      const won = playerFinalPower > aiFinalPower;
+      const pointsReward = calculatePointsReward(aiPower, playerPower, won);
+
+      if (won) {
+        totalWins++;
+        aiWins++;
+      } else {
+        totalLosses++;
+      }
+
+      totalPointsEarned += pointsReward;
+
+      // Record battle
+      await connection.query(`
+        INSERT INTO user_stats_history (user_id, battle_type, result, points_change, ai_difficulty)
+        VALUES (?, 'AI', ?, ?, ?)
+      `, [userId, won ? 'WIN' : 'LOSE', pointsReward, aiBasePower]);
+
+      results.push({
+        battleNumber: i + 1,
+        won,
+        aiDifficulty: aiBasePower,
+        pointsEarned: pointsReward,
+      });
+    }
+
+    // Update user points
+    await connection.query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
+      [totalPointsEarned, userId]
+    );
+
+    // Update user stats
+    await connection.query(`
+      INSERT INTO user_stats (user_id, total_matches, wins, losses)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        total_matches = total_matches + ?,
+        wins = wins + ?,
+        losses = losses + ?
+    `, [userId, count, totalWins, totalLosses, count, totalWins, totalLosses]);
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      data: {
+        totalBattles: count,
+        totalWins,
+        totalLosses,
+        totalPointsEarned,
+        results,
+      },
+    });
+
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Auto battle error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Auto battle failed',
     });
   } finally {
     connection.release();

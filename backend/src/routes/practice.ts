@@ -4,7 +4,15 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
-// Find practice match opponent (no rating change)
+// Practice matchmaking queue
+const practiceQueue: Array<{
+  userId: number;
+  username: string;
+  deckId: number;
+  timestamp: number;
+}> = [];
+
+// Find practice match opponent (with matchmaking queue)
 router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
 
@@ -12,6 +20,7 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
     await connection.beginTransaction();
 
     const userId = req.user!.id;
+    const username = req.user!.username;
 
     // Get active deck
     const [decks]: any = await connection.query(
@@ -26,22 +35,66 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
 
     const userDeck = decks[0];
 
-    // Find random opponent (not self, has active deck)
-    const [opponents]: any = await connection.query(`
-      SELECT u.id, u.username, u.rating, d.id as deck_id
-      FROM users u
-      JOIN decks d ON u.id = d.user_id AND d.is_active = 1
-      WHERE u.id != ?
-      ORDER BY RAND()
-      LIMIT 1
-    `, [userId]);
-
-    if (opponents.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({ success: false, error: '대전 상대를 찾을 수 없습니다' });
+    // Check if already in queue
+    const queueIndex = practiceQueue.findIndex(p => p.userId === userId);
+    if (queueIndex !== -1) {
+      practiceQueue.splice(queueIndex, 1);
     }
 
-    const opponent = opponents[0];
+    // Try to find opponent in queue first
+    let opponent: any = null;
+    if (practiceQueue.length > 0) {
+      // Match with first person in queue
+      const queuedPlayer = practiceQueue.shift()!;
+
+      // Get opponent user info
+      const [opponentUsers]: any = await connection.query(
+        'SELECT id, username, rating FROM users WHERE id = ?',
+        [queuedPlayer.userId]
+      );
+
+      if (opponentUsers.length > 0) {
+        opponent = {
+          id: queuedPlayer.userId,
+          username: queuedPlayer.username,
+          rating: opponentUsers[0].rating,
+          deck_id: queuedPlayer.deckId
+        };
+      }
+    }
+
+    // If no one in queue, find random opponent or add to queue
+    if (!opponent) {
+      // Find random opponent (not self, has active deck)
+      const [opponents]: any = await connection.query(`
+        SELECT u.id, u.username, u.rating, d.id as deck_id
+        FROM users u
+        JOIN decks d ON u.id = d.user_id AND d.is_active = 1
+        WHERE u.id != ?
+        ORDER BY RAND()
+        LIMIT 1
+      `, [userId]);
+
+      if (opponents.length === 0) {
+        // No opponents available, add to queue
+        practiceQueue.push({
+          userId,
+          username,
+          deckId: userDeck.id,
+          timestamp: Date.now()
+        });
+
+        await connection.rollback();
+        return res.status(404).json({
+          success: false,
+          error: '대전 상대를 찾는 중입니다. 잠시 후 다시 시도하세요.',
+          inQueue: true,
+          queueSize: practiceQueue.length
+        });
+      }
+
+      opponent = opponents[0];
+    }
 
     // Calculate deck powers
     const userPower = await calculateDeckPower(userDeck.id, connection);

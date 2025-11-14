@@ -177,7 +177,7 @@ export default function Practice() {
               )}
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-center">
               <button
                 onClick={() => findMatch(false)}
                 disabled={searching || autoMatch}

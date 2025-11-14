@@ -19,6 +19,13 @@ interface MatchResult {
   ratingChange: number;
 }
 
+interface AutoMatchStats {
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  totalPoints: number;
+}
+
 export default function Practice() {
   const { user, token, updateUser } = useAuthStore();
   const [searching, setSearching] = useState(false);
@@ -26,6 +33,13 @@ export default function Practice() {
   const [showResult, setShowResult] = useState(false);
   const [autoMatch, setAutoMatch] = useState(false);
   const [matchCount, setMatchCount] = useState(0);
+  const [autoMatchStats, setAutoMatchStats] = useState<AutoMatchStats>({
+    totalMatches: 0,
+    wins: 0,
+    losses: 0,
+    totalPoints: 0
+  });
+  const [showAutoMatchSummary, setShowAutoMatchSummary] = useState(false);
 
   const findMatch = async (isAuto = false) => {
     if (!user || !token) {
@@ -53,31 +67,48 @@ export default function Practice() {
         // Update user points
         updateUser({ points: user.points + result.pointsGained });
 
+        // Update stats
+        if (isAuto) {
+          setAutoMatchStats(prev => ({
+            totalMatches: prev.totalMatches + 1,
+            wins: prev.wins + (result.result === 'WIN' ? 1 : 0),
+            losses: prev.losses + (result.result === 'LOSE' ? 1 : 0),
+            totalPoints: prev.totalPoints + result.pointsGained
+          }));
+        }
+
         // Increment match count
         setMatchCount(prev => prev + 1);
 
-        // Show result after animation
-        setTimeout(() => {
+        // Auto continue if auto-match is enabled
+        if (isAuto && autoMatch) {
+          // Don't show modal, just continue immediately
           setSearching(false);
 
           if (result.result === 'WIN') {
-            toast.success(`승리! +${result.pointsGained}P`);
+            toast.success(`승리! +${result.pointsGained}P`, { duration: 1000 });
           } else {
-            toast(`패배... +${result.pointsGained}P`, { icon: '😢' });
+            toast(`패배 +${result.pointsGained}P`, { icon: '😢', duration: 1000 });
           }
 
-          // Auto continue if auto-match is enabled
-          if (isAuto && autoMatch) {
-            // Don't show modal, just continue
-            setTimeout(() => {
-              setMatchResult(null);
-              findMatch(true);
-            }, 1000);
-          } else {
-            // Show result modal for manual matches
+          // Continue immediately
+          setTimeout(() => {
+            setMatchResult(null);
+            findMatch(true);
+          }, 500);
+        } else {
+          // Show result modal for manual matches
+          setTimeout(() => {
+            setSearching(false);
             setShowResult(true);
-          }
-        }, 2000);
+
+            if (result.result === 'WIN') {
+              toast.success(`승리! +${result.pointsGained}P`);
+            } else {
+              toast(`패배... +${result.pointsGained}P`, { icon: '😢' });
+            }
+          }, 2000);
+        }
       }
     } catch (error: any) {
       setSearching(false);
@@ -92,10 +123,20 @@ export default function Practice() {
       // Start auto-match
       setAutoMatch(true);
       setMatchCount(0);
+      setAutoMatchStats({
+        totalMatches: 0,
+        wins: 0,
+        losses: 0,
+        totalPoints: 0
+      });
       findMatch(true);
     } else {
-      // Stop auto-match
+      // Stop auto-match and show summary
       setAutoMatch(false);
+      setSearching(false);
+      if (autoMatchStats.totalMatches > 0) {
+        setShowAutoMatchSummary(true);
+      }
     }
   };
 
@@ -235,7 +276,7 @@ export default function Practice() {
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  +30P
+                  +50P
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
                   랭크 변동 없음
@@ -256,7 +297,7 @@ export default function Practice() {
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  +15P
+                  +30P
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
                   랭크 변동 없음
@@ -377,6 +418,84 @@ export default function Practice() {
                   <button
                     onClick={closeResult}
                     className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all"
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Auto-Match Summary Modal */}
+      <AnimatePresence>
+        {showAutoMatchSummary && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAutoMatchSummary(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-md w-full"
+            >
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-1 rounded-2xl shadow-2xl">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-8">
+                  <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-6">
+                    자동 매칭 결과
+                  </h2>
+
+                  <div className="space-y-4 mb-6">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 경기 수</div>
+                      <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                        {autoMatchStats.totalMatches}경기
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+                        <div className="text-sm text-green-700 dark:text-green-400 mb-1">승리</div>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {autoMatchStats.wins}
+                        </div>
+                      </div>
+                      <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 text-center">
+                        <div className="text-sm text-red-700 dark:text-red-400 mb-1">패배</div>
+                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                          {autoMatchStats.losses}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                      <div className="text-sm text-yellow-700 dark:text-yellow-400 mb-1">승률</div>
+                      <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                        {autoMatchStats.totalMatches > 0
+                          ? ((autoMatchStats.wins / autoMatchStats.totalMatches) * 100).toFixed(1)
+                          : 0}%
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-lg p-4">
+                      <div className="text-sm text-orange-700 dark:text-orange-400 mb-1">
+                        총 획득 포인트
+                      </div>
+                      <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        +{autoMatchStats.totalPoints}P
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowAutoMatchSummary(false)}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all"
                   >
                     확인
                   </button>

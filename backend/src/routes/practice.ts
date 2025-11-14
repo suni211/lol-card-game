@@ -107,7 +107,7 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
     const won = userFinalPower > opponentFinalPower;
 
     // Practice match rewards (lower than ranked)
-    const pointsChange = won ? 30 : 15; // Win: 30P, Loss: 15P (no rating change)
+    const pointsChange = won ? 50 : 30; // Win: 50P, Loss: 30P (no rating change)
 
     // Create match record
     const [matchResult]: any = await connection.query(`
@@ -137,11 +137,11 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
     await connection.query(`
       INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
       VALUES (?, ?, ?, ?, 0)
-    `, [opponent.id, matchId, won ? 'LOSE' : 'WIN', won ? 15 : 30]);
+    `, [opponent.id, matchId, won ? 'LOSE' : 'WIN', won ? 30 : 50]);
 
     // Update points for both players
     await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsChange, userId]);
-    await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [won ? 15 : 30, opponent.id]);
+    await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [won ? 30 : 50, opponent.id]);
 
     // Update user stats (only match count, no rating)
     await connection.query(`

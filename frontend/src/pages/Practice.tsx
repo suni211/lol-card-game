@@ -47,7 +47,9 @@ export default function Practice() {
       return;
     }
 
-    setSearching(true);
+    if (!isAuto || !autoMatch) {
+      setSearching(true);
+    }
     setMatchResult(null);
     setShowResult(false);
 
@@ -107,10 +109,10 @@ export default function Practice() {
     } catch (error: any) {
       // If auto-match mode and just waiting in queue, retry
       if (isAuto && autoMatch && error.response?.status === 404) {
-        // In queue, keep trying
+        // In queue, keep trying (don't stop searching indicator)
         setTimeout(() => {
           findMatch(true);
-        }, 1000); // Retry every 1 second
+        }, 5000); // Retry every 5 seconds
       } else {
         // Real error, stop auto-match
         setSearching(false);

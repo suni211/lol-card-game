@@ -56,7 +56,19 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
         });
 
         if (position) {
-          cards[position] = card;
+          cards[position] = {
+            id: card.id,
+            level: card.level,
+            player: {
+              id: card.player_id,
+              name: card.name,
+              team: card.team,
+              position: card.position,
+              overall: card.overall,
+              region: card.region,
+              tier: card.tier,
+            },
+          };
         }
       });
     }

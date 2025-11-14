@@ -251,26 +251,6 @@ export function setupMatchmaking(io: Server) {
 
         const user = users[0];
 
-        // Check rank match limit if this is a ranked match
-        if (data.isRanked !== false) {
-          const oneHourAgo = new Date(Date.now() - RANK_MATCH_WINDOW);
-          const [recentMatches]: any = await pool.query(`
-            SELECT COUNT(*) as count
-            FROM matches
-            WHERE (player1_id = ? OR player2_id = ?)
-            AND status = 'COMPLETED'
-            AND completed_at >= ?
-          `, [user.id, user.id, oneHourAgo]);
-
-          if (recentMatches[0].count >= RANK_MATCH_LIMIT) {
-            socket.emit('queue_error', {
-              error: 'Rank match limit reached',
-              message: `1시간에 최대 ${RANK_MATCH_LIMIT}번의 랭크 매치만 가능합니다.`
-            });
-            return;
-          }
-        }
-
         // Get active deck
         const [decks]: any = await pool.query(
           'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',

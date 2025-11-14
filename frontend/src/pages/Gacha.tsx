@@ -246,7 +246,7 @@ export default function Gacha() {
                   {option.special && (
                     <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
-                        25WW 카드만 획득 가능!
+                        25WW, 25WUD + 레어 이상 확정!
                       </p>
                     </div>
                   )}

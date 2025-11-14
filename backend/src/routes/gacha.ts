@@ -10,7 +10,7 @@ const GACHA_OPTIONS = {
   basic: { cost: 100, probabilities: { legendary: 0.3, epic: 2, rare: 20, common: 77.7 } },
   premium: { cost: 300, probabilities: { legendary: 1, epic: 5, rare: 30, common: 64 } },
   ultra: { cost: 500, probabilities: { legendary: 3, epic: 10, rare: 35, common: 52 } },
-  worlds_winner: { cost: 2500, probabilities: { legendary: 100, epic: 0, rare: 0, common: 0 }, special: '25WW' }, // 25WW only, guaranteed Rare+
+  worlds_winner: { cost: 2500, probabilities: { legendary: 40, epic: 30, rare: 30, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards
 };
 
 function selectTierByProbability(probabilities: any): string {
@@ -73,11 +73,20 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get random player of that tier
     let players: any;
-    if ((option as any).special === '25WW') {
-      // Special 25WW pack - only get 25WW players
+    if ((option as any).special === 'WORLDS') {
+      // Special WORLDS pack - 25WW, 25WUD, and Rare+ cards only
       [players] = await connection.query(
-        "SELECT * FROM players WHERE name LIKE '25WW%' ORDER BY RAND() LIMIT 1"
+        "SELECT * FROM players WHERE (name LIKE '25WW%' OR name LIKE '25WUD%' OR tier IN ('RARE', 'EPIC', 'LEGENDARY')) AND tier = ? ORDER BY RAND() LIMIT 1",
+        [tier]
       );
+
+      // Fallback if no special cards found for this tier
+      if (players.length === 0) {
+        [players] = await connection.query(
+          'SELECT * FROM players WHERE tier = ? ORDER BY RAND() LIMIT 1',
+          [tier]
+        );
+      }
     } else {
       [players] = await connection.query(
         'SELECT * FROM players WHERE tier = ? ORDER BY RAND() LIMIT 1',

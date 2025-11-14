@@ -1,23 +1,56 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Target, Flame, Award, TrendingUp } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Profile() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
+  const [stats, setStats] = useState({
+    totalMatches: 0,
+    wins: 0,
+    losses: 0,
+    winRate: 0,
+    currentStreak: 0,
+    longestWinStreak: 0,
+    totalCards: 0,
+    legendaryCards: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      // Fetch user cards to calculate card stats
+      const cardsResponse = await axios.get(`${API_URL}/gacha/my-cards`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const cards = cardsResponse.data.data || [];
+
+      setStats({
+        totalMatches: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+        currentStreak: 0,
+        longestWinStreak: 0,
+        totalCards: cards.length,
+        legendaryCards: cards.filter((card: any) => card.tier === 'LEGENDARY').length,
+      });
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) return null;
-
-  // Mock stats
-  const stats = {
-    totalMatches: 50,
-    wins: 32,
-    losses: 18,
-    winRate: 64,
-    currentStreak: 5,
-    longestWinStreak: 12,
-    totalCards: 45,
-    legendaryCards: 5,
-  };
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -185,48 +218,27 @@ export default function Profile() {
             최근 경기
           </h2>
 
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((_, index) => {
-              const isWin = Math.random() > 0.4;
-              return (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between p-4 rounded-lg border-2 ${
-                    isWin
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                  }`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white ${
-                      isWin ? 'bg-green-500' : 'bg-red-500'
-                    }`}>
-                      {isWin ? 'W' : 'L'}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900 dark:text-white">
-                        vs Player{index + 1}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {Math.floor(Math.random() * 7) + 1}일 전
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className={`font-bold ${
-                      isWin ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {isWin ? '+25' : '-15'} Rating
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {isWin ? '+100P' : '+50P'}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {stats.totalMatches === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🎮</div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                아직 경기 기록이 없습니다
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                덱을 편성하고 첫 번째 경기를 시작해보세요!
+              </p>
+              <a
+                href="/deck"
+                className="inline-block px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg transition-colors"
+              >
+                덱 편성하기
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Match history will be displayed here when implemented */}
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

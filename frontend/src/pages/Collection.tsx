@@ -24,9 +24,10 @@ export default function Collection() {
   const [materialCard, setMaterialCard] = useState<UserCard | null>(null);
   const [enhancing, setEnhancing] = useState(false);
   const [enhancementResult, setEnhancementResult] = useState<{
-    success: boolean;
+    isSuccess: boolean;
     newLevel: number;
     playerName: string;
+    successRate: number;
   } | null>(null);
   const { token, user, updateUser } = useAuthStore();
 
@@ -493,10 +494,10 @@ export default function Collection() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className={`text-2xl font-bold mt-4 ${
-                          enhancementResult.success ? 'text-green-500' : 'text-red-500'
+                          enhancementResult.isSuccess ? 'text-green-500' : 'text-red-500'
                         }`}
                       >
-                        {enhancementResult.success ? '강화 성공!' : '강화 실패...'}
+                        {enhancementResult.isSuccess ? '강화 성공!' : '강화 실패...'}
                       </motion.div>
                     )}
                   </div>

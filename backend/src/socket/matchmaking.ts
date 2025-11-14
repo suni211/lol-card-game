@@ -289,23 +289,14 @@ export function setupMatchmaking(io: Server) {
               if (!forceMatched) {
                 // No opponents at all, put back in queue
                 matchmakingQueue.push(queuedPlayer);
-                socket.emit('queue_update', {
-                  playersInQueue: matchmakingQueue.length,
-                  message: '상대를 찾지 못했습니다. 계속 대기 중...'
-                });
+                broadcastQueueSize(io);
               }
             }
           }, AUTO_MATCH_TIMEOUT);
 
           player.timeoutId = timeoutId;
 
-          socket.emit('queue_joined', {
-            position: matchmakingQueue.length,
-            playersInQueue: matchmakingQueue.length,
-            message: 'Searching for opponent...',
-          });
-
-          // Broadcast queue size to all players
+          // Broadcast queue size to ALL players (including new one)
           broadcastQueueSize(io);
 
           console.log(`Player ${user.username} joined queue (${matchmakingQueue.length} in queue)`);

@@ -4,6 +4,7 @@ import { Search, Trash2, TrendingUp } from 'lucide-react';
 import type { UserCard } from '../types';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { getPlayerImageUrl, getPlayerPlaceholder } from '../utils/playerImage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -211,11 +212,19 @@ export default function Collection() {
                         )}
                       </div>
 
-                      {/* Player Image Placeholder */}
-                      <div className="w-full h-40 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg mb-3 flex items-center justify-center">
-                        <span className="text-6xl font-bold text-gray-400 dark:text-gray-500">
-                          {card.player.name[0]}
-                        </span>
+                      {/* Player Image */}
+                      <div className="w-full h-40 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={getPlayerImageUrl(card.player.name)}
+                          alt={card.player.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = getPlayerPlaceholder();
+                            target.className = "w-24 h-24 object-contain opacity-50";
+                          }}
+                        />
                       </div>
 
                       {/* Player Info */}

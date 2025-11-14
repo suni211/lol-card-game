@@ -4,6 +4,7 @@ import { Save, Info, Target, Users, Map } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
+import { getPlayerImageUrl, getPlayerPlaceholder } from '../utils/playerImage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -490,24 +491,44 @@ export default function Deck() {
                               : 'border-gray-200 dark:border-gray-700 hover:border-primary-400'
                           }`}
                         >
-                          <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(card.player.tier)} rounded text-white text-xs font-bold mb-1`}>
-                            {card.player.tier}
-                          </div>
-                          <p className="font-bold text-gray-900 dark:text-white text-sm">
-                            {card.player.name}
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {card.player.team} • {card.player.position}
-                          </p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className={`text-lg font-bold ${positionMatch ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                              {displayOVR}
-                            </span>
-                            {!positionMatch && (
-                              <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
-                                -10 페널티
-                              </span>
-                            )}
+                          <div className="flex gap-3">
+                            {/* Player Image */}
+                            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+                              <img
+                                src={getPlayerImageUrl(card.player.name)}
+                                alt={card.player.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null;
+                                  target.src = getPlayerPlaceholder();
+                                  target.className = "w-full h-full object-contain opacity-50";
+                                }}
+                              />
+                            </div>
+
+                            {/* Card Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(card.player.tier)} rounded text-white text-xs font-bold mb-1`}>
+                                {card.player.tier}
+                              </div>
+                              <p className="font-bold text-gray-900 dark:text-white text-sm truncate">
+                                {card.player.name}
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {card.player.team} • {card.player.position}
+                              </p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className={`text-lg font-bold ${positionMatch ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                  {displayOVR}
+                                </span>
+                                {!positionMatch && (
+                                  <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                                    -10 페널티
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </motion.div>
                       );

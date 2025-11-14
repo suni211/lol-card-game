@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Swords, Layers, Users, Trophy, Target } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
+import { io, Socket } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 interface Player {
   id: number;
@@ -43,6 +45,7 @@ export default function Match() {
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     const fetchDeck = async () => {
@@ -96,41 +99,83 @@ export default function Match() {
     return !!(deck.top && deck.jungle && deck.mid && deck.adc && deck.support);
   };
 
-  const startMatch = async () => {
+  useEffect(() => {
+    // Setup socket connection
+    if (!token) return;
+
+    const socket = io(SOCKET_URL);
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('Socket connected');
+    });
+
+    socket.on('queue_joined', (data) => {
+      console.log('Joined queue:', data);
+      toast.success('매칭 대기열에 참가했습니다');
+    });
+
+    socket.on('queue_error', (data) => {
+      console.error('Queue error:', data);
+      toast.error(data.error || '매칭 실패');
+      setMatching(false);
+    });
+
+    socket.on('match_found', (data) => {
+      console.log('Match found:', data);
+      toast.success(`매치 발견! 상대: ${data.opponent.username}`);
+    });
+
+    socket.on('match_result', (result) => {
+      console.log('Match result:', result);
+      setMatchResult(result);
+      setMatching(false);
+
+      // Update user points and rating
+      if (user) {
+        updateUser({
+          ...user,
+          points: user.points + result.pointsChange,
+          rating: user.rating + result.ratingChange,
+        });
+      }
+
+      if (result.won) {
+        toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
+      } else {
+        toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
+      }
+    });
+
+    socket.on('match_error', (data) => {
+      console.error('Match error:', data);
+      toast.error('매치 처리 오류');
+      setMatching(false);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [token, user, updateUser]);
+
+  const startMatch = () => {
+    if (!socketRef.current) {
+      toast.error('소켓 연결 실패');
+      return;
+    }
+
     setMatching(true);
     setMatchResult(null);
+    socketRef.current.emit('join_queue', { token });
+  };
 
-    try {
-      const response = await axios.post(
-        `${API_URL}/match/find`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        const result = response.data.data;
-        setMatchResult(result);
-
-        // Update user points and rating
-        if (user) {
-          updateUser({
-            ...user,
-            points: user.points + result.pointsChange,
-            rating: user.rating + result.ratingChange,
-          });
-        }
-
-        if (result.won) {
-          toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
-        } else {
-          toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
-        }
-      }
-    } catch (error: any) {
-      console.error('Match error:', error);
-      toast.error('매칭 실패: ' + (error.response?.data?.error || '서버 오류'));
-    } finally {
+  const cancelMatch = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('leave_queue');
       setMatching(false);
+      toast('매칭 취소됨');
     }
   };
 
@@ -279,28 +324,40 @@ export default function Match() {
                 transition={{ delay: 0.1 }}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700"
               >
-                <button
-                  onClick={startMatch}
-                  disabled={matching}
-                  className="w-full px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold text-xl rounded-lg transition-all transform hover:scale-105 shadow-lg"
-                >
-                  <div className="flex items-center justify-center gap-3">
-                    {matching ? (
-                      <>
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                        <span>매칭 중...</span>
-                      </>
-                    ) : (
-                      <>
+                {!matching ? (
+                  <>
+                    <button
+                      onClick={startMatch}
+                      className="w-full px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold text-xl rounded-lg transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      <div className="flex items-center justify-center gap-3">
                         <Swords className="w-6 h-6" />
                         <span>랭크 매칭 시작</span>
-                      </>
-                    )}
-                  </div>
-                </button>
-                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  비슷한 실력의 상대와 자동 매칭됩니다
-                </p>
+                      </div>
+                    </button>
+                    <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                      비슷한 실력의 상대와 자동으로 실시간 매칭됩니다
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-6">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">매칭 중...</span>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 text-center">
+                        상대를 찾고 있습니다
+                      </p>
+                    </div>
+                    <button
+                      onClick={cancelMatch}
+                      className="w-full px-8 py-4 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-bold text-xl rounded-lg transition-all"
+                    >
+                      매칭 취소
+                    </button>
+                  </>
+                )}
               </motion.div>
             ) : (
               /* Match Result */

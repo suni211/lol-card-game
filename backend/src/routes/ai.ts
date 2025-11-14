@@ -148,8 +148,39 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     const playerScore = won ? 3 : 1;
     const aiScore = won ? 1 : 3;
 
+    // Get current streak
+    const [currentStats]: any = await connection.query(
+      'SELECT current_streak, longest_win_streak FROM user_stats WHERE user_id = ?',
+      [userId]
+    );
+
+    let currentStreak = 0;
+    let longestWinStreak = 0;
+
+    if (currentStats.length > 0) {
+      currentStreak = currentStats[0].current_streak;
+      longestWinStreak = currentStats[0].longest_win_streak;
+    }
+
+    // Update streak
+    let newStreak = 0;
+    if (won) {
+      newStreak = currentStreak + 1;
+      if (newStreak > 10) newStreak = 10; // Max 10 streak
+      if (newStreak > longestWinStreak) longestWinStreak = newStreak;
+    } else {
+      newStreak = 0;
+    }
+
     // Calculate rewards
-    const pointsReward = calculatePointsReward(aiPower, playerPower, won);
+    let pointsReward = calculatePointsReward(aiPower, playerPower, won);
+
+    // Win streak bonus: +10P per streak level (max 100P at 10 streak)
+    let streakBonus = 0;
+    if (won && newStreak > 0) {
+      streakBonus = newStreak * 10;
+      pointsReward += streakBonus;
+    }
 
     // No rating change for AI battles
     const ratingChange = 0;
@@ -162,13 +193,15 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
 
     // Update user stats (AI battles count towards stats)
     await connection.query(`
-      INSERT INTO user_stats (user_id, total_matches, wins, losses)
-      VALUES (?, 1, ?, ?)
+      INSERT INTO user_stats (user_id, total_matches, wins, losses, current_streak, longest_win_streak)
+      VALUES (?, 1, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         total_matches = total_matches + 1,
         wins = wins + ?,
-        losses = losses + ?
-    `, [userId, won ? 1 : 0, won ? 0 : 1, won ? 1 : 0, won ? 0 : 1]);
+        losses = losses + ?,
+        current_streak = ?,
+        longest_win_streak = GREATEST(longest_win_streak, ?)
+    `, [userId, won ? 1 : 0, won ? 0 : 1, newStreak, longestWinStreak, won ? 1 : 0, won ? 0 : 1, newStreak, longestWinStreak]);
 
     // Record AI battle in history for rate limiting
     await connection.query(`
@@ -187,6 +220,8 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
         playerPower: Math.floor(playerFinalPower),
         aiPower: Math.floor(aiFinalPower),
         pointsReward,
+        streakBonus,
+        currentStreak: newStreak,
         aiDifficulty: aiBasePower,
       },
     });
@@ -311,13 +346,15 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
 
     const deckId = decks[0].id;
 
-    // Get user stats for AI difficulty
+    // Get user stats for AI difficulty and streak
     const [stats]: any = await connection.query(
-      'SELECT wins FROM user_stats WHERE user_id = ?',
+      'SELECT wins, current_streak, longest_win_streak FROM user_stats WHERE user_id = ?',
       [userId]
     );
 
     let aiWins = stats.length > 0 ? stats[0].wins : 0;
+    let currentStreak = stats.length > 0 ? stats[0].current_streak : 0;
+    let longestWinStreak = stats.length > 0 ? stats[0].longest_win_streak : 0;
 
     // Calculate player power once
     const playerPower = await calculateDeckPower(deckId);
@@ -326,6 +363,7 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
     let totalPointsEarned = 0;
     let totalWins = 0;
     let totalLosses = 0;
+    let totalStreakBonus = 0;
 
     await connection.beginTransaction();
 
@@ -339,12 +377,23 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
       const aiFinalPower = aiPower * aiRandomFactor;
 
       const won = playerFinalPower > aiFinalPower;
-      const pointsReward = calculatePointsReward(aiPower, playerPower, won);
+      let pointsReward = calculatePointsReward(aiPower, playerPower, won);
 
+      // Update streak
+      let streakBonus = 0;
       if (won) {
+        currentStreak = Math.min(currentStreak + 1, 10); // Max 10 streak
+        if (currentStreak > longestWinStreak) longestWinStreak = currentStreak;
+
+        // Win streak bonus: +10P per streak level
+        streakBonus = currentStreak * 10;
+        pointsReward += streakBonus;
+        totalStreakBonus += streakBonus;
+
         totalWins++;
         aiWins++;
       } else {
+        currentStreak = 0;
         totalLosses++;
       }
 
@@ -361,6 +410,8 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
         won,
         aiDifficulty: aiBasePower,
         pointsEarned: pointsReward,
+        streakBonus,
+        currentStreak: won ? currentStreak : 0,
       });
     }
 
@@ -372,13 +423,15 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
 
     // Update user stats
     await connection.query(`
-      INSERT INTO user_stats (user_id, total_matches, wins, losses)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO user_stats (user_id, total_matches, wins, losses, current_streak, longest_win_streak)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         total_matches = total_matches + ?,
         wins = wins + ?,
-        losses = losses + ?
-    `, [userId, count, totalWins, totalLosses, count, totalWins, totalLosses]);
+        losses = losses + ?,
+        current_streak = ?,
+        longest_win_streak = GREATEST(longest_win_streak, ?)
+    `, [userId, count, totalWins, totalLosses, currentStreak, longestWinStreak, count, totalWins, totalLosses, currentStreak, longestWinStreak]);
 
     await connection.commit();
 
@@ -389,6 +442,8 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
         totalWins,
         totalLosses,
         totalPointsEarned,
+        totalStreakBonus,
+        finalStreak: currentStreak,
         results,
       },
     });

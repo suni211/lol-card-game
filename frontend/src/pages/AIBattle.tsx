@@ -21,6 +21,8 @@ interface BattleResult {
   playerPower: number;
   aiPower: number;
   pointsReward: number;
+  streakBonus: number;
+  currentStreak: number;
   aiDifficulty: number;
 }
 
@@ -29,11 +31,15 @@ interface AutoBattleResult {
   totalWins: number;
   totalLosses: number;
   totalPointsEarned: number;
+  totalStreakBonus: number;
+  finalStreak: number;
   results: {
     battleNumber: number;
     won: boolean;
     aiDifficulty: number;
     pointsEarned: number;
+    streakBonus: number;
+    currentStreak: number;
   }[];
 }
 
@@ -371,6 +377,13 @@ export default function AIBattle() {
                 <span className="text-lg font-semibold">획득 포인트</span>
               </div>
               <div className="text-4xl font-bold">+{result.pointsReward}P</div>
+              {result.streakBonus > 0 && (
+                <div className="mt-2 text-sm">
+                  <span className="inline-block px-3 py-1 bg-yellow-500/30 rounded-full">
+                    🔥 {result.currentStreak}연승 보너스 +{result.streakBonus}P
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Try Again Button */}
@@ -401,7 +414,7 @@ export default function AIBattle() {
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-white/10 backdrop-blur rounded-lg p-4 text-center">
                 <div className="text-sm opacity-80 mb-1">승리</div>
                 <div className="text-3xl font-bold text-green-300">{autoResult.totalWins}</div>
@@ -414,6 +427,10 @@ export default function AIBattle() {
                 <div className="text-sm opacity-80 mb-1">승률</div>
                 <div className="text-3xl font-bold">{((autoResult.totalWins / autoResult.totalBattles) * 100).toFixed(1)}%</div>
               </div>
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4 text-center">
+                <div className="text-sm opacity-80 mb-1">최종 연승</div>
+                <div className="text-3xl font-bold text-yellow-300">🔥 {autoResult.finalStreak}</div>
+              </div>
             </div>
 
             {/* Total Points */}
@@ -423,6 +440,13 @@ export default function AIBattle() {
                 <span className="text-lg font-semibold">총 획득 포인트</span>
               </div>
               <div className="text-5xl font-bold">+{autoResult.totalPointsEarned}P</div>
+              {autoResult.totalStreakBonus > 0 && (
+                <div className="mt-3 text-lg">
+                  <span className="inline-block px-4 py-2 bg-yellow-500/30 rounded-full">
+                    🔥 연승 보너스 +{autoResult.totalStreakBonus}P 포함
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Detailed Results */}
@@ -441,6 +465,9 @@ export default function AIBattle() {
                     <div className="font-bold">#{battle.battleNumber}</div>
                     <div className="text-xs opacity-80">{battle.won ? '승' : '패'}</div>
                     <div className="text-xs">+{battle.pointsEarned}P</div>
+                    {battle.streakBonus > 0 && (
+                      <div className="text-xs text-yellow-300">🔥 {battle.currentStreak}연승</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -473,6 +500,10 @@ export default function AIBattle() {
             <li className="flex items-start space-x-2">
               <span className="text-blue-500 mt-1">•</span>
               <span>1시간에 최대 30번 플레이 가능합니다</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="text-blue-500 mt-1">•</span>
+              <span>연승할 때마다 +10P 보너스가 추가됩니다 (최대 10연승 +100P)</span>
             </li>
             <li className="flex items-start space-x-2">
               <span className="text-blue-500 mt-1">•</span>

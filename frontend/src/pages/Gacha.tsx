@@ -61,9 +61,9 @@ export default function Gacha() {
       label: '2025 월즈 우승',
       probabilities: {
         common: 0,
-        rare: 0,
-        epic: 0,
-        legendary: 100,
+        rare: 30,
+        epic: 30,
+        legendary: 40,
       },
       special: true,
     },

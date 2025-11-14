@@ -1,11 +1,14 @@
 -- Add special player cards for 2025 Worlds
 
+-- Remove overall constraint to allow values above 100
+ALTER TABLE players DROP CHECK players_chk_1;
+
 -- 2025 Worlds Winner (25WW) Cards
 INSERT INTO players (name, team, position, overall, region, tier, image_url) VALUES
 ('25WW Doran', 'T1', 'TOP', 90, 'LCK', 'LEGENDARY', NULL),
 ('25WW Oner', 'T1', 'JUNGLE', 92, 'LCK', 'LEGENDARY', NULL),
 ('25WW Faker', 'T1', 'MID', 100, 'LCK', 'LEGENDARY', NULL),
-('25WW Gumayusi', 'T1', 'ADC', 100, 'LCK', 'LEGENDARY', NULL),
+('25WW Gumayusi', 'T1', 'ADC', 101, 'LCK', 'LEGENDARY', NULL),
 ('25WW Keria', 'T1', 'SUPPORT', 99, 'LCK', 'LEGENDARY', NULL);
 
 -- 2025 Worlds Underdog (25WUD) Cards

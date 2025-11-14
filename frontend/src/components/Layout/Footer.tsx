@@ -10,11 +10,11 @@ export default function Footer() {
             <div className="flex items-center space-x-2 mb-4">
               <Trophy className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               <span className="text-lg font-bold text-gray-900 dark:text-white">
-                LOL Card Game
+                LCG
               </span>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              League of Legends 프로 선수 카드 수집 및 대전 게임
+              LOL Trading Card Game - 프로 선수 카드 수집 및 대전 게임
             </p>
           </div>
 
@@ -68,7 +68,7 @@ export default function Footer() {
 
         <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            © 2025 LOL Card Game. All rights reserved.
+            © 2025 LCG (LOL Trading Card Game). All rights reserved.
           </p>
         </div>
       </div>

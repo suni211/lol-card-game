@@ -65,9 +65,9 @@ export default function Home() {
             className="text-center"
           >
             <h1 className="text-4xl sm:text-6xl font-bold text-white mb-6 text-shadow">
-              League of Legends
+              LCG
               <br />
-              Card Game
+              <span className="text-3xl sm:text-4xl">LOL Trading Card Game</span>
             </h1>
             <p className="text-xl sm:text-2xl text-white/90 mb-8 text-shadow">
               전세계 프로 선수 카드를 수집하고 최강 팀을 만들어보세요!

@@ -133,7 +133,7 @@ export default function Login() {
               로그인
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              LOL Card Game에 오신 것을 환영합니다
+              LCG에 오신 것을 환영합니다
             </p>
           </div>
 

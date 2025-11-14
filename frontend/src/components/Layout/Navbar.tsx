@@ -30,7 +30,11 @@ export default function Navbar() {
         <div className="flex items-center h-16 gap-2">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
-            <img src="/logo.svg" alt="LOL Card Game" className="h-8" />
+            <div className="flex items-center space-x-2">
+              <div className="text-2xl font-black bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
+                LCG
+              </div>
+            </div>
           </Link>
 
           {/* Navigation Links */}

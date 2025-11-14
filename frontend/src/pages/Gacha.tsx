@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Trophy, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { Player, GachaOption } from '../types';
+import type { Player, GachaOption } from '../types';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -140,7 +140,9 @@ export default function Gacha() {
 
           // 중복 카드 메시지
           if (isDuplicate) {
-            toast.info(`중복 카드! ${refundPoints}P 환급받았습니다.`);
+            toast(`중복 카드! ${refundPoints}P 환급받았습니다.`, {
+              icon: 'ℹ️',
+            });
           }
 
           if (option.cost === 0) {

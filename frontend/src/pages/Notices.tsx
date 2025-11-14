@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { Bell, Pin, Calendar, Eye } from 'lucide-react';
+import { Bell, Pin, Calendar } from 'lucide-react';
 import { useState } from 'react';
-import { Notice } from '../types';
+import type { Notice } from '../types';
 
 export default function Notices() {
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Target, Calendar } from 'lucide-react';
+import { Target } from 'lucide-react';
 
 export default function Missions() {
   return (

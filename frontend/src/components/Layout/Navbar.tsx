@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User, LogOut, Bell } from 'lucide-react';
+import { Moon, Sun, Trophy, User, LogOut } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 

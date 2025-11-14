@@ -38,9 +38,11 @@ interface Deck {
 }
 
 export default function Match() {
-  const { token } = useAuthStore();
+  const { token, user, updateUser } = useAuthStore();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
+  const [matching, setMatching] = useState(false);
+  const [matchResult, setMatchResult] = useState<any>(null);
 
   useEffect(() => {
     const fetchDeck = async () => {
@@ -92,6 +94,48 @@ export default function Match() {
   const isDeckComplete = (): boolean => {
     if (!deck) return false;
     return !!(deck.top && deck.jungle && deck.mid && deck.adc && deck.support);
+  };
+
+  const startMatch = async () => {
+    setMatching(true);
+    setMatchResult(null);
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/match/find`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        const result = response.data.data;
+        setMatchResult(result);
+
+        // Update user points and rating
+        if (user) {
+          updateUser({
+            ...user,
+            points: user.points + result.pointsChange,
+            rating: user.rating + result.ratingChange,
+          });
+        }
+
+        if (result.won) {
+          toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
+        } else {
+          toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Match error:', error);
+      toast.error('매칭 실패: ' + (error.response?.data?.error || '서버 오류'));
+    } finally {
+      setMatching(false);
+    }
+  };
+
+  const playAgain = () => {
+    setMatchResult(null);
   };
 
   if (loading) {
@@ -227,26 +271,90 @@ export default function Match() {
               </div>
             </motion.div>
 
-            {/* Match Button */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700"
-            >
-              <button
-                onClick={() => toast.success('매칭 시스템은 곧 출시됩니다!')}
-                className="w-full px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold text-xl rounded-lg transition-all transform hover:scale-105 shadow-lg"
+            {/* Match Button or Result */}
+            {!matchResult ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700"
               >
-                <div className="flex items-center justify-center gap-3">
-                  <Swords className="w-6 h-6" />
-                  <span>랭크 매칭 시작</span>
+                <button
+                  onClick={startMatch}
+                  disabled={matching}
+                  className="w-full px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold text-xl rounded-lg transition-all transform hover:scale-105 shadow-lg"
+                >
+                  <div className="flex items-center justify-center gap-3">
+                    {matching ? (
+                      <>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                        <span>매칭 중...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Swords className="w-6 h-6" />
+                        <span>랭크 매칭 시작</span>
+                      </>
+                    )}
+                  </div>
+                </button>
+                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                  비슷한 실력의 상대와 자동 매칭됩니다
+                </p>
+              </motion.div>
+            ) : (
+              /* Match Result */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <div className={`text-center mb-6 ${matchResult.won ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className="text-6xl font-bold mb-2">
+                    {matchResult.won ? '승리!' : '패배'}
+                  </div>
+                  <div className="text-2xl font-semibold">
+                    {matchResult.myScore} - {matchResult.opponentScore}
+                  </div>
                 </div>
-              </button>
-              <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                비슷한 실력의 상대와 자동 매칭됩니다
-              </p>
-            </motion.div>
+
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6 mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">상대</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">
+                        {matchResult.opponent.username}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {matchResult.opponent.tier} · {matchResult.opponent.rating} 레이팅
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className={`rounded-lg p-4 ${matchResult.pointsChange > 0 ? 'bg-green-100 dark:bg-green-900/20' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">포인트</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      +{matchResult.pointsChange}
+                    </div>
+                  </div>
+                  <div className={`rounded-lg p-4 ${matchResult.ratingChange > 0 ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-red-100 dark:bg-red-900/20'}`}>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">레이팅</div>
+                    <div className={`text-2xl font-bold ${matchResult.ratingChange > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {matchResult.ratingChange > 0 ? '+' : ''}{matchResult.ratingChange}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={playAgain}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all"
+                >
+                  다시 경기하기
+                </button>
+              </motion.div>
+            )}
           </div>
         )}
       </div>

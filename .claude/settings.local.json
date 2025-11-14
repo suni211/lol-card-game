@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix gacha 401 error - use auth store token instead of localStorage\n\nThe gacha feature was experiencing 401 Unauthorized errors because it was trying to read the token from localStorage.getItem(''token''), but the auth store uses Zustand persist which stores data under a different structure. Updated to use the token directly from the auth store.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix TailwindCSS v4 PostCSS configuration\n\nTailwindCSS v4 requires the @tailwindcss/postcss package separately. Updated package.json to include @tailwindcss/postcss and modified postcss.config.js to use the new plugin.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nUpdate index.css for TailwindCSS v4 compatibility\n\nChanged from @tailwind directives to @import \"tailwindcss\" for v4 compatibility. Moved base styles out of @layer base to work with new Tailwind v4 architecture.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd dark mode variant for TailwindCSS v4\n\nAdded @variant dark directive to enable class-based dark mode in TailwindCSS v4.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(git restore:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

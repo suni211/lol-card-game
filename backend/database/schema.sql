@@ -14,13 +14,19 @@ CREATE TABLE users (
     tier ENUM('IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'MASTER', 'CHALLENGER') DEFAULT 'IRON',
     rating INT DEFAULT 1000,
     is_admin BOOLEAN DEFAULT FALSE,
+    is_email_verified BOOLEAN DEFAULT FALSE,
+    email_verification_token VARCHAR(255),
+    email_verification_expires TIMESTAMP NULL,
+    registration_ip VARCHAR(45) NOT NULL,
     last_check_in DATE,
     consecutive_days INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username),
     INDEX idx_email (email),
-    INDEX idx_rating (rating)
+    INDEX idx_rating (rating),
+    INDEX idx_registration_ip (registration_ip),
+    INDEX idx_email_verified (is_email_verified)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Players 테이블 (프로 선수 정보)

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRightLeft, Clock } from 'lucide-react';
+import { ArrowRightLeft } from 'lucide-react';
 
 export default function Trade() {
   const [activeTab, setActiveTab] = useState<'send' | 'received' | 'history'>('send');

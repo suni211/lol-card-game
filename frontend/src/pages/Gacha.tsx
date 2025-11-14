@@ -10,7 +10,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Gacha() {
   const { user, updateUser } = useAuthStore();
-  const [selectedOption, setSelectedOption] = useState<GachaOption | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnCard, setDrawnCard] = useState<Player | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -96,7 +95,6 @@ export default function Gacha() {
       return;
     }
 
-    setSelectedOption(option);
     setIsDrawing(true);
     setShowResult(false);
 
@@ -165,7 +163,6 @@ export default function Gacha() {
   const closeResult = () => {
     setShowResult(false);
     setDrawnCard(null);
-    setSelectedOption(null);
   };
 
   return (
@@ -255,7 +252,7 @@ export default function Gacha() {
 
                 <button
                   onClick={() => handleDraw(option)}
-                  disabled={isDrawing || (option.cost === 0 && dailyFreeUsed) || (user && user.points < option.cost)}
+                  disabled={isDrawing || (option.cost === 0 && dailyFreeUsed) || !!(user && user.points < option.cost)}
                   className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {option.cost === 0 && dailyFreeUsed ? '내일 다시' : '뽑기'}

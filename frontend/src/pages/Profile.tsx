@@ -18,7 +18,6 @@ export default function Profile() {
     totalCards: 0,
     legendaryCards: 0,
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
@@ -26,7 +25,6 @@ export default function Profile() {
 
   const fetchStats = async () => {
     try {
-      setLoading(true);
       // Fetch user cards to calculate card stats
       const cardsResponse = await axios.get(`${API_URL}/gacha/my-cards`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -45,8 +43,6 @@ export default function Profile() {
       });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

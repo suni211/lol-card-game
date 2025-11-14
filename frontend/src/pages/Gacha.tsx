@@ -361,6 +361,11 @@ export default function Gacha() {
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                       {drawnCard.name}
+                      {drawnCard.season && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                          {drawnCard.season}
+                        </span>
+                      )}
                     </h2>
                     <p className="text-lg text-gray-600 dark:text-gray-400">
                       {drawnCard.team} • {drawnCard.position}

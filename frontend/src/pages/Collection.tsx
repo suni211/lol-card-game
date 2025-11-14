@@ -235,6 +235,11 @@ export default function Collection() {
                       {/* Player Info */}
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                         {card.player.name}
+                        {card.player.season && (
+                          <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                            {card.player.season}
+                          </span>
+                        )}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         {card.player.team} • {card.player.region}

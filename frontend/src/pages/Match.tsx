@@ -132,7 +132,14 @@ export default function Match() {
 
     socket.on('queue_error', (data) => {
       console.error('Queue error:', data);
-      toast.error(data.error || '매칭 실패');
+
+      // Handle suspension specifically
+      if (data.error === 'Suspended' && data.message) {
+        toast.error(data.message, { duration: 5000 });
+      } else {
+        toast.error(data.error || '매칭 실패');
+      }
+
       setMatching(false);
     });
 

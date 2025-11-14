@@ -27,6 +27,7 @@ interface PlayerCard {
   region: string;
   tier: string;
   level: number;
+  season?: string;
 }
 
 interface UserProfile {
@@ -401,6 +402,11 @@ export default function Ranking() {
                                       <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
                                         <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">
                                           {card.name}
+                                          {card.season && (
+                                            <span className="ml-1 px-1 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                                              {card.season}
+                                            </span>
+                                          )}
                                         </div>
                                         <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                                           {card.team}

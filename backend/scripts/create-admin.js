@@ -39,11 +39,11 @@ async function createAdmin() {
     // Hash password
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-    // Create admin user (removed is_email_verified as it doesn't exist in schema)
+    // Create admin user (removed is_email_verified and registration_ip - not in schema)
     const [result] = await connection.query(
       `INSERT INTO users
-      (username, email, password, registration_ip, points, tier, rating, is_admin)
-      VALUES (?, ?, ?, '127.0.0.1', 999999, 'CHALLENGER', 9999, TRUE)`,
+      (username, email, password, points, tier, rating, is_admin)
+      VALUES (?, ?, ?, 999999, 'CHALLENGER', 9999, TRUE)`,
       [adminUsername, adminEmail, hashedPassword]
     );
 

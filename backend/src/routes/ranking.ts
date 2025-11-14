@@ -14,12 +14,13 @@ router.get('/', async (req, res) => {
         u.username,
         u.tier,
         u.rating,
-        s.wins,
-        s.losses,
-        ROUND((s.wins / NULLIF(s.total_matches, 0)) * 100, 1) as win_rate
+        COALESCE(MAX(s.wins), 0) as wins,
+        COALESCE(MAX(s.losses), 0) as losses,
+        ROUND((COALESCE(MAX(s.wins), 0) / NULLIF(COALESCE(MAX(s.total_matches), 0), 0)) * 100, 1) as win_rate
       FROM users u
       LEFT JOIN user_stats s ON u.id = s.user_id
       WHERE u.is_admin = FALSE
+      GROUP BY u.id, u.username, u.tier, u.rating
     `;
 
     const params: any[] = [];

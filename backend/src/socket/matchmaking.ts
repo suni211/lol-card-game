@@ -1,12 +1,14 @@
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database';
+import { calculateTier, canMatchTiers, UserTier } from '../utils/tierCalculator';
 
 interface MatchmakingPlayer {
   socketId: string;
   userId: number;
   username: string;
   rating: number;
+  tier: UserTier;
   deckId: number;
   joinedAt: number;
   timeoutId?: NodeJS.Timeout;
@@ -106,7 +108,24 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
     for (const player of [player1, player2]) {
       const won = winnerId === player.userId;
       const pointsChange = won ? 100 : 50;
-      const ratingChange = won ? 25 : -15;
+      let ratingChange = won ? 25 : -15;
+
+      // Get current rating to prevent going below 1000
+      const [currentUser]: any = await connection.query(
+        'SELECT rating FROM users WHERE id = ?',
+        [player.userId]
+      );
+
+      const currentRating = currentUser[0].rating;
+      const newRating = currentRating + ratingChange;
+
+      // Prevent rating from going below 1000
+      if (newRating < 1000) {
+        ratingChange = 1000 - currentRating;
+      }
+
+      // Calculate new tier
+      const newTier = calculateTier(currentRating + ratingChange);
 
       await connection.query(`
         INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
@@ -114,8 +133,8 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
       `, [player.userId, matchId, won ? 'WIN' : 'LOSE', pointsChange, ratingChange]);
 
       await connection.query(
-        'UPDATE users SET points = points + ?, rating = rating + ? WHERE id = ?',
-        [pointsChange, ratingChange, player.userId]
+        'UPDATE users SET points = points + ?, rating = rating + ?, tier = ? WHERE id = ?',
+        [pointsChange, ratingChange, newTier, player.userId]
       );
 
       await connection.query(`
@@ -126,6 +145,26 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
           losses = losses + ?
         WHERE user_id = ?
       `, [won ? 1 : 0, won ? 0 : 1, player.userId]);
+
+      // Check for 0 rating penalty (suspended for 12 hours)
+      if (currentRating + ratingChange <= 1000 && !won) {
+        // Check if already at minimum and losing
+        const [lossStreak]: any = await connection.query(`
+          SELECT COUNT(*) as count
+          FROM match_history
+          WHERE user_id = ?
+          AND created_at >= NOW() - INTERVAL 1 HOUR
+          AND result = 'LOSE'
+        `, [player.userId]);
+
+        // If lost 3+ games in a row while at minimum rating, apply suspension
+        if (lossStreak[0].count >= 3) {
+          await connection.query(
+            'UPDATE users SET tier_suspended_until = DATE_ADD(NOW(), INTERVAL 12 HOUR) WHERE id = ?',
+            [player.userId]
+          );
+        }
+      }
     }
 
     await connection.commit();
@@ -209,28 +248,33 @@ function findMatch(player: MatchmakingPlayer, io: Server, forceMatch: boolean = 
   let opponentIndex = -1;
 
   if (!forceMatch) {
-    // First try to find opponent with similar rating who wasn't recently matched
+    // First try to find opponent with similar rating, matching tier, who wasn't recently matched
     opponentIndex = matchmakingQueue.findIndex((p) =>
       p.userId !== player.userId &&
       p.rating >= minRating &&
       p.rating <= maxRating &&
+      canMatchTiers(player.tier, p.tier) &&
       canMatchPlayers(player.userId, p.userId)
     );
   }
 
-  // If force match or no similar rating opponent, get first available (but still check 3-min rule)
+  // If force match or no similar rating opponent, get first available (check tier and 3-min rule)
   if (opponentIndex === -1 && matchmakingQueue.length > 0) {
     opponentIndex = matchmakingQueue.findIndex((p) =>
       p.userId !== player.userId &&
+      canMatchTiers(player.tier, p.tier) &&
       canMatchPlayers(player.userId, p.userId)
     );
   }
 
-  // If still no match after 3 minutes in queue, match with anyone (ignore recent match rule)
+  // If still no match after 3 minutes in queue, match with anyone (ignore recent match rule but keep tier restriction)
   if (opponentIndex === -1 && forceMatch && matchmakingQueue.length > 0) {
     const waitTime = Date.now() - player.joinedAt;
     if (waitTime >= PREVENT_REMATCH_DURATION) {
-      opponentIndex = matchmakingQueue.findIndex((p) => p.userId !== player.userId);
+      opponentIndex = matchmakingQueue.findIndex((p) =>
+        p.userId !== player.userId &&
+        canMatchTiers(player.tier, p.tier)
+      );
     }
   }
 
@@ -295,7 +339,7 @@ export function setupMatchmaking(io: Server) {
 
         // Get user info
         const [users]: any = await pool.query(
-          'SELECT id, username, rating FROM users WHERE id = ?',
+          'SELECT id, username, rating, tier_suspended_until FROM users WHERE id = ?',
           [decoded.id]
         );
 
@@ -305,6 +349,24 @@ export function setupMatchmaking(io: Server) {
         }
 
         const user = users[0];
+
+        // Check if user is suspended
+        if (user.tier_suspended_until) {
+          const suspendedUntil = new Date(user.tier_suspended_until);
+          const now = new Date();
+
+          if (suspendedUntil > now) {
+            const remainingTime = Math.ceil((suspendedUntil.getTime() - now.getTime()) / (1000 * 60)); // minutes
+            socket.emit('queue_error', {
+              error: 'Suspended',
+              message: `랭크 매치가 ${remainingTime}분 동안 정지되었습니다. (연패 페널티)`,
+            });
+            return;
+          }
+        }
+
+        // Calculate tier based on rating
+        const userTier = calculateTier(user.rating);
 
         // Get active deck
         const [decks]: any = await pool.query(
@@ -322,6 +384,7 @@ export function setupMatchmaking(io: Server) {
           userId: user.id,
           username: user.username,
           rating: user.rating,
+          tier: userTier,
           deckId: decks[0].id,
           joinedAt: Date.now(),
         };

@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database';
 import { calculateTier, canMatchTiers, UserTier } from '../utils/tierCalculator';
+import { updateMissionProgress } from '../utils/missionTracker';
 
 interface MatchmakingPlayer {
   socketId: string;
@@ -168,6 +169,14 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
     }
 
     await connection.commit();
+
+    // Update mission progress for both players
+    updateMissionProgress(player1.userId, 'rank_match', 1).catch(err =>
+      console.error('Mission update error:', err)
+    );
+    updateMissionProgress(player2.userId, 'rank_match', 1).catch(err =>
+      console.error('Mission update error:', err)
+    );
 
     // Send results to both players
     io.to(player1.socketId).emit('match_result', {

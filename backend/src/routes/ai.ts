@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { updateMissionProgress } from '../utils/missionTracker';
 
 const router = express.Router();
 
@@ -210,6 +211,11 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     `, [userId, won ? 'WIN' : 'LOSE', pointsReward, aiBasePower]);
 
     await connection.commit();
+
+    // Update mission progress (don't await to avoid slowing down response)
+    updateMissionProgress(userId, 'ai_battle', 1).catch(err =>
+      console.error('Mission update error:', err)
+    );
 
     res.json({
       success: true,
@@ -434,6 +440,11 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
     `, [userId, count, totalWins, totalLosses, currentStreak, longestWinStreak, count, totalWins, totalLosses, currentStreak, longestWinStreak]);
 
     await connection.commit();
+
+    // Update mission progress for all battles
+    updateMissionProgress(userId, 'ai_battle', count).catch(err =>
+      console.error('Mission update error:', err)
+    );
 
     res.json({
       success: true,

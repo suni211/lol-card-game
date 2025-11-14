@@ -12,7 +12,7 @@ SELECT id, username, email FROM users WHERE email = 'admin@berrple.com' OR usern
 INSERT INTO users
 (username, email, password, registration_ip, points, tier, rating, is_admin, is_email_verified, created_at)
 VALUES
-('admin', 'admin@berrple.com', '$2b$10$ELVwQZInaestrgCzsWOfROlUbPpJRuCfZtDR4ZmrCZGBRHhjeLBOO', '127.0.0.1', 999999, 'CHALLENGER', 9999, TRUE, TRUE, NOW());
+('admin', 'admin@berrple.com', '$2b$10$ELVwQZInaestrgCzsWOfROlUbPpJRuCfZtDR4ZmrCZGBRHhjeLBOO', '127.0.0.1', 0, 'ADMIN', 0, TRUE, TRUE, NOW());
 
 -- Get the admin user ID
 SET @admin_id = LAST_INSERT_ID();

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Save, User, Trophy, Info } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Save, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
@@ -32,7 +32,7 @@ interface DeckSlot {
 }
 
 export default function Deck() {
-  const { user, token } = useAuthStore();
+  const { token } = useAuthStore();
   const [deckSlots, setDeckSlots] = useState<DeckSlot[]>([
     { position: 'TOP', label: '탑', card: null },
     { position: 'JUNGLE', label: '정글', card: null },

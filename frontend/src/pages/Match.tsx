@@ -126,18 +126,22 @@ export default function Match() {
       toast.success(`매치 발견! 상대: ${data.opponent.username}`);
     });
 
-    socket.on('match_result', (result) => {
+    socket.on('match_result', async (result) => {
       console.log('Match result:', result);
       setMatchResult(result);
       setMatching(false);
 
-      // Update user points and rating
-      if (user) {
-        updateUser({
-          ...user,
-          points: user.points + result.pointsChange,
-          rating: user.rating + result.ratingChange,
+      // Fetch updated user data from server
+      try {
+        const response = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (response.data.success) {
+          updateUser(response.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch updated user data:', error);
       }
 
       if (result.won) {

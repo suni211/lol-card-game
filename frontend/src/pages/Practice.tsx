@@ -105,10 +105,19 @@ export default function Practice() {
         }
       }
     } catch (error: any) {
-      setSearching(false);
-      setAutoMatch(false); // Stop auto-match on error
-      console.error('Practice match error:', error);
-      toast.error(error.response?.data?.error || '매치 찾기 실패');
+      // If auto-match mode and just waiting in queue, retry
+      if (isAuto && autoMatch && error.response?.status === 404) {
+        // In queue, keep trying
+        setTimeout(() => {
+          findMatch(true);
+        }, 1000); // Retry every 1 second
+      } else {
+        // Real error, stop auto-match
+        setSearching(false);
+        setAutoMatch(false);
+        console.error('Practice match error:', error);
+        toast.error(error.response?.data?.error || '매치 찾기 실패');
+      }
     }
   };
 

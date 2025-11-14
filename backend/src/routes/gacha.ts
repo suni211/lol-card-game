@@ -4,12 +4,12 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
-// Gacha probabilities
+// Gacha probabilities (더 현실적인 확률)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { common: 70, rare: 25, epic: 4.5, legendary: 0.5 } },
-  basic: { cost: 100, probabilities: { common: 65, rare: 28, epic: 6, legendary: 1 } },
-  premium: { cost: 300, probabilities: { common: 50, rare: 35, epic: 12, legendary: 3 } },
-  ultra: { cost: 500, probabilities: { common: 30, rare: 40, epic: 22, legendary: 8 } },
+  free: { cost: 0, probabilities: { legendary: 0.1, epic: 1, rare: 15, common: 83.9 } },
+  basic: { cost: 100, probabilities: { legendary: 0.3, epic: 2, rare: 20, common: 77.7 } },
+  premium: { cost: 300, probabilities: { legendary: 1, epic: 5, rare: 30, common: 64 } },
+  ultra: { cost: 500, probabilities: { legendary: 3, epic: 10, rare: 35, common: 52 } },
 };
 
 function selectTierByProbability(probabilities: any): string {

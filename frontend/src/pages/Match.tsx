@@ -111,12 +111,6 @@ export default function Match() {
       console.log('Socket connected');
     });
 
-    socket.on('queue_joined', (data) => {
-      console.log('Joined queue:', data);
-      setQueueSize(data.playersInQueue || 0);
-      toast.success('매칭 대기열에 참가했습니다');
-    });
-
     socket.on('queue_update', (data) => {
       console.log('Queue update:', data);
       setQueueSize(data.playersInQueue || 0);
@@ -183,6 +177,7 @@ export default function Match() {
     setMatching(true);
     setMatchResult(null);
     socketRef.current.emit('join_queue', { token });
+    toast.success('매칭 대기열에 참가했습니다');
   };
 
   const cancelMatch = () => {

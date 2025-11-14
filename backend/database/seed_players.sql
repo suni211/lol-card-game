@@ -254,7 +254,7 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 ('Taki', 'TSW', 'SUPPORT', 67, 'LPL', 'COMMON');
 
 -- ============================================
--- LCP (8 TEAMS)
+-- LCP (6 TEAMS)
 -- ============================================
 
 -- PSG
@@ -305,25 +305,25 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 ('Feng', 'DCG', 'ADC', 62, 'LCP', 'COMMON'),
 ('ShiauC', 'DCG', 'SUPPORT', 63, 'LCP', 'COMMON');
 
+-- ============================================
+-- LTA (15 TEAMS)
+-- ============================================
+
 -- TL
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
-('Impact', 'TL', 'TOP', 68, 'LCP', 'COMMON'),
-('Yuuji', 'TL', 'JUNGLE', 66, 'LCP', 'COMMON'),
-('APA', 'TL', 'MID', 73, 'LCP', 'RARE'),
-('Yeon', 'TL', 'ADC', 75, 'LCP', 'RARE'),
-('CoreJJ', 'TL', 'SUPPORT', 70, 'LCP', 'COMMON');
+('Impact', 'TL', 'TOP', 68, 'LTA', 'COMMON'),
+('Yuuji', 'TL', 'JUNGLE', 66, 'LTA', 'COMMON'),
+('APA', 'TL', 'MID', 73, 'LTA', 'RARE'),
+('Yeon', 'TL', 'ADC', 75, 'LTA', 'RARE'),
+('CoreJJ', 'TL', 'SUPPORT', 70, 'LTA', 'COMMON');
 
 -- 100T
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
-('Sniper', '100T', 'TOP', 70, 'LCP', 'COMMON'),
-('River', '100T', 'JUNGLE', 68, 'LCP', 'COMMON'),
-('Quid', '100T', 'MID', 73, 'LCP', 'RARE'),
-('FBI', '100T', 'ADC', 75, 'LCP', 'RARE'),
-('Eyla', '100T', 'SUPPORT', 70, 'LCP', 'COMMON');
-
--- ============================================
--- LTA (16 TEAMS)
--- ============================================
+('Sniper', '100T', 'TOP', 70, 'LTA', 'COMMON'),
+('River', '100T', 'JUNGLE', 68, 'LTA', 'COMMON'),
+('Quid', '100T', 'MID', 73, 'LTA', 'RARE'),
+('FBI', '100T', 'ADC', 75, 'LTA', 'RARE'),
+('Eyla', '100T', 'SUPPORT', 70, 'LTA', 'COMMON');
 
 -- C9
 INSERT INTO players (name, team, position, overall, region, tier) VALUES

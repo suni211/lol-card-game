@@ -219,10 +219,10 @@ router.get('/stats', authMiddleware, async (req: AuthRequest, res: Response) => 
     const aiWins = stats.length > 0 ? stats[0].wins : 0;
     const nextAIDifficulty = calculateAIDifficulty(aiWins);
 
-    // Get recent battles count (last hour)
+    // Get recent battles count (last hour) and oldest battle time
     const oneHourAgo = new Date(Date.now() - AI_BATTLE_WINDOW);
     const [recentBattles]: any = await connection.query(`
-      SELECT COUNT(*) as count
+      SELECT COUNT(*) as count, MIN(created_at) as oldestBattle
       FROM user_stats_history
       WHERE user_id = ?
       AND battle_type = 'AI'
@@ -231,6 +231,14 @@ router.get('/stats', authMiddleware, async (req: AuthRequest, res: Response) => 
 
     const battlesRemaining = AI_BATTLE_LIMIT - recentBattles[0].count;
 
+    // Calculate time until next reset (when oldest battle expires)
+    let resetIn = null;
+    if (recentBattles[0].count >= AI_BATTLE_LIMIT && recentBattles[0].oldestBattle) {
+      const oldestBattleTime = new Date(recentBattles[0].oldestBattle).getTime();
+      const resetTime = oldestBattleTime + AI_BATTLE_WINDOW;
+      resetIn = Math.max(0, resetTime - Date.now());
+    }
+
     res.json({
       success: true,
       data: {
@@ -238,6 +246,7 @@ router.get('/stats', authMiddleware, async (req: AuthRequest, res: Response) => 
         totalWins: aiWins,
         battlesRemaining,
         maxBattles: AI_BATTLE_LIMIT,
+        resetIn, // milliseconds until next battle available
       },
     });
 

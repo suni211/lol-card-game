@@ -11,6 +11,7 @@ interface AIStats {
   totalWins: number;
   battlesRemaining?: number;
   maxBattles?: number;
+  resetIn?: number | null;
 }
 
 interface BattleResult {
@@ -43,11 +44,34 @@ export default function AIBattle() {
   const [autoResult, setAutoResult] = useState<AutoBattleResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [autoBattleCount, setAutoBattleCount] = useState(10);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const { token, user, updateUser } = useAuthStore();
 
   useEffect(() => {
     fetchAIStats();
   }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (aiStats?.resetIn) {
+      setTimeRemaining(aiStats.resetIn);
+
+      const interval = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev === null || prev <= 0) {
+            clearInterval(interval);
+            fetchAIStats(); // Refresh stats when timer expires
+            return null;
+          }
+          return prev - 1000;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    } else {
+      setTimeRemaining(null);
+    }
+  }, [aiStats?.resetIn]);
 
   const fetchAIStats = async () => {
     try {
@@ -62,6 +86,13 @@ export default function AIBattle() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatTime = (ms: number | null): string => {
+    if (ms === null || ms <= 0) return '0:00';
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const startBattle = async () => {
@@ -211,6 +242,11 @@ export default function AIBattle() {
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 남은 배틀 수
               </div>
+              {timeRemaining !== null && timeRemaining > 0 && (
+                <div className="mt-2 text-xs text-orange-600 dark:text-orange-400 font-semibold">
+                  {formatTime(timeRemaining)} 후 리셋
+                </div>
+              )}
             </div>
 
             {/* User Points */}

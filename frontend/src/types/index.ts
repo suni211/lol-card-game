@@ -7,6 +7,7 @@ export interface Player {
   overall: number;
   region: 'LCK' | 'LPL' | 'LEC' | 'LCS' | 'PCS' | 'VCS' | 'CBLOL' | 'LJL' | 'LLA';
   tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+  season?: string; // 25WW, 25WUD, 25, etc.
   traits: PlayerTrait[];
   imageUrl?: string;
 }

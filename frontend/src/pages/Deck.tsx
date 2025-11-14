@@ -347,6 +347,11 @@ export default function Deck() {
                         </div>
                         <p className="font-bold text-gray-900 dark:text-white mb-1">
                           {slot.card.player.name}
+                          {slot.card.player.season && (
+                            <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                              {slot.card.player.season}
+                            </span>
+                          )}
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {slot.card.player.team} • {slot.card.player.position}
@@ -519,6 +524,11 @@ export default function Deck() {
                               </div>
                               <p className="font-bold text-gray-900 dark:text-white text-sm truncate">
                                 {card.player.name}
+                                {card.player.season && (
+                                  <span className="ml-1 px-1 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                                    {card.player.season}
+                                  </span>
+                                )}
                               </p>
                               <p className="text-xs text-gray-600 dark:text-gray-400">
                                 {card.player.team} • {card.player.position}

@@ -32,8 +32,8 @@ async function resetAdminPassword() {
       // Create admin user
       const [result] = await connection.query(
         `INSERT INTO users
-        (username, email, password, registration_ip, points, tier, rating, is_admin, is_email_verified)
-        VALUES (?, ?, ?, '127.0.0.1', 999999, 'CHALLENGER', 9999, TRUE, TRUE)`,
+        (username, email, password, registration_ip, points, tier, rating, is_admin)
+        VALUES (?, ?, ?, '127.0.0.1', 999999, 'CHALLENGER', 9999, TRUE)`,
         [adminUsername, adminEmail, hashedPassword]
       );
 
@@ -54,7 +54,7 @@ async function resetAdminPassword() {
 
       // Update admin password
       await connection.query(
-        'UPDATE users SET password = ?, is_admin = TRUE, is_email_verified = TRUE WHERE id = ?',
+        'UPDATE users SET password = ?, is_admin = TRUE WHERE id = ?',
         [hashedPassword, existingAdmin[0].id]
       );
 

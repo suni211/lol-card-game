@@ -11,9 +11,8 @@ SELECT id, username, email, is_admin FROM users WHERE email = 'admin@berrple.com
 UPDATE users
 SET
   password = '$2b$10$ELVwQZInaestrgCzsWOfROlUbPpJRuCfZtDR4ZmrCZGBRHhjeLBOO',
-  is_admin = TRUE,
-  is_email_verified = TRUE
+  is_admin = TRUE
 WHERE email = 'admin@berrple.com' OR username = 'admin';
 
 -- Verify update
-SELECT id, username, email, is_admin, is_email_verified FROM users WHERE email = 'admin@berrple.com' OR username = 'admin';
+SELECT id, username, email, is_admin FROM users WHERE email = 'admin@berrple.com' OR username = 'admin';

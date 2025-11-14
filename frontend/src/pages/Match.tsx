@@ -439,41 +439,57 @@ export default function Match() {
                 {/* Phase Results */}
                 <AnimatePresence>
                   <div className="space-y-4">
-                    {simulatedPhases.map((phase, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className={`p-6 rounded-xl border-2 ${
-                          phase.advantage === 'player1'
-                            ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                            : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            {phase.phase === 'LANING' && <Zap className="w-6 h-6 text-yellow-600" />}
-                            {phase.phase === 'TEAMFIGHT' && <Shield className="w-6 h-6 text-blue-600" />}
-                            {phase.phase === 'MACRO' && <MapPin className="w-6 h-6 text-purple-600" />}
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                              {phase.name} 단계
-                            </h3>
-                          </div>
-                          <div className={`text-2xl font-bold ${
-                            phase.advantage === 'player1'
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`}>
-                            {phase.advantage === 'player1' ? '승리!' : '패배'}
-                          </div>
-                        </div>
+                    {simulatedPhases.map((phase, idx) => {
+                      // Determine if I won this game
+                      // phase.winner is 1 or 2 (from backend perspective)
+                      // matchResult.won tells us if WE (the viewer) won overall
+                      // If we won overall and final score is higher, we are player1
+                      // If we lost overall and final score is lower, we are player2
+                      const amIPlayer1 = matchResult.won ?
+                        (matchResult.myScore > matchResult.opponentScore) :
+                        (matchResult.myScore < matchResult.opponentScore);
 
-                        <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-900 dark:text-white">
-                          <span className="text-blue-600 dark:text-blue-400">{phase.score.player1}</span>
-                          <span className="text-gray-400">-</span>
-                          <span className="text-red-600 dark:text-red-400">{phase.score.player2}</span>
-                        </div>
+                      const iWonThisGame = amIPlayer1 ? (phase.winner === 1) : (phase.winner === 2);
+
+                      return (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5 }}
+                          className={`p-6 rounded-xl border-2 ${
+                            iWonThisGame
+                              ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                              : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              {phase.phase === 'LANING' && <Zap className="w-6 h-6 text-yellow-600" />}
+                              {phase.phase === 'TEAMFIGHT' && <Shield className="w-6 h-6 text-blue-600" />}
+                              {phase.phase === 'MACRO' && <MapPin className="w-6 h-6 text-purple-600" />}
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {phase.name} 단계
+                              </h3>
+                            </div>
+                            <div className={`text-2xl font-bold ${
+                              iWonThisGame
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {iWonThisGame ? '승리!' : '패배'}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-900 dark:text-white">
+                            <span className={iWonThisGame ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
+                              {matchResult.myScore}
+                            </span>
+                            <span className="text-gray-400">-</span>
+                            <span className={!iWonThisGame ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
+                              {matchResult.opponentScore}
+                            </span>
+                          </div>
 
                         {phase.strategyWon && (
                           <div className="mt-3 text-center">
@@ -483,7 +499,8 @@ export default function Match() {
                           </div>
                         )}
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </AnimatePresence>
               </motion.div>

@@ -167,7 +167,9 @@ export default function Suggestions() {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',

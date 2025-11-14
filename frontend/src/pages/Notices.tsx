@@ -145,7 +145,9 @@ export default function Notices() {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString; // Invalid date, return original string
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',

@@ -25,19 +25,19 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center h-16 gap-2">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <img src="/logo.svg" alt="LOL Card Game" className="h-10" />
+          <Link to="/" className="flex items-center flex-shrink-0">
+            <img src="/logo.svg" alt="LOL Card Game" className="h-8" />
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-0.5">
+          <div className="hidden lg:flex items-center space-x-0.5 flex-1 justify-center">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                className={`px-1.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                   isActive(link.path)
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -49,37 +49,31 @@ export default function Navbar() {
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 flex-shrink-0">
             {isAuthenticated && user ? (
               <>
                 {/* Points Display */}
-                <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-primary-100 dark:bg-primary-900 rounded-lg">
-                  <Trophy className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                  <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
-                    {user.points.toLocaleString()}P
+                <div className="hidden lg:flex items-center space-x-1 px-2 py-1 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                  <Trophy className="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                  <span className="text-xs font-semibold text-primary-700 dark:text-primary-300">
+                    {user.points.toLocaleString()}
                   </span>
                 </div>
 
                 {/* Tier Badge */}
-                <div className="hidden sm:flex items-center px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                  <span className="text-sm font-bold text-white">
+                <div className="hidden lg:flex items-center px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                  <span className="text-xs font-bold text-white">
                     {user.tier}
                   </span>
                 </div>
 
-                {/* Notifications */}
-                <button className="p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-
                 {/* Profile */}
                 <Link
                   to="/profile"
-                  className="flex items-center space-x-2 p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  className="flex items-center space-x-1 p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
-                  <User className="w-5 h-5" />
-                  <span className="hidden sm:inline text-sm font-medium">
+                  <User className="w-4 h-4" />
+                  <span className="hidden lg:inline text-xs font-medium">
                     {user.username}
                   </span>
                 </Link>
@@ -87,10 +81,10 @@ export default function Navbar() {
                 {/* Logout */}
                 <button
                   onClick={logout}
-                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                   title="로그아웃"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </>
             ) : (

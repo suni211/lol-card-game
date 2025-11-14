@@ -4,6 +4,9 @@ import { Sparkles, Trophy, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { Player, GachaOption } from '../types';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Gacha() {
   const { user, updateUser } = useAuthStore();
@@ -82,37 +85,13 @@ export default function Gacha() {
     }
   };
 
-  const simulateGacha = (option: GachaOption): Player => {
-    const random = Math.random() * 100;
-    let tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' = 'COMMON';
-
-    if (random < option.probabilities.legendary) {
-      tier = 'LEGENDARY';
-    } else if (random < option.probabilities.legendary + option.probabilities.epic) {
-      tier = 'EPIC';
-    } else if (random < option.probabilities.legendary + option.probabilities.epic + option.probabilities.rare) {
-      tier = 'RARE';
-    }
-
-    // 임시 카드 데이터
-    const mockPlayers: Player[] = [
-      { id: 1, name: 'Faker', team: 'T1', position: 'MID', overall: 98, region: 'LCK', tier: 'LEGENDARY', traits: [] },
-      { id: 2, name: 'Chovy', team: 'GEN.G', position: 'MID', overall: 93, region: 'LCK', tier: 'LEGENDARY', traits: [] },
-      { id: 3, name: 'Zeus', team: 'HLE', position: 'TOP', overall: 93, region: 'LCK', tier: 'LEGENDARY', traits: [] },
-      { id: 4, name: 'Bdd', team: 'KT', position: 'MID', overall: 90, region: 'LCK', tier: 'EPIC', traits: [] },
-      { id: 5, name: 'Doran', team: 'T1', position: 'TOP', overall: 89, region: 'LCK', tier: 'EPIC', traits: [] },
-    ];
-
-    return mockPlayers.find(p => p.tier === tier) || mockPlayers[0];
-  };
-
   const handleDraw = async (option: GachaOption) => {
-    if (option.cost === 0 && dailyFreeUsed) {
-      toast.error('일일 무료 뽑기는 하루에 한 번만 가능합니다!');
+    if (!user) {
+      toast.error('로그인이 필요합니다!');
       return;
     }
 
-    if (!user || user.points < option.cost) {
+    if (user.points < option.cost) {
       toast.error('포인트가 부족합니다!');
       return;
     }
@@ -121,27 +100,64 @@ export default function Gacha() {
     setIsDrawing(true);
     setShowResult(false);
 
-    // 포인트 차감
-    updateUser({ points: user.points - option.cost });
+    try {
+      // 가챠 타입 결정
+      let gachaType = 'basic';
+      if (option.cost === 0) gachaType = 'free';
+      else if (option.cost === 300) gachaType = 'premium';
+      else if (option.cost === 500) gachaType = 'ultra';
 
-    // 애니메이션 시뮬레이션
-    setTimeout(() => {
-      const card = simulateGacha(option);
-      setDrawnCard(card);
+      // 백엔드 API 호출
+      const response = await axios.post(
+        `${API_URL}/gacha/draw`,
+        { type: gachaType },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const { player, isDuplicate, refundPoints } = response.data.data;
+
+        // 애니메이션 시뮬레이션
+        setTimeout(() => {
+          setDrawnCard(player);
+          setIsDrawing(false);
+          setShowResult(true);
+
+          // 포인트 업데이트
+          const newPoints = user.points - option.cost + (refundPoints || 0);
+          updateUser({ points: newPoints });
+
+          // 티어에 따라 다른 메시지
+          if (player.tier === 'LEGENDARY') {
+            toast.success('🎉 레전드 카드 획득!', { duration: 5000 });
+          } else if (player.tier === 'EPIC') {
+            toast.success('⭐ 에픽 카드 획득!');
+          }
+
+          // 중복 카드 메시지
+          if (isDuplicate) {
+            toast.info(`중복 카드! ${refundPoints}P 환급받았습니다.`);
+          }
+
+          if (option.cost === 0) {
+            setDailyFreeUsed(true);
+          }
+        }, 3000);
+      }
+    } catch (error: any) {
       setIsDrawing(false);
-      setShowResult(true);
+      console.error('가챠 오류:', error);
 
-      if (option.cost === 0) {
-        setDailyFreeUsed(true);
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('카드 뽑기 중 오류가 발생했습니다.');
       }
-
-      // 티어에 따라 다른 메시지
-      if (card.tier === 'LEGENDARY') {
-        toast.success('🎉 레전드 카드 획득!', { duration: 5000 });
-      } else if (card.tier === 'EPIC') {
-        toast.success('⭐ 에픽 카드 획득!');
-      }
-    }, 3000);
+    }
   };
 
   const closeResult = () => {

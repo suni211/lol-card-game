@@ -133,35 +133,21 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     // No rating change for AI battles
     const ratingChange = 0;
 
-    // Create match record (AI is player2 with id 0)
-    const [matchResult]: any = await connection.query(`
-      INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at)
-      VALUES (?, 0, ?, 0, ?, ?, ?, 'COMPLETED', NOW())
-    `, [userId, deckId, won ? userId : 0, playerScore, aiScore]);
-
-    const matchId = matchResult.insertId;
-
-    // Add match history
-    await connection.query(`
-      INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
-      VALUES (?, ?, ?, ?, ?)
-    `, [userId, matchId, won ? 'WIN' : 'LOSE', pointsReward, ratingChange]);
-
-    // Update user points (no rating change)
+    // Update user points (no rating change for AI battles)
     await connection.query(
       'UPDATE users SET points = points + ? WHERE id = ?',
       [pointsReward, userId]
     );
 
-    // Update user stats
+    // Update user stats (AI battles count towards stats)
     await connection.query(`
-      UPDATE user_stats
-      SET
+      INSERT INTO user_stats (user_id, total_matches, wins, losses)
+      VALUES (?, 1, ?, ?)
+      ON DUPLICATE KEY UPDATE
         total_matches = total_matches + 1,
         wins = wins + ?,
         losses = losses + ?
-      WHERE user_id = ?
-    `, [won ? 1 : 0, won ? 0 : 1, userId]);
+    `, [userId, won ? 1 : 0, won ? 0 : 1, won ? 1 : 0, won ? 0 : 1]);
 
     await connection.commit();
 

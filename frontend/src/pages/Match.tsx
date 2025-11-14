@@ -104,11 +104,22 @@ export default function Match() {
     // Setup socket connection
     if (!token) return;
 
+    console.log('Connecting to socket:', SOCKET_URL);
     const socket = io(SOCKET_URL);
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('Socket connected');
+      console.log('Socket connected:', socket.id);
+      toast.success('서버 연결됨');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      toast.error('서버 연결 실패');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
     });
 
     socket.on('queue_update', (data) => {

@@ -15,28 +15,35 @@ async function createAdmin() {
     // Admin credentials
     const adminEmail = 'admin@berrple.com';
     const adminUsername = 'admin';
-    const adminPassword = 'ss092888?';
+    const adminPassword = 'admin123';
 
     // Check if admin already exists
     const [existingAdmin] = await connection.query(
-      'SELECT id FROM users WHERE email = ? OR username = ?',
+      'SELECT id, username, email, is_admin FROM users WHERE email = ? OR username = ?',
       [adminEmail, adminUsername]
     );
 
     if (existingAdmin.length > 0) {
-      console.log('❌ Admin account already exists!');
-      await connection.end();
-      return;
+      console.log('⚠️  Admin account already exists:');
+      console.table(existingAdmin);
+      console.log('');
+      console.log('Deleting and recreating...');
+
+      // Delete existing admin
+      await connection.query(
+        'DELETE FROM users WHERE email = ? OR username = ?',
+        [adminEmail, adminUsername]
+      );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-    // Create admin user
+    // Create admin user (removed is_email_verified as it doesn't exist in schema)
     const [result] = await connection.query(
       `INSERT INTO users
-      (username, email, password, registration_ip, points, tier, rating, is_admin, is_email_verified)
-      VALUES (?, ?, ?, '127.0.0.1', 999999, 'CHALLENGER', 9999, TRUE, TRUE)`,
+      (username, email, password, registration_ip, points, tier, rating, is_admin)
+      VALUES (?, ?, ?, '127.0.0.1', 999999, 'CHALLENGER', 9999, TRUE)`,
       [adminUsername, adminEmail, hashedPassword]
     );
 
@@ -44,16 +51,29 @@ async function createAdmin() {
 
     // Create user stats for admin
     await connection.query(
-      'INSERT INTO user_stats (user_id) VALUES (?)',
+      `INSERT INTO user_stats (user_id, total_matches, wins, losses, current_streak, longest_win_streak)
+       VALUES (?, 0, 0, 0, 0, 0)
+       ON DUPLICATE KEY UPDATE user_id = user_id`,
       [userId]
     );
 
     console.log('✅ Admin account created successfully!');
-    console.log('📧 Email:', adminEmail);
-    console.log('👤 Username:', adminUsername);
-    console.log('🔑 Password: ss092888?');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📧 Email:    admin@berrple.com');
+    console.log('👤 Username: admin');
+    console.log('🔑 Password: admin123');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
     console.log('⚠️  Please keep these credentials safe!');
+
+    // Verify
+    const [verify] = await connection.query(
+      'SELECT id, username, email, is_admin, points, rating, tier FROM users WHERE id = ?',
+      [userId]
+    );
+    console.log('');
+    console.log('Verified account:');
+    console.table(verify);
 
   } catch (error) {
     console.error('❌ Error creating admin account:', error);

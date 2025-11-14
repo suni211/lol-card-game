@@ -5,13 +5,13 @@ import { updateMissionProgress } from '../utils/missionTracker';
 
 const router = express.Router();
 
-// Gacha probabilities (더 현실적인 확률)
+// Gacha probabilities (더 어려운 확률로 조정)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { legendary: 0.1, epic: 1, rare: 15, common: 83.9 } },
-  basic: { cost: 100, probabilities: { legendary: 0.3, epic: 2, rare: 20, common: 77.7 } },
-  premium: { cost: 300, probabilities: { legendary: 1, epic: 5, rare: 30, common: 64 } },
-  ultra: { cost: 500, probabilities: { legendary: 3, epic: 10, rare: 35, common: 52 } },
-  worlds_winner: { cost: 2500, probabilities: { legendary: 15, epic: 40, rare: 45, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards
+  free: { cost: 0, probabilities: { legendary: 0.05, epic: 0.5, rare: 10, common: 89.45 } },
+  basic: { cost: 100, probabilities: { legendary: 0.2, epic: 1, rare: 15, common: 83.8 } },
+  premium: { cost: 300, probabilities: { legendary: 0.5, epic: 3, rare: 25, common: 71.5 } },
+  ultra: { cost: 500, probabilities: { legendary: 1.5, epic: 6, rare: 30, common: 62.5 } },
+  worlds_winner: { cost: 2500, probabilities: { legendary: 15, epic: 35, rare: 50, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
 };
 
 function selectTierByProbability(probabilities: any): string {

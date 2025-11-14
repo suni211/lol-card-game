@@ -110,6 +110,48 @@ CREATE TABLE gacha_history (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Recreate trades table
+CREATE TABLE trades (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    sender_card_id INT NOT NULL,
+    receiver_card_id INT NOT NULL,
+    status ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED') DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_card_id) REFERENCES user_cards(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_card_id) REFERENCES user_cards(id) ON DELETE CASCADE,
+    INDEX idx_sender_id (sender_id),
+    INDEX idx_receiver_id (receiver_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Recreate matches table
+CREATE TABLE matches (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    player1_id INT NOT NULL,
+    player2_id INT NOT NULL,
+    player1_deck_id INT NOT NULL,
+    player2_deck_id INT NOT NULL,
+    winner_id INT,
+    player1_score INT DEFAULT 0,
+    player2_score INT DEFAULT 0,
+    rating_change INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (player1_deck_id) REFERENCES decks(id) ON DELETE CASCADE,
+    FOREIGN KEY (player2_deck_id) REFERENCES decks(id) ON DELETE CASCADE,
+    FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_player1_id (player1_id),
+    INDEX idx_player2_id (player2_id),
+    INDEX idx_winner_id (winner_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Re-enable foreign key checks
 SET FOREIGN_KEY_CHECKS = 1;
 

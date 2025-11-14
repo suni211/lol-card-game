@@ -27,7 +27,33 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       ORDER BY m.type, m.id
     `, [userId]);
 
-    res.json({ success: true, data: missions });
+    // Calculate expires_at for missions without user_missions record
+    const now = new Date();
+    const formattedMissions = missions.map((mission: any) => {
+      if (!mission.expires_at) {
+        // Calculate expires_at based on mission type
+        let expiresAt: Date;
+
+        if (mission.type === 'DAILY') {
+          expiresAt = new Date(now);
+          expiresAt.setHours(23, 59, 59, 999);
+        } else if (mission.type === 'WEEKLY') {
+          expiresAt = new Date(now);
+          const daysUntilSunday = 7 - now.getDay();
+          expiresAt.setDate(now.getDate() + daysUntilSunday);
+          expiresAt.setHours(23, 59, 59, 999);
+        } else {
+          // MONTHLY
+          expiresAt = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        }
+
+        mission.expires_at = expiresAt;
+      }
+
+      return mission;
+    });
+
+    res.json({ success: true, data: formattedMissions });
   } catch (error: any) {
     console.error('Get missions error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
@@ -35,14 +61,19 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 });
 
 // Claim mission reward
-router.post('/:missionId/claim', authMiddleware, async (req: AuthRequest, res) => {
+router.post('/claim', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
     const userId = req.user!.id;
-    const missionId = parseInt(req.params.missionId);
+    const { missionId } = req.body;
+
+    if (!missionId) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: 'Mission ID required' });
+    }
 
     // Get user mission
     const [userMissions]: any = await connection.query(

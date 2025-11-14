@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trophy, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -7,6 +7,13 @@ import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,6 +24,63 @@ export default function Login() {
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Load Google Sign-In script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleSignIn,
+        });
+
+        window.google.accounts.id.renderButton(
+          document.getElementById('googleSignInButton'),
+          {
+            theme: 'outline',
+            size: 'large',
+            width: 400,
+            text: 'signin_with',
+            logo_alignment: 'left',
+          }
+        );
+      }
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const handleGoogleSignIn = async (response: any) => {
+    try {
+      const result = await axios.post(`${API_URL}/auth/google`, {
+        credential: response.credential,
+      });
+
+      if (result.data.success) {
+        const { user, token } = result.data.data;
+        login(user, token);
+        toast.success(result.data.message);
+        navigate('/');
+      } else {
+        toast.error(result.data.error || '로그인 실패');
+      }
+    } catch (error: any) {
+      console.error('Google 로그인 오류:', error);
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('로그인 실패. 다시 시도해주세요.');
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +221,11 @@ export default function Login() {
             <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
             <span className="px-4 text-sm text-gray-500 dark:text-gray-400">OR</span>
             <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+          </div>
+
+          {/* Google Sign-In Button */}
+          <div className="mb-6">
+            <div id="googleSignInButton" className="flex justify-center"></div>
           </div>
 
           {/* Register Link */}

@@ -3,6 +3,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import Joi from 'joi';
+import axios from 'axios';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
@@ -20,44 +21,79 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 });
 
-// Register
-router.post('/register', async (req, res) => {
+// Google OAuth Register/Login
+router.post('/google', async (req, res) => {
   try {
-    const { error, value } = registerSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ success: false, error: error.details[0].message });
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ success: false, error: 'No credential provided' });
     }
 
-    const { username, email, password } = value;
-
-    // Check if user with this email already exists
-    const [existing]: any = await pool.query(
-      'SELECT id FROM users WHERE email = ? OR username = ?',
-      [email, username]
+    // Verify Google token
+    const googleResponse = await axios.get(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
     );
+
+    const { email, name, picture } = googleResponse.data;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Failed to get email from Google' });
+    }
+
+    // Check if user exists
+    const [existing]: any = await pool.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+
+    let userId;
+    let username;
 
     if (existing.length > 0) {
-      return res.status(400).json({ success: false, error: 'Email or username already exists' });
+      // User exists - login
+      const user = existing[0];
+      userId = user.id;
+      username = user.username;
+    } else {
+      // New user - register
+      // Generate unique username from email
+      const baseUsername = email.split('@')[0];
+      let finalUsername = baseUsername;
+      let counter = 1;
+
+      // Check username uniqueness
+      while (true) {
+        const [usernameCheck]: any = await pool.query(
+          'SELECT id FROM users WHERE username = ?',
+          [finalUsername]
+        );
+
+        if (usernameCheck.length === 0) break;
+        finalUsername = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      username = finalUsername;
+
+      // Create user with random password (not used for Google login)
+      const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+
+      const [result]: any = await pool.query(
+        `INSERT INTO users (username, email, password, points, tier, rating) VALUES (?, ?, ?, 1000, "IRON", 1000)`,
+        [username, email, randomPassword]
+      );
+
+      userId = result.insertId;
+
+      // Create user stats
+      await pool.query(
+        'INSERT INTO user_stats (user_id) VALUES (?)',
+        [userId]
+      );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const [result]: any = await pool.query(
-      `INSERT INTO users (username, email, password, points, tier, rating) VALUES (?, ?, ?, 1000, "IRON", 1000)`,
-      [username, email, hashedPassword]
-    );
-
-    const userId = result.insertId;
-
-    // Create user stats
-    await pool.query(
-      'INSERT INTO user_stats (user_id) VALUES (?)',
-      [userId]
-    );
-
-    // Generate JWT token for immediate login
+    // Generate JWT token
     const jwtSecret = (process.env.JWT_SECRET || 'your-secret-key') as string;
     const jwtExpire = (process.env.JWT_EXPIRE || '7d') as string;
     const token = jwt.sign(
@@ -66,29 +102,45 @@ router.post('/register', async (req, res) => {
       { expiresIn: jwtExpire }
     );
 
+    // Get full user data
+    const [users]: any = await pool.query(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+
+    const user = users[0];
+
     const userData = {
-      id: userId,
-      username,
-      email,
-      points: 1000,
-      tier: 'IRON',
-      rating: 1000,
-      isAdmin: false,
-      createdAt: new Date(),
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      points: user.points,
+      tier: user.tier,
+      rating: user.rating,
+      isAdmin: user.is_admin === 1,
+      createdAt: user.created_at,
     };
 
-    res.status(201).json({
+    res.json({
       success: true,
-      message: 'Registration successful!',
+      message: existing.length > 0 ? 'Login successful!' : 'Registration successful!',
       data: {
         user: userData,
         token
       }
     });
   } catch (error: any) {
-    console.error('Registration error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+    console.error('Google OAuth error:', error);
+    res.status(500).json({ success: false, error: 'Google authentication failed' });
   }
+});
+
+// Register (DISABLED - Use Google OAuth instead)
+router.post('/register', async (req, res) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Direct registration is disabled. Please use Google Sign-In.'
+  });
 });
 
 // Login

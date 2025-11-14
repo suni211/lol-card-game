@@ -71,11 +71,11 @@ router.post('/register', async (req, res) => {
     const verificationToken = generateVerificationToken();
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create user
+    // Create user - set email as verified for immediate login
     const [result]: any = await pool.query(
       `INSERT INTO users
       (username, email, password, registration_ip, email_verification_token, email_verification_expires, points, tier, rating, is_email_verified)
-      VALUES (?, ?, ?, ?, ?, ?, 1000, "IRON", 1000, FALSE)`,
+      VALUES (?, ?, ?, ?, ?, ?, 1000, "IRON", 1000, TRUE)`,
       [username, email, hashedPassword, clientIp, verificationToken, verificationExpires]
     );
 
@@ -87,7 +87,7 @@ router.post('/register', async (req, res) => {
       [userId]
     );
 
-    // Send verification email
+    // Send verification email in background (optional)
     try {
       await sendVerificationEmail(email, verificationToken, username);
     } catch (emailError) {
@@ -95,13 +95,32 @@ router.post('/register', async (req, res) => {
       // Continue even if email fails
     }
 
+    // Generate JWT token for immediate login
+    const jwtSecret = (process.env.JWT_SECRET || 'your-secret-key') as string;
+    const jwtExpire = (process.env.JWT_EXPIRE || '7d') as string;
+    const token = jwt.sign(
+      { id: userId, username, email, isAdmin: false },
+      jwtSecret,
+      { expiresIn: jwtExpire }
+    );
+
+    const userData = {
+      id: userId,
+      username,
+      email,
+      points: 1000,
+      tier: 'IRON',
+      rating: 1000,
+      isAdmin: false,
+      createdAt: new Date(),
+    };
+
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful!',
       data: {
-        username,
-        email,
-        requiresVerification: true
+        user: userData,
+        token
       }
     });
   } catch (error: any) {

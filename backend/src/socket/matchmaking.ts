@@ -474,6 +474,18 @@ export function setupMatchmaking(io: Server) {
         const matched = findMatch(player, queue, recentMatchesMap, io, isPractice);
 
         if (!matched) {
+          // Check if user already in queue (prevent duplicates)
+          const existingIndex = queue.findIndex(p => p.userId === user.id);
+          if (existingIndex !== -1) {
+            // User already in queue - remove old entry and add new one (updates socketId)
+            const oldPlayer = queue[existingIndex];
+            if (oldPlayer.timeoutId) {
+              clearTimeout(oldPlayer.timeoutId);
+            }
+            queue.splice(existingIndex, 1);
+            console.log(`Player ${user.username} rejoined ${isPractice ? 'practice' : 'ranked'} queue (removed old entry)`);
+          }
+
           // Add to queue
           queue.push(player);
 

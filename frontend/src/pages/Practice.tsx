@@ -82,20 +82,14 @@ export default function Practice() {
 
         // Auto continue if auto-match is enabled
         if (isAuto && autoMatch) {
-          // Don't show modal, just continue immediately
+          // Don't show anything, just continue immediately
           setSearching(false);
 
-          if (result.result === 'WIN') {
-            toast.success(`승리! +${result.pointsGained}P`, { duration: 1000 });
-          } else {
-            toast(`패배 +${result.pointsGained}P`, { icon: '😢', duration: 1000 });
-          }
-
-          // Continue immediately
+          // Continue immediately without any notification
           setTimeout(() => {
             setMatchResult(null);
             findMatch(true);
-          }, 500);
+          }, 300);
         } else {
           // Show result modal for manual matches
           setTimeout(() => {

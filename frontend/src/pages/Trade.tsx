@@ -53,10 +53,6 @@ export default function Trade() {
   const [receivedTrades, setReceivedTrades] = useState<Trade[]>([]);
   const [loadingReceived, setLoadingReceived] = useState(false);
 
-  // Sent trades
-  const [sentTrades, setSentTrades] = useState<Trade[]>([]);
-  const [loadingSent, setLoadingSent] = useState(false);
-
   // Trade history
   const [tradeHistory, setTradeHistory] = useState<Trade[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -123,20 +119,6 @@ export default function Trade() {
       toast.error('받은 트레이드를 불러오지 못했습니다');
     } finally {
       setLoadingReceived(false);
-    }
-  };
-
-  const fetchSentTrades = async () => {
-    try {
-      setLoadingSent(true);
-      const response = await axios.get(`${API_URL}/trade/sent`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSentTrades(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to fetch sent trades:', error);
-    } finally {
-      setLoadingSent(false);
     }
   };
 
@@ -228,7 +210,6 @@ export default function Trade() {
         }
       );
       toast.success('트레이드를 취소했습니다');
-      fetchSentTrades();
     } catch (error: any) {
       console.error('Failed to cancel trade:', error);
       toast.error(error.response?.data?.error || '트레이드 취소 실패');

@@ -108,17 +108,26 @@ export default function Match() {
     if (!token) return;
 
     console.log('Connecting to socket:', SOCKET_URL);
-    const socket = io(SOCKET_URL);
+    const socket = io(SOCKET_URL, {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
     socketRef.current = socket;
+
+    let hasConnected = false;
 
     socket.on('connect', () => {
       console.log('Socket connected:', socket.id);
-      toast.success('서버 연결됨');
+      if (!hasConnected) {
+        hasConnected = true;
+        // Only show toast on first connect, not on reconnects
+      }
     });
 
     socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
-      toast.error('서버 연결 실패');
+      // Don't show toast for every connection error
     });
 
     socket.on('disconnect', () => {
@@ -398,7 +407,7 @@ export default function Match() {
                 {/* Phase Progress */}
                 <div className="mb-8">
                   <div className="flex items-center justify-center gap-4 mb-4">
-                    {['라인전', '한타', '운영'].map((phaseName, idx) => (
+                    {['라인전', '한타', '운영'].map((_, idx) => (
                       <div key={idx} className="flex items-center">
                         <div
                           className={`flex items-center justify-center w-12 h-12 rounded-full font-bold ${

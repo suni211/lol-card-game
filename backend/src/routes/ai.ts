@@ -192,17 +192,15 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       [pointsReward, userId]
     );
 
-    // Update user stats (AI battles count towards stats)
+    // Update user stats (AI battles DO NOT count towards stats - 승률은 랭크전만)
+    // Only update streak for AI battles, not total matches/wins/losses
     await connection.query(`
       INSERT INTO user_stats (user_id, total_matches, wins, losses, current_streak, longest_win_streak)
-      VALUES (?, 1, ?, ?, ?, ?)
+      VALUES (?, 0, 0, 0, ?, ?)
       ON DUPLICATE KEY UPDATE
-        total_matches = total_matches + 1,
-        wins = wins + ?,
-        losses = losses + ?,
         current_streak = ?,
         longest_win_streak = GREATEST(longest_win_streak, ?)
-    `, [userId, won ? 1 : 0, won ? 0 : 1, newStreak, longestWinStreak, won ? 1 : 0, won ? 0 : 1, newStreak, longestWinStreak]);
+    `, [userId, newStreak, longestWinStreak, newStreak, longestWinStreak]);
 
     // Record AI battle in history for rate limiting
     await connection.query(`

@@ -150,14 +150,17 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
         );
       }
 
-      await connection.query(`
-        UPDATE user_stats
-        SET
-          total_matches = total_matches + 1,
-          wins = wins + ?,
-          losses = losses + ?
-        WHERE user_id = ?
-      `, [won ? 1 : 0, won ? 0 : 1, player.userId]);
+      // Update stats only for ranked matches (승률은 랭크전만 반영)
+      if (!isPractice) {
+        await connection.query(`
+          UPDATE user_stats
+          SET
+            total_matches = total_matches + 1,
+            wins = wins + ?,
+            losses = losses + ?
+          WHERE user_id = ?
+        `, [won ? 1 : 0, won ? 0 : 1, player.userId]);
+      }
 
       // Check for 0 rating penalty (suspended for 12 hours) - only for ranked
       if (!isPractice && currentRating + ratingChange <= 1000 && !won) {

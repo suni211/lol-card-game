@@ -16,7 +16,8 @@ interface MatchmakingPlayer {
   lastOpponentId?: number; // Track last opponent
 }
 
-const matchmakingQueue: MatchmakingPlayer[] = [];
+const rankedQueue: MatchmakingPlayer[] = [];
+const practiceQueue: MatchmakingPlayer[] = [];
 const RATING_RANGE = 200;
 const AUTO_MATCH_TIMEOUT = 30000; // 30 seconds
 const PREVENT_REMATCH_DURATION = 3 * 60 * 1000; // 3 minutes
@@ -25,6 +26,7 @@ const RANK_MATCH_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
 
 // Store recent matches to prevent immediate rematches
 const recentMatches = new Map<number, { opponentId: number; timestamp: number }>();
+const practiceRecentMatches = new Map<number, { opponentId: number; timestamp: number }>();
 
 // Calculate deck power
 async function calculateDeckPower(deckId: number): Promise<number> {
@@ -77,7 +79,7 @@ async function calculateDeckPower(deckId: number): Promise<number> {
 }
 
 // Process match
-async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlayer, io: Server) {
+async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlayer, io: Server, isPractice: boolean = false) {
   const connection = await pool.getConnection();
 
   try {
@@ -99,17 +101,19 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
 
     // Create match record
     const [matchResult]: any = await connection.query(`
-      INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED', NOW())
-    `, [player1.userId, player2.userId, player1.deckId, player2.deckId, winnerId, player1Score, player2Score]);
+      INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at, match_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED', NOW(), ?)
+    `, [player1.userId, player2.userId, player1.deckId, player2.deckId, winnerId, player1Score, player2Score, isPractice ? 'PRACTICE' : 'RANKED']);
 
     const matchId = matchResult.insertId;
 
     // Update both players
     for (const player of [player1, player2]) {
       const won = winnerId === player.userId;
-      const pointsChange = won ? 100 : 50;
-      let ratingChange = won ? 25 : -15;
+
+      // Practice mode: lower rewards, no rating change
+      const pointsChange = isPractice ? (won ? 50 : 30) : (won ? 100 : 50);
+      let ratingChange = isPractice ? 0 : (won ? 25 : -15);
 
       // Get current rating to prevent going below 1000
       const [currentUser]: any = await connection.query(
@@ -120,23 +124,31 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
       const currentRating = currentUser[0].rating;
       const newRating = currentRating + ratingChange;
 
-      // Prevent rating from going below 1000
-      if (newRating < 1000) {
+      // Prevent rating from going below 1000 (only for ranked)
+      if (!isPractice && newRating < 1000) {
         ratingChange = 1000 - currentRating;
       }
 
-      // Calculate new tier
-      const newTier = calculateTier(currentRating + ratingChange);
+      // Calculate new tier (only for ranked)
+      const newTier = isPractice ? null : calculateTier(currentRating + ratingChange);
 
       await connection.query(`
         INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
         VALUES (?, ?, ?, ?, ?)
       `, [player.userId, matchId, won ? 'WIN' : 'LOSE', pointsChange, ratingChange]);
 
-      await connection.query(
-        'UPDATE users SET points = points + ?, rating = rating + ?, tier = ? WHERE id = ?',
-        [pointsChange, ratingChange, newTier, player.userId]
-      );
+      // Update user: only update tier/rating for ranked matches
+      if (isPractice) {
+        await connection.query(
+          'UPDATE users SET points = points + ? WHERE id = ?',
+          [pointsChange, player.userId]
+        );
+      } else {
+        await connection.query(
+          'UPDATE users SET points = points + ?, rating = rating + ?, tier = ? WHERE id = ?',
+          [pointsChange, ratingChange, newTier, player.userId]
+        );
+      }
 
       await connection.query(`
         UPDATE user_stats
@@ -147,8 +159,8 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
         WHERE user_id = ?
       `, [won ? 1 : 0, won ? 0 : 1, player.userId]);
 
-      // Check for 0 rating penalty (suspended for 12 hours)
-      if (currentRating + ratingChange <= 1000 && !won) {
+      // Check for 0 rating penalty (suspended for 12 hours) - only for ranked
+      if (!isPractice && currentRating + ratingChange <= 1000 && !won) {
         // Check if already at minimum and losing
         const [lossStreak]: any = await connection.query(`
           SELECT COUNT(*) as count
@@ -170,13 +182,23 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
 
     await connection.commit();
 
-    // Update mission progress for both players
-    updateMissionProgress(player1.userId, 'rank_match', 1).catch(err =>
-      console.error('Mission update error:', err)
-    );
-    updateMissionProgress(player2.userId, 'rank_match', 1).catch(err =>
-      console.error('Mission update error:', err)
-    );
+    // Update mission progress for both players (only for ranked)
+    if (!isPractice) {
+      updateMissionProgress(player1.userId, 'rank_match', 1).catch(err =>
+        console.error('Mission update error:', err)
+      );
+      updateMissionProgress(player2.userId, 'rank_match', 1).catch(err =>
+        console.error('Mission update error:', err)
+      );
+    }
+
+    // Calculate actual values for each player
+    const player1Won = winnerId === player1.userId;
+    const player2Won = winnerId === player2.userId;
+    const player1PointsChange = isPractice ? (player1Won ? 50 : 30) : (player1Won ? 100 : 50);
+    const player2PointsChange = isPractice ? (player2Won ? 50 : 30) : (player2Won ? 100 : 50);
+    const player1RatingChange = isPractice ? 0 : (player1Won ? 25 : -15);
+    const player2RatingChange = isPractice ? 0 : (player2Won ? 25 : -15);
 
     // Send results to both players
     io.to(player1.socketId).emit('match_result', {
@@ -185,11 +207,12 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
         username: player2.username,
         rating: player2.rating,
       },
-      won: winnerId === player1.userId,
+      won: player1Won,
       myScore: player1Score,
       opponentScore: player2Score,
-      pointsChange: winnerId === player1.userId ? 100 : 50,
-      ratingChange: winnerId === player1.userId ? 25 : -15,
+      pointsChange: player1PointsChange,
+      ratingChange: player1RatingChange,
+      isPractice,
     });
 
     io.to(player2.socketId).emit('match_result', {
@@ -198,11 +221,12 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
         username: player1.username,
         rating: player1.rating,
       },
-      won: winnerId === player2.userId,
+      won: player2Won,
       myScore: player2Score,
       opponentScore: player1Score,
-      pointsChange: winnerId === player2.userId ? 100 : 50,
-      ratingChange: winnerId === player2.userId ? 25 : -15,
+      pointsChange: player2PointsChange,
+      ratingChange: player2RatingChange,
+      isPractice,
     });
 
   } catch (error) {
@@ -216,19 +240,19 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
 }
 
 // Broadcast queue size to all players in queue
-function broadcastQueueSize(io: Server) {
-  const queueSize = matchmakingQueue.length;
-  matchmakingQueue.forEach(player => {
-    io.to(player.socketId).emit('queue_update', { playersInQueue: queueSize });
+function broadcastQueueSize(io: Server, queue: MatchmakingPlayer[], eventName: string = 'queue_update') {
+  const queueSize = queue.length;
+  queue.forEach(player => {
+    io.to(player.socketId).emit(eventName, { playersInQueue: queueSize });
   });
 }
 
 // Check if two players recently played against each other
-function canMatchPlayers(player1Id: number, player2Id: number): boolean {
+function canMatchPlayers(player1Id: number, player2Id: number, recentMatchesMap: Map<number, { opponentId: number; timestamp: number }>): boolean {
   const now = Date.now();
 
-  const player1Recent = recentMatches.get(player1Id);
-  const player2Recent = recentMatches.get(player2Id);
+  const player1Recent = recentMatchesMap.get(player1Id);
+  const player2Recent = recentMatchesMap.get(player2Id);
 
   // Check if player1 recently played against player2
   if (player1Recent && player1Recent.opponentId === player2Id) {
@@ -250,46 +274,71 @@ function canMatchPlayers(player1Id: number, player2Id: number): boolean {
 }
 
 // Find match for player
-function findMatch(player: MatchmakingPlayer, io: Server, forceMatch: boolean = false): boolean {
+function findMatch(
+  player: MatchmakingPlayer,
+  queue: MatchmakingPlayer[],
+  recentMatchesMap: Map<number, { opponentId: number; timestamp: number }>,
+  io: Server,
+  isPractice: boolean = false,
+  forceMatch: boolean = false
+): boolean {
   const minRating = player.rating - RATING_RANGE;
   const maxRating = player.rating + RATING_RANGE;
 
   let opponentIndex = -1;
 
-  if (!forceMatch) {
-    // First try to find opponent with similar rating, matching tier, who wasn't recently matched
-    opponentIndex = matchmakingQueue.findIndex((p) =>
+  if (!forceMatch && !isPractice) {
+    // Ranked: First try to find opponent with similar rating, matching tier, who wasn't recently matched
+    opponentIndex = queue.findIndex((p) =>
       p.userId !== player.userId &&
       p.rating >= minRating &&
       p.rating <= maxRating &&
       canMatchTiers(player.tier, p.tier) &&
-      canMatchPlayers(player.userId, p.userId)
+      canMatchPlayers(player.userId, p.userId, recentMatchesMap)
     );
   }
 
-  // If force match or no similar rating opponent, get first available (check tier and 3-min rule)
-  if (opponentIndex === -1 && matchmakingQueue.length > 0) {
-    opponentIndex = matchmakingQueue.findIndex((p) =>
+  if (isPractice && !forceMatch) {
+    // Practice: Match with anyone who wasn't recently matched (no tier or rating restrictions)
+    opponentIndex = queue.findIndex((p) =>
       p.userId !== player.userId &&
-      canMatchTiers(player.tier, p.tier) &&
-      canMatchPlayers(player.userId, p.userId)
+      canMatchPlayers(player.userId, p.userId, recentMatchesMap)
     );
   }
 
-  // If still no match after 3 minutes in queue, match with anyone (ignore recent match rule but keep tier restriction)
-  if (opponentIndex === -1 && forceMatch && matchmakingQueue.length > 0) {
-    const waitTime = Date.now() - player.joinedAt;
-    if (waitTime >= PREVENT_REMATCH_DURATION) {
-      opponentIndex = matchmakingQueue.findIndex((p) =>
+  // If force match or no similar rating opponent, get first available
+  if (opponentIndex === -1 && queue.length > 0) {
+    if (isPractice) {
+      // Practice: just find anyone
+      opponentIndex = queue.findIndex((p) => p.userId !== player.userId);
+    } else {
+      // Ranked: check tier and 3-min rule
+      opponentIndex = queue.findIndex((p) =>
         p.userId !== player.userId &&
-        canMatchTiers(player.tier, p.tier)
+        canMatchTiers(player.tier, p.tier) &&
+        canMatchPlayers(player.userId, p.userId, recentMatchesMap)
       );
     }
   }
 
+  // If still no match after 3 minutes in queue, match with anyone (ignore recent match rule)
+  if (opponentIndex === -1 && forceMatch && queue.length > 0) {
+    const waitTime = Date.now() - player.joinedAt;
+    if (waitTime >= PREVENT_REMATCH_DURATION) {
+      if (isPractice) {
+        opponentIndex = queue.findIndex((p) => p.userId !== player.userId);
+      } else {
+        opponentIndex = queue.findIndex((p) =>
+          p.userId !== player.userId &&
+          canMatchTiers(player.tier, p.tier)
+        );
+      }
+    }
+  }
+
   if (opponentIndex !== -1) {
-    const opponent = matchmakingQueue[opponentIndex];
-    matchmakingQueue.splice(opponentIndex, 1);
+    const opponent = queue[opponentIndex];
+    queue.splice(opponentIndex, 1);
 
     // Clear timeout for opponent
     if (opponent.timeoutId) {
@@ -301,33 +350,35 @@ function findMatch(player: MatchmakingPlayer, io: Server, forceMatch: boolean = 
       opponent: {
         username: opponent.username,
         rating: opponent.rating,
-      }
+      },
+      isPractice,
     });
 
     io.to(opponent.socketId).emit('match_found', {
       opponent: {
         username: player.username,
         rating: player.rating,
-      }
+      },
+      isPractice,
     });
 
     // Record this match to prevent immediate rematches
     const now = Date.now();
-    recentMatches.set(player.userId, { opponentId: opponent.userId, timestamp: now });
-    recentMatches.set(opponent.userId, { opponentId: player.userId, timestamp: now });
+    recentMatchesMap.set(player.userId, { opponentId: opponent.userId, timestamp: now });
+    recentMatchesMap.set(opponent.userId, { opponentId: player.userId, timestamp: now });
 
     // Clean up old entries (older than PREVENT_REMATCH_DURATION)
-    recentMatches.forEach((value, key) => {
+    recentMatchesMap.forEach((value, key) => {
       if (now - value.timestamp > PREVENT_REMATCH_DURATION) {
-        recentMatches.delete(key);
+        recentMatchesMap.delete(key);
       }
     });
 
     // Process the match
-    processMatch(player, opponent, io);
+    processMatch(player, opponent, io, isPractice);
 
     // Update queue size for remaining players
-    broadcastQueueSize(io);
+    broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');
 
     return true;
   }
@@ -340,11 +391,13 @@ export function setupMatchmaking(io: Server) {
     console.log('Client connected:', socket.id);
 
     // Join matchmaking queue
-    socket.on('join_queue', async (data: { token: string; isRanked?: boolean }) => {
+    socket.on('join_queue', async (data: { token: string; isPractice?: boolean }) => {
       try {
         // Verify token
         const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
         const decoded: any = jwt.verify(data.token, jwtSecret);
+
+        const isPractice = data.isPractice === true;
 
         // Get user info
         const [users]: any = await pool.query(
@@ -359,8 +412,8 @@ export function setupMatchmaking(io: Server) {
 
         const user = users[0];
 
-        // Check if user is suspended
-        if (user.tier_suspended_until) {
+        // Check if user is suspended (only for ranked)
+        if (!isPractice && user.tier_suspended_until) {
           const suspendedUntil = new Date(user.tier_suspended_until);
           const now = new Date();
 
@@ -398,27 +451,31 @@ export function setupMatchmaking(io: Server) {
           joinedAt: Date.now(),
         };
 
+        // Select queue based on match type
+        const queue = isPractice ? practiceQueue : rankedQueue;
+        const recentMatchesMap = isPractice ? practiceRecentMatches : recentMatches;
+
         // Try to find a match
-        const matched = findMatch(player, io);
+        const matched = findMatch(player, queue, recentMatchesMap, io, isPractice);
 
         if (!matched) {
           // Add to queue
-          matchmakingQueue.push(player);
+          queue.push(player);
 
           // Set timeout for auto-match after 30 seconds
           const timeoutId = setTimeout(() => {
-            const playerIndex = matchmakingQueue.findIndex(p => p.socketId === socket.id);
+            const playerIndex = queue.findIndex(p => p.socketId === socket.id);
             if (playerIndex !== -1) {
-              const queuedPlayer = matchmakingQueue[playerIndex];
-              matchmakingQueue.splice(playerIndex, 1);
+              const queuedPlayer = queue[playerIndex];
+              queue.splice(playerIndex, 1);
 
               // Try force match (any opponent)
-              const forceMatched = findMatch(queuedPlayer, io, true);
+              const forceMatched = findMatch(queuedPlayer, queue, recentMatchesMap, io, isPractice, true);
 
               if (!forceMatched) {
                 // No opponents at all, put back in queue
-                matchmakingQueue.push(queuedPlayer);
-                broadcastQueueSize(io);
+                queue.push(queuedPlayer);
+                broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');
               }
             }
           }, AUTO_MATCH_TIMEOUT);
@@ -426,9 +483,9 @@ export function setupMatchmaking(io: Server) {
           player.timeoutId = timeoutId;
 
           // Broadcast queue size to ALL players (including new one)
-          broadcastQueueSize(io);
+          broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');
 
-          console.log(`Player ${user.username} joined queue (${matchmakingQueue.length} in queue)`);
+          console.log(`Player ${user.username} joined ${isPractice ? 'practice' : 'ranked'} queue (${queue.length} in queue)`);
         }
 
       } catch (error: any) {
@@ -439,40 +496,60 @@ export function setupMatchmaking(io: Server) {
 
     // Leave matchmaking queue
     socket.on('leave_queue', () => {
-      const index = matchmakingQueue.findIndex((p) => p.socketId === socket.id);
+      // Check both queues
+      let index = rankedQueue.findIndex((p) => p.socketId === socket.id);
+      let queue = rankedQueue;
+      let isPractice = false;
+
+      if (index === -1) {
+        index = practiceQueue.findIndex((p) => p.socketId === socket.id);
+        queue = practiceQueue;
+        isPractice = true;
+      }
+
       if (index !== -1) {
-        const player = matchmakingQueue[index];
+        const player = queue[index];
 
         // Clear timeout
         if (player.timeoutId) {
           clearTimeout(player.timeoutId);
         }
 
-        matchmakingQueue.splice(index, 1);
-        console.log(`Player ${player.username} left queue`);
+        queue.splice(index, 1);
+        console.log(`Player ${player.username} left ${isPractice ? 'practice' : 'ranked'} queue`);
         socket.emit('queue_left', { message: 'Left matchmaking queue' });
 
         // Update queue size for remaining players
-        broadcastQueueSize(io);
+        broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');
       }
     });
 
     // Disconnect
     socket.on('disconnect', () => {
-      const index = matchmakingQueue.findIndex((p) => p.socketId === socket.id);
+      // Check both queues
+      let index = rankedQueue.findIndex((p) => p.socketId === socket.id);
+      let queue = rankedQueue;
+      let isPractice = false;
+
+      if (index === -1) {
+        index = practiceQueue.findIndex((p) => p.socketId === socket.id);
+        queue = practiceQueue;
+        isPractice = true;
+      }
+
       if (index !== -1) {
-        const player = matchmakingQueue[index];
+        const player = queue[index];
 
         // Clear timeout
         if (player.timeoutId) {
           clearTimeout(player.timeoutId);
         }
 
-        matchmakingQueue.splice(index, 1);
-        console.log(`Player ${player.username} disconnected from queue`);
+        queue.splice(index, 1);
+        console.log(`Player ${player.username} disconnected from ${isPractice ? 'practice' : 'ranked'} queue`);
 
         // Update queue size for remaining players
-        broadcastQueueSize(io);
+        broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');
       }
       console.log('Client disconnected:', socket.id);
     });

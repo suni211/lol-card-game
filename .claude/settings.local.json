@@ -13,7 +13,13 @@
       "Bash(git pull:*)",
       "Bash(git rm:*)",
       "Bash(npm run build:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(dir /s \"C:\\Users\\hisam\\OneDrive\\바탕 화면\\lol-card-game\\backend\\src\" *.ts)",
+      "Bash(nul)",
+      "Bash(del nul 2)",
+      "Bash(if [ -f \"nul\" ])",
+      "Bash(then rm nul)",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

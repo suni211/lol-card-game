@@ -1,22 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trophy, Swords, TrendingUp, Info } from 'lucide-react';
-import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
+import { io, Socket } from 'socket.io-client';
+import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 interface MatchResult {
-  result: 'WIN' | 'LOSE';
   opponent: {
+    id: number;
     username: string;
     rating: number;
-    power: number;
   };
-  userPower: number;
-  pointsGained: number;
+  won: boolean;
+  myScore: number;
+  opponentScore: number;
+  pointsChange: number;
   ratingChange: number;
+  isPractice: boolean;
 }
 
 interface AutoMatchStats {
@@ -40,87 +44,136 @@ export default function Practice() {
     totalPoints: 0
   });
   const [showAutoMatchSummary, setShowAutoMatchSummary] = useState(false);
+  const [queueSize, setQueueSize] = useState(0);
+  const socketRef = useRef<Socket | null>(null);
+  const autoMatchRef = useRef(false);
 
-  const findMatch = async (isAuto = false) => {
+  useEffect(() => {
+    autoMatchRef.current = autoMatch;
+  }, [autoMatch]);
+
+  useEffect(() => {
+    // Setup socket connection
+    if (!token) return;
+
+    console.log('Connecting to socket:', SOCKET_URL);
+    const socket = io(SOCKET_URL);
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      if (!autoMatchRef.current) {
+        toast.error('서버 연결 실패');
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+
+    socket.on('practice_queue_update', (data) => {
+      console.log('Practice queue update:', data);
+      setQueueSize(data.playersInQueue || 0);
+    });
+
+    socket.on('queue_error', (data) => {
+      console.error('Queue error:', data);
+      if (!autoMatchRef.current) {
+        toast.error(data.error || '매칭 실패');
+      }
+      setSearching(false);
+      setAutoMatch(false);
+    });
+
+    socket.on('match_found', (data) => {
+      console.log('Match found:', data);
+      if (!autoMatchRef.current) {
+        toast.success(`매치 발견! 상대: ${data.opponent.username}`);
+      }
+    });
+
+    socket.on('match_result', async (result: MatchResult) => {
+      console.log('Match result:', result);
+      setMatchResult(result);
+
+      // Fetch updated user data from server
+      try {
+        const response = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data.success) {
+          updateUser(response.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch updated user data:', error);
+      }
+
+      // Update stats
+      if (autoMatchRef.current) {
+        setAutoMatchStats(prev => ({
+          totalMatches: prev.totalMatches + 1,
+          wins: prev.wins + (result.won ? 1 : 0),
+          losses: prev.losses + (result.won ? 0 : 1),
+          totalPoints: prev.totalPoints + result.pointsChange
+        }));
+
+        setMatchCount(prev => prev + 1);
+
+        // Continue auto-matching immediately
+        setTimeout(() => {
+          if (autoMatchRef.current && socketRef.current) {
+            socketRef.current.emit('join_queue', { token, isPractice: true });
+          }
+        }, 300);
+      } else {
+        // Show result modal for manual matches
+        setSearching(false);
+        setShowResult(true);
+
+        if (result.won) {
+          toast.success(`승리! +${result.pointsChange}P`);
+        } else {
+          toast(`패배... +${result.pointsChange}P`, { icon: '😢' });
+        }
+      }
+    });
+
+    socket.on('match_error', (data) => {
+      console.error('Match error:', data);
+      if (!autoMatchRef.current) {
+        toast.error('매치 처리 오류');
+      }
+      setSearching(false);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [token, updateUser]);
+
+  const findMatch = () => {
     if (!user || !token) {
       toast.error('로그인이 필요합니다!');
       return;
     }
 
-    if (!isAuto || !autoMatch) {
-      setSearching(true);
+    if (!socketRef.current) {
+      toast.error('소켓 연결 실패');
+      return;
     }
+
+    setSearching(true);
     setMatchResult(null);
     setShowResult(false);
-
-    try {
-      const response = await axios.post(
-        `${API_URL}/practice/find`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (response.data.success) {
-        const result = response.data.data;
-        setMatchResult(result);
-
-        // Update user points
-        updateUser({ points: user.points + result.pointsGained });
-
-        // Update stats
-        if (isAuto) {
-          setAutoMatchStats(prev => ({
-            totalMatches: prev.totalMatches + 1,
-            wins: prev.wins + (result.result === 'WIN' ? 1 : 0),
-            losses: prev.losses + (result.result === 'LOSE' ? 1 : 0),
-            totalPoints: prev.totalPoints + result.pointsGained
-          }));
-        }
-
-        // Increment match count
-        setMatchCount(prev => prev + 1);
-
-        // Auto continue if auto-match is enabled
-        if (isAuto && autoMatch) {
-          // Don't show anything, just continue immediately
-          setSearching(false);
-
-          // Continue immediately without any notification
-          setTimeout(() => {
-            setMatchResult(null);
-            findMatch(true);
-          }, 300);
-        } else {
-          // Show result modal for manual matches
-          setTimeout(() => {
-            setSearching(false);
-            setShowResult(true);
-
-            if (result.result === 'WIN') {
-              toast.success(`승리! +${result.pointsGained}P`);
-            } else {
-              toast(`패배... +${result.pointsGained}P`, { icon: '😢' });
-            }
-          }, 2000);
-        }
-      }
-    } catch (error: any) {
-      // If auto-match mode and just waiting in queue, retry
-      if (isAuto && autoMatch && error.response?.status === 404) {
-        // In queue, keep trying (don't stop searching indicator)
-        setTimeout(() => {
-          findMatch(true);
-        }, 5000); // Retry every 5 seconds
-      } else {
-        // Real error, stop auto-match
-        setSearching(false);
-        setAutoMatch(false);
-        console.error('Practice match error:', error);
-        toast.error(error.response?.data?.error || '매치 찾기 실패');
-      }
-    }
+    socketRef.current.emit('join_queue', { token, isPractice: true });
+    toast.success('매칭 대기열에 참가했습니다');
   };
 
   const toggleAutoMatch = () => {
@@ -134,11 +187,20 @@ export default function Practice() {
         losses: 0,
         totalPoints: 0
       });
-      findMatch(true);
+      setSearching(true);
+
+      if (socketRef.current && token) {
+        socketRef.current.emit('join_queue', { token, isPractice: true });
+      }
     } else {
-      // Stop auto-match and show summary
+      // Stop auto-match
       setAutoMatch(false);
       setSearching(false);
+
+      if (socketRef.current) {
+        socketRef.current.emit('leave_queue');
+      }
+
       if (autoMatchStats.totalMatches > 0) {
         setShowAutoMatchSummary(true);
       }
@@ -193,9 +255,14 @@ export default function Practice() {
               </h3>
               <ul className="space-y-1 text-sm text-green-800 dark:text-green-200">
                 <li>• 랭크 변동이 없는 연습 모드입니다</li>
-                <li>• 승리 시 30P, 패배 시 15P를 획득합니다</li>
+                <li>• 승리 시 50P, 패배 시 30P를 획득합니다</li>
                 <li>• 횟수 제한이 없어 자유롭게 플레이할 수 있습니다</li>
                 <li>• 실제 유저와 매칭되며 덱 파워로 승부가 결정됩니다</li>
+                {queueSize > 0 && (
+                  <li className="font-bold text-green-700 dark:text-green-300">
+                    • 현재 대기 중인 플레이어: {queueSize}명
+                  </li>
+                )}
               </ul>
             </div>
           </div>
@@ -227,11 +294,11 @@ export default function Practice() {
 
             <div className="flex flex-col gap-3 items-center">
               <button
-                onClick={() => findMatch(false)}
+                onClick={findMatch}
                 disabled={searching || autoMatch}
                 className="w-full max-w-md py-4 px-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg"
               >
-                {searching ? '매칭 중...' : '일반전 시작'}
+                {searching && !autoMatch ? '매칭 중...' : '일반전 시작'}
               </button>
 
               <button
@@ -333,7 +400,7 @@ export default function Practice() {
             >
               <div
                 className={`rounded-2xl p-1 shadow-2xl ${
-                  matchResult.result === 'WIN'
+                  matchResult.won
                     ? 'bg-gradient-to-br from-green-400 to-emerald-500'
                     : 'bg-gradient-to-br from-blue-400 to-cyan-500'
                 }`}
@@ -343,12 +410,12 @@ export default function Practice() {
                   <div className="text-center mb-6">
                     <div
                       className={`inline-block px-8 py-3 rounded-full text-white font-bold text-2xl mb-4 ${
-                        matchResult.result === 'WIN'
+                        matchResult.won
                           ? 'bg-gradient-to-r from-green-600 to-emerald-600'
                           : 'bg-gradient-to-r from-blue-600 to-cyan-600'
                       }`}
                     >
-                      {matchResult.result === 'WIN' ? '승리!' : '패배'}
+                      {matchResult.won ? '승리!' : '패배'}
                     </div>
                   </div>
 
@@ -372,18 +439,18 @@ export default function Practice() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
                         <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">
-                          내 덱 파워
+                          내 스코어
                         </div>
                         <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {matchResult.userPower}
+                          {matchResult.myScore}
                         </div>
                       </div>
                       <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
                         <div className="text-sm text-red-600 dark:text-red-400 mb-1">
-                          상대 덱 파워
+                          상대 스코어
                         </div>
                         <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {matchResult.opponent.power}
+                          {matchResult.opponentScore}
                         </div>
                       </div>
                     </div>
@@ -398,7 +465,7 @@ export default function Practice() {
                           </span>
                         </div>
                         <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                          +{matchResult.pointsGained}P
+                          +{matchResult.pointsChange}P
                         </div>
                       </div>
                     </div>

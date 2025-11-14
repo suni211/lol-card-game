@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Swords, Layers, Users, Trophy, Target } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Swords, Layers, Users, Trophy, Target, Zap, Shield, MapPin } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -46,6 +46,9 @@ export default function Match() {
   const [matching, setMatching] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
   const [queueSize, setQueueSize] = useState(0);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState(0);
+  const [simulatedPhases, setSimulatedPhases] = useState<any[]>([]);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -150,8 +153,46 @@ export default function Match() {
 
     socket.on('match_result', async (result) => {
       console.log('Match result:', result);
-      setMatchResult(result);
-      setMatching(false);
+
+      // Start simulation if phases exist
+      if (result.phases && result.phases.length > 0) {
+        setIsSimulating(true);
+        setSimulatedPhases([]);
+        setCurrentPhase(0);
+
+        // Simulate phases over 30 seconds (10 seconds per phase)
+        for (let i = 0; i < result.phases.length; i++) {
+          setTimeout(() => {
+            setSimulatedPhases(prev => [...prev, result.phases[i]]);
+            setCurrentPhase(i + 1);
+
+            // After last phase, show final result
+            if (i === result.phases.length - 1) {
+              setTimeout(() => {
+                setIsSimulating(false);
+                setMatchResult(result);
+                setMatching(false);
+
+                if (result.won) {
+                  toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
+                } else {
+                  toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
+                }
+              }, 3000); // 3 second pause before showing result
+            }
+          }, i * 10000); // 10 seconds per phase
+        }
+      } else {
+        // No phases, show result immediately
+        setMatchResult(result);
+        setMatching(false);
+
+        if (result.won) {
+          toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
+        } else {
+          toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
+        }
+      }
 
       // Fetch updated user data from server
       try {
@@ -164,12 +205,6 @@ export default function Match() {
         }
       } catch (error) {
         console.error('Failed to fetch updated user data:', error);
-      }
-
-      if (result.won) {
-        toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
-      } else {
-        toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
       }
     });
 
@@ -343,8 +378,105 @@ export default function Match() {
               </div>
             </motion.div>
 
-            {/* Match Button or Result */}
-            {!matchResult ? (
+            {/* Match Button, Simulation, or Result */}
+            {isSimulating ? (
+              /* Match Simulation */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <div className="text-center mb-6">
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    경기 진행 중
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    실시간 전투 중...
+                  </p>
+                </div>
+
+                {/* Phase Progress */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    {['라인전', '한타', '운영'].map((phaseName, idx) => (
+                      <div key={idx} className="flex items-center">
+                        <div
+                          className={`flex items-center justify-center w-12 h-12 rounded-full font-bold ${
+                            idx < currentPhase
+                              ? 'bg-green-500 text-white'
+                              : idx === currentPhase
+                              ? 'bg-blue-500 text-white animate-pulse'
+                              : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {idx + 1}
+                        </div>
+                        {idx < 2 && (
+                          <div
+                            className={`w-16 h-1 mx-2 ${
+                              idx < currentPhase - 1
+                                ? 'bg-green-500'
+                                : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
+                          ></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Phase Results */}
+                <AnimatePresence>
+                  <div className="space-y-4">
+                    {simulatedPhases.map((phase, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className={`p-6 rounded-xl border-2 ${
+                          phase.advantage === 'player1'
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                            : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            {phase.phase === 'LANING' && <Zap className="w-6 h-6 text-yellow-600" />}
+                            {phase.phase === 'TEAMFIGHT' && <Shield className="w-6 h-6 text-blue-600" />}
+                            {phase.phase === 'MACRO' && <MapPin className="w-6 h-6 text-purple-600" />}
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                              {phase.name} 단계
+                            </h3>
+                          </div>
+                          <div className={`text-2xl font-bold ${
+                            phase.advantage === 'player1'
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-red-600 dark:text-red-400'
+                          }`}>
+                            {phase.advantage === 'player1' ? '승리!' : '패배'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-900 dark:text-white">
+                          <span className="text-blue-600 dark:text-blue-400">{phase.score.player1}</span>
+                          <span className="text-gray-400">-</span>
+                          <span className="text-red-600 dark:text-red-400">{phase.score.player2}</span>
+                        </div>
+
+                        {phase.strategyWon && (
+                          <div className="mt-3 text-center">
+                            <span className="inline-block px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full text-sm font-medium">
+                              전략 카운터 성공!
+                            </span>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatePresence>
+              </motion.div>
+            ) : !matchResult ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

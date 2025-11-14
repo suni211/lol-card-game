@@ -4,6 +4,60 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// Strategy counter relationships
+const STRATEGY_COUNTERS: any = {
+  LANING: {
+    AGGRESSIVE: { counters: ['SAFE'], weakTo: ['SCALING'] },
+    SAFE: { counters: ['PUSH'], weakTo: ['AGGRESSIVE'] },
+    ROAMING: { counters: ['SCALING'], weakTo: ['PUSH'] },
+    SCALING: { counters: ['AGGRESSIVE'], weakTo: ['ROAMING'] },
+    PUSH: { counters: ['ROAMING'], weakTo: ['SAFE'] },
+    FREEZE: { counters: ['PUSH'], weakTo: ['ROAMING'] },
+    TRADE: { counters: ['SCALING'], weakTo: ['ALLKILL'] },
+    ALLKILL: { counters: ['TRADE'], weakTo: ['SAFE'] },
+  },
+  TEAMFIGHT: {
+    ENGAGE: { counters: ['POKE'], weakTo: ['DISENGAGE'] },
+    DISENGAGE: { counters: ['ENGAGE'], weakTo: ['POKE'] },
+    POKE: { counters: ['DISENGAGE'], weakTo: ['ENGAGE'] },
+    PROTECT: { counters: ['DIVE'], weakTo: ['POKE'] },
+    SPLIT: { counters: ['PROTECT'], weakTo: ['ENGAGE'] },
+    FLANK: { counters: ['PROTECT'], weakTo: ['KITE'] },
+    KITE: { counters: ['ENGAGE'], weakTo: ['FLANK'] },
+    DIVE: { counters: ['KITE'], weakTo: ['PROTECT'] },
+  },
+  MACRO: {
+    OBJECTIVE: { counters: ['SPLITPUSH'], weakTo: ['PICK'] },
+    VISION: { counters: ['PICK'], weakTo: ['SPLITPUSH'] },
+    SPLITPUSH: { counters: ['GROUPING'], weakTo: ['OBJECTIVE'] },
+    GROUPING: { counters: ['VISION'], weakTo: ['SPLITPUSH'] },
+    PICK: { counters: ['OBJECTIVE'], weakTo: ['VISION'] },
+    SIEGE: { counters: ['GROUPING'], weakTo: ['ROTATION'] },
+    ROTATION: { counters: ['SIEGE'], weakTo: ['CONTROL'] },
+    CONTROL: { counters: ['ROTATION'], weakTo: ['GROUPING'] },
+  },
+};
+
+// Calculate strategy advantage
+function calculateStrategyAdvantage(
+  myStrategy: string,
+  opponentStrategy: string,
+  phase: 'LANING' | 'TEAMFIGHT' | 'MACRO'
+): number {
+  const strategies = STRATEGY_COUNTERS[phase];
+  const myStrategyData = strategies[myStrategy];
+
+  if (!myStrategyData) return 1.0;
+
+  if (myStrategyData.counters.includes(opponentStrategy)) {
+    return 1.15; // 15% advantage
+  } else if (myStrategyData.weakTo.includes(opponentStrategy)) {
+    return 0.85; // 15% disadvantage
+  }
+
+  return 1.0; // No advantage
+}
+
 // Calculate deck power
 async function calculateDeckPower(connection: any, deckId: number): Promise<number> {
   const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);
@@ -72,6 +126,128 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
   return totalPower;
 }
 
+// Simulate match with detailed phases
+async function simulateMatch(
+  connection: any,
+  player1DeckId: number,
+  player2DeckId: number
+): Promise<{
+  phases: any[];
+  finalScore: { player1: number; player2: number };
+  winnerId: 1 | 2;
+}> {
+  // Get deck strategies
+  const [deck1]: any = await connection.query(
+    'SELECT laning_strategy, teamfight_strategy, macro_strategy FROM decks WHERE id = ?',
+    [player1DeckId]
+  );
+  const [deck2]: any = await connection.query(
+    'SELECT laning_strategy, teamfight_strategy, macro_strategy FROM decks WHERE id = ?',
+    [player2DeckId]
+  );
+
+  const p1Strategies = deck1[0];
+  const p2Strategies = deck2[0];
+
+  // Calculate base powers
+  const p1Power = await calculateDeckPower(connection, player1DeckId);
+  const p2Power = await calculateDeckPower(connection, player2DeckId);
+
+  const phases: any[] = [];
+  let p1TotalScore = 0;
+  let p2TotalScore = 0;
+
+  // Phase 1: Early Game (Laning) - 0-10 seconds
+  const laningAdvantage = calculateStrategyAdvantage(
+    p1Strategies.laning_strategy,
+    p2Strategies.laning_strategy,
+    'LANING'
+  );
+  const laningRandom = 0.85 + Math.random() * 0.3; // 85%-115%
+  const p1LaningPower = p1Power * laningAdvantage * laningRandom;
+  const p2LaningPower = p2Power * (2 - laningAdvantage) * laningRandom;
+
+  const laningWinner = p1LaningPower > p2LaningPower ? 1 : 2;
+  const laningScoreDiff = Math.max(1, Math.floor(Math.abs(p1LaningPower - p2LaningPower) / 50));
+
+  if (laningWinner === 1) {
+    p1TotalScore += laningScoreDiff;
+  } else {
+    p2TotalScore += laningScoreDiff;
+  }
+
+  phases.push({
+    phase: 'LANING',
+    name: '라인전',
+    winner: laningWinner,
+    score: { player1: p1TotalScore, player2: p2TotalScore },
+    advantage: laningWinner === 1 ? 'player1' : 'player2',
+    strategyWon: laningAdvantage !== 1.0,
+  });
+
+  // Phase 2: Mid Game (Teamfight) - 10-20 seconds
+  const teamfightAdvantage = calculateStrategyAdvantage(
+    p1Strategies.teamfight_strategy,
+    p2Strategies.teamfight_strategy,
+    'TEAMFIGHT'
+  );
+  const teamfightRandom = 0.85 + Math.random() * 0.3;
+  const p1TeamfightPower = p1Power * teamfightAdvantage * teamfightRandom * (p1TotalScore > p2TotalScore ? 1.1 : 0.95);
+  const p2TeamfightPower = p2Power * (2 - teamfightAdvantage) * teamfightRandom * (p2TotalScore > p1TotalScore ? 1.1 : 0.95);
+
+  const teamfightWinner = p1TeamfightPower > p2TeamfightPower ? 1 : 2;
+  const teamfightScoreDiff = Math.max(1, Math.floor(Math.abs(p1TeamfightPower - p2TeamfightPower) / 45));
+
+  if (teamfightWinner === 1) {
+    p1TotalScore += teamfightScoreDiff;
+  } else {
+    p2TotalScore += teamfightScoreDiff;
+  }
+
+  phases.push({
+    phase: 'TEAMFIGHT',
+    name: '한타',
+    winner: teamfightWinner,
+    score: { player1: p1TotalScore, player2: p2TotalScore },
+    advantage: teamfightWinner === 1 ? 'player1' : 'player2',
+    strategyWon: teamfightAdvantage !== 1.0,
+  });
+
+  // Phase 3: Late Game (Macro) - 20-30 seconds
+  const macroAdvantage = calculateStrategyAdvantage(
+    p1Strategies.macro_strategy,
+    p2Strategies.macro_strategy,
+    'MACRO'
+  );
+  const macroRandom = 0.85 + Math.random() * 0.3;
+  const p1MacroPower = p1Power * macroAdvantage * macroRandom * (p1TotalScore > p2TotalScore ? 1.15 : 0.9);
+  const p2MacroPower = p2Power * (2 - macroAdvantage) * macroRandom * (p2TotalScore > p1TotalScore ? 1.15 : 0.9);
+
+  const macroWinner = p1MacroPower > p2MacroPower ? 1 : 2;
+  const macroScoreDiff = Math.max(1, Math.floor(Math.abs(p1MacroPower - p2MacroPower) / 40));
+
+  if (macroWinner === 1) {
+    p1TotalScore += macroScoreDiff;
+  } else {
+    p2TotalScore += macroScoreDiff;
+  }
+
+  phases.push({
+    phase: 'MACRO',
+    name: '운영',
+    winner: macroWinner,
+    score: { player1: p1TotalScore, player2: p2TotalScore },
+    advantage: macroWinner === 1 ? 'player1' : 'player2',
+    strategyWon: macroAdvantage !== 1.0,
+  });
+
+  return {
+    phases,
+    finalScore: { player1: p1TotalScore, player2: p2TotalScore },
+    winnerId: p1TotalScore > p2TotalScore ? 1 : 2,
+  };
+}
+
 // Find match
 router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
@@ -131,18 +307,12 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
       opponentDeckId = opponent.deck_id;
     }
 
-    // Calculate powers
-    const player1Power = await calculateDeckPower(connection, userDeckId);
-    const player2Power = await calculateDeckPower(connection, opponentDeckId);
+    // Simulate match with detailed phases
+    const matchSimulation = await simulateMatch(connection, userDeckId, opponentDeckId);
 
-    // Determine winner (with some randomness)
-    const randomFactor = 0.9 + Math.random() * 0.2; // 90%-110%
-    const player1FinalPower = player1Power * randomFactor;
-    const player2FinalPower = player2Power * randomFactor;
-
-    const winnerId = player1FinalPower > player2FinalPower ? userId : opponent.id;
-    const player1Score = player1FinalPower > player2FinalPower ? 3 : 1;
-    const player2Score = player1FinalPower > player2FinalPower ? 1 : 3;
+    const winnerId = matchSimulation.winnerId === 1 ? userId : opponent.id;
+    const player1Score = matchSimulation.finalScore.player1;
+    const player2Score = matchSimulation.finalScore.player2;
 
     // Create match record
     if (opponent.id !== 0) {
@@ -195,6 +365,7 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
         opponentScore: player2Score,
         pointsChange: won ? 100 : 50,
         ratingChange: won ? 25 : -15,
+        phases: matchSimulation.phases,
       },
     });
   } catch (error: any) {

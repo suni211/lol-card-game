@@ -237,25 +237,26 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 ('Sav1or', 'LGD', 'ADC', 68, 'LPL', 'COMMON'),
 ('Ycx', 'LGD', 'SUPPORT', 70, 'LPL', 'COMMON');
 
+
+-- ============================================
+-- LCP (8 TEAMS)
+-- ============================================
+
 -- CFO
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
-('Rest', 'CFO', 'TOP', 71, 'LPL', 'RARE'),
-('JunJia', 'CFO', 'JUNGLE', 75, 'LPL', 'RARE'),
-('HongQ', 'CFO', 'MID', 70, 'LPL', 'COMMON'),
-('Doggo', 'CFO', 'ADC', 83, 'LPL', 'EPIC'),
-('Kaiwing', 'CFO', 'SUPPORT', 80, 'LPL', 'RARE');
+('Rest', 'CFO', 'TOP', 71, 'LCP', 'RARE'),
+('JunJia', 'CFO', 'JUNGLE', 75, 'LCP', 'RARE'),
+('HongQ', 'CFO', 'MID', 70, 'LCP', 'COMMON'),
+('Doggo', 'CFO', 'ADC', 83, 'LCP', 'EPIC'),
+('Kaiwing', 'CFO', 'SUPPORT', 80, 'LCP', 'RARE');
 
 -- TSW
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
-('Pun', 'TSW', 'TOP', 70, 'LPL', 'COMMON'),
-('Hizto', 'TSW', 'JUNGLE', 71, 'LPL', 'RARE'),
-('Dire', 'TSW', 'MID', 68, 'LPL', 'COMMON'),
-('Eddie', 'TSW', 'ADC', 70, 'LPL', 'COMMON'),
-('Taki', 'TSW', 'SUPPORT', 67, 'LPL', 'COMMON');
-
--- ============================================
--- LCP (6 TEAMS)
--- ============================================
+('Pun', 'TSW', 'TOP', 70, 'LCP', 'COMMON'),
+('Hizto', 'TSW', 'JUNGLE', 71, 'LCP', 'RARE'),
+('Dire', 'TSW', 'MID', 68, 'LCP', 'COMMON'),
+('Eddie', 'TSW', 'ADC', 70, 'LCP', 'COMMON'),
+('Taki', 'TSW', 'SUPPORT', 67, 'LCP', 'COMMON');
 
 -- PSG
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
@@ -445,11 +446,11 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 
 -- CFO substitutes
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
-('Driver', 'CFO', 'TOP', 72, 'LPL', 'RARE');
+('Driver', 'CFO', 'TOP', 72, 'LCP', 'RARE');
 
 -- TSW substitutes
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
-('Hiro02', 'TSW', 'TOP', 70, 'LPL', 'COMMON');
+('Hiro02', 'TSW', 'TOP', 70, 'LCP', 'COMMON');
 
 -- DFM substitutes
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
@@ -462,4 +463,4 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 
 -- 100T substitutes
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
-('Dhokla', '100T', 'TOP', 71, 'LCP', 'RARE');
+('Dhokla', '100T', 'TOP', 71, 'LTA', 'RARE');

@@ -16,6 +16,7 @@ import missionsRoutes from './routes/missions';
 import tradeRoutes from './routes/trade';
 import noticesRoutes from './routes/notices';
 import profileRoutes from './routes/profile';
+import aiRoutes from './routes/ai';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -63,6 +64,7 @@ app.use('/api/missions', missionsRoutes);
 app.use('/api/trade', tradeRoutes);
 app.use('/api/notices', noticesRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

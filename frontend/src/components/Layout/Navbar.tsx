@@ -16,6 +16,7 @@ export default function Navbar() {
     { path: '/collection', label: '내 카드' },
     { path: '/deck', label: '덱 편성' },
     { path: '/match', label: '경기' },
+    { path: '/ai-battle', label: 'AI 배틀' },
     { path: '/ranking', label: '랭킹' },
     { path: '/missions', label: '미션' },
     { path: '/trade', label: '트레이드' },

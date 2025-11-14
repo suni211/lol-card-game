@@ -56,6 +56,17 @@ export default function Gacha() {
         legendary: 8,
       },
     },
+    {
+      cost: 2500,
+      label: '2025 월즈 우승',
+      probabilities: {
+        common: 0,
+        rare: 0,
+        epic: 0,
+        legendary: 100,
+      },
+      special: true,
+    },
   ];
 
   const getTierColor = (tier: string) => {
@@ -104,6 +115,7 @@ export default function Gacha() {
       if (option.cost === 0) gachaType = 'free';
       else if (option.cost === 300) gachaType = 'premium';
       else if (option.cost === 500) gachaType = 'ultra';
+      else if (option.cost === 2500) gachaType = 'worlds_winner';
 
       // 백엔드 API 호출
       const response = await axios.post(
@@ -205,6 +217,8 @@ export default function Gacha() {
               className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 transition-all ${
                 option.cost === 0 && dailyFreeUsed
                   ? 'border-gray-300 dark:border-gray-600 opacity-50'
+                  : option.special
+                  ? 'border-yellow-500 dark:border-yellow-400 hover:shadow-2xl hover:-translate-y-2'
                   : 'border-primary-500 dark:border-primary-400 hover:shadow-xl hover:-translate-y-2'
               }`}
             >
@@ -213,17 +227,29 @@ export default function Gacha() {
                   FREE
                 </div>
               )}
+              {option.special && (
+                <div className="absolute top-0 right-0 bg-gradient-to-br from-yellow-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                  SPECIAL
+                </div>
+              )}
 
               <div className="p-6">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                <h3 className={`text-2xl font-bold mb-2 ${option.special ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-900 dark:text-white'}`}>
                   {option.label}
                 </h3>
-                <div className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-4">
+                <div className={`text-3xl font-bold mb-4 ${option.special ? 'text-yellow-600 dark:text-yellow-400' : 'text-primary-600 dark:text-primary-400'}`}>
                   {option.cost === 0 ? '무료' : `${option.cost}P`}
                 </div>
 
                 {/* Probabilities */}
                 <div className="space-y-2 mb-6">
+                  {option.special && (
+                    <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
+                        25WW 카드만 획득 가능!
+                      </p>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-yellow-600 dark:text-yellow-400">레전드</span>
                     <span className="font-semibold text-gray-900 dark:text-white">

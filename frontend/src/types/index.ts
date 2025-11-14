@@ -92,6 +92,7 @@ export interface GachaOption {
     epic: number;
     legendary: number;
   };
+  special?: boolean;
 }
 
 export interface GachaResult {

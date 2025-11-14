@@ -8,10 +8,13 @@ interface MatchmakingPlayer {
   username: string;
   rating: number;
   deckId: number;
+  joinedAt: number;
+  timeoutId?: NodeJS.Timeout;
 }
 
 const matchmakingQueue: MatchmakingPlayer[] = [];
 const RATING_RANGE = 200;
+const AUTO_MATCH_TIMEOUT = 30000; // 30 seconds
 
 // Calculate deck power
 async function calculateDeckPower(deckId: number): Promise<number> {
@@ -157,19 +160,31 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
   }
 }
 
+// Broadcast queue size to all players in queue
+function broadcastQueueSize(io: Server) {
+  const queueSize = matchmakingQueue.length;
+  matchmakingQueue.forEach(player => {
+    io.to(player.socketId).emit('queue_update', { playersInQueue: queueSize });
+  });
+}
+
 // Find match for player
-function findMatch(player: MatchmakingPlayer, io: Server): boolean {
+function findMatch(player: MatchmakingPlayer, io: Server, forceMatch: boolean = false): boolean {
   const minRating = player.rating - RATING_RANGE;
   const maxRating = player.rating + RATING_RANGE;
 
-  // First try to find opponent with similar rating
-  let opponentIndex = matchmakingQueue.findIndex((p) =>
-    p.userId !== player.userId &&
-    p.rating >= minRating &&
-    p.rating <= maxRating
-  );
+  let opponentIndex = -1;
 
-  // If no similar rating opponent, just get first available (선착순)
+  if (!forceMatch) {
+    // First try to find opponent with similar rating
+    opponentIndex = matchmakingQueue.findIndex((p) =>
+      p.userId !== player.userId &&
+      p.rating >= minRating &&
+      p.rating <= maxRating
+    );
+  }
+
+  // If force match or no similar rating opponent, just get first available (선착순)
   if (opponentIndex === -1 && matchmakingQueue.length > 0) {
     opponentIndex = matchmakingQueue.findIndex((p) => p.userId !== player.userId);
   }
@@ -177,6 +192,11 @@ function findMatch(player: MatchmakingPlayer, io: Server): boolean {
   if (opponentIndex !== -1) {
     const opponent = matchmakingQueue[opponentIndex];
     matchmakingQueue.splice(opponentIndex, 1);
+
+    // Clear timeout for opponent
+    if (opponent.timeoutId) {
+      clearTimeout(opponent.timeoutId);
+    }
 
     // Notify both players that match was found
     io.to(player.socketId).emit('match_found', {
@@ -195,6 +215,10 @@ function findMatch(player: MatchmakingPlayer, io: Server): boolean {
 
     // Process the match
     processMatch(player, opponent, io);
+
+    // Update queue size for remaining players
+    broadcastQueueSize(io);
+
     return true;
   }
 
@@ -242,6 +266,7 @@ export function setupMatchmaking(io: Server) {
           username: user.username,
           rating: user.rating,
           deckId: decks[0].id,
+          joinedAt: Date.now(),
         };
 
         // Try to find a match
@@ -250,10 +275,38 @@ export function setupMatchmaking(io: Server) {
         if (!matched) {
           // Add to queue
           matchmakingQueue.push(player);
+
+          // Set timeout for auto-match after 30 seconds
+          const timeoutId = setTimeout(() => {
+            const playerIndex = matchmakingQueue.findIndex(p => p.socketId === socket.id);
+            if (playerIndex !== -1) {
+              const queuedPlayer = matchmakingQueue[playerIndex];
+              matchmakingQueue.splice(playerIndex, 1);
+
+              // Try force match (any opponent)
+              const forceMatched = findMatch(queuedPlayer, io, true);
+
+              if (!forceMatched) {
+                // No opponents at all, put back in queue
+                matchmakingQueue.push(queuedPlayer);
+                socket.emit('queue_update', {
+                  playersInQueue: matchmakingQueue.length,
+                  message: '상대를 찾지 못했습니다. 계속 대기 중...'
+                });
+              }
+            }
+          }, AUTO_MATCH_TIMEOUT);
+
+          player.timeoutId = timeoutId;
+
           socket.emit('queue_joined', {
             position: matchmakingQueue.length,
+            playersInQueue: matchmakingQueue.length,
             message: 'Searching for opponent...',
           });
+
+          // Broadcast queue size to all players
+          broadcastQueueSize(io);
 
           console.log(`Player ${user.username} joined queue (${matchmakingQueue.length} in queue)`);
         }
@@ -269,9 +322,18 @@ export function setupMatchmaking(io: Server) {
       const index = matchmakingQueue.findIndex((p) => p.socketId === socket.id);
       if (index !== -1) {
         const player = matchmakingQueue[index];
+
+        // Clear timeout
+        if (player.timeoutId) {
+          clearTimeout(player.timeoutId);
+        }
+
         matchmakingQueue.splice(index, 1);
         console.log(`Player ${player.username} left queue`);
         socket.emit('queue_left', { message: 'Left matchmaking queue' });
+
+        // Update queue size for remaining players
+        broadcastQueueSize(io);
       }
     });
 
@@ -280,8 +342,17 @@ export function setupMatchmaking(io: Server) {
       const index = matchmakingQueue.findIndex((p) => p.socketId === socket.id);
       if (index !== -1) {
         const player = matchmakingQueue[index];
+
+        // Clear timeout
+        if (player.timeoutId) {
+          clearTimeout(player.timeoutId);
+        }
+
         matchmakingQueue.splice(index, 1);
         console.log(`Player ${player.username} disconnected from queue`);
+
+        // Update queue size for remaining players
+        broadcastQueueSize(io);
       }
       console.log('Client disconnected:', socket.id);
     });

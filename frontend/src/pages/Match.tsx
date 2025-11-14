@@ -45,6 +45,7 @@ export default function Match() {
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
+  const [queueSize, setQueueSize] = useState(0);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -112,7 +113,16 @@ export default function Match() {
 
     socket.on('queue_joined', (data) => {
       console.log('Joined queue:', data);
+      setQueueSize(data.playersInQueue || 0);
       toast.success('매칭 대기열에 참가했습니다');
+    });
+
+    socket.on('queue_update', (data) => {
+      console.log('Queue update:', data);
+      setQueueSize(data.playersInQueue || 0);
+      if (data.message) {
+        toast(data.message);
+      }
     });
 
     socket.on('queue_error', (data) => {
@@ -350,8 +360,17 @@ export default function Match() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                         <span className="text-2xl font-bold text-gray-900 dark:text-white">매칭 중...</span>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-center">
-                        상대를 찾고 있습니다
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                            대기 중: {queueSize}명
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 text-center text-sm">
+                        상대를 찾고 있습니다<br />
+                        <span className="text-xs">30초 후 자동 매칭됩니다</span>
                       </p>
                     </div>
                     <button

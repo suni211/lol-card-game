@@ -9,7 +9,9 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nAdd dark mode variant for TailwindCSS v4\n\nAdded @variant dark directive to enable class-based dark mode in TailwindCSS v4.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
       "Bash(git restore:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

@@ -493,16 +493,21 @@ export default function Deck() {
                         >
                           <div className="flex gap-3">
                             {/* Player Image */}
-                            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+                            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center relative">
                               <img
                                 src={getPlayerImageUrl(card.player.name)}
                                 alt={card.player.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
-                                  target.onerror = null;
-                                  target.src = getPlayerPlaceholder();
-                                  target.className = "w-full h-full object-contain opacity-50";
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent && !parent.querySelector('.fallback-text')) {
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'fallback-text text-2xl font-bold text-gray-400 dark:text-gray-500';
+                                    fallback.textContent = card.player.name[0];
+                                    parent.appendChild(fallback);
+                                  }
                                 }}
                               />
                             </div>

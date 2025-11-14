@@ -15,6 +15,7 @@ import Collection from './pages/Collection';
 import Deck from './pages/Deck';
 import Match from './pages/Match';
 import AIBattle from './pages/AIBattle';
+import Practice from './pages/Practice';
 import Ranking from './pages/Ranking';
 import Missions from './pages/Missions';
 import Trade from './pages/Trade';
@@ -120,6 +121,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AIBattle />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice"
+            element={
+              <ProtectedRoute>
+                <Practice />
               </ProtectedRoute>
             }
           />

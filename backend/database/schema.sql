@@ -101,6 +101,7 @@ CREATE TABLE matches (
     player1_score INT DEFAULT 0,
     player2_score INT DEFAULT 0,
     status ENUM('WAITING', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'WAITING',
+    match_type ENUM('RANKED', 'PRACTICE', 'AI') DEFAULT 'RANKED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP NULL,
     FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -111,6 +112,7 @@ CREATE TABLE matches (
     INDEX idx_player1_id (player1_id),
     INDEX idx_player2_id (player2_id),
     INDEX idx_status (status),
+    INDEX idx_match_type (match_type),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

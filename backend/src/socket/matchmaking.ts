@@ -10,13 +10,18 @@ interface MatchmakingPlayer {
   deckId: number;
   joinedAt: number;
   timeoutId?: NodeJS.Timeout;
+  lastOpponentId?: number; // Track last opponent
 }
 
 const matchmakingQueue: MatchmakingPlayer[] = [];
 const RATING_RANGE = 200;
 const AUTO_MATCH_TIMEOUT = 30000; // 30 seconds
+const PREVENT_REMATCH_DURATION = 3 * 60 * 1000; // 3 minutes
 const RANK_MATCH_LIMIT = 10; // Max rank matches per hour
 const RANK_MATCH_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+
+// Store recent matches to prevent immediate rematches
+const recentMatches = new Map<number, { opponentId: number; timestamp: number }>();
 
 // Calculate deck power
 async function calculateDeckPower(deckId: number): Promise<number> {
@@ -170,6 +175,32 @@ function broadcastQueueSize(io: Server) {
   });
 }
 
+// Check if two players recently played against each other
+function canMatchPlayers(player1Id: number, player2Id: number): boolean {
+  const now = Date.now();
+
+  const player1Recent = recentMatches.get(player1Id);
+  const player2Recent = recentMatches.get(player2Id);
+
+  // Check if player1 recently played against player2
+  if (player1Recent && player1Recent.opponentId === player2Id) {
+    const timeSinceMatch = now - player1Recent.timestamp;
+    if (timeSinceMatch < PREVENT_REMATCH_DURATION) {
+      return false; // Too soon for rematch
+    }
+  }
+
+  // Check if player2 recently played against player1
+  if (player2Recent && player2Recent.opponentId === player1Id) {
+    const timeSinceMatch = now - player2Recent.timestamp;
+    if (timeSinceMatch < PREVENT_REMATCH_DURATION) {
+      return false; // Too soon for rematch
+    }
+  }
+
+  return true;
+}
+
 // Find match for player
 function findMatch(player: MatchmakingPlayer, io: Server, forceMatch: boolean = false): boolean {
   const minRating = player.rating - RATING_RANGE;
@@ -178,17 +209,29 @@ function findMatch(player: MatchmakingPlayer, io: Server, forceMatch: boolean = 
   let opponentIndex = -1;
 
   if (!forceMatch) {
-    // First try to find opponent with similar rating
+    // First try to find opponent with similar rating who wasn't recently matched
     opponentIndex = matchmakingQueue.findIndex((p) =>
       p.userId !== player.userId &&
       p.rating >= minRating &&
-      p.rating <= maxRating
+      p.rating <= maxRating &&
+      canMatchPlayers(player.userId, p.userId)
     );
   }
 
-  // If force match or no similar rating opponent, just get first available (선착순)
+  // If force match or no similar rating opponent, get first available (but still check 3-min rule)
   if (opponentIndex === -1 && matchmakingQueue.length > 0) {
-    opponentIndex = matchmakingQueue.findIndex((p) => p.userId !== player.userId);
+    opponentIndex = matchmakingQueue.findIndex((p) =>
+      p.userId !== player.userId &&
+      canMatchPlayers(player.userId, p.userId)
+    );
+  }
+
+  // If still no match after 3 minutes in queue, match with anyone (ignore recent match rule)
+  if (opponentIndex === -1 && forceMatch && matchmakingQueue.length > 0) {
+    const waitTime = Date.now() - player.joinedAt;
+    if (waitTime >= PREVENT_REMATCH_DURATION) {
+      opponentIndex = matchmakingQueue.findIndex((p) => p.userId !== player.userId);
+    }
   }
 
   if (opponentIndex !== -1) {
@@ -212,6 +255,18 @@ function findMatch(player: MatchmakingPlayer, io: Server, forceMatch: boolean = 
       opponent: {
         username: player.username,
         rating: player.rating,
+      }
+    });
+
+    // Record this match to prevent immediate rematches
+    const now = Date.now();
+    recentMatches.set(player.userId, { opponentId: opponent.userId, timestamp: now });
+    recentMatches.set(opponent.userId, { opponentId: player.userId, timestamp: now });
+
+    // Clean up old entries (older than PREVENT_REMATCH_DURATION)
+    recentMatches.forEach((value, key) => {
+      if (now - value.timestamp > PREVENT_REMATCH_DURATION) {
+        recentMatches.delete(key);
       }
     });
 

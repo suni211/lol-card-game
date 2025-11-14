@@ -27,20 +27,17 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <Trophy className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
-              LOL Card Game
-            </span>
+          <Link to="/" className="flex items-center">
+            <img src="/logo.svg" alt="LOL Card Game" className="h-10" />
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center space-x-0.5">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   isActive(link.path)
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

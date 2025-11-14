@@ -43,24 +43,29 @@ export default function Match() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDeck();
-  }, []);
-
-  const fetchDeck = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/deck`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.data.success) {
-        setDeck(response.data.data);
+    const fetchDeck = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
       }
-    } catch (error: any) {
-      console.error('Failed to fetch deck:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      try {
+        const response = await axios.get(`${API_URL}/deck`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data.success) {
+          setDeck(response.data.data);
+        }
+      } catch (error: any) {
+        console.error('Failed to fetch deck:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDeck();
+  }, [token]);
 
   const calculateCardOVR = (card: UserCard | null, expectedPosition: string): number => {
     if (!card) return 0;

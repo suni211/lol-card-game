@@ -59,7 +59,6 @@ export default function Practice() {
         // Show result after animation
         setTimeout(() => {
           setSearching(false);
-          setShowResult(true);
 
           if (result.result === 'WIN') {
             toast.success(`승리! +${result.pointsGained}P`);
@@ -69,11 +68,14 @@ export default function Practice() {
 
           // Auto continue if auto-match is enabled
           if (isAuto && autoMatch) {
+            // Don't show modal, just continue
             setTimeout(() => {
-              setShowResult(false);
               setMatchResult(null);
               findMatch(true);
-            }, 1500);
+            }, 1000);
+          } else {
+            // Show result modal for manual matches
+            setShowResult(true);
           }
         }, 2000);
       }

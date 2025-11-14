@@ -4,6 +4,9 @@ import { Trophy, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,28 +23,23 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // TODO: API 연동
-      // const response = await axios.post('/api/auth/login', formData);
+      const response = await axios.post(`${API_URL}/auth/login`, formData);
 
-      // 임시 데이터
-      const mockUser = {
-        id: 1,
-        username: 'TestUser',
-        email: formData.email,
-        points: 1000,
-        tier: 'SILVER' as const,
-        rating: 1500,
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      const mockToken = 'mock-jwt-token';
-
-      login(mockUser, mockToken);
-      toast.success('로그인 성공!');
-      navigate('/');
-    } catch (error) {
-      toast.error('로그인 실패. 이메일과 비밀번호를 확인해주세요.');
+      if (response.data.success) {
+        const { user, token } = response.data.data;
+        login(user, token);
+        toast.success('로그인 성공!');
+        navigate('/');
+      } else {
+        toast.error(response.data.error || '로그인 실패');
+      }
+    } catch (error: any) {
+      console.error('로그인 오류:', error);
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('로그인 실패. 이메일과 비밀번호를 확인해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }

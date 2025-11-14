@@ -4,6 +4,9 @@ import { Trophy, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -34,28 +37,27 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      // TODO: API 연동
-      // const response = await axios.post('/api/auth/register', formData);
-
-      // 임시 데이터
-      const mockUser = {
-        id: 1,
+      const response = await axios.post(`${API_URL}/auth/register`, {
         username: formData.username,
         email: formData.email,
-        points: 1000, // 가입 보너스
-        tier: 'IRON' as const,
-        rating: 1000,
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-      };
+        password: formData.password,
+      });
 
-      const mockToken = 'mock-jwt-token';
-
-      login(mockUser, mockToken);
-      toast.success('회원가입 성공! 환영합니다!');
-      navigate('/');
-    } catch (error) {
-      toast.error('회원가입 실패. 다시 시도해주세요.');
+      if (response.data.success) {
+        const { user, token } = response.data.data;
+        login(user, token);
+        toast.success('회원가입 성공! 환영합니다!');
+        navigate('/');
+      } else {
+        toast.error(response.data.error || '회원가입 실패');
+      }
+    } catch (error: any) {
+      console.error('회원가입 오류:', error);
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('회원가입 실패. 다시 시도해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -30,7 +30,7 @@ CREATE TABLE players (
     team VARCHAR(50) NOT NULL,
     position ENUM('TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT') NOT NULL,
     overall INT NOT NULL CHECK (overall >= 50 AND overall <= 100),
-    region ENUM('LCK', 'LPL', 'LEC', 'LCS', 'PCS', 'VCS', 'CBLOL', 'LJL', 'LLA') NOT NULL,
+    region ENUM('LCK', 'LTA', 'LPL', 'LEC', 'LCP') NOT NULL,
     tier ENUM('COMMON', 'RARE', 'EPIC', 'LEGENDARY') NOT NULL,
     image_url VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

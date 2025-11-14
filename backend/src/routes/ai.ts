@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/database';
-import { authenticateToken } from '../middleware/auth';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -79,11 +79,11 @@ function calculatePointsReward(aiPower: number, playerPower: number, won: boolea
 }
 
 // Battle AI
-router.post('/battle', authenticateToken, async (req: Request, res: Response) => {
+router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();
 
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.id;
 
     await connection.beginTransaction();
 
@@ -191,11 +191,11 @@ router.post('/battle', authenticateToken, async (req: Request, res: Response) =>
 });
 
 // Get AI battle stats
-router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
+router.get('/stats', authMiddleware, async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();
 
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.id;
 
     // Get user stats
     const [stats]: any = await connection.query(

@@ -9,7 +9,7 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Gacha() {
-  const { user, updateUser } = useAuthStore();
+  const { user, token, updateUser } = useAuthStore();
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnCard, setDrawnCard] = useState<Player | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -111,7 +111,7 @@ export default function Gacha() {
         { type: gachaType },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );

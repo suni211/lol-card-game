@@ -232,42 +232,68 @@ export default function Missions() {
                           key={mission.id}
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 transition-all ${
-                            isCompleted
-                              ? 'border-green-500 dark:border-green-400'
-                              : 'border-gray-200 dark:border-gray-700'
+                          className={`rounded-xl shadow-lg border-2 transition-all ${
+                            mission.isCompleted
+                              ? 'bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 opacity-75'
+                              : isCompleted
+                              ? 'bg-white dark:bg-gray-800 border-green-500 dark:border-green-400'
+                              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                           }`}
                         >
                           <div className="p-6">
                             {/* Mission Header */}
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                                <h3 className={`text-lg font-bold mb-1 ${
+                                  mission.isCompleted
+                                    ? 'text-gray-500 dark:text-gray-400 line-through'
+                                    : 'text-gray-900 dark:text-white'
+                                }`}>
                                   {mission.title}
                                 </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <p className={`text-sm ${
+                                  mission.isCompleted
+                                    ? 'text-gray-400 dark:text-gray-500'
+                                    : 'text-gray-600 dark:text-gray-400'
+                                }`}>
                                   {mission.description}
                                 </p>
                               </div>
-                              {isCompleted && (
+                              {mission.isCompleted ? (
+                                <CheckCircle className="w-6 h-6 text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2" />
+                              ) : isCompleted ? (
                                 <CheckCircle className="w-6 h-6 text-green-500 dark:text-green-400 flex-shrink-0 ml-2" />
-                              )}
+                              ) : null}
                             </div>
 
                             {/* Progress Bar */}
                             <div className="mb-4">
                               <div className="flex items-center justify-between text-sm mb-2">
-                                <span className="text-gray-600 dark:text-gray-400">진행도</span>
-                                <span className="font-bold text-gray-900 dark:text-white">
+                                <span className={mission.isCompleted ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-400'}>
+                                  진행도
+                                </span>
+                                <span className={`font-bold ${
+                                  mission.isCompleted
+                                    ? 'text-gray-500 dark:text-gray-400'
+                                    : 'text-gray-900 dark:text-white'
+                                }`}>
                                   {mission.progress} / {mission.requirement}
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                              <div className={`w-full rounded-full h-3 overflow-hidden ${
+                                mission.isCompleted
+                                  ? 'bg-gray-400 dark:bg-gray-600'
+                                  : 'bg-gray-200 dark:bg-gray-700'
+                              }`}>
                                 <motion.div
                                   initial={{ width: 0 }}
                                   animate={{ width: `${progressPercent}%` }}
                                   transition={{ duration: 0.5, ease: 'easeOut' }}
-                                  className={`h-full bg-gradient-to-r ${getMissionTypeColor(mission.type)} rounded-full`}
+                                  className={`h-full rounded-full ${
+                                    mission.isCompleted
+                                      ? 'bg-gray-500 dark:bg-gray-500'
+                                      : `bg-gradient-to-r ${getMissionTypeColor(mission.type)}`
+                                  }`}
                                 />
                               </div>
                             </div>
@@ -276,12 +302,20 @@ export default function Missions() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1">
-                                  <Trophy className="w-4 h-4 text-yellow-500" />
-                                  <span className="font-bold text-gray-900 dark:text-white">
+                                  <Trophy className={`w-4 h-4 ${mission.isCompleted ? 'text-gray-400' : 'text-yellow-500'}`} />
+                                  <span className={`font-bold ${
+                                    mission.isCompleted
+                                      ? 'text-gray-500 dark:text-gray-400'
+                                      : 'text-gray-900 dark:text-white'
+                                  }`}>
                                     {mission.reward}P
                                   </span>
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                <div className={`text-xs ${
+                                  mission.isCompleted
+                                    ? 'text-gray-400 dark:text-gray-500'
+                                    : 'text-gray-500 dark:text-gray-400'
+                                }`}>
                                   {getTimeRemaining(mission.expiresAt)}
                                 </div>
                               </div>

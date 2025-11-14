@@ -14,6 +14,7 @@ export default function Gacha() {
   const [drawnCard, setDrawnCard] = useState<Player | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [dailyFreeUsed, setDailyFreeUsed] = useState(false);
+  const [revealStep, setRevealStep] = useState(0); // 0: loading, 1: position, 2: season, 3: team, 4: final
 
   const gachaOptions: GachaOption[] = [
     {
@@ -131,9 +132,14 @@ export default function Gacha() {
       if (response.data.success) {
         const { player, isDuplicate, refundPoints } = response.data.data;
 
-        // 애니메이션 시뮬레이션
+        setDrawnCard(player);
+
+        // Reveal animation sequence: position -> season -> team -> final
+        setTimeout(() => setRevealStep(1), 500);   // Position
+        setTimeout(() => setRevealStep(2), 1500);  // Season
+        setTimeout(() => setRevealStep(3), 2500);  // Team
         setTimeout(() => {
-          setDrawnCard(player);
+          setRevealStep(4);  // Final card
           setIsDrawing(false);
           setShowResult(true);
 
@@ -158,7 +164,10 @@ export default function Gacha() {
           if (option.cost === 0) {
             setDailyFreeUsed(true);
           }
-        }, 3000);
+
+          // Reset reveal step
+          setRevealStep(0);
+        }, 3500);
       }
     } catch (error: any) {
       setIsDrawing(false);
@@ -175,6 +184,24 @@ export default function Gacha() {
   const closeResult = () => {
     setShowResult(false);
     setDrawnCard(null);
+    setRevealStep(0);
+  };
+
+  const getPositionColor = (position: string) => {
+    switch (position) {
+      case 'TOP':
+        return 'bg-red-500';
+      case 'JUNGLE':
+        return 'bg-green-500';
+      case 'MID':
+        return 'bg-blue-500';
+      case 'ADC':
+        return 'bg-yellow-500';
+      case 'SUPPORT':
+        return 'bg-purple-500';
+      default:
+        return 'bg-gray-500';
+    }
   };
 
   return (
@@ -313,24 +340,105 @@ export default function Gacha() {
 
       {/* Drawing Animation Modal */}
       <AnimatePresence>
-        {isDrawing && (
+        {isDrawing && drawnCard && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
-            <motion.div
-              initial={{ scale: 0.8, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative"
-            >
-              <div className="w-48 h-64 bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 rounded-xl shadow-2xl animate-card-glow"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="w-24 h-24 text-white animate-spin" />
-              </div>
-            </motion.div>
+            <div className="text-center">
+              {/* Step 0: Loading */}
+              {revealStep === 0 && (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="relative"
+                >
+                  <div className="w-48 h-64 bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 rounded-xl shadow-2xl"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles className="w-24 h-24 text-white animate-spin" />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 1: Position Reveal */}
+              {revealStep === 1 && (
+                <motion.div
+                  key="position"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="text-center"
+                >
+                  <div className={`inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-12 py-8 shadow-2xl`}>
+                    <div className="text-white text-6xl font-bold mb-2">
+                      {drawnCard.position}
+                    </div>
+                    <div className="text-white/80 text-xl">포지션</div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Season Reveal */}
+              {revealStep === 2 && (
+                <motion.div
+                  key="season"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="text-center"
+                >
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl px-12 py-8 shadow-2xl">
+                    <div className="text-white text-6xl font-bold mb-2">
+                      {drawnCard.season || '시즌 정보 없음'}
+                    </div>
+                    <div className="text-white/80 text-xl">시즌</div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Team Reveal */}
+              {revealStep === 3 && (
+                <motion.div
+                  key="team"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="text-center"
+                >
+                  <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl px-12 py-8 shadow-2xl">
+                    <div className="text-white text-6xl font-bold mb-2">
+                      {drawnCard.team}
+                    </div>
+                    <div className="text-white/80 text-xl">소속팀</div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 4: Final Card Reveal (will transition to showResult) */}
+              {revealStep === 4 && (
+                <motion.div
+                  key="final"
+                  initial={{ opacity: 0, scale: 0.5, rotateY: -180 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  transition={{ type: 'spring', damping: 15 }}
+                  className="relative"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 rounded-2xl blur-2xl opacity-75 animate-pulse"></div>
+                  <div className={`relative w-48 h-64 bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl shadow-2xl p-1`}>
+                    <div className="w-full h-full bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                      <div className="text-center">
+                        <div className={`text-5xl font-bold bg-gradient-to-r ${getTierColor(drawnCard.tier)} bg-clip-text text-transparent`}>
+                          {drawnCard.name}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

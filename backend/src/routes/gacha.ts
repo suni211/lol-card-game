@@ -10,7 +10,7 @@ const GACHA_OPTIONS = {
   basic: { cost: 100, probabilities: { legendary: 0.3, epic: 2, rare: 20, common: 77.7 } },
   premium: { cost: 300, probabilities: { legendary: 1, epic: 5, rare: 30, common: 64 } },
   ultra: { cost: 500, probabilities: { legendary: 3, epic: 10, rare: 35, common: 52 } },
-  worlds_winner: { cost: 2500, probabilities: { legendary: 40, epic: 30, rare: 30, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards
+  worlds_winner: { cost: 2500, probabilities: { legendary: 15, epic: 40, rare: 45, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards
 };
 
 function selectTierByProbability(probabilities: any): string {

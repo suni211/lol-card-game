@@ -157,89 +157,65 @@ async function simulateMatch(
   let p1TotalScore = 0;
   let p2TotalScore = 0;
 
-  // Phase 1: Early Game (Laning) - 0-10 seconds
-  const laningAdvantage = calculateStrategyAdvantage(
-    p1Strategies.laning_strategy,
-    p2Strategies.laning_strategy,
-    'LANING'
-  );
-  const laningRandom = 0.85 + Math.random() * 0.3; // 85%-115%
-  const p1LaningPower = p1Power * laningAdvantage * laningRandom;
-  const p2LaningPower = p2Power * (2 - laningAdvantage) * laningRandom;
+  // Best of 5 (5판 3선승제)
+  // Play up to 5 games, first to win 3 games wins the match
+  for (let gameNum = 1; gameNum <= 5; gameNum++) {
+    // Stop if someone already won 3 games
+    if (p1TotalScore >= 3 || p2TotalScore >= 3) break;
 
-  const laningWinner = p1LaningPower > p2LaningPower ? 1 : 2;
-  const laningScoreDiff = Math.max(1, Math.floor(Math.abs(p1LaningPower - p2LaningPower) / 50));
+    // Determine which strategy to use for this game
+    let strategyType: 'LANING' | 'TEAMFIGHT' | 'MACRO';
+    let strategyName: string;
+    let p1Strategy: string;
+    let p2Strategy: string;
 
-  if (laningWinner === 1) {
-    p1TotalScore += laningScoreDiff;
-  } else {
-    p2TotalScore += laningScoreDiff;
+    if (gameNum % 3 === 1) {
+      strategyType = 'LANING';
+      strategyName = '라인전';
+      p1Strategy = p1Strategies.laning_strategy;
+      p2Strategy = p2Strategies.laning_strategy;
+    } else if (gameNum % 3 === 2) {
+      strategyType = 'TEAMFIGHT';
+      strategyName = '한타';
+      p1Strategy = p1Strategies.teamfight_strategy;
+      p2Strategy = p2Strategies.teamfight_strategy;
+    } else {
+      strategyType = 'MACRO';
+      strategyName = '운영';
+      p1Strategy = p1Strategies.macro_strategy;
+      p2Strategy = p2Strategies.macro_strategy;
+    }
+
+    // Calculate advantage for this game
+    const advantage = calculateStrategyAdvantage(p1Strategy, p2Strategy, strategyType);
+    const randomFactor = 0.85 + Math.random() * 0.3; // 85%-115%
+
+    // Add momentum bonus if ahead
+    const p1MomentumBonus = p1TotalScore > p2TotalScore ? 1.05 : 1.0;
+    const p2MomentumBonus = p2TotalScore > p1TotalScore ? 1.05 : 1.0;
+
+    const p1GamePower = p1Power * advantage * randomFactor * p1MomentumBonus;
+    const p2GamePower = p2Power * (2 - advantage) * randomFactor * p2MomentumBonus;
+
+    const gameWinner = p1GamePower > p2GamePower ? 1 : 2;
+
+    // Winner gets 1 point
+    if (gameWinner === 1) {
+      p1TotalScore += 1;
+    } else {
+      p2TotalScore += 1;
+    }
+
+    phases.push({
+      phase: strategyType,
+      name: `${gameNum}게임 - ${strategyName}`,
+      winner: gameWinner,
+      score: { player1: p1TotalScore, player2: p2TotalScore },
+      advantage: gameWinner === 1 ? 'player1' : 'player2',
+      strategyWon: advantage !== 1.0,
+      gameNumber: gameNum,
+    });
   }
-
-  phases.push({
-    phase: 'LANING',
-    name: '라인전',
-    winner: laningWinner,
-    score: { player1: p1TotalScore, player2: p2TotalScore },
-    advantage: laningWinner === 1 ? 'player1' : 'player2',
-    strategyWon: laningAdvantage !== 1.0,
-  });
-
-  // Phase 2: Mid Game (Teamfight) - 10-20 seconds
-  const teamfightAdvantage = calculateStrategyAdvantage(
-    p1Strategies.teamfight_strategy,
-    p2Strategies.teamfight_strategy,
-    'TEAMFIGHT'
-  );
-  const teamfightRandom = 0.85 + Math.random() * 0.3;
-  const p1TeamfightPower = p1Power * teamfightAdvantage * teamfightRandom * (p1TotalScore > p2TotalScore ? 1.1 : 0.95);
-  const p2TeamfightPower = p2Power * (2 - teamfightAdvantage) * teamfightRandom * (p2TotalScore > p1TotalScore ? 1.1 : 0.95);
-
-  const teamfightWinner = p1TeamfightPower > p2TeamfightPower ? 1 : 2;
-  const teamfightScoreDiff = Math.max(1, Math.floor(Math.abs(p1TeamfightPower - p2TeamfightPower) / 45));
-
-  if (teamfightWinner === 1) {
-    p1TotalScore += teamfightScoreDiff;
-  } else {
-    p2TotalScore += teamfightScoreDiff;
-  }
-
-  phases.push({
-    phase: 'TEAMFIGHT',
-    name: '한타',
-    winner: teamfightWinner,
-    score: { player1: p1TotalScore, player2: p2TotalScore },
-    advantage: teamfightWinner === 1 ? 'player1' : 'player2',
-    strategyWon: teamfightAdvantage !== 1.0,
-  });
-
-  // Phase 3: Late Game (Macro) - 20-30 seconds
-  const macroAdvantage = calculateStrategyAdvantage(
-    p1Strategies.macro_strategy,
-    p2Strategies.macro_strategy,
-    'MACRO'
-  );
-  const macroRandom = 0.85 + Math.random() * 0.3;
-  const p1MacroPower = p1Power * macroAdvantage * macroRandom * (p1TotalScore > p2TotalScore ? 1.15 : 0.9);
-  const p2MacroPower = p2Power * (2 - macroAdvantage) * macroRandom * (p2TotalScore > p1TotalScore ? 1.15 : 0.9);
-
-  const macroWinner = p1MacroPower > p2MacroPower ? 1 : 2;
-  const macroScoreDiff = Math.max(1, Math.floor(Math.abs(p1MacroPower - p2MacroPower) / 40));
-
-  if (macroWinner === 1) {
-    p1TotalScore += macroScoreDiff;
-  } else {
-    p2TotalScore += macroScoreDiff;
-  }
-
-  phases.push({
-    phase: 'MACRO',
-    name: '운영',
-    winner: macroWinner,
-    score: { player1: p1TotalScore, player2: p2TotalScore },
-    advantage: macroWinner === 1 ? 'player1' : 'player2',
-    strategyWon: macroAdvantage !== 1.0,
-  });
 
   return {
     phases,

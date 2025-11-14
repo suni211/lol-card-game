@@ -169,14 +169,18 @@ export default function Match() {
         setSimulatedPhases([]);
         setCurrentPhase(0);
 
-        // Simulate phases over 30 seconds (10 seconds per phase)
-        for (let i = 0; i < result.phases.length; i++) {
+        // Calculate time per game (6 seconds each for best-of-5)
+        const timePerGame = 6000; // 6 seconds per game
+        const totalGames = result.phases.length;
+
+        // Simulate phases (each game takes 6 seconds)
+        for (let i = 0; i < totalGames; i++) {
           setTimeout(() => {
             setSimulatedPhases(prev => [...prev, result.phases[i]]);
             setCurrentPhase(i + 1);
 
             // After last phase, show final result
-            if (i === result.phases.length - 1) {
+            if (i === totalGames - 1) {
               setTimeout(() => {
                 setIsSimulating(false);
                 setMatchResult(result);
@@ -187,9 +191,9 @@ export default function Match() {
                 } else {
                   toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
                 }
-              }, 3000); // 3 second pause before showing result
+              }, 2000); // 2 second pause before showing result
             }
-          }, i * 10000); // 10 seconds per phase
+          }, i * timePerGame); // 6 seconds per game
         }
       } else {
         // No phases, show result immediately
@@ -404,31 +408,29 @@ export default function Match() {
                   </p>
                 </div>
 
-                {/* Phase Progress */}
+                {/* Game Progress (Bo5) */}
                 <div className="mb-8">
-                  <div className="flex items-center justify-center gap-4 mb-4">
-                    {['라인전', '한타', '운영'].map((_, idx) => (
-                      <div key={idx} className="flex items-center">
-                        <div
-                          className={`flex items-center justify-center w-12 h-12 rounded-full font-bold ${
-                            idx < currentPhase
-                              ? 'bg-green-500 text-white'
-                              : idx === currentPhase
-                              ? 'bg-blue-500 text-white animate-pulse'
-                              : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
-                          }`}
-                        >
-                          {idx + 1}
-                        </div>
-                        {idx < 2 && (
-                          <div
-                            className={`w-16 h-1 mx-2 ${
-                              idx < currentPhase - 1
-                                ? 'bg-green-500'
-                                : 'bg-gray-300 dark:bg-gray-600'
-                            }`}
-                          ></div>
-                        )}
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      5판 3선승
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      진행중: {currentPhase} / {simulatedPhases.length > 0 ? simulatedPhases[simulatedPhases.length - 1].gameNumber : '?'}게임
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+                    {[1, 2, 3, 4, 5].map((gameNum) => (
+                      <div
+                        key={gameNum}
+                        className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${
+                          gameNum < currentPhase
+                            ? 'bg-green-500 text-white'
+                            : gameNum === currentPhase
+                            ? 'bg-blue-500 text-white animate-pulse'
+                            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
+                        }`}
+                      >
+                        {gameNum}
                       </div>
                     ))}
                   </div>

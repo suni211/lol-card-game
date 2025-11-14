@@ -17,6 +17,7 @@ import tradeRoutes from './routes/trade';
 import noticesRoutes from './routes/notices';
 import profileRoutes from './routes/profile';
 import aiRoutes from './routes/ai';
+import suggestionsRoutes from './routes/suggestions';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -71,6 +72,7 @@ app.use('/api/trade', tradeRoutes);
 app.use('/api/notices', noticesRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/suggestions', suggestionsRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

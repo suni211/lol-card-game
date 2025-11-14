@@ -192,8 +192,22 @@ export interface Notice {
   id: number;
   title: string;
   content: string;
-  type: 'NOTICE' | 'PATCH' | 'EVENT' | 'MAINTENANCE';
+  type: 'NOTICE' | 'PATCH' | 'EVENT' | 'MAINTENANCE' | 'UPDATE';
   isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Suggestion Types
+export interface Suggestion {
+  id: number;
+  userId: number;
+  username: string;
+  title: string;
+  content: string;
+  category: 'BUG' | 'FEATURE' | 'BALANCE' | 'UI' | 'OTHER';
+  status: 'PENDING' | 'REVIEWING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED';
+  adminReply?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -20,6 +20,7 @@ import Ranking from './pages/Ranking';
 import Missions from './pages/Missions';
 import Trade from './pages/Trade';
 import Notices from './pages/Notices';
+import Suggestions from './pages/Suggestions';
 import Profile from './pages/Profile';
 
 // Protected Route Component
@@ -153,6 +154,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suggestions"
+            element={
+              <ProtectedRoute>
+                <Suggestions />
               </ProtectedRoute>
             }
           />

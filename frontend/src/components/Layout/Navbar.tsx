@@ -22,6 +22,7 @@ export default function Navbar() {
     { path: '/missions', label: '미션' },
     { path: '/trade', label: '트레이드' },
     { path: '/notices', label: '공지사항' },
+    { path: '/suggestions', label: '건의사항' },
   ];
 
   return (

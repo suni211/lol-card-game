@@ -242,12 +242,25 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
   }
 }
 
-// Broadcast queue size to all players in queue
+// Broadcast queue size to all players in queue (debounced)
+const queueBroadcastTimers = new Map<string, NodeJS.Timeout>();
+
 function broadcastQueueSize(io: Server, queue: MatchmakingPlayer[], eventName: string = 'queue_update') {
-  const queueSize = queue.length;
-  queue.forEach(player => {
-    io.to(player.socketId).emit(eventName, { playersInQueue: queueSize });
-  });
+  // Clear existing timer for this queue
+  if (queueBroadcastTimers.has(eventName)) {
+    clearTimeout(queueBroadcastTimers.get(eventName)!);
+  }
+
+  // Debounce: only broadcast once every 2 seconds
+  const timer = setTimeout(() => {
+    const queueSize = queue.length;
+    queue.forEach(player => {
+      io.to(player.socketId).emit(eventName, { playersInQueue: queueSize });
+    });
+    queueBroadcastTimers.delete(eventName);
+  }, 2000);
+
+  queueBroadcastTimers.set(eventName, timer);
 }
 
 // Check if two players recently played against each other
@@ -402,18 +415,30 @@ export function setupMatchmaking(io: Server) {
 
         const isPractice = data.isPractice === true;
 
-        // Get user info
-        const [users]: any = await pool.query(
-          'SELECT id, username, rating, tier_suspended_until FROM users WHERE id = ?',
-          [decoded.id]
-        );
+        // Get user info and active deck in ONE query (최적화)
+        const [results]: any = await pool.query(`
+          SELECT
+            u.id,
+            u.username,
+            u.rating,
+            u.tier_suspended_until,
+            d.id as deck_id
+          FROM users u
+          LEFT JOIN decks d ON u.id = d.user_id AND d.is_active = TRUE
+          WHERE u.id = ?
+        `, [decoded.id]);
 
-        if (users.length === 0) {
+        if (results.length === 0) {
           socket.emit('queue_error', { error: 'User not found' });
           return;
         }
 
-        const user = users[0];
+        const user = results[0];
+
+        if (!user.deck_id) {
+          socket.emit('queue_error', { error: 'No active deck found' });
+          return;
+        }
 
         // Check if user is suspended (only for ranked)
         if (!isPractice && user.tier_suspended_until) {
@@ -433,24 +458,13 @@ export function setupMatchmaking(io: Server) {
         // Calculate tier based on rating
         const userTier = calculateTier(user.rating);
 
-        // Get active deck
-        const [decks]: any = await pool.query(
-          'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',
-          [user.id]
-        );
-
-        if (decks.length === 0) {
-          socket.emit('queue_error', { error: 'No active deck found' });
-          return;
-        }
-
         const player: MatchmakingPlayer = {
           socketId: socket.id,
           userId: user.id,
           username: user.username,
           rating: user.rating,
           tier: userTier,
-          deckId: decks[0].id,
+          deckId: user.deck_id,
           joinedAt: Date.now(),
         };
 

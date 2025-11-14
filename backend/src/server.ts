@@ -14,7 +14,7 @@ import matchRoutes from './routes/match';
 import rankingRoutes from './routes/ranking';
 import missionsRoutes from './routes/missions';
 import tradeRoutes from './routes/trade';
-import noticesRoutes from './routes/notices';
+import noticesRoutes, { setSocketIO } from './routes/notices';
 import profileRoutes from './routes/profile';
 import aiRoutes from './routes/ai';
 import suggestionsRoutes from './routes/suggestions';
@@ -94,6 +94,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Setup matchmaking
 setupMatchmaking(io);
 
+// Setup socket.io for notices
+setSocketIO(io);
+
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`
@@ -109,3 +112,4 @@ httpServer.listen(PORT, () => {
 });
 
 export default app;
+export { io };

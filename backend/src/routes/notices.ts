@@ -4,6 +4,12 @@ import { authMiddleware, adminMiddleware, AuthRequest } from '../middleware/auth
 
 const router = express.Router();
 
+// Import io for broadcasting
+let io: any;
+export const setSocketIO = (socketIO: any) => {
+  io = socketIO;
+};
+
 // Get all notices
 router.get('/', async (req, res) => {
   try {
@@ -49,7 +55,21 @@ router.post('/', authMiddleware, adminMiddleware, async (req: AuthRequest, res) 
       VALUES (?, ?, ?, ?)
     `, [title, content, type || 'NOTICE', isPinned || false]);
 
-    res.status(201).json({ success: true, data: { id: result.insertId } });
+    const noticeId = result.insertId;
+
+    // Broadcast new notice to all connected clients
+    if (io) {
+      io.emit('new_notice', {
+        id: noticeId,
+        title,
+        content,
+        type: type || 'NOTICE',
+        isPinned: isPinned || false,
+      });
+      console.log('Broadcasted new notice to all clients:', title);
+    }
+
+    res.status(201).json({ success: true, data: { id: noticeId } });
   } catch (error: any) {
     console.error('Create notice error:', error);
     res.status(500).json({ success: false, error: 'Server error' });

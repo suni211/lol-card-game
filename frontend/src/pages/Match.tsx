@@ -49,6 +49,7 @@ export default function Match() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentPhase, setCurrentPhase] = useState(0);
   const [simulatedPhases, setSimulatedPhases] = useState<any[]>([]);
+  const [tempResult, setTempResult] = useState<any>(null); // Store result during simulation
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -168,6 +169,7 @@ export default function Match() {
         setIsSimulating(true);
         setSimulatedPhases([]);
         setCurrentPhase(0);
+        setTempResult(result); // Store result for use during simulation
 
         // Calculate time per game (6 seconds each for best-of-5)
         const timePerGame = 6000; // 6 seconds per game
@@ -184,6 +186,7 @@ export default function Match() {
               setTimeout(() => {
                 setIsSimulating(false);
                 setMatchResult(result);
+                setTempResult(null);
                 setMatching(false);
 
                 if (result.won) {
@@ -441,13 +444,13 @@ export default function Match() {
                   <div className="space-y-4">
                     {simulatedPhases.map((phase, idx) => {
                       // Determine if I won this game
-                      // phase.winner is 1 or 2 (from backend perspective)
-                      // matchResult.won tells us if WE (the viewer) won overall
-                      // If we won overall and final score is higher, we are player1
-                      // If we lost overall and final score is lower, we are player2
-                      const amIPlayer1 = matchResult.won ?
-                        (matchResult.myScore > matchResult.opponentScore) :
-                        (matchResult.myScore < matchResult.opponentScore);
+                      // Use tempResult during simulation, matchResult after
+                      const result = tempResult || matchResult;
+                      if (!result) return null;
+
+                      const amIPlayer1 = result.won ?
+                        (result.myScore > result.opponentScore) :
+                        (result.myScore < result.opponentScore);
 
                       const iWonThisGame = amIPlayer1 ? (phase.winner === 1) : (phase.winner === 2);
 
@@ -483,11 +486,11 @@ export default function Match() {
 
                           <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-900 dark:text-white">
                             <span className={iWonThisGame ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
-                              {matchResult.myScore}
+                              {result.myScore}
                             </span>
                             <span className="text-gray-400">-</span>
                             <span className={!iWonThisGame ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
-                              {matchResult.opponentScore}
+                              {result.opponentScore}
                             </span>
                           </div>
 

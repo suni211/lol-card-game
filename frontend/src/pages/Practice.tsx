@@ -24,8 +24,10 @@ export default function Practice() {
   const [searching, setSearching] = useState(false);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [autoMatch, setAutoMatch] = useState(false);
+  const [matchCount, setMatchCount] = useState(0);
 
-  const findMatch = async () => {
+  const findMatch = async (isAuto = false) => {
     if (!user || !token) {
       toast.error('로그인이 필요합니다!');
       return;
@@ -51,6 +53,9 @@ export default function Practice() {
         // Update user points
         updateUser({ points: user.points + result.pointsGained });
 
+        // Increment match count
+        setMatchCount(prev => prev + 1);
+
         // Show result after animation
         setTimeout(() => {
           setSearching(false);
@@ -61,12 +66,34 @@ export default function Practice() {
           } else {
             toast(`패배... +${result.pointsGained}P`, { icon: '😢' });
           }
+
+          // Auto continue if auto-match is enabled
+          if (isAuto && autoMatch) {
+            setTimeout(() => {
+              setShowResult(false);
+              setMatchResult(null);
+              findMatch(true);
+            }, 1500);
+          }
         }, 2000);
       }
     } catch (error: any) {
       setSearching(false);
+      setAutoMatch(false); // Stop auto-match on error
       console.error('Practice match error:', error);
       toast.error(error.response?.data?.error || '매치 찾기 실패');
+    }
+  };
+
+  const toggleAutoMatch = () => {
+    if (!autoMatch) {
+      // Start auto-match
+      setAutoMatch(true);
+      setMatchCount(0);
+      findMatch(true);
+    } else {
+      // Stop auto-match
+      setAutoMatch(false);
     }
   };
 
@@ -141,17 +168,38 @@ export default function Practice() {
               <p className="text-gray-600 dark:text-gray-400">
                 상대를 찾아 일반전을 시작하세요
               </p>
+              {autoMatch && (
+                <div className="mt-4 px-4 py-2 bg-green-100 dark:bg-green-900/20 border border-green-500 rounded-lg">
+                  <p className="text-green-700 dark:text-green-400 font-semibold">
+                    🔄 자동 매칭 중... ({matchCount}경기 완료)
+                  </p>
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={findMatch}
-              disabled={searching}
-              className="w-full max-w-md py-4 px-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg"
-            >
-              {searching ? '매칭 중...' : '일반전 시작'}
-            </button>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => findMatch(false)}
+                disabled={searching || autoMatch}
+                className="w-full max-w-md py-4 px-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg"
+              >
+                {searching ? '매칭 중...' : '일반전 시작'}
+              </button>
 
-            {searching && (
+              <button
+                onClick={toggleAutoMatch}
+                disabled={searching && !autoMatch}
+                className={`w-full max-w-md py-4 px-8 font-bold text-lg rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg ${
+                  autoMatch
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                }`}
+              >
+                {autoMatch ? '🛑 자동 매칭 중지' : '🔄 자동 매칭 시작'}
+              </button>
+            </div>
+
+            {searching && !autoMatch && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

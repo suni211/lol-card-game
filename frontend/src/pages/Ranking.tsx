@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Medal, TrendingUp, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, Medal, TrendingUp, Award, X, Eye } from 'lucide-react';
 import axios from 'axios';
+import { useAuthStore } from '../store/authStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -16,9 +17,52 @@ interface RankingUser {
   winRate: number;
 }
 
+interface PlayerCard {
+  user_card_id: number;
+  player_id: number;
+  name: string;
+  team: string;
+  position: string;
+  overall: number;
+  region: string;
+  tier: string;
+  level: number;
+}
+
+interface UserProfile {
+  user: {
+    id: number;
+    username: string;
+    tier: string;
+    rating: number;
+  };
+  stats: {
+    total_matches: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+    totalCards: number;
+    legendaryCards: number;
+  };
+  activeDeck: {
+    id: number;
+    name: string;
+    cards: {
+      top: PlayerCard | null;
+      jungle: PlayerCard | null;
+      mid: PlayerCard | null;
+      adc: PlayerCard | null;
+      support: PlayerCard | null;
+    };
+  } | null;
+}
+
 export default function Ranking() {
   const [rankings, setRankings] = useState<RankingUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const { token } = useAuthStore();
 
   useEffect(() => {
     fetchRankings();
@@ -34,6 +78,35 @@ export default function Ranking() {
       console.error('Failed to fetch rankings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserProfile = async (userId: number) => {
+    setLoadingProfile(true);
+    try {
+      const response = await axios.get(`${API_URL}/profile/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setSelectedUser(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const getCardTierColor = (tier: string) => {
+    switch (tier) {
+      case 'LEGENDARY':
+        return 'from-yellow-400 to-orange-500';
+      case 'EPIC':
+        return 'from-purple-400 to-pink-500';
+      case 'RARE':
+        return 'from-blue-400 to-cyan-500';
+      default:
+        return 'from-gray-400 to-gray-500';
     }
   };
 
@@ -146,6 +219,9 @@ export default function Ranking() {
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       승률
                     </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      액션
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -203,6 +279,17 @@ export default function Ranking() {
                           {user.winRate}%
                         </div>
                       </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => fetchUserProfile(user.userId)}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>덱 보기</span>
+                        </button>
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -210,6 +297,146 @@ export default function Ranking() {
             </div>
           </motion.div>
         )}
+
+        {/* User Profile Modal */}
+        <AnimatePresence>
+          {selectedUser && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedUser(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              >
+                {loadingProfile ? (
+                  <div className="p-8 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600 dark:text-gray-400">로딩 중...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-primary-600 to-purple-600 p-6 rounded-t-xl relative">
+                      <button
+                        onClick={() => setSelectedUser(null)}
+                        className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                      >
+                        <X className="w-5 h-5 text-white" />
+                      </button>
+
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center border-4 border-white/30">
+                          <span className="text-3xl font-bold text-white">
+                            {selectedUser.user.username[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold text-white mb-1">
+                            {selectedUser.user.username}
+                          </h2>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getTierColor(selectedUser.user.tier)}`}>
+                              {selectedUser.user.tier}
+                            </span>
+                            <span className="text-white/90 text-sm">
+                              레이팅: {selectedUser.user.rating}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-4 gap-3 mt-4">
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{selectedUser.stats.wins}</div>
+                          <div className="text-xs text-white/80">승</div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{selectedUser.stats.losses}</div>
+                          <div className="text-xs text-white/80">패</div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{selectedUser.stats.winRate}%</div>
+                          <div className="text-xs text-white/80">승률</div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{selectedUser.stats.totalCards}</div>
+                          <div className="text-xs text-white/80">보유 카드</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Deck */}
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                        활성 덱
+                      </h3>
+
+                      {selectedUser.activeDeck ? (
+                        <div>
+                          <div className="mb-4">
+                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {selectedUser.activeDeck.name}
+                            </h4>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            {['top', 'jungle', 'mid', 'adc', 'support'].map((position) => {
+                              const card = selectedUser.activeDeck!.cards[position as keyof typeof selectedUser.activeDeck.cards];
+
+                              return (
+                                <div key={position} className="text-center">
+                                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
+                                    {position}
+                                  </div>
+                                  {card ? (
+                                    <div className={`bg-gradient-to-br ${getCardTierColor(card.tier)} p-0.5 rounded-lg`}>
+                                      <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
+                                        <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                                          {card.name}
+                                        </div>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                          {card.team}
+                                        </div>
+                                        <div className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                                          {card.overall}
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                          Lv. {card.level}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 h-32 flex items-center justify-center">
+                                      <span className="text-xs text-gray-400">빈 슬롯</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <p className="text-gray-600 dark:text-gray-400">
+                            활성화된 덱이 없습니다.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

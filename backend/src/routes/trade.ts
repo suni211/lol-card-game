@@ -87,9 +87,29 @@ router.get('/received', authMiddleware, async (req: AuthRequest, res) => {
         t.created_at,
         u.username as sender_username,
         u.tier as sender_tier,
-        u.rating as sender_rating
+        u.rating as sender_rating,
+        p1.id as sender_player_id,
+        p1.name as sender_player_name,
+        p1.team as sender_player_team,
+        p1.position as sender_player_position,
+        p1.overall as sender_player_overall,
+        p1.region as sender_player_region,
+        p1.tier as sender_player_tier,
+        uc1.level as sender_card_level,
+        p2.id as receiver_player_id,
+        p2.name as receiver_player_name,
+        p2.team as receiver_player_team,
+        p2.position as receiver_player_position,
+        p2.overall as receiver_player_overall,
+        p2.region as receiver_player_region,
+        p2.tier as receiver_player_tier,
+        uc2.level as receiver_card_level
       FROM trades t
       JOIN users u ON t.sender_id = u.id
+      JOIN user_cards uc1 ON t.sender_card_id = uc1.id
+      JOIN players p1 ON uc1.player_id = p1.id
+      JOIN user_cards uc2 ON t.receiver_card_id = uc2.id
+      JOIN players p2 ON uc2.player_id = p2.id
       WHERE t.receiver_id = ? AND t.status = 'PENDING'
       ORDER BY t.created_at DESC
     `, [userId]);
@@ -97,6 +117,103 @@ router.get('/received', authMiddleware, async (req: AuthRequest, res) => {
     res.json({ success: true, data: trades });
   } catch (error: any) {
     console.error('Get received trades error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Get sent trades
+router.get('/sent', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [trades]: any = await pool.query(`
+      SELECT
+        t.id,
+        t.receiver_id,
+        t.sender_card_id,
+        t.receiver_card_id,
+        t.status,
+        t.created_at,
+        u.username as receiver_username,
+        u.tier as receiver_tier,
+        u.rating as receiver_rating,
+        p1.id as sender_player_id,
+        p1.name as sender_player_name,
+        p1.team as sender_player_team,
+        p1.position as sender_player_position,
+        p1.overall as sender_player_overall,
+        p1.region as sender_player_region,
+        p1.tier as sender_player_tier,
+        uc1.level as sender_card_level,
+        p2.id as receiver_player_id,
+        p2.name as receiver_player_name,
+        p2.team as receiver_player_team,
+        p2.position as receiver_player_position,
+        p2.overall as receiver_player_overall,
+        p2.region as receiver_player_region,
+        p2.tier as receiver_player_tier,
+        uc2.level as receiver_card_level
+      FROM trades t
+      JOIN users u ON t.receiver_id = u.id
+      JOIN user_cards uc1 ON t.sender_card_id = uc1.id
+      JOIN players p1 ON uc1.player_id = p1.id
+      JOIN user_cards uc2 ON t.receiver_card_id = uc2.id
+      JOIN players p2 ON uc2.player_id = p2.id
+      WHERE t.sender_id = ? AND t.status = 'PENDING'
+      ORDER BY t.created_at DESC
+    `, [userId]);
+
+    res.json({ success: true, data: trades });
+  } catch (error: any) {
+    console.error('Get sent trades error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Get trade history
+router.get('/history', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [trades]: any = await pool.query(`
+      SELECT
+        t.id,
+        t.sender_id,
+        t.receiver_id,
+        t.sender_card_id,
+        t.receiver_card_id,
+        t.status,
+        t.created_at,
+        t.updated_at,
+        u1.username as sender_username,
+        u2.username as receiver_username,
+        p1.id as sender_player_id,
+        p1.name as sender_player_name,
+        p1.team as sender_player_team,
+        p1.position as sender_player_position,
+        p1.overall as sender_player_overall,
+        p1.tier as sender_player_tier,
+        p2.id as receiver_player_id,
+        p2.name as receiver_player_name,
+        p2.team as receiver_player_team,
+        p2.position as receiver_player_position,
+        p2.overall as receiver_player_overall,
+        p2.tier as receiver_player_tier
+      FROM trades t
+      JOIN users u1 ON t.sender_id = u1.id
+      JOIN users u2 ON t.receiver_id = u2.id
+      JOIN user_cards uc1 ON t.sender_card_id = uc1.id
+      JOIN players p1 ON uc1.player_id = p1.id
+      JOIN user_cards uc2 ON t.receiver_card_id = uc2.id
+      JOIN players p2 ON uc2.player_id = p2.id
+      WHERE (t.sender_id = ? OR t.receiver_id = ?) AND t.status IN ('ACCEPTED', 'REJECTED', 'CANCELLED')
+      ORDER BY t.updated_at DESC
+      LIMIT 50
+    `, [userId, userId]);
+
+    res.json({ success: true, data: trades });
+  } catch (error: any) {
+    console.error('Get trade history error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });
@@ -171,6 +288,28 @@ router.post('/:tradeId/reject', authMiddleware, async (req: AuthRequest, res) =>
     res.json({ success: true, message: 'Trade rejected' });
   } catch (error: any) {
     console.error('Reject trade error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Cancel trade (sender only)
+router.post('/:tradeId/cancel', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const tradeId = parseInt(req.params.tradeId);
+
+    const [result]: any = await pool.query(
+      'UPDATE trades SET status = "CANCELLED" WHERE id = ? AND sender_id = ? AND status = "PENDING"',
+      [tradeId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: 'Trade not found or already processed' });
+    }
+
+    res.json({ success: true, message: 'Trade cancelled' });
+  } catch (error: any) {
+    console.error('Cancel trade error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });

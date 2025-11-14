@@ -157,6 +157,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         uc.player_id,
         uc.level,
         uc.created_at,
+        p.id as player_id,
         p.name,
         p.team,
         p.position,
@@ -170,18 +171,108 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
       ORDER BY p.overall DESC, uc.created_at DESC
     `, [userId]);
 
-    // Get traits for each card
-    for (const card of cards) {
+    // Transform to nested structure
+    const formattedCards = await Promise.all(cards.map(async (card: any) => {
       const [traits]: any = await pool.query(
         'SELECT * FROM player_traits WHERE player_id = ?',
         [card.player_id]
       );
-      card.traits = traits;
-    }
 
-    res.json({ success: true, data: cards });
+      return {
+        id: card.id,
+        userId: card.user_id,
+        playerId: card.player_id,
+        level: card.level,
+        createdAt: card.created_at,
+        player: {
+          id: card.player_id,
+          name: card.name,
+          team: card.team,
+          position: card.position,
+          overall: card.overall,
+          region: card.region,
+          tier: card.tier,
+          imageUrl: card.image_url,
+          traits: traits,
+        },
+      };
+    }));
+
+    res.json({ success: true, data: formattedCards });
   } catch (error: any) {
     console.error('Get cards error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Get another user's cards (for trade)
+router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const username = req.params.username;
+
+    // Get user by username
+    const [users]: any = await pool.query(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const targetUserId = users[0].id;
+
+    const [cards]: any = await pool.query(`
+      SELECT
+        uc.id,
+        uc.user_id,
+        uc.player_id,
+        uc.level,
+        uc.created_at,
+        p.id as player_id,
+        p.name,
+        p.team,
+        p.position,
+        p.overall,
+        p.region,
+        p.tier,
+        p.image_url
+      FROM user_cards uc
+      JOIN players p ON uc.player_id = p.id
+      WHERE uc.user_id = ?
+      ORDER BY p.overall DESC, uc.created_at DESC
+    `, [targetUserId]);
+
+    // Transform to nested structure
+    const formattedCards = await Promise.all(cards.map(async (card: any) => {
+      const [traits]: any = await pool.query(
+        'SELECT * FROM player_traits WHERE player_id = ?',
+        [card.player_id]
+      );
+
+      return {
+        id: card.id,
+        userId: card.user_id,
+        playerId: card.player_id,
+        level: card.level,
+        createdAt: card.created_at,
+        player: {
+          id: card.player_id,
+          name: card.name,
+          team: card.team,
+          position: card.position,
+          overall: card.overall,
+          region: card.region,
+          tier: card.tier,
+          imageUrl: card.image_url,
+          traits: traits,
+        },
+      };
+    }));
+
+    res.json({ success: true, data: formattedCards });
+  } catch (error: any) {
+    console.error('Get user cards error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });

@@ -447,21 +447,6 @@ export function setupMatchmaking(io: Server) {
           return;
         }
 
-        // Check if user is suspended (only for ranked)
-        if (!isPractice && user.tier_suspended_until) {
-          const suspendedUntil = new Date(user.tier_suspended_until);
-          const now = new Date();
-
-          if (suspendedUntil > now) {
-            const remainingTime = Math.ceil((suspendedUntil.getTime() - now.getTime()) / (1000 * 60)); // minutes
-            socket.emit('queue_error', {
-              error: 'Suspended',
-              message: `랭크 매치가 ${remainingTime}분 동안 정지되었습니다. (연패 페널티)`,
-            });
-            return;
-          }
-        }
-
         // Calculate tier based on rating
         const userTier = calculateTier(user.rating);
 

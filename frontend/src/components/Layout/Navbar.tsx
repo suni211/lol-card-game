@@ -1,12 +1,29 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User, LogOut } from 'lucide-react';
+import { Moon, Sun, Trophy, User, LogOut, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export default function Navbar() {
   const { theme, toggleTheme } = useThemeStore();
   const { user, isAuthenticated, logout } = useAuthStore();
   const location = useLocation();
+  const [onlineUsers, setOnlineUsers] = useState(0);
+
+  useEffect(() => {
+    const socket = io(SOCKET_URL);
+
+    socket.on('online_users', (count: number) => {
+      setOnlineUsers(count);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -60,6 +77,14 @@ export default function Navbar() {
 
           {/* Right Section */}
           <div className="flex items-center space-x-1 flex-shrink-0">
+            {/* Online Users */}
+            <div className="hidden lg:flex items-center space-x-1 px-2 py-1 bg-green-100 dark:bg-green-900 rounded-lg">
+              <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
+              <span className="text-xs font-semibold text-green-700 dark:text-green-300">
+                {onlineUsers}
+              </span>
+            </div>
+
             {isAuthenticated && user ? (
               <>
                 {/* Points Display */}

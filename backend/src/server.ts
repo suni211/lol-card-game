@@ -123,6 +123,19 @@ io.on('connection', (socket) => {
 // Setup socket.io for notices
 setSocketIO(io);
 
+// Track online users
+let onlineUsers = 0;
+
+io.on('connection', (socket) => {
+  onlineUsers++;
+  io.emit('online_users', onlineUsers);
+
+  socket.on('disconnect', () => {
+    onlineUsers--;
+    io.emit('online_users', onlineUsers);
+  });
+});
+
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`

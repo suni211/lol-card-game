@@ -51,8 +51,21 @@ export default function VSMode() {
       });
 
       if (response.data.success) {
-        setStages(response.data.data.stages);
-        setProgress(response.data.data.progress);
+        setStages(response.data.data.stages || []);
+        const progressData = response.data.data.progress;
+
+        // Ensure arrays are properly formatted
+        if (progressData) {
+          setProgress({
+            ...progressData,
+            stages_cleared: Array.isArray(progressData.stages_cleared)
+              ? progressData.stages_cleared
+              : [],
+            hard_stages_cleared: Array.isArray(progressData.hard_stages_cleared)
+              ? progressData.hard_stages_cleared
+              : [],
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch stages:', error);
@@ -182,7 +195,7 @@ export default function VSMode() {
 
         {/* Stages Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {stages.map((stage) => {
+          {Array.isArray(stages) && stages.map((stage) => {
             const unlocked = isStageUnlocked(stage.stage_number);
             const cleared = isStageCleared(stage.stage_number);
             const isHardMode = selectedMode === 'hard';
@@ -241,7 +254,7 @@ export default function VSMode() {
 
                   {/* Enemies */}
                   <div className="space-y-1 mb-4">
-                    {stage.enemies.map((enemy) => (
+                    {Array.isArray(stage.enemies) && stage.enemies.map((enemy) => (
                       <div
                         key={enemy.position_order}
                         className="text-xs text-gray-700 dark:text-gray-300 flex justify-between"

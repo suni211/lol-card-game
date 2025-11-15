@@ -246,6 +246,32 @@ router.post('/change-username', authMiddleware, async (req: AuthRequest, res) =>
       });
     }
 
+    // Get current user data
+    const [currentUser]: any = await pool.query(
+      'SELECT last_username_change FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (currentUser.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: '사용자를 찾을 수 없습니다.',
+      });
+    }
+
+    // Check if 30 days have passed since last change
+    const lastChange = currentUser[0].last_username_change;
+    if (lastChange) {
+      const daysSinceChange = Math.floor((Date.now() - new Date(lastChange).getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceChange < 30) {
+        const daysRemaining = 30 - daysSinceChange;
+        return res.status(400).json({
+          success: false,
+          error: `닉네임 변경은 30일마다 한 번만 가능합니다. ${daysRemaining}일 후에 다시 시도해주세요.`,
+        });
+      }
+    }
+
     // Check if username is already taken
     const [existing]: any = await pool.query(
       'SELECT id FROM users WHERE username = ? AND id != ?',
@@ -259,9 +285,9 @@ router.post('/change-username', authMiddleware, async (req: AuthRequest, res) =>
       });
     }
 
-    // Update username
+    // Update username and last_username_change timestamp
     await pool.query(
-      'UPDATE users SET username = ? WHERE id = ?',
+      'UPDATE users SET username = ?, last_username_change = NOW() WHERE id = ?',
       [newUsername, userId]
     );
 

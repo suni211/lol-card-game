@@ -88,9 +88,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         [tier]
       );
     } else if ((option as any).special === '17SSG') {
-      // 2017 SSG pack - only 17SSG cards, Epic+ tier
+      // 2017 SSG pack - 17SSG cards and all Epic+ cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE name LIKE '17SSG%' AND tier = ? ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE (name LIKE '17SSG%' OR tier IN ('EPIC', 'LEGENDARY')) AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {

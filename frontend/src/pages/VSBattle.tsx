@@ -61,8 +61,6 @@ export default function VSBattle() {
   const navigate = useNavigate();
   const { token, user, updateUser } = useAuthStore();
 
-  const [stage, setStage] = useState<Stage | null>(null);
-  const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [userDecks, setUserDecks] = useState<Deck[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<number | null>(null);
   const [battling, setBattling] = useState(false);
@@ -114,8 +112,6 @@ export default function VSBattle() {
 
       if (battleResponse.data.success) {
         const battleData = battleResponse.data.data;
-        setStage(battleData.stage);
-        setEnemies(battleData.enemies);
 
         // Simulate battle (simple simulation)
         await simulateBattle(battleData);

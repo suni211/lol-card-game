@@ -106,8 +106,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Setup matchmaking
 setupMatchmaking(io);
 
-// Setup realtime match handlers for all connections
+// Setup socket.io for notices
+setSocketIO(io);
+
+// Track online users and setup handlers
+let onlineUsers = 0;
+
 io.on('connection', (socket) => {
+  // Increment online users
+  onlineUsers++;
+  io.emit('online_users', onlineUsers);
+
   // Verify user token and setup realtime match handlers
   socket.on('authenticate', (data: { token: string }) => {
     try {
@@ -120,18 +129,8 @@ io.on('connection', (socket) => {
       console.error('Socket authentication error:', error);
     }
   });
-});
 
-// Setup socket.io for notices
-setSocketIO(io);
-
-// Track online users
-let onlineUsers = 0;
-
-io.on('connection', (socket) => {
-  onlineUsers++;
-  io.emit('online_users', onlineUsers);
-
+  // Decrement online users on disconnect
   socket.on('disconnect', () => {
     onlineUsers--;
     io.emit('online_users', onlineUsers);

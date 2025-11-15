@@ -328,14 +328,25 @@ function findMatch(
   }
 
   if (isPractice && !forceMatch) {
-    // Practice: Match with anyone who wasn't recently matched (no tier or rating restrictions)
-    opponentIndex = queue.findIndex((p) =>
-      p.userId !== player.userId &&
-      canMatchPlayers(player.userId, p.userId, recentMatchesMap)
-    );
+    // Practice: Match with anyone (no restrictions at all)
+    opponentIndex = queue.findIndex((p) => p.userId !== player.userId);
   }
 
   // If force match or no similar rating opponent, get first available
+  if (opponentIndex === -1 && forceMatch && queue.length > 0) {
+    if (isPractice) {
+      // Practice: just find anyone
+      opponentIndex = queue.findIndex((p) => p.userId !== player.userId);
+    } else {
+      // Ranked: match with anyone in matching tier (ignore rating range and recent match)
+      opponentIndex = queue.findIndex((p) =>
+        p.userId !== player.userId &&
+        canMatchTiers(player.tier, p.tier)
+      );
+    }
+  }
+
+  // If still no opponent after force match, relax tier restrictions
   if (opponentIndex === -1 && queue.length > 0) {
     if (isPractice) {
       // Practice: just find anyone
@@ -347,21 +358,6 @@ function findMatch(
         canMatchTiers(player.tier, p.tier) &&
         canMatchPlayers(player.userId, p.userId, recentMatchesMap)
       );
-    }
-  }
-
-  // If still no match after 3 minutes in queue, match with anyone (ignore recent match rule)
-  if (opponentIndex === -1 && forceMatch && queue.length > 0) {
-    const waitTime = Date.now() - player.joinedAt;
-    if (waitTime >= PREVENT_REMATCH_DURATION) {
-      if (isPractice) {
-        opponentIndex = queue.findIndex((p) => p.userId !== player.userId);
-      } else {
-        opponentIndex = queue.findIndex((p) =>
-          p.userId !== player.userId &&
-          canMatchTiers(player.tier, p.tier)
-        );
-      }
     }
   }
 

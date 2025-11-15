@@ -154,6 +154,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
           overall: player.overall,
           region: player.region,
           tier: player.tier,
+          season: player.season,
           traits: traits,
         },
         isDuplicate,
@@ -188,6 +189,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         p.overall,
         p.region,
         p.tier,
+        p.season,
         p.image_url
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
@@ -216,6 +218,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
           overall: card.overall,
           region: card.region,
           tier: card.tier,
+          season: card.season,
           imageUrl: card.image_url,
           traits: traits,
         },
@@ -260,6 +263,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
         p.overall,
         p.region,
         p.tier,
+        p.season,
         p.image_url
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
@@ -288,6 +292,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
           overall: card.overall,
           region: card.region,
           tier: card.tier,
+          season: card.season,
           imageUrl: card.image_url,
           traits: traits,
         },

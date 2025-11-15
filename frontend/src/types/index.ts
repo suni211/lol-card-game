@@ -8,6 +8,10 @@ export interface Player {
   region: 'LCK' | 'LPL' | 'LEC' | 'LCS' | 'PCS' | 'VCS' | 'CBLOL' | 'LJL' | 'LLA';
   tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
   season?: string; // 25WW, 25WUD, 25, etc.
+  laning?: number; // 라인전 스탯 (0-100)
+  teamfight?: number; // 한타 스탯 (0-100)
+  macro?: number; // 운영 스탯 (0-100)
+  mental?: number; // 멘탈 스탯 (0-100)
   traits: PlayerTrait[];
   imageUrl?: string;
 }

@@ -49,7 +49,6 @@ export default function Match() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentPhase, setCurrentPhase] = useState(0);
   const [simulatedPhases, setSimulatedPhases] = useState<any[]>([]);
-  const [tempResult, setTempResult] = useState<any>(null); // Store result during simulation
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -169,7 +168,6 @@ export default function Match() {
         setIsSimulating(true);
         setSimulatedPhases([]);
         setCurrentPhase(0);
-        setTempResult(result); // Store result for use during simulation
 
         // Calculate time per game (6 seconds each for best-of-5)
         const timePerGame = 6000; // 6 seconds per game
@@ -186,7 +184,6 @@ export default function Match() {
               setTimeout(() => {
                 setIsSimulating(false);
                 setMatchResult(result);
-                setTempResult(null);
                 setMatching(false);
 
                 if (result.won) {

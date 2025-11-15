@@ -194,7 +194,17 @@ export default function Deck() {
   };
 
   const calculateCardOVR = (card: UserCard, position: string) => {
-    const baseStat = card.player.overall + (card.level * 10);
+    // 강화 등급별 오버롤 보너스 계산
+    let levelBonus = 0;
+    if (card.level <= 4) {
+      levelBonus = card.level; // 1~4강: +1씩
+    } else if (card.level <= 7) {
+      levelBonus = 4 + (card.level - 4) * 2; // 5~7강: +2씩
+    } else {
+      levelBonus = 10 + (card.level - 7) * 4; // 8~10강: +4씩
+    }
+
+    const baseStat = card.player.overall + levelBonus;
     const positionMatch = card.player.position === position;
     return positionMatch ? baseStat : baseStat - 10;
   };

@@ -87,11 +87,20 @@ async function calculateDeckStatPower(
 
     let totalPower = 0;
     cards.forEach((card: any, index: number) => {
-      // Overall 50%, 스탯 40%, 레벨 10%
+      // 강화 등급별 오버롤 보너스 계산
+      let levelBonus = 0;
+      if (card.level <= 4) {
+        levelBonus = card.level; // 1~4강: +1씩
+      } else if (card.level <= 7) {
+        levelBonus = 4 + (card.level - 4) * 2; // 5~7강: +2씩 (4 + 2,4,6)
+      } else {
+        levelBonus = 10 + (card.level - 7) * 4; // 8~10강: +4씩 (10 + 4,8,12)
+      }
+
+      // Overall 50% (기본 오버롤 + 강화 보너스), 스탯 40%
       const statContribution = (card.stat_value || 50) * 0.4;
-      const overallContribution = card.overall * 0.5;
-      const levelContribution = card.level * 10;
-      totalPower += statContribution + overallContribution + levelContribution;
+      const overallContribution = (card.overall + levelBonus) * 0.5;
+      totalPower += statContribution + overallContribution;
 
       // 팀 시너지 카운팅
       const synergyTeam = teamMapping[card.team] || card.team;

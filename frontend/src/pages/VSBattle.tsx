@@ -38,9 +38,35 @@ export default function VSBattle() {
       console.log('Decks response:', response.data);
 
       if (response.data.success) {
-        setUserDecks(response.data.data);
-        if (response.data.data.length > 0) {
-          setSelectedDeck(response.data.data[0].id);
+        const decksData = response.data.data;
+        // Check if it's an array or object
+        let decksArray = Array.isArray(decksData) ? decksData : [decksData];
+
+        // Transform deck data to flat structure
+        decksArray = decksArray.map((deck: any) => ({
+          id: deck.id,
+          name: deck.name,
+          top_name: deck.top?.player?.name || 'Unknown',
+          top_overall: deck.top?.player?.overall || 0,
+          top_level: deck.top?.level || 0,
+          jungle_name: deck.jungle?.player?.name || 'Unknown',
+          jungle_overall: deck.jungle?.player?.overall || 0,
+          jungle_level: deck.jungle?.level || 0,
+          mid_name: deck.mid?.player?.name || 'Unknown',
+          mid_overall: deck.mid?.player?.overall || 0,
+          mid_level: deck.mid?.level || 0,
+          adc_name: deck.adc?.player?.name || 'Unknown',
+          adc_overall: deck.adc?.player?.overall || 0,
+          adc_level: deck.adc?.level || 0,
+          support_name: deck.support?.player?.name || 'Unknown',
+          support_overall: deck.support?.player?.overall || 0,
+          support_level: deck.support?.level || 0,
+        }));
+
+        console.log('Transformed decks:', decksArray);
+        setUserDecks(decksArray);
+        if (decksArray.length > 0 && decksArray[0]) {
+          setSelectedDeck(decksArray[0].id);
         }
       }
     } catch (error) {

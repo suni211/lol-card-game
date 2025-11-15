@@ -285,7 +285,7 @@ export default function Practice() {
     setMatching(true);
     setMatchResult(null);
     socketRef.current.emit('join_queue', { token, isPractice: true });
-    toast.success('매칭 대기열에 참가했습니다');
+    toast.success('매칭 대기열에 참가했습니다 (30초 후 AI 자동 매칭)');
   };
 
   const cancelMatch = () => {

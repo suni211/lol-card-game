@@ -91,6 +91,76 @@ async function calculateDeckPower(deckId: number): Promise<number> {
   }
 }
 
+// Match with AI
+async function matchWithAI(player: MatchmakingPlayer, io: Server) {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // Get player's deck power
+    const playerPower = await calculateDeckPower(player.deckId);
+
+    // Create a similar AI opponent
+    const aiPower = playerPower + Math.floor(Math.random() * 21) - 10; // ±10 power difference
+
+    // Import simulateMatch
+    const { simulateMatch } = require('../routes/match');
+
+    // Create AI vs player match (note: AI doesn't have a real deck)
+    // We'll simulate with player's power vs AI power
+    const matchSimulation = await simulateMatch(connection, player.deckId, player.deckId); // Use same deck for simulation
+
+    // Adjust result based on AI power difference
+    const powerRatio = aiPower / playerPower;
+    const isPlayerWin = Math.random() > (powerRatio - 0.5); // Slightly favor player
+
+    const winnerId = isPlayerWin ? player.userId : null; // null for AI
+    const player1Score = matchSimulation.finalScore.player1;
+    const player2Score = Math.floor(player1Score * powerRatio);
+
+    // Create match record
+    const [matchResult]: any = await connection.query(`
+      INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at, match_type)
+      VALUES (?, NULL, ?, NULL, ?, ?, ?, 'COMPLETED', NOW(), 'PRACTICE')
+    `, [player.userId, player.deckId, isPlayerWin ? player.userId : null, player1Score, player2Score]);
+
+    const matchId = matchResult.insertId;
+
+    await connection.commit();
+
+    // Emit match result to player
+    io.to(player.socketId).emit('match_found', {
+      matchId,
+      opponent: {
+        username: 'AI 상대',
+        deckId: null,
+        power: aiPower,
+      },
+      isPractice: true,
+    });
+
+    // Emit match complete
+    io.to(player.socketId).emit('match_complete', {
+      matchId,
+      winnerId: isPlayerWin ? player.userId : null,
+      isWinner: isPlayerWin,
+      isDraw: false,
+      rounds: matchSimulation.rounds,
+      finalScore: { player1: player1Score, player2: player2Score },
+      matchType: 'PRACTICE',
+    });
+
+    console.log(`Player ${player.username} matched with AI`);
+  } catch (error) {
+    await connection.rollback();
+    console.error('AI match error:', error);
+    io.to(player.socketId).emit('queue_error', { error: 'Failed to create AI match' });
+  } finally {
+    connection.release();
+  }
+}
+
 // Process match
 async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlayer, io: Server, isPractice: boolean = false) {
   const connection = await pool.getConnection();
@@ -493,10 +563,13 @@ export function setupMatchmaking(io: Server) {
               // Try force match (any opponent)
               const forceMatched = findMatch(queuedPlayer, queue, recentMatchesMap, io, isPractice, true);
 
-              if (!forceMatched) {
-                // No opponents at all, put back in queue
+              if (!forceMatched && isPractice) {
+                // No opponents - match with AI for practice mode
+                matchWithAI(queuedPlayer, io);
+              } else if (!forceMatched) {
+                // Ranked mode - put back in queue
                 queue.push(queuedPlayer);
-                broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');
+                broadcastQueueSize(io, queue, 'queue_update');
               }
             }
           }, AUTO_MATCH_TIMEOUT);

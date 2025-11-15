@@ -66,14 +66,26 @@ export default function VSMode() {
         console.log('Progress data:', progressData);
 
         // Force ensure stages is array
-        const safeStages = Array.isArray(stagesData) ? stagesData : [];
+        let safeStages = [];
+
+        if (Array.isArray(stagesData)) {
+          safeStages = stagesData;
+        } else {
+          console.error('stagesData is not an array:', stagesData);
+          safeStages = [];
+        }
 
         // Ensure each stage has enemies array
-        const validatedStages = safeStages.map(stage => ({
-          ...stage,
-          enemies: Array.isArray(stage.enemies) ? stage.enemies : []
-        }));
+        const validatedStages = [];
+        for (let i = 0; i < safeStages.length; i++) {
+          const stage = safeStages[i];
+          validatedStages.push({
+            ...stage,
+            enemies: Array.isArray(stage?.enemies) ? stage.enemies : []
+          });
+        }
 
+        console.log('Validated stages:', validatedStages);
         setStages(validatedStages);
 
         // Ensure arrays are properly formatted
@@ -226,7 +238,7 @@ export default function VSMode() {
 
         {/* Stages Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {Array.isArray(stages) && stages.map((stage) => {
+          {Array.isArray(stages) && stages.length > 0 && stages.map((stage) => {
             const unlocked = isStageUnlocked(stage.stage_number);
             const cleared = isStageCleared(stage.stage_number);
             const isHardMode = selectedMode === 'hard';
@@ -285,7 +297,7 @@ export default function VSMode() {
 
                   {/* Enemies */}
                   <div className="space-y-1 mb-4">
-                    {Array.isArray(stage.enemies) && stage.enemies.map((enemy) => (
+                    {Array.isArray(stage.enemies) && stage.enemies.length > 0 && stage.enemies.map((enemy) => (
                       <div
                         key={enemy.position_order}
                         className="text-xs text-gray-700 dark:text-gray-300 flex justify-between"

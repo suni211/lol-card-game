@@ -306,9 +306,40 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
 
     // Check if stage 10 hard mode cleared (give legendary pack)
     let legendaryPackAwarded = false;
+    let awardedPlayer = null;
+
     if (isHardMode && stageNumber === 10 && !alreadyCleared) {
-      // Award legendary pack (we'll add this to gacha or give points equivalent)
-      legendaryPackAwarded = true;
+      // Award legendary pack - give a random legendary player
+      const [legendaryPlayers]: any = await connection.query(
+        "SELECT * FROM players WHERE tier = 'LEGENDARY' AND (season = '25' OR season = 'RE' OR season = '25HW') ORDER BY RAND() LIMIT 1"
+      );
+
+      if (legendaryPlayers.length > 0) {
+        const legendaryPlayer = legendaryPlayers[0];
+
+        // Add legendary card to user
+        await connection.query(
+          'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
+          [userId, legendaryPlayer.id]
+        );
+
+        // Record in gacha history
+        await connection.query(
+          'INSERT INTO gacha_history (user_id, player_id, cost, is_duplicate, refund_points) VALUES (?, ?, 0, FALSE, 0)',
+          [userId, legendaryPlayer.id]
+        );
+
+        legendaryPackAwarded = true;
+        awardedPlayer = {
+          id: legendaryPlayer.id,
+          name: legendaryPlayer.name,
+          team: legendaryPlayer.team,
+          position: legendaryPlayer.position,
+          overall: legendaryPlayer.overall,
+          tier: legendaryPlayer.tier,
+          season: legendaryPlayer.season
+        };
+      }
     }
 
     await connection.commit();
@@ -322,6 +353,7 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
         hardStagesCleared,
         hardModeUnlocked: progress.hard_mode_unlocked || stagesCleared.length === 10,
         legendaryPackAwarded,
+        awardedPlayer,
         alreadyCleared
       }
     });

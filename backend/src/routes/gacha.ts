@@ -82,15 +82,15 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else if ((option as any).special === '17SSG') {
-      // 2017 SSG pack - Only 17SSG cards + 25 season cards
+      // 2017 SSG pack - Only 17SSG cards + 25 season cards + 25HW cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === 'MSI') {
-      // MSI pack - Only MSI cards + 25 season cards
+      // MSI pack - Only MSI cards + 25 season cards + 25HW cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (name LIKE 'MSI %' OR season = '25') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (name LIKE 'MSI %' OR season = '25' OR season = '25HW') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {

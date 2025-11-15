@@ -22,6 +22,7 @@ import fusionRoutes from './routes/fusion';
 import achievementsRoutes from './routes/achievements';
 import adminRoutes from './routes/admin';
 import marketRoutes from './routes/market';
+import vsmodeRoutes from './routes/vsmode';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -83,6 +84,7 @@ app.use('/api/market', marketRoutes);
 app.use('/api/fusion', fusionRoutes);
 app.use('/api/achievements', achievementsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/vsmode', vsmodeRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

@@ -26,6 +26,7 @@ import Fusion from './pages/Fusion';
 import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
 import Market from './pages/Market';
+import VSMode from './pages/VSMode';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -190,6 +191,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vsmode"
+            element={
+              <ProtectedRoute>
+                <VSMode />
               </ProtectedRoute>
             }
           />

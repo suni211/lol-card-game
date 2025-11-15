@@ -36,6 +36,7 @@ export default function Navbar() {
     { path: '/match', label: '랭크전' },
     { path: '/practice', label: '일반전' },
     { path: '/ai-battle', label: 'AI 배틀' },
+    { path: '/vsmode', label: 'VS 모드' },
     { path: '/market', label: '이적시장' },
     { path: '/ranking', label: '랭킹' },
     { path: '/missions', label: '미션' },

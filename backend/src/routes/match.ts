@@ -358,8 +358,55 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
 
       // Update match history
       const won = winnerId === userId;
-      const pointsChange = won ? 200 : 100;
+      let pointsChange = won ? 20 : 0;
       const ratingChange = won ? 25 : -15;
+
+      // Get current win streak for bonus calculation
+      let winStreak = 0;
+      let streakBonus = 0;
+
+      if (won) {
+        // Get or create ladder stats
+        let [ladderStats]: any = await connection.query(
+          'SELECT * FROM user_ladder_stats WHERE user_id = ?',
+          [userId]
+        );
+
+        if (ladderStats.length === 0) {
+          await connection.query(
+            'INSERT INTO user_ladder_stats (user_id, current_win_streak) VALUES (?, 1)',
+            [userId]
+          );
+          winStreak = 1;
+        } else {
+          winStreak = ladderStats[0].current_win_streak + 1;
+
+          // Calculate streak bonus
+          if (winStreak >= 5) streakBonus = 50;
+          else if (winStreak >= 3) streakBonus = 20;
+          else if (winStreak >= 2) streakBonus = 10;
+
+          // Update ladder stats
+          await connection.query(`
+            UPDATE user_ladder_stats
+            SET current_win_streak = ?,
+                best_win_streak = GREATEST(best_win_streak, ?),
+                total_streak_bonus = total_streak_bonus + ?,
+                last_match_at = NOW()
+            WHERE user_id = ?
+          `, [winStreak, winStreak, streakBonus, userId]);
+        }
+
+        pointsChange += streakBonus;
+      } else {
+        // Reset win streak on loss
+        await connection.query(
+          `INSERT INTO user_ladder_stats (user_id, current_win_streak, last_match_at)
+           VALUES (?, 0, NOW())
+           ON DUPLICATE KEY UPDATE current_win_streak = 0, last_match_at = NOW()`,
+          [userId]
+        );
+      }
 
       await connection.query(`
         INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
@@ -382,12 +429,28 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
           current_streak = ?,
           longest_win_streak = GREATEST(longest_win_streak, ?)
         WHERE user_id = ?
-      `, [won ? 1 : 0, won ? 0 : 1, won ? 1 : 0, won ? 1 : 0, userId]);
+      `, [won ? 1 : 0, won ? 0 : 1, won ? winStreak : 0, won ? winStreak : 0, userId]);
     }
 
     await connection.commit();
 
     const won = winnerId === userId;
+
+    // Get final streak info
+    let finalWinStreak = 0;
+    let finalStreakBonus = 0;
+    if (opponent.id !== 0 && won) {
+      const [ladderStats]: any = await connection.query(
+        'SELECT current_win_streak FROM user_ladder_stats WHERE user_id = ?',
+        [userId]
+      );
+      if (ladderStats.length > 0) {
+        finalWinStreak = ladderStats[0].current_win_streak;
+        if (finalWinStreak >= 5) finalStreakBonus = 50;
+        else if (finalWinStreak >= 3) finalStreakBonus = 20;
+        else if (finalWinStreak >= 2) finalStreakBonus = 10;
+      }
+    }
 
     res.json({
       success: true,
@@ -396,9 +459,11 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
         won,
         myScore: player1Score,
         opponentScore: player2Score,
-        pointsChange: won ? 100 : 50,
+        pointsChange: opponent.id === 0 ? (won ? 100 : 50) : (won ? 20 + finalStreakBonus : 0),
         ratingChange: won ? 25 : -15,
         phases: matchSimulation.phases,
+        winStreak: finalWinStreak,
+        streakBonus: finalStreakBonus,
       },
     });
   } catch (error: any) {

@@ -13,6 +13,7 @@ export default function Navbar() {
   const location = useLocation();
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [clickedDropdown, setClickedDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     const socket = io(SOCKET_URL, {
@@ -39,6 +40,19 @@ export default function Navbar() {
       console.log('Cleaning up socket connection');
       socket.disconnect();
     };
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setClickedDropdown(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   const isActive = (path: string) => location.pathname === path;
@@ -88,6 +102,18 @@ export default function Navbar() {
     return items.some(item => location.pathname === item.path);
   };
 
+  const handleDropdownClick = (label: string) => {
+    if (clickedDropdown === label) {
+      setClickedDropdown(null);
+    } else {
+      setClickedDropdown(label);
+    }
+  };
+
+  const shouldShowDropdown = (label: string) => {
+    return clickedDropdown === label || activeDropdown === label;
+  };
+
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -110,28 +136,34 @@ export default function Navbar() {
                 return (
                   <div
                     key={index}
-                    className="relative group"
-                    onMouseEnter={() => setActiveDropdown(item.label)}
-                    onMouseLeave={() => setActiveDropdown(null)}
+                    className="relative group dropdown-container"
+                    onMouseEnter={() => {
+                      if (!clickedDropdown) setActiveDropdown(item.label);
+                    }}
+                    onMouseLeave={() => {
+                      if (!clickedDropdown) setActiveDropdown(null);
+                    }}
                   >
                     <button
+                      onClick={() => handleDropdownClick(item.label)}
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
-                        isDropActive
+                        isDropActive || shouldShowDropdown(item.label)
                           ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
                       {item.label}
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className={`w-4 h-4 transition-transform ${shouldShowDropdown(item.label) ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Dropdown */}
-                    {activeDropdown === item.label && (
+                    {shouldShowDropdown(item.label) && (
                       <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-lg py-2 w-auto min-w-[120px] border border-gray-200 dark:border-gray-700 z-50">
                         {item.items.map((subItem) => (
                           <Link
                             key={subItem.path}
                             to={subItem.path}
+                            onClick={() => setClickedDropdown(null)}
                             className={`block px-4 py-2 text-sm transition-colors whitespace-nowrap ${
                               isActive(subItem.path)
                                 ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'

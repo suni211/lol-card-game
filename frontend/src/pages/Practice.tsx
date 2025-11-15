@@ -377,10 +377,10 @@ export default function Practice() {
             <Swords className="w-12 h-12 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            랭크 경기
+            일반 경기
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            실시간 전략 대결!
+            부담없이 실시간 전략 대결!
           </p>
         </motion.div>
 
@@ -665,11 +665,11 @@ export default function Practice() {
                     >
                       <div className="flex items-center justify-center gap-3">
                         <Swords className="w-6 h-6" />
-                        <span>랭크 매칭 시작</span>
+                        <span>일반 매칭 시작</span>
                       </div>
                     </button>
                     <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                      실시간 전략 대결 - 5판 3선승
+                      일반 경기 - 포인트만 획득, 레이팅 변동 없음
                     </p>
                   </>
                 ) : (

@@ -445,7 +445,45 @@ export default function Gacha() {
                   transition={{ type: 'spring', damping: 15 }}
                   className="relative"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 rounded-2xl blur-2xl opacity-75 animate-pulse"></div>
+                  {/* Epic and Legendary effects */}
+                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    <>
+                      {/* Outer glow */}
+                      <div className={`absolute inset-0 bg-gradient-to-r ${
+                        drawnCard.tier === 'LEGENDARY'
+                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                          : 'from-purple-400 via-pink-500 to-purple-400'
+                      } rounded-2xl blur-3xl opacity-75 animate-pulse`}></div>
+
+                      {/* Sparks effect */}
+                      <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                        {[...Array(drawnCard.tier === 'LEGENDARY' ? 20 : 12)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            className={`absolute w-1 h-1 rounded-full ${
+                              drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-400' : 'bg-purple-400'
+                            }`}
+                            style={{
+                              left: `${Math.random() * 100}%`,
+                              top: `${Math.random() * 100}%`,
+                            }}
+                            animate={{
+                              scale: [0, 1.5, 0],
+                              opacity: [0, 1, 0],
+                              x: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 200],
+                              y: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 200],
+                            }}
+                            transition={{
+                              duration: 1 + Math.random(),
+                              repeat: Infinity,
+                              delay: Math.random() * 2,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+
                   <div className={`relative w-48 h-64 bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl shadow-2xl p-1`}>
                     <div className="w-full h-full bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center">
                       <div className="text-center">
@@ -478,9 +516,48 @@ export default function Gacha() {
               exit={{ scale: 0.5, y: 100 }}
               transition={{ type: 'spring', damping: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="max-w-md w-full"
+              className="max-w-md w-full relative"
             >
-              <div className={`bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl p-1 shadow-2xl`}>
+              {/* Epic and Legendary effects for result modal */}
+              {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                <>
+                  {/* Outer glow */}
+                  <div className={`absolute -inset-4 bg-gradient-to-r ${
+                    drawnCard.tier === 'LEGENDARY'
+                      ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                      : 'from-purple-400 via-pink-500 to-purple-400'
+                  } rounded-3xl blur-2xl opacity-60 animate-pulse`}></div>
+
+                  {/* Sparks effect */}
+                  <div className="absolute -inset-4 overflow-visible pointer-events-none">
+                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 15 : 10)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className={`absolute w-1.5 h-1.5 rounded-full ${
+                          drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-300' : 'bg-purple-300'
+                        }`}
+                        style={{
+                          left: `${Math.random() * 100}%`,
+                          top: `${Math.random() * 100}%`,
+                        }}
+                        animate={{
+                          scale: [0, 2, 0],
+                          opacity: [0, 1, 0],
+                          x: [(Math.random() - 0.5) * 50, (Math.random() - 0.5) * 150],
+                          y: [(Math.random() - 0.5) * 50, (Math.random() - 0.5) * 150],
+                        }}
+                        transition={{
+                          duration: 1.5 + Math.random(),
+                          repeat: Infinity,
+                          delay: Math.random() * 2,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <div className={`relative bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl p-1 shadow-2xl`}>
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-8">
                   <div className="text-center mb-6">
                     <div className={`inline-block px-6 py-2 bg-gradient-to-r ${getTierColor(drawnCard.tier)} rounded-full text-white font-bold text-lg mb-4`}>

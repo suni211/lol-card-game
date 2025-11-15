@@ -83,21 +83,21 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else if ((option as any).special === 'RE') {
-      // LCK Legend pack - RE cards and all Rare+ cards (exclude 25WW, 25WUD)
+      // LCK Legend pack - Only LCK region cards + 25WW/25WUD
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier IN ('RARE', 'EPIC', 'LEGENDARY') AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (region = 'LCK' OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === '17SSG') {
-      // 2017 SSG pack - 17SSG cards and all Epic+ cards
+      // 2017 SSG pack - Only 17SSG cards + 25WW/25WUD
       [players] = await connection.query(
-        "SELECT * FROM players WHERE (name LIKE '17SSG%' OR tier IN ('EPIC', 'LEGENDARY')) AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === 'MSI') {
-      // MSI pack - MSI cards and all Rare+ cards (exclude 17SSG)
+      // MSI pack - Only MSI cards + 25WW/25WUD
       [players] = await connection.query(
-        "SELECT * FROM players WHERE (name LIKE 'MSI %' OR tier IN ('RARE', 'EPIC', 'LEGENDARY')) AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE '17SSG%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (name LIKE 'MSI %' OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {

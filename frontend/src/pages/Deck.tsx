@@ -354,8 +354,15 @@ export default function Deck() {
                     {slot.card ? (
                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 h-40 flex flex-col justify-between">
                         <div>
-                          <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(slot.card.player.tier)} rounded text-white text-xs font-bold mb-2`}>
-                            {slot.card.player.tier}
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(slot.card.player.tier)} rounded text-white text-xs font-bold`}>
+                              {slot.card.player.tier}
+                            </div>
+                            {slot.card.level > 0 && (
+                              <div className="px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded text-white text-xs font-bold">
+                                +{slot.card.level}
+                              </div>
+                            )}
                           </div>
                           <p className="font-bold text-gray-900 dark:text-white mb-1 truncate">
                             {slot.card.player.name}

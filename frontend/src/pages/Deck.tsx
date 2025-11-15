@@ -67,6 +67,54 @@ const MACRO_STRATEGIES = [
   { value: 'CONTROL', label: '컨트롤', description: '정글 및 중립 지역 장악', counters: ['ROTATION'], weakTo: ['GROUPING'] },
 ];
 
+// Team mapping for synergy calculation
+const teamMapping: { [key: string]: string } = {
+  'T1': 'T1',
+  'GEN': 'GEN',
+  'HLE': 'HLE',
+  'KT': 'KT',
+  'DK': 'DK',
+  'DRX': 'DRX',
+  'BRO': 'BRO',
+  'NS': 'NS',
+  'KDF': 'KDF',
+  'FOX': 'FOX',
+  // Add other teams as needed
+};
+
+// Calculate team synergy
+const calculateTeamSynergy = (slots: DeckSlot[]) => {
+  const teams: { [key: string]: number } = {};
+  let totalPower = 0;
+
+  slots.forEach(slot => {
+    if (slot.card) {
+      const power = slot.card.player.overall + slot.card.level;
+      totalPower += power;
+
+      const synergyTeam = teamMapping[slot.card.player.team] || slot.card.player.team;
+      teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+    }
+  });
+
+  let synergyBonus = 0;
+  const synergyDetails: { team: string; count: number; bonus: number }[] = [];
+
+  Object.entries(teams).forEach(([team, count]) => {
+    let bonus = 0;
+    if (count === 3) bonus = 1;
+    if (count === 4) bonus = 3;
+    if (count === 5) bonus = 5;
+
+    if (bonus > 0) {
+      synergyBonus += bonus;
+      synergyDetails.push({ team, count, bonus });
+    }
+  });
+
+  return { totalPower, synergyBonus, synergyDetails };
+};
+
 export default function Deck() {
   const { token } = useAuthStore();
   const [deckSlots, setDeckSlots] = useState<DeckSlot[]>([
@@ -84,6 +132,8 @@ export default function Deck() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [seasonFilter, setSeasonFilter] = useState<string>('ALL');
+
+  const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
 
   useEffect(() => {
     fetchDeckAndCards();
@@ -253,22 +303,47 @@ export default function Deck() {
           </div>
 
           {/* Deck Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 OVR</p>
-              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{totalOVR}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 파워</p>
+              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{totalPower}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">평균 OVR</p>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                {filledSlots > 0 ? Math.round(totalOVR / filledSlots) : 0}
-              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">팀 시너지</p>
+              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">+{synergyBonus}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">최종 파워</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{totalPower + synergyBonus}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">덱 완성도</p>
               <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{filledSlots}/5</p>
             </div>
           </div>
+
+          {/* Team Synergy Details */}
+          {synergyDetails.length > 0 && (
+            <div className="mt-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-center space-x-2 mb-2">
+                <Users className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <span className="font-bold text-yellow-800 dark:text-yellow-200">팀 시너지 활성</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {synergyDetails.map((detail, idx) => (
+                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-md px-3 py-1.5 border border-yellow-300 dark:border-yellow-700">
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">{detail.team}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
+                      ({detail.count}명 = +{detail.bonus})
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
+                💡 같은 팀 3명 = +1, 4명 = +3, 5명 = +5 파워 보너스
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {/* Info Box */}

@@ -94,9 +94,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         [tier]
       );
     } else {
-      // Regular packs - 25 season cards + RE (LCK Legend) cards
+      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }

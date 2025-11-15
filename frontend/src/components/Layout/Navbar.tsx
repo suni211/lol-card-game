@@ -46,6 +46,7 @@ export default function Navbar() {
     { path: '/', label: '홈' },
     { path: '/gacha', label: '카드 뽑기' },
     { path: '/fusion', label: '카드 합성' },
+    { path: '/enhancement', label: '카드 강화' },
     { path: '/collection', label: '내 카드' },
     { path: '/deck', label: '덱 편성' },
     { path: '/match', label: '랭크전' },

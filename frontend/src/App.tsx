@@ -23,6 +23,7 @@ import Notices from './pages/Notices';
 import Suggestions from './pages/Suggestions';
 import Profile from './pages/Profile';
 import Fusion from './pages/Fusion';
+import Enhancement from './pages/Enhancement';
 import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
 import Market from './pages/Market';
@@ -104,6 +105,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Fusion />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/enhancement"
+            element={
+              <ProtectedRoute>
+                <Enhancement />
               </ProtectedRoute>
             }
           />

@@ -268,25 +268,12 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
   }
 }
 
-// Broadcast queue size to all players in queue (debounced)
-const queueBroadcastTimers = new Map<string, NodeJS.Timeout>();
-
+// Broadcast queue size to all players in queue
 function broadcastQueueSize(io: Server, queue: MatchmakingPlayer[], eventName: string = 'queue_update') {
-  // Clear existing timer for this queue
-  if (queueBroadcastTimers.has(eventName)) {
-    clearTimeout(queueBroadcastTimers.get(eventName)!);
-  }
-
-  // Debounce: only broadcast once every 2 seconds
-  const timer = setTimeout(() => {
-    const queueSize = queue.length;
-    queue.forEach(player => {
-      io.to(player.socketId).emit(eventName, { playersInQueue: queueSize });
-    });
-    queueBroadcastTimers.delete(eventName);
-  }, 2000);
-
-  queueBroadcastTimers.set(eventName, timer);
+  const queueSize = queue.length;
+  queue.forEach(player => {
+    io.to(player.socketId).emit(eventName, { playersInQueue: queueSize });
+  });
 }
 
 // Check if two players recently played against each other

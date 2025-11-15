@@ -84,9 +84,9 @@ export default function Gacha() {
       label: 'MSI 레전드 카드팩',
       probabilities: {
         common: 0,
-        rare: 87,
-        epic: 10.5,
-        legendary: 2.5,
+        rare: 65,
+        epic: 30,
+        legendary: 5,
       },
       special: true,
     },

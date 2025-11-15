@@ -93,6 +93,14 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     [deckData.support_card_id]: 'SUPPORT',
   };
 
+  // Team synergy mapping: old teams treated as current teams
+  const teamMapping: any = {
+    'NJS': 'BRO',
+    'AZF': 'CJ',
+    'MVP': 'GEN',
+    'SKT': 'T1',
+  };
+
   cards.forEach((card: any) => {
     let power = card.overall + card.level;
 
@@ -109,8 +117,9 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
 
     totalPower += power;
 
-    // Count teams for synergy
-    teams[card.team] = (teams[card.team] || 0) + 1;
+    // Count teams for synergy (map old teams to current teams)
+    const synergyTeam = teamMapping[card.team] || card.team;
+    teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
   });
 
   // Team synergy: same team 3 players = +1 OVR, 4 players = +3 OVR, 5 players = +5 OVR

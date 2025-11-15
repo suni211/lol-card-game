@@ -1,31 +1,32 @@
 -- LCK REWIND RE Series Cards
 -- Legendary players from LCK history
+-- Team synergy: NJS=BRO, AZF=CJ, MVP=Samsung, SKT=T1 (treated as same for synergy calculation)
 
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
--- NJS (Najin Sword - treated as BRO)
-('RE MaKNooN', 'BRO', 'TOP', 86, 'KR', 'EPIC', 'LCK REWIND'),
+-- NJS (Najin Sword)
+('RE MaKNooN', 'NJS', 'TOP', 86, 'KR', 'EPIC', 'LCK REWIND'),
 
--- AZF (Azubu Frost - treated as NS/CJ)
-('RE MadLife', 'NS', 'SUPPORT', 93, 'KR', 'LEGENDARY', 'LCK REWIND'),
-('RE CloudTemplar', 'NS', 'JUNGLE', 91, 'KR', 'LEGENDARY', 'LCK REWIND'),
+-- AZF (Azubu Frost)
+('RE MadLife', 'AZF', 'SUPPORT', 93, 'KR', 'LEGENDARY', 'LCK REWIND'),
+('RE CloudTemplar', 'AZF', 'JUNGLE', 91, 'KR', 'LEGENDARY', 'LCK REWIND'),
 
 -- KT
 ('RE Ryu', 'KT', 'MID', 90, 'KR', 'LEGENDARY', 'LCK REWIND'),
 ('RE inSec', 'KT', 'JUNGLE', 94, 'KR', 'LEGENDARY', 'LCK REWIND'),
 ('RE KaKAO', 'KT', 'JUNGLE', 83, 'KR', 'EPIC', 'LCK REWIND'),
 
--- MVP (treated as GEN - Samsung)
-('RE Dade', 'GEN', 'MID', 88, 'KR', 'EPIC', 'LCK REWIND'),
-('RE Imp', 'GEN', 'ADC', 100, 'KR', 'LEGENDARY', 'LCK REWIND'),
-('RE Mata', 'GEN', 'SUPPORT', 95, 'KR', 'LEGENDARY', 'LCK REWIND'),
-('RE Dandy', 'GEN', 'JUNGLE', 85, 'KR', 'EPIC', 'LCK REWIND'),
+-- MVP (Samsung)
+('RE Dade', 'MVP', 'MID', 88, 'KR', 'EPIC', 'LCK REWIND'),
+('RE Imp', 'MVP', 'ADC', 100, 'KR', 'LEGENDARY', 'LCK REWIND'),
+('RE Mata', 'MVP', 'SUPPORT', 95, 'KR', 'LEGENDARY', 'LCK REWIND'),
+('RE Dandy', 'MVP', 'JUNGLE', 85, 'KR', 'EPIC', 'LCK REWIND'),
 
--- SKT (T1)
-('RE Bengi', 'T1', 'JUNGLE', 97, 'KR', 'LEGENDARY', 'LCK REWIND'),
-('RE PoohManDu', 'T1', 'SUPPORT', 90, 'KR', 'LEGENDARY', 'LCK REWIND'),
-('RE Piglet', 'T1', 'ADC', 91, 'KR', 'LEGENDARY', 'LCK REWIND'),
-('RE Faker', 'T1', 'MID', 94, 'KR', 'LEGENDARY', 'LCK REWIND'),
-('RE Impact', 'T1', 'TOP', 83, 'KR', 'EPIC', 'LCK REWIND');
+-- SKT
+('RE Bengi', 'SKT', 'JUNGLE', 97, 'KR', 'LEGENDARY', 'LCK REWIND'),
+('RE PoohManDu', 'SKT', 'SUPPORT', 90, 'KR', 'LEGENDARY', 'LCK REWIND'),
+('RE Piglet', 'SKT', 'ADC', 91, 'KR', 'LEGENDARY', 'LCK REWIND'),
+('RE Faker', 'SKT', 'MID', 94, 'KR', 'LEGENDARY', 'LCK REWIND'),
+('RE Impact', 'SKT', 'TOP', 83, 'KR', 'EPIC', 'LCK REWIND');
 
 -- Add traits for the legendary RE cards
 -- Note: You'll need to get the player IDs after inserting the players above

@@ -77,13 +77,21 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
     // Get random player of that tier
     let players: any;
     if ((option as any).special === 'WORLDS') {
-      // Special WORLDS pack - 25WW, 25WUD, and Rare+ cards only
+      // Special WORLDS pack - 25WW, 25WUD only (exclude RE cards)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE (name LIKE '25WW%' OR name LIKE '25WUD%' OR tier IN ('RARE', 'EPIC', 'LEGENDARY')) AND tier = ? ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE (name LIKE '25WW%' OR name LIKE '25WUD%') AND tier = ? ORDER BY RAND() LIMIT 1",
         [tier]
       );
 
-      // Fallback if no special cards found for this tier
+      // Fallback to any Rare+ card (but still exclude RE)
+      if (players.length === 0) {
+        [players] = await connection.query(
+          "SELECT * FROM players WHERE tier IN ('RARE', 'EPIC', 'LEGENDARY') AND tier = ? AND season != 'LCK REWIND' ORDER BY RAND() LIMIT 1",
+          [tier]
+        );
+      }
+
+      // Final fallback if no cards found for this tier
       if (players.length === 0) {
         [players] = await connection.query(
           'SELECT * FROM players WHERE tier = ? ORDER BY RAND() LIMIT 1',

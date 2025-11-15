@@ -14,13 +14,28 @@ export default function Navbar() {
   const [onlineUsers, setOnlineUsers] = useState(0);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL);
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
+
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+    });
 
     socket.on('online_users', (count: number) => {
+      console.log('Online users updated:', count);
       setOnlineUsers(count);
     });
 
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+
     return () => {
+      console.log('Cleaning up socket connection');
       socket.disconnect();
     };
   }, []);

@@ -109,13 +109,17 @@ setupMatchmaking(io);
 // Setup socket.io for notices
 setSocketIO(io);
 
-// Track online users and setup handlers
-let onlineUsers = 0;
+// Track unique online users by socket ID
+const connectedSockets = new Set<string>();
 
 io.on('connection', (socket) => {
-  // Increment online users
-  onlineUsers++;
-  io.emit('online_users', onlineUsers);
+  // Add socket to connected set
+  connectedSockets.add(socket.id);
+
+  // Emit updated count
+  io.emit('online_users', connectedSockets.size);
+
+  console.log(`User connected: ${socket.id}, Total: ${connectedSockets.size}`);
 
   // Verify user token and setup realtime match handlers
   socket.on('authenticate', (data: { token: string }) => {
@@ -130,10 +134,11 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Decrement online users on disconnect
+  // Remove socket on disconnect
   socket.on('disconnect', () => {
-    onlineUsers--;
-    io.emit('online_users', onlineUsers);
+    connectedSockets.delete(socket.id);
+    io.emit('online_users', connectedSockets.size);
+    console.log(`User disconnected: ${socket.id}, Total: ${connectedSockets.size}`);
   });
 });
 

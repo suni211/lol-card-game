@@ -1,0 +1,221 @@
+import express, { Response } from 'express';
+import pool from '../config/database';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
+
+const router = express.Router();
+
+// Admin middleware - 특정 사용자만 관리자 권한 부여
+const adminMiddleware = async (req: AuthRequest, res: Response, next: any) => {
+  try {
+    const userId = req.user!.id;
+
+    // 관리자 확인 (users 테이블에 is_admin 컬럼 필요)
+    const [users]: any = await pool.query(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0 || !users[0].is_admin) {
+      return res.status(403).json({
+        success: false,
+        error: '관리자 권한이 필요합니다.',
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin middleware error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  }
+};
+
+// 포인트 지급
+router.post('/give-points', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { username, points, reason } = req.body;
+
+    if (!username || !points) {
+      return res.status(400).json({
+        success: false,
+        error: '유저명과 포인트를 입력해주세요.',
+      });
+    }
+
+    if (points < 0 || points > 1000000) {
+      return res.status(400).json({
+        success: false,
+        error: '포인트는 0~1,000,000 사이로 입력해주세요.',
+      });
+    }
+
+    // 유저 찾기
+    const [users]: any = await connection.query(
+      'SELECT id, username, points FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        error: '해당 유저를 찾을 수 없습니다.',
+      });
+    }
+
+    const targetUser = users[0];
+
+    // 포인트 지급
+    await connection.query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
+      [points, targetUser.id]
+    );
+
+    // 관리자 로그 기록
+    await connection.query(
+      'INSERT INTO admin_logs (admin_id, action, target_user_id, details) VALUES (?, ?, ?, ?)',
+      [req.user!.id, 'GIVE_POINTS', targetUser.id, JSON.stringify({ points, reason: reason || '없음', previousPoints: targetUser.points })]
+    );
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: `${username}님에게 ${points}P를 지급했습니다.`,
+      data: {
+        username: targetUser.username,
+        previousPoints: targetUser.points,
+        newPoints: targetUser.points + points,
+        pointsGiven: points,
+      },
+    });
+
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Give points error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// 포인트 차감
+router.post('/deduct-points', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { username, points, reason } = req.body;
+
+    if (!username || !points) {
+      return res.status(400).json({
+        success: false,
+        error: '유저명과 포인트를 입력해주세요.',
+      });
+    }
+
+    if (points < 0 || points > 1000000) {
+      return res.status(400).json({
+        success: false,
+        error: '포인트는 0~1,000,000 사이로 입력해주세요.',
+      });
+    }
+
+    // 유저 찾기
+    const [users]: any = await connection.query(
+      'SELECT id, username, points FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        error: '해당 유저를 찾을 수 없습니다.',
+      });
+    }
+
+    const targetUser = users[0];
+
+    // 포인트 차감 (0 미만으로 내려가지 않도록)
+    await connection.query(
+      'UPDATE users SET points = GREATEST(0, points - ?) WHERE id = ?',
+      [points, targetUser.id]
+    );
+
+    // 관리자 로그 기록
+    await connection.query(
+      'INSERT INTO admin_logs (admin_id, action, target_user_id, details) VALUES (?, ?, ?, ?)',
+      [req.user!.id, 'DEDUCT_POINTS', targetUser.id, JSON.stringify({ points, reason: reason || '없음', previousPoints: targetUser.points })]
+    );
+
+    await connection.commit();
+
+    const newPoints = Math.max(0, targetUser.points - points);
+
+    res.json({
+      success: true,
+      message: `${username}님의 포인트 ${points}P를 차감했습니다.`,
+      data: {
+        username: targetUser.username,
+        previousPoints: targetUser.points,
+        newPoints,
+        pointsDeducted: points,
+      },
+    });
+
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Deduct points error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// 관리자 로그 조회
+router.get('/logs', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const [logs]: any = await pool.query(`
+      SELECT
+        al.*,
+        u1.username as admin_username,
+        u2.username as target_username
+      FROM admin_logs al
+      LEFT JOIN users u1 ON al.admin_id = u1.id
+      LEFT JOIN users u2 ON al.target_user_id = u2.id
+      ORDER BY al.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
+
+    res.json({
+      success: true,
+      data: logs,
+    });
+
+  } catch (error: any) {
+    console.error('Get admin logs error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  }
+});
+
+export default router;

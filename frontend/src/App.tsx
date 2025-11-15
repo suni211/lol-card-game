@@ -24,6 +24,7 @@ import Suggestions from './pages/Suggestions';
 import Profile from './pages/Profile';
 import Fusion from './pages/Fusion';
 import Achievements from './pages/Achievements';
+import Admin from './pages/Admin';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -180,6 +181,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Suggestions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Admin />
               </ProtectedRoute>
             }
           />

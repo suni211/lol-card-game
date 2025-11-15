@@ -20,6 +20,7 @@ import aiRoutes from './routes/ai';
 import suggestionsRoutes from './routes/suggestions';
 import fusionRoutes from './routes/fusion';
 import achievementsRoutes from './routes/achievements';
+import adminRoutes from './routes/admin';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -79,6 +80,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/suggestions', suggestionsRoutes);
 app.use('/api/fusion', fusionRoutes);
 app.use('/api/achievements', achievementsRoutes);
+app.use('/api/admin', adminRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

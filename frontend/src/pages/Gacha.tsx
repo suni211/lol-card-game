@@ -68,6 +68,17 @@ export default function Gacha() {
       },
       special: true,
     },
+    {
+      cost: 6500,
+      label: '2017 SSG 월즈 우승 카드팩',
+      probabilities: {
+        common: 0,
+        rare: 0,
+        epic: 90.5,
+        legendary: 9.5,
+      },
+      special: true,
+    },
   ];
 
   const getTierColor = (tier: string) => {
@@ -117,6 +128,7 @@ export default function Gacha() {
       else if (option.cost === 300) gachaType = 'premium';
       else if (option.cost === 500) gachaType = 'ultra';
       else if (option.cost === 2200) gachaType = 'lck_legend';
+      else if (option.cost === 6500) gachaType = 'ssg_2017';
 
       // 백엔드 API 호출
       const response = await axios.post(

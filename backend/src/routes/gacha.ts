@@ -14,6 +14,7 @@ const GACHA_OPTIONS = {
   ultra: { cost: 500, probabilities: { legendary: 0.5, epic: 4, rare: 25, common: 70.5 } },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5, epic: 25, rare: 70, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   lck_legend: { cost: 2200, probabilities: { legendary: 3, epic: 22, rare: 75, common: 0 }, special: 'RE' }, // RE cards and Rare+ only
+  ssg_2017: { cost: 6500, probabilities: { legendary: 9.5, epic: 90.5, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
 };
 
 function selectTierByProbability(probabilities: any): string {
@@ -84,6 +85,12 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       // LCK Legend pack - RE cards and all Rare+ cards (exclude 25WW, 25WUD)
       [players] = await connection.query(
         "SELECT * FROM players WHERE tier IN ('RARE', 'EPIC', 'LEGENDARY') AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        [tier]
+      );
+    } else if ((option as any).special === '17SSG') {
+      // 2017 SSG pack - only 17SSG cards, Epic+ tier
+      [players] = await connection.query(
+        "SELECT * FROM players WHERE name LIKE '17SSG%' AND tier = ? ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {

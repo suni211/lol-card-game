@@ -15,7 +15,7 @@ export default function VSBattle() {
   const isHardMode = mode === 'hard';
 
   const navigate = useNavigate();
-  const { token } = useAuthStore();
+  const { token, user, updateUser } = useAuthStore();
 
   const [userDecks, setUserDecks] = useState<any[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<number | null>(null);
@@ -143,6 +143,16 @@ export default function VSBattle() {
           userScore,
           enemyScore,
         });
+
+        // Update user points in real-time
+        if (isVictory && completeResponse.data.data.rewardPoints && user) {
+          updateUser({ points: user.points + completeResponse.data.data.rewardPoints });
+        }
+
+        // Show message if already cleared
+        if (completeResponse.data.data.alreadyCleared) {
+          toast.success('이미 클리어한 스테이지입니다! 보상은 최초 1회만 지급됩니다.');
+        }
       }
     } catch (error) {
       console.error('Failed to complete battle:', error);

@@ -253,40 +253,56 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
     let stagesCleared = JSON.parse(progress.stages_cleared || '[]');
     let hardStagesCleared = JSON.parse(progress.hard_stages_cleared || '[]');
 
-    if (isHardMode) {
-      if (!hardStagesCleared.includes(stageNumber)) {
+    // Check if already cleared
+    const alreadyCleared = isHardMode
+      ? hardStagesCleared.includes(stageNumber)
+      : stagesCleared.includes(stageNumber);
+
+    let actualRewardPoints = 0;
+
+    if (!alreadyCleared) {
+      // First time clear - give full reward
+      actualRewardPoints = rewardPoints;
+
+      if (isHardMode) {
         hardStagesCleared.push(stageNumber);
-      }
-    } else {
-      if (!stagesCleared.includes(stageNumber)) {
+      } else {
         stagesCleared.push(stageNumber);
+
+        // Check if all stages cleared (unlock hard mode)
+        if (stagesCleared.length === 10 && !progress.hard_mode_unlocked) {
+          await connection.query(
+            'UPDATE user_vs_progress SET hard_mode_unlocked = TRUE WHERE user_id = ?',
+            [userId]
+          );
+        }
       }
 
-      // Check if all stages cleared (unlock hard mode)
-      if (stagesCleared.length === 10 && !progress.hard_mode_unlocked) {
-        await connection.query(
-          'UPDATE user_vs_progress SET hard_mode_unlocked = TRUE WHERE user_id = ?',
-          [userId]
-        );
-      }
+      // Update progress
+      await connection.query(
+        `UPDATE user_vs_progress
+         SET stages_cleared = ?,
+             hard_stages_cleared = ?,
+             total_points_earned = total_points_earned + ?,
+             last_played_at = NOW()
+         WHERE user_id = ?`,
+        [JSON.stringify(stagesCleared), JSON.stringify(hardStagesCleared), actualRewardPoints, userId]
+      );
+
+      // Award points
+      await connection.query(
+        'UPDATE users SET points = points + ? WHERE id = ?',
+        [actualRewardPoints, userId]
+      );
+    } else {
+      // Already cleared - no reward, just update last_played_at
+      await connection.query(
+        `UPDATE user_vs_progress
+         SET last_played_at = NOW()
+         WHERE user_id = ?`,
+        [userId]
+      );
     }
-
-    // Update progress
-    await connection.query(
-      `UPDATE user_vs_progress
-       SET stages_cleared = ?,
-           hard_stages_cleared = ?,
-           total_points_earned = total_points_earned + ?,
-           last_played_at = NOW()
-       WHERE user_id = ?`,
-      [JSON.stringify(stagesCleared), JSON.stringify(hardStagesCleared), rewardPoints, userId]
-    );
-
-    // Award points
-    await connection.query(
-      'UPDATE users SET points = points + ? WHERE id = ?',
-      [rewardPoints, userId]
-    );
 
     // Check if stage 10 hard mode cleared (give legendary pack)
     let legendaryPackAwarded = false;
@@ -299,13 +315,14 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
 
     res.json({
       success: true,
-      message: '승리했습니다!',
+      message: alreadyCleared ? '이미 클리어한 스테이지입니다!' : '승리했습니다!',
       data: {
-        rewardPoints,
+        rewardPoints: actualRewardPoints,
         stagesCleared,
         hardStagesCleared,
         hardModeUnlocked: progress.hard_mode_unlocked || stagesCleared.length === 10,
-        legendaryPackAwarded
+        legendaryPackAwarded,
+        alreadyCleared
       }
     });
   } catch (error) {

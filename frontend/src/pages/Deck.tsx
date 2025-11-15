@@ -271,7 +271,6 @@ export default function Deck() {
     );
   }
 
-  const totalOVR = calculateTotalOVR();
   const filledSlots = deckSlots.filter(s => s.card).length;
 
   return (

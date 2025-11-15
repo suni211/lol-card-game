@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, ArrowRight, Sparkles, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Zap, Sparkles, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';

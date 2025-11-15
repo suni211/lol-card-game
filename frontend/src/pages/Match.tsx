@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Swords, Layers, Users, Trophy, Target, Zap, Shield, MapPin } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
@@ -39,6 +39,21 @@ interface Deck {
   isActive: boolean;
 }
 
+type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
+
+interface RoundResult {
+  round: number;
+  player1Strategy: Strategy;
+  player2Strategy: Strategy;
+  player1Power: number;
+  player2Power: number;
+  winner: 1 | 2;
+  currentScore: {
+    player1: number;
+    player2: number;
+  };
+}
+
 export default function Match() {
   const { token, user, updateUser } = useAuthStore();
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -46,10 +61,18 @@ export default function Match() {
   const [matching, setMatching] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
   const [queueSize, setQueueSize] = useState(0);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [currentPhase, setCurrentPhase] = useState(0);
-  const [simulatedPhases, setSimulatedPhases] = useState<any[]>([]);
   const socketRef = useRef<Socket | null>(null);
+
+  // Realtime match state
+  const [inMatch, setInMatch] = useState(false);
+  const [matchId, setMatchId] = useState<string | null>(null);
+  const [opponent, setOpponent] = useState<any>(null);
+  const [currentRound, setCurrentRound] = useState(0);
+  const [roundTimeLeft, setRoundTimeLeft] = useState(0);
+  const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
+  const [roundHistory, setRoundHistory] = useState<RoundResult[]>([]);
+  const [myScore, setMyScore] = useState(0);
+  const [opponentScore, setOpponentScore] = useState(0);
 
   useEffect(() => {
     const fetchDeck = async () => {
@@ -121,13 +144,13 @@ export default function Match() {
       console.log('Socket connected:', socket.id);
       if (!hasConnected) {
         hasConnected = true;
-        // Only show toast on first connect, not on reconnects
+        // Authenticate for realtime match handlers
+        socket.emit('authenticate', { token });
       }
     });
 
     socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
-      // Don't show toast for every connection error
     });
 
     socket.on('disconnect', () => {
@@ -145,7 +168,6 @@ export default function Match() {
     socket.on('queue_error', (data) => {
       console.error('Queue error:', data);
 
-      // Handle suspension specifically
       if (data.error === 'Suspended' && data.message) {
         toast.error(data.message, { duration: 5000 });
       } else {
@@ -160,54 +182,73 @@ export default function Match() {
       toast.success(`매치 발견! 상대: ${data.opponent.username}`);
     });
 
-    socket.on('match_result', async (result) => {
-      console.log('Match result:', result);
+    // Realtime match events
+    socket.on('matchFound', (data) => {
+      console.log('Real-time match found:', data);
+      setInMatch(true);
+      setMatchId(data.matchId);
+      setOpponent(data.opponent);
+      setMatching(false);
+      setRoundHistory([]);
+      setMyScore(0);
+      setOpponentScore(0);
+      toast.success(`매치 시작! 상대: ${data.opponent.username}`);
+    });
 
-      // Start simulation if phases exist
-      if (result.phases && result.phases.length > 0) {
-        setIsSimulating(true);
-        setSimulatedPhases([]);
-        setCurrentPhase(0);
+    socket.on('roundStart', (data) => {
+      console.log('Round start:', data);
+      setCurrentRound(data.round);
+      setRoundTimeLeft(Math.floor(data.timeLimit / 1000));
+      setSelectedStrategy(null);
 
-        // Calculate time per game (6 seconds each for best-of-5)
-        const timePerGame = 6000; // 6 seconds per game
-        const totalGames = result.phases.length;
+      // Start countdown timer
+      const interval = setInterval(() => {
+        setRoundTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-        // Simulate phases (each game takes 6 seconds)
-        for (let i = 0; i < totalGames; i++) {
-          setTimeout(() => {
-            setSimulatedPhases(prev => [...prev, result.phases[i]]);
-            setCurrentPhase(i + 1);
+      return () => clearInterval(interval);
+    });
 
-            // After last phase, show final result
-            if (i === totalGames - 1) {
-              setTimeout(() => {
-                setIsSimulating(false);
-                setMatchResult(result);
-                setMatching(false);
+    socket.on('roundResult', (data: RoundResult) => {
+      console.log('Round result:', data);
+      setRoundHistory(prev => [...prev, data]);
+      setMyScore(data.currentScore.player1);
+      setOpponentScore(data.currentScore.player2);
 
-                if (result.won) {
-                  toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
-                } else {
-                  toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
-                }
-              }, 2000); // 2 second pause before showing result
-            }
-          }, i * timePerGame); // 6 seconds per game
-        }
+      // Show round result toast
+      if (data.winner === 1) {
+        toast.success(`라운드 ${data.round} 승리!`);
       } else {
-        // No phases, show result immediately
-        setMatchResult(result);
-        setMatching(false);
+        toast.error(`라운드 ${data.round} 패배`);
+      }
+    });
 
-        if (result.won) {
-          toast.success(`승리! +${result.pointsChange} 포인트, +${result.ratingChange} 레이팅`);
-        } else {
-          toast.error(`패배! +${result.pointsChange} 포인트, ${result.ratingChange} 레이팅`);
-        }
+    socket.on('matchComplete', async (data) => {
+      console.log('Match complete:', data);
+      setInMatch(false);
+      setMatchId(null);
+      setMatchResult({
+        won: data.won,
+        myScore: data.myScore,
+        opponentScore: data.opponentScore,
+        opponent: data.opponent,
+        pointsChange: data.pointsChange,
+        ratingChange: data.ratingChange,
+      });
+
+      if (data.won) {
+        toast.success(`승리! +${data.pointsChange} 포인트, +${data.ratingChange} 레이팅`);
+      } else {
+        toast.error(`패배! +${data.pointsChange} 포인트, ${data.ratingChange} 레이팅`);
       }
 
-      // Fetch updated user data from server
+      // Fetch updated user data
       try {
         const response = await axios.get(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -225,6 +266,7 @@ export default function Match() {
       console.error('Match error:', data);
       toast.error('매치 처리 오류');
       setMatching(false);
+      setInMatch(false);
     });
 
     return () => {
@@ -254,8 +296,61 @@ export default function Match() {
     }
   };
 
+  const selectStrategy = (strategy: Strategy) => {
+    if (!socketRef.current || !matchId || selectedStrategy) return;
+
+    setSelectedStrategy(strategy);
+    socketRef.current.emit('selectStrategy', { matchId, strategy });
+    toast.success(`${getStrategyName(strategy)} 선택!`);
+  };
+
+  const forfeitMatch = () => {
+    if (!socketRef.current || !matchId) return;
+
+    if (confirm('정말 항복하시겠습니까?')) {
+      socketRef.current.emit('forfeitMatch', { matchId });
+      setInMatch(false);
+      setMatchId(null);
+      toast.error('항복했습니다');
+    }
+  };
+
   const playAgain = () => {
     setMatchResult(null);
+    setRoundHistory([]);
+  };
+
+  const getStrategyName = (strategy: Strategy): string => {
+    switch (strategy) {
+      case 'AGGRESSIVE':
+        return '공격형 (라인전)';
+      case 'TEAMFIGHT':
+        return '한타형';
+      case 'DEFENSIVE':
+        return '수비형 (운영)';
+    }
+  };
+
+  const getStrategyIcon = (strategy: Strategy) => {
+    switch (strategy) {
+      case 'AGGRESSIVE':
+        return <Zap className="w-6 h-6" />;
+      case 'TEAMFIGHT':
+        return <Shield className="w-6 h-6" />;
+      case 'DEFENSIVE':
+        return <MapPin className="w-6 h-6" />;
+    }
+  };
+
+  const getStrategyColor = (strategy: Strategy): string => {
+    switch (strategy) {
+      case 'AGGRESSIVE':
+        return 'from-yellow-500 to-orange-500';
+      case 'TEAMFIGHT':
+        return 'from-blue-500 to-purple-500';
+      case 'DEFENSIVE':
+        return 'from-green-500 to-teal-500';
+    }
   };
 
   if (loading) {
@@ -285,7 +380,7 @@ export default function Match() {
             랭크 경기
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            최고의 실력자들과 경쟁하세요!
+            실시간 전략 대결!
           </p>
         </motion.div>
 
@@ -318,6 +413,169 @@ export default function Match() {
               </a>
             </div>
           </motion.div>
+        ) : inMatch ? (
+          /* In Match - Strategy Selection */
+          <div className="space-y-6">
+            {/* Match Info */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="text-center flex-1">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">YOU</div>
+                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mt-2">{myScore}</div>
+                </div>
+                <div className="text-center px-6">
+                  <div className="text-xl font-bold text-gray-600 dark:text-gray-400">VS</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-500 mt-1">라운드 {currentRound}</div>
+                </div>
+                <div className="text-center flex-1">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{opponent?.username}</div>
+                  <div className="text-4xl font-bold text-red-600 dark:text-red-400 mt-2">{opponentScore}</div>
+                </div>
+              </div>
+
+              {/* Round Timer */}
+              {roundTimeLeft > 0 && (
+                <div className="text-center">
+                  <div className="text-6xl font-bold text-primary-600 dark:text-primary-400 mb-2">
+                    {roundTimeLeft}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">초 남음</div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Strategy Selection */}
+            {roundTimeLeft > 0 && !selectedStrategy && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+                  전략을 선택하세요!
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => selectStrategy('AGGRESSIVE')}
+                    className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <Zap className="w-12 h-12" />
+                      <div className="text-xl font-bold">공격형</div>
+                      <div className="text-sm opacity-90">(라인전 스탯 사용)</div>
+                    </div>
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+
+                  <button
+                    onClick={() => selectStrategy('TEAMFIGHT')}
+                    className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <Shield className="w-12 h-12" />
+                      <div className="text-xl font-bold">한타형</div>
+                      <div className="text-sm opacity-90">(한타 스탯 사용)</div>
+                    </div>
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+
+                  <button
+                    onClick={() => selectStrategy('DEFENSIVE')}
+                    className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <MapPin className="w-12 h-12" />
+                      <div className="text-xl font-bold">수비형</div>
+                      <div className="text-sm opacity-90">(운영 스탯 사용)</div>
+                    </div>
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-sm text-blue-900 dark:text-blue-300 text-center">
+                    <strong>가위바위보 상성:</strong> 공격형 {">"} 한타형 {">"} 수비형 {">"} 공격형
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {selectedStrategy && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center"
+              >
+                <div className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  선택 완료! 상대방을 기다리는 중...
+                </div>
+                <div className={`inline-flex items-center gap-3 px-6 py-4 rounded-xl bg-gradient-to-r ${getStrategyColor(selectedStrategy)} text-white`}>
+                  {getStrategyIcon(selectedStrategy)}
+                  <span className="text-2xl font-bold">{getStrategyName(selectedStrategy)}</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Round History */}
+            {roundHistory.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+              >
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">라운드 기록</h3>
+                <div className="space-y-3">
+                  {roundHistory.map((round, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-lg border-2 ${
+                        round.winner === 1
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                          : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                            R{round.round}
+                          </div>
+                          <div className={`px-3 py-1 rounded-lg bg-gradient-to-r ${getStrategyColor(round.player1Strategy)} text-white text-sm font-bold`}>
+                            {getStrategyName(round.player1Strategy)}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">vs</div>
+                          <div className={`px-3 py-1 rounded-lg bg-gradient-to-r ${getStrategyColor(round.player2Strategy)} text-white text-sm font-bold`}>
+                            {getStrategyName(round.player2Strategy)}
+                          </div>
+                        </div>
+                        <div className={`text-xl font-bold ${
+                          round.winner === 1
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {round.winner === 1 ? '승리' : '패배'}
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center">
+                        파워: {round.player1Power} vs {round.player2Power}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Forfeit Button */}
+            <button
+              onClick={forfeitMatch}
+              className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition-colors"
+            >
+              항복
+            </button>
+          </div>
         ) : (
           /* Deck Ready - Show Match Options */
           <div className="space-y-6">
@@ -391,115 +649,8 @@ export default function Match() {
               </div>
             </motion.div>
 
-            {/* Match Button, Simulation, or Result */}
-            {isSimulating ? (
-              /* Match Simulation */
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700"
-              >
-                <div className="text-center mb-6">
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    경기 진행 중
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    실시간 전투 중...
-                  </p>
-                </div>
-
-                {/* Game Progress (Bo5) */}
-                <div className="mb-8">
-                  <div className="text-center mb-4">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      5판 3선승
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      진행중: {currentPhase} / {simulatedPhases.length > 0 ? simulatedPhases[simulatedPhases.length - 1].gameNumber : '?'}게임
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
-                    {[1, 2, 3, 4, 5].map((gameNum) => (
-                      <div
-                        key={gameNum}
-                        className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${
-                          gameNum < currentPhase
-                            ? 'bg-green-500 text-white'
-                            : gameNum === currentPhase
-                            ? 'bg-blue-500 text-white animate-pulse'
-                            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
-                        }`}
-                      >
-                        {gameNum}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Phase Results */}
-                <AnimatePresence>
-                  <div className="space-y-4">
-                    {simulatedPhases.map((phase, idx) => {
-                      // The server always sends data from player1's perspective
-                      // We are always player1 in the simulation
-                      const myCurrentScore = phase.score.player1;
-                      const opponentCurrentScore = phase.score.player2;
-                      const iWonThisGame = phase.winner === 1;
-
-                      return (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, x: -50 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.5 }}
-                          className={`p-6 rounded-xl border-2 ${
-                            iWonThisGame
-                              ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                              : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              {phase.phase === 'LANING' && <Zap className="w-6 h-6 text-yellow-600" />}
-                              {phase.phase === 'TEAMFIGHT' && <Shield className="w-6 h-6 text-blue-600" />}
-                              {phase.phase === 'MACRO' && <MapPin className="w-6 h-6 text-purple-600" />}
-                              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {phase.name}
-                              </h3>
-                            </div>
-                            <div className={`text-2xl font-bold ${
-                              iWonThisGame
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              {iWonThisGame ? '승리!' : '패배'}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-900 dark:text-white">
-                            <span className={iWonThisGame ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
-                              {myCurrentScore}
-                            </span>
-                            <span className="text-gray-400">-</span>
-                            <span className={!iWonThisGame ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
-                              {opponentCurrentScore}
-                            </span>
-                          </div>
-
-                        {phase.strategyWon && (
-                          <div className="mt-3 text-center">
-                            <span className="inline-block px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full text-sm font-medium">
-                              전략 카운터 성공!
-                            </span>
-                          </div>
-                        )}
-                      </motion.div>
-                      );
-                    })}
-                  </div>
-                </AnimatePresence>
-              </motion.div>
-            ) : !matchResult ? (
+            {/* Match Button or Result */}
+            {!matchResult ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -518,7 +669,7 @@ export default function Match() {
                       </div>
                     </button>
                     <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                      비슷한 실력의 상대와 자동으로 실시간 매칭됩니다
+                      실시간 전략 대결 - 5판 3선승
                     </p>
                   </>
                 ) : (
@@ -572,9 +723,6 @@ export default function Match() {
                     <div>
                       <div className="text-xl font-bold text-gray-900 dark:text-white">
                         {matchResult.opponent.username}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {matchResult.opponent.tier} · {matchResult.opponent.rating} 레이팅
                       </div>
                     </div>
                   </div>

@@ -1,0 +1,417 @@
+import { Server, Socket } from 'socket.io';
+import pool from '../config/database';
+
+// 전략 타입 정의
+type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
+
+// 전략 상성표
+const STRATEGY_COUNTERS: Record<Strategy, { beats: Strategy; losesTo: Strategy }> = {
+  AGGRESSIVE: { beats: 'TEAMFIGHT', losesTo: 'DEFENSIVE' },
+  TEAMFIGHT: { beats: 'DEFENSIVE', losesTo: 'AGGRESSIVE' },
+  DEFENSIVE: { beats: 'AGGRESSIVE', losesTo: 'TEAMFIGHT' },
+};
+
+// 전략별 사용 스탯
+const STRATEGY_STATS: Record<Strategy, 'laning' | 'teamfight' | 'macro'> = {
+  AGGRESSIVE: 'laning',
+  TEAMFIGHT: 'teamfight',
+  DEFENSIVE: 'macro',
+};
+
+interface ActiveMatch {
+  matchId: string;
+  player1: {
+    socketId: string;
+    userId: number;
+    username: string;
+    deckId: number;
+    score: number;
+    ready: boolean;
+    strategy?: Strategy;
+  };
+  player2: {
+    socketId: string;
+    userId: number;
+    username: string;
+    deckId: number;
+    score: number;
+    ready: boolean;
+    strategy?: Strategy;
+  };
+  currentRound: number;
+  roundStartTime?: number;
+  roundTimer?: NodeJS.Timeout;
+  isPractice: boolean;
+}
+
+const activeMatches = new Map<string, ActiveMatch>();
+const ROUND_TIME_LIMIT = 10000; // 10 seconds
+
+// 덱의 특정 스탯 파워 계산
+async function calculateDeckStatPower(
+  deckId: number,
+  stat: 'laning' | 'teamfight' | 'macro'
+): Promise<number> {
+  const connection = await pool.getConnection();
+
+  try {
+    const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);
+    if (deck.length === 0) return 0;
+
+    const deckData = deck[0];
+    const cardIds = [
+      deckData.top_card_id,
+      deckData.jungle_card_id,
+      deckData.mid_card_id,
+      deckData.adc_card_id,
+      deckData.support_card_id,
+    ].filter(Boolean);
+
+    if (cardIds.length === 0) return 0;
+
+    const [cards]: any = await connection.query(`
+      SELECT uc.level, p.overall, p.${stat} as stat_value
+      FROM user_cards uc
+      JOIN players p ON uc.player_id = p.id
+      WHERE uc.id IN (?)
+    `, [cardIds]);
+
+    let totalPower = 0;
+    cards.forEach((card: any) => {
+      const statContribution = (card.stat_value || 50) * 0.7;
+      const overallContribution = card.overall * 0.3;
+      totalPower += statContribution + overallContribution + card.level;
+    });
+
+    return totalPower;
+  } finally {
+    connection.release();
+  }
+}
+
+// 라운드 결과 계산
+async function calculateRoundResult(
+  match: ActiveMatch
+): Promise<{ winner: 1 | 2; player1Power: number; player2Power: number }> {
+  const p1Strategy = match.player1.strategy!;
+  const p2Strategy = match.player2.strategy!;
+
+  // 사용할 스탯 결정
+  const p1Stat = STRATEGY_STATS[p1Strategy];
+  const p2Stat = STRATEGY_STATS[p2Strategy];
+
+  // 덱 파워 계산
+  const p1BasePower = await calculateDeckStatPower(match.player1.deckId, p1Stat);
+  const p2BasePower = await calculateDeckStatPower(match.player2.deckId, p2Stat);
+
+  // 전략 상성 보너스
+  let p1Bonus = 1.0;
+  let p2Bonus = 1.0;
+
+  if (STRATEGY_COUNTERS[p1Strategy].beats === p2Strategy) {
+    p1Bonus = 1.2; // +20% advantage
+  } else if (STRATEGY_COUNTERS[p1Strategy].losesTo === p2Strategy) {
+    p1Bonus = 0.8; // -20% disadvantage
+  }
+
+  if (STRATEGY_COUNTERS[p2Strategy].beats === p1Strategy) {
+    p2Bonus = 1.2;
+  } else if (STRATEGY_COUNTERS[p2Strategy].losesTo === p1Strategy) {
+    p2Bonus = 0.8;
+  }
+
+  // 랜덤 요소 (±10%)
+  const p1Random = 0.9 + Math.random() * 0.2;
+  const p2Random = 0.9 + Math.random() * 0.2;
+
+  // 최종 파워 계산
+  const p1FinalPower = p1BasePower * p1Bonus * p1Random;
+  const p2FinalPower = p2BasePower * p2Bonus * p2Random;
+
+  return {
+    winner: p1FinalPower > p2FinalPower ? 1 : 2,
+    player1Power: Math.round(p1FinalPower),
+    player2Power: Math.round(p2FinalPower),
+  };
+}
+
+// 라운드 시작
+function startRound(matchId: string, io: Server) {
+  const match = activeMatches.get(matchId);
+  if (!match) return;
+
+  match.player1.ready = false;
+  match.player2.ready = false;
+  match.player1.strategy = undefined;
+  match.player2.strategy = undefined;
+  match.roundStartTime = Date.now();
+
+  // 양 플레이어에게 라운드 시작 알림
+  io.to(match.player1.socketId).emit('roundStart', {
+    round: match.currentRound,
+    timeLimit: ROUND_TIME_LIMIT,
+  });
+  io.to(match.player2.socketId).emit('roundStart', {
+    round: match.currentRound,
+    timeLimit: ROUND_TIME_LIMIT,
+  });
+
+  // 타임아웃 설정 (10초)
+  match.roundTimer = setTimeout(() => {
+    processRoundTimeout(matchId, io);
+  }, ROUND_TIME_LIMIT);
+}
+
+// 타임아웃 처리 (전략 선택 안한 플레이어는 랜덤)
+async function processRoundTimeout(matchId: string, io: Server) {
+  const match = activeMatches.get(matchId);
+  if (!match) return;
+
+  const strategies: Strategy[] = ['AGGRESSIVE', 'TEAMFIGHT', 'DEFENSIVE'];
+
+  // 선택 안한 플레이어는 랜덤 전략
+  if (!match.player1.strategy) {
+    match.player1.strategy = strategies[Math.floor(Math.random() * strategies.length)];
+  }
+  if (!match.player2.strategy) {
+    match.player2.strategy = strategies[Math.floor(Math.random() * strategies.length)];
+  }
+
+  // 라운드 결과 처리
+  await processRound(matchId, io);
+}
+
+// 라운드 결과 처리
+async function processRound(matchId: string, io: Server) {
+  const match = activeMatches.get(matchId);
+  if (!match) return;
+
+  // 타이머 정리
+  if (match.roundTimer) {
+    clearTimeout(match.roundTimer);
+    match.roundTimer = undefined;
+  }
+
+  // 결과 계산
+  const result = await calculateRoundResult(match);
+
+  // 점수 업데이트
+  if (result.winner === 1) {
+    match.player1.score++;
+  } else {
+    match.player2.score++;
+  }
+
+  // 라운드 결과 전송
+  const roundResult = {
+    round: match.currentRound,
+    player1Strategy: match.player1.strategy,
+    player2Strategy: match.player2.strategy,
+    player1Power: result.player1Power,
+    player2Power: result.player2Power,
+    winner: result.winner,
+    currentScore: {
+      player1: match.player1.score,
+      player2: match.player2.score,
+    },
+  };
+
+  io.to(match.player1.socketId).emit('roundResult', roundResult);
+  io.to(match.player2.socketId).emit('roundResult', roundResult);
+
+  // 매치 종료 확인 (3승)
+  if (match.player1.score >= 3 || match.player2.score >= 3) {
+    await endMatch(matchId, io);
+  } else {
+    // 다음 라운드 시작
+    match.currentRound++;
+    setTimeout(() => startRound(matchId, io), 3000); // 3초 후 다음 라운드
+  }
+}
+
+// 매치 종료 및 결과 저장
+async function endMatch(matchId: string, io: Server) {
+  const match = activeMatches.get(matchId);
+  if (!match) return;
+
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const winnerId = match.player1.score > match.player2.score ? match.player1.userId : match.player2.userId;
+    const player1Won = winnerId === match.player1.userId;
+
+    // 매치 결과 저장 (일반전이 아닌 경우만)
+    if (!match.isPractice) {
+      const pointsChange = player1Won ? 200 : 100;
+      const ratingChange = player1Won ? 25 : -15;
+
+      // matches 테이블에 저장
+      const [matchResult]: any = await connection.query(`
+        INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED', NOW())
+      `, [match.player1.userId, match.player2.userId, match.player1.deckId, match.player2.deckId, winnerId, match.player1.score, match.player2.score]);
+
+      const dbMatchId = matchResult.insertId;
+
+      // match_history 저장
+      await connection.query(`
+        INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
+        VALUES (?, ?, ?, ?, ?)
+      `, [match.player1.userId, dbMatchId, player1Won ? 'WIN' : 'LOSE', player1Won ? pointsChange : 100, player1Won ? ratingChange : -15]);
+
+      await connection.query(`
+        INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
+        VALUES (?, ?, ?, ?, ?)
+      `, [match.player2.userId, dbMatchId, player1Won ? 'LOSE' : 'WIN', player1Won ? 100 : pointsChange, player1Won ? -15 : ratingChange]);
+
+      // 유저 포인트 및 레이팅 업데이트
+      await connection.query(
+        'UPDATE users SET points = points + ?, rating = GREATEST(1000, rating + ?) WHERE id = ?',
+        [player1Won ? pointsChange : 100, player1Won ? ratingChange : -15, match.player1.userId]
+      );
+
+      await connection.query(
+        'UPDATE users SET points = points + ?, rating = GREATEST(1000, rating + ?) WHERE id = ?',
+        [player1Won ? 100 : pointsChange, player1Won ? -15 : ratingChange, match.player2.userId]
+      );
+
+      // 통계 업데이트
+      await connection.query(`
+        UPDATE user_stats
+        SET total_matches = total_matches + 1, wins = wins + ?, losses = losses + ?, current_streak = ?, longest_win_streak = GREATEST(longest_win_streak, ?)
+        WHERE user_id = ?
+      `, [player1Won ? 1 : 0, player1Won ? 0 : 1, player1Won ? 1 : 0, player1Won ? 1 : 0, match.player1.userId]);
+
+      await connection.query(`
+        UPDATE user_stats
+        SET total_matches = total_matches + 1, wins = wins + ?, losses = losses + ?, current_streak = ?, longest_win_streak = GREATEST(longest_win_streak, ?)
+        WHERE user_id = ?
+      `, [player1Won ? 0 : 1, player1Won ? 1 : 0, player1Won ? 0 : 1, player1Won ? 0 : 1, match.player2.userId]);
+    }
+
+    await connection.commit();
+
+    // 최종 결과 전송
+    const finalResult = {
+      won: true,
+      myScore: match.player1.score,
+      opponentScore: match.player2.score,
+      opponent: {
+        username: match.player2.username,
+      },
+      pointsChange: match.isPractice ? 0 : (player1Won ? 200 : 100),
+      ratingChange: match.isPractice ? 0 : (player1Won ? 25 : -15),
+    };
+
+    io.to(match.player1.socketId).emit('matchComplete', {
+      ...finalResult,
+      won: player1Won,
+      myScore: match.player1.score,
+      opponentScore: match.player2.score,
+      opponent: { username: match.player2.username },
+    });
+
+    io.to(match.player2.socketId).emit('matchComplete', {
+      ...finalResult,
+      won: !player1Won,
+      myScore: match.player2.score,
+      opponentScore: match.player1.score,
+      opponent: { username: match.player1.username },
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('End match error:', error);
+  } finally {
+    connection.release();
+    activeMatches.delete(matchId);
+  }
+}
+
+// 소켓 이벤트 핸들러 설정
+export function setupRealtimeMatch(io: Server, socket: Socket, user: any) {
+  // 전략 선택 이벤트
+  socket.on('selectStrategy', async (data: { matchId: string; strategy: Strategy }) => {
+    const match = activeMatches.get(data.matchId);
+    if (!match) return;
+
+    // 플레이어 식별 및 전략 저장
+    if (socket.id === match.player1.socketId) {
+      match.player1.strategy = data.strategy;
+      match.player1.ready = true;
+    } else if (socket.id === match.player2.socketId) {
+      match.player2.strategy = data.strategy;
+      match.player2.ready = true;
+    }
+
+    // 둘 다 준비되면 라운드 처리
+    if (match.player1.ready && match.player2.ready) {
+      await processRound(data.matchId, io);
+    }
+  });
+
+  // 매치 포기
+  socket.on('forfeitMatch', async (data: { matchId: string }) => {
+    const match = activeMatches.get(data.matchId);
+    if (!match) return;
+
+    // 포기한 플레이어 반대편을 승자로
+    if (socket.id === match.player1.socketId) {
+      match.player2.score = 3;
+      match.player1.score = 0;
+    } else if (socket.id === match.player2.socketId) {
+      match.player1.score = 3;
+      match.player2.score = 0;
+    }
+
+    await endMatch(data.matchId, io);
+  });
+}
+
+// 새로운 매치 생성 (matchmaking에서 호출)
+export function createRealtimeMatch(
+  player1: { socketId: string; userId: number; username: string; deckId: number },
+  player2: { socketId: string; userId: number; username: string; deckId: number },
+  isPractice: boolean,
+  io: Server
+): string {
+  const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  const match: ActiveMatch = {
+    matchId,
+    player1: {
+      ...player1,
+      score: 0,
+      ready: false,
+    },
+    player2: {
+      ...player2,
+      score: 0,
+      ready: false,
+    },
+    currentRound: 1,
+    isPractice,
+  };
+
+  activeMatches.set(matchId, match);
+
+  // 양 플레이어에게 매치 시작 알림
+  io.to(player1.socketId).emit('matchFound', {
+    matchId,
+    opponent: { username: player2.username },
+    isPractice,
+  });
+
+  io.to(player2.socketId).emit('matchFound', {
+    matchId,
+    opponent: { username: player1.username },
+    isPractice,
+  });
+
+  // 첫 라운드 시작 (3초 후)
+  setTimeout(() => startRound(matchId, io), 3000);
+
+  return matchId;
+}

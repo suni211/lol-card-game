@@ -23,6 +23,8 @@ import achievementsRoutes from './routes/achievements';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
+import { setupRealtimeMatch } from './socket/realtimeMatch';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -97,6 +99,22 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Setup matchmaking
 setupMatchmaking(io);
+
+// Setup realtime match handlers for all connections
+io.on('connection', (socket) => {
+  // Verify user token and setup realtime match handlers
+  socket.on('authenticate', (data: { token: string }) => {
+    try {
+      const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+      const decoded: any = jwt.verify(data.token, jwtSecret);
+
+      // Setup realtime match event handlers for this authenticated user
+      setupRealtimeMatch(io, socket, decoded);
+    } catch (error) {
+      console.error('Socket authentication error:', error);
+    }
+  });
+});
 
 // Setup socket.io for notices
 setSocketIO(io);

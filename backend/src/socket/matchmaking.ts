@@ -4,6 +4,7 @@ import pool from '../config/database';
 import { calculateTier, canMatchTiers, UserTier } from '../utils/tierCalculator';
 import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
+import { createRealtimeMatch, setupRealtimeMatch } from './realtimeMatch';
 
 interface MatchmakingPlayer {
   socketId: string;
@@ -415,8 +416,23 @@ function findMatch(
       }
     });
 
-    // Process the match
-    processMatch(player, opponent, io, isPractice);
+    // Create realtime match instead of auto-simulation
+    createRealtimeMatch(
+      {
+        socketId: player.socketId,
+        userId: player.userId,
+        username: player.username,
+        deckId: player.deckId,
+      },
+      {
+        socketId: opponent.socketId,
+        userId: opponent.userId,
+        username: opponent.username,
+        deckId: opponent.deckId,
+      },
+      isPractice,
+      io
+    );
 
     // Update queue size for remaining players
     broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');

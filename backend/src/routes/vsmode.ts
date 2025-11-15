@@ -35,7 +35,7 @@ router.get('/stages', authMiddleware, async (req: AuthRequest, res: Response) =>
         ORDER BY position_order ASC
       `, [stage.id]);
 
-      stage.enemies = enemies;
+      stage.enemies = enemies || [];
     }
 
     // Get user progress
@@ -66,8 +66,14 @@ router.get('/stages', authMiddleware, async (req: AuthRequest, res: Response) =>
     res.json({
       success: true,
       data: {
-        stages,
-        progress: progress[0]
+        stages: stages || [],
+        progress: progress[0] || {
+          current_stage: 1,
+          hard_mode_unlocked: false,
+          stages_cleared: [],
+          hard_stages_cleared: [],
+          total_points_earned: 0
+        }
       }
     });
   } catch (error) {

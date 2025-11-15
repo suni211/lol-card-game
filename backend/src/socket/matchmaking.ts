@@ -115,6 +115,9 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
 
     const matchId = matchResult.insertId;
 
+    // Store actual rating changes for later use
+    const actualRatingChanges: { [key: number]: number } = {};
+
     // Update both players
     for (const player of [player1, player2]) {
       const won = winnerId === player.userId;
@@ -136,6 +139,9 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
       if (!isPractice && newRating < 1000) {
         ratingChange = 1000 - currentRating;
       }
+
+      // Store actual rating change for this player
+      actualRatingChanges[player.userId] = ratingChange;
 
       // Calculate new tier (only for ranked)
       const newTier = isPractice ? null : calculateTier(currentRating + ratingChange);
@@ -214,10 +220,11 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
     // Calculate actual values for each player
     const player1Won = winnerId === player1.userId;
     const player2Won = winnerId === player2.userId;
-    const player1PointsChange = isPractice ? (player1Won ? 50 : 30) : (player1Won ? 100 : 50);
-    const player2PointsChange = isPractice ? (player2Won ? 50 : 30) : (player2Won ? 100 : 50);
-    const player1RatingChange = isPractice ? 0 : (player1Won ? 25 : -15);
-    const player2RatingChange = isPractice ? 0 : (player2Won ? 25 : -15);
+    const player1PointsChange = isPractice ? (player1Won ? 100 : 60) : (player1Won ? 200 : 100);
+    const player2PointsChange = isPractice ? (player2Won ? 100 : 60) : (player2Won ? 200 : 100);
+    // Use actual rating changes that were stored (includes 1000 minimum cap)
+    const player1RatingChange = actualRatingChanges[player1.userId];
+    const player2RatingChange = actualRatingChanges[player2.userId];
 
     // Send results to both players (with phases for 30-second simulation)
     io.to(player1.socketId).emit('match_result', {

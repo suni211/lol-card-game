@@ -15,6 +15,7 @@ const GACHA_OPTIONS = {
   worlds_winner: { cost: 2500, probabilities: { legendary: 5, epic: 25, rare: 70, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   lck_legend: { cost: 2200, probabilities: { legendary: 3, epic: 22, rare: 75, common: 0 }, special: 'RE' }, // RE cards and Rare+ only
   ssg_2017: { cost: 6500, probabilities: { legendary: 9.5, epic: 90.5, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
+  msi_pack: { cost: 2500, probabilities: { legendary: 2.5, epic: 10.5, rare: 87, common: 0 }, special: 'MSI' }, // MSI cards + Rare+ only
 };
 
 function selectTierByProbability(probabilities: any): string {
@@ -91,6 +92,12 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       // 2017 SSG pack - 17SSG cards and all Epic+ cards
       [players] = await connection.query(
         "SELECT * FROM players WHERE (name LIKE '17SSG%' OR tier IN ('EPIC', 'LEGENDARY')) AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        [tier]
+      );
+    } else if ((option as any).special === 'MSI') {
+      // MSI pack - MSI cards and all Rare+ cards
+      [players] = await connection.query(
+        "SELECT * FROM players WHERE (name LIKE 'MSI %' OR tier IN ('RARE', 'EPIC', 'LEGENDARY')) AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {

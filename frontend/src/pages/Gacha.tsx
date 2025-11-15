@@ -79,6 +79,17 @@ export default function Gacha() {
       },
       special: true,
     },
+    {
+      cost: 2500,
+      label: 'MSI 레전드 카드팩',
+      probabilities: {
+        common: 0,
+        rare: 87,
+        epic: 10.5,
+        legendary: 2.5,
+      },
+      special: true,
+    },
   ];
 
   const getTierColor = (tier: string) => {
@@ -129,6 +140,7 @@ export default function Gacha() {
       else if (option.cost === 500) gachaType = 'ultra';
       else if (option.cost === 2200) gachaType = 'lck_legend';
       else if (option.cost === 6500) gachaType = 'ssg_2017';
+      else if (option.cost === 2500 && option.label.includes('MSI')) gachaType = 'msi_pack';
 
       // 백엔드 API 호출
       const response = await axios.post(
@@ -282,10 +294,17 @@ export default function Gacha() {
 
                 {/* Probabilities */}
                 <div className="space-y-2 mb-6">
-                  {option.special && option.cost === 2500 && (
+                  {option.special && option.cost === 2500 && option.label.includes('월즈') && (
                     <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
                         25WW, 25WUD + 레어 이상 확정!
+                      </p>
+                    </div>
+                  )}
+                  {option.special && option.cost === 2500 && option.label.includes('MSI') && (
+                    <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
+                        MSI 카드 + 레어 이상 확정!
                       </p>
                     </div>
                   )}

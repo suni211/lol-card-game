@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Users } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/authStore';
-import toast from 'react-hot-toast';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 

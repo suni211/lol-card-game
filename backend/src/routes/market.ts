@@ -208,7 +208,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     // Check if card is in deck
     const [inDeck]: any = await connection.query(
-      'SELECT id FROM decks WHERE user_id = ? AND (top_id = ? OR jungle_id = ? OR mid_id = ? OR adc_id = ? OR support_id = ?)',
+      'SELECT id FROM decks WHERE user_id = ? AND (top_card_id = ? OR jungle_card_id = ? OR mid_card_id = ? OR adc_card_id = ? OR support_card_id = ?)',
       [userId, cardId, cardId, cardId, cardId, cardId]
     );
 

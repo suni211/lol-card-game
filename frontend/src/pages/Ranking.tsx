@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, TrendingUp, Award, X, Eye } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { calculateEnhancementBonus } from '../utils/cardHelpers';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -435,10 +436,16 @@ export default function Ranking() {
                                           {card.team}
                                         </div>
                                         <div className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                                          {card.overall}
+                                          {card.overall + calculateEnhancementBonus(card.level)}
                                         </div>
                                         <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                          Lv. {card.level}
+                                          {card.level > 0 ? (
+                                            <span>
+                                              +{card.level} ({card.overall}+{calculateEnhancementBonus(card.level)})
+                                            </span>
+                                          ) : (
+                                            <span>Lv. 0</span>
+                                          )}
                                         </div>
                                       </div>
                                     </div>

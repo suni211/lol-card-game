@@ -259,17 +259,17 @@ export default function Enhancement() {
             <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                강화 안내 (FIFA 4 방식)
+                강화 안내 (극악 난이도)
               </h3>
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
                 <li>• 아무 카드나 재료로 사용 가능합니다</li>
-                <li>• 같은 선수 카드 사용 시: 성공률 +30%</li>
-                <li>• 재료 등급별 보너스: 레전드 +20%, 에픽 +10%, 레어 +5%</li>
-                <li>• 재료 오버롤 70 이상: 10마다 +5% (예: 80 = +5%, 90 = +10%)</li>
-                <li>• 재료 강화도: 1강당 +2% (예: +5강 재료 = +10%)</li>
+                <li>• 같은 선수 카드 사용 시: 성공률 +10%</li>
+                <li>• 재료 등급별 보너스: 레전드 +5%, 에픽 +3%, 레어 +1%</li>
+                <li>• 재료 오버롤 70 이상: 10마다 +2% (예: 80 = +2%, 90 = +4%)</li>
+                <li>• 재료 강화도: 1강당 +1% (예: +5강 재료 = +5%)</li>
                 <li>• 강화 비용: (현재 강화도 + 1) × 100P</li>
                 <li>• 실패 시 재료 카드만 소멸, 강화도는 유지됩니다</li>
-                <li>• 최대 강화: +10강</li>
+                <li>• 최대 강화: +10강 (최대 성공률 80%)</li>
               </ul>
             </div>
           </div>
@@ -331,28 +331,28 @@ export default function Enhancement() {
                   {preview.isSamePlayer && (
                     <div className="flex items-center justify-between mb-2 text-green-600 dark:text-green-400">
                       <span className="text-sm">같은 선수 보너스</span>
-                      <span className="font-bold">+30%</span>
+                      <span className="font-bold">+10%</span>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between mb-2 text-purple-600 dark:text-purple-400">
                     <span className="text-sm">재료 등급 ({getTierText(preview.materialTier)})</span>
                     <span className="font-bold">
-                      +{preview.materialTier === 'LEGENDARY' ? 20 : preview.materialTier === 'EPIC' ? 10 : preview.materialTier === 'RARE' ? 5 : 0}%
+                      +{preview.materialTier === 'LEGENDARY' ? 5 : preview.materialTier === 'EPIC' ? 3 : preview.materialTier === 'RARE' ? 1 : 0}%
                     </span>
                   </div>
 
                   {preview.materialOverall >= 70 && (
                     <div className="flex items-center justify-between mb-2 text-blue-600 dark:text-blue-400">
                       <span className="text-sm">재료 오버롤 ({preview.materialOverall})</span>
-                      <span className="font-bold">+{Math.floor((preview.materialOverall - 70) / 10) * 5}%</span>
+                      <span className="font-bold">+{Math.floor((preview.materialOverall - 70) / 10) * 2}%</span>
                     </div>
                   )}
 
                   {preview.materialLevel > 0 && (
                     <div className="flex items-center justify-between mb-2 text-orange-600 dark:text-orange-400">
                       <span className="text-sm">재료 강화도 (+{preview.materialLevel})</span>
-                      <span className="font-bold">+{preview.materialLevel * 2}%</span>
+                      <span className="font-bold">+{preview.materialLevel * 1}%</span>
                     </div>
                   )}
 

@@ -65,7 +65,12 @@ export default function Achievements() {
 
       if (response.data.success) {
         toast.success(`${response.data.data.reward}P 획득!`);
-        fetchAchievements(); // Refresh
+
+        // Update user points in auth store
+        const updatedUser = { ...user!, points: user!.points + response.data.data.reward };
+        useAuthStore.setState({ user: updatedUser });
+
+        fetchAchievements(); // Refresh achievements
       }
     } catch (error: any) {
       console.error('Claim achievement error:', error);
@@ -125,6 +130,14 @@ export default function Achievements() {
     const difficultyMatch = difficultyFilter === 'ALL' || achievement.difficulty === difficultyFilter;
     return categoryMatch && difficultyMatch;
   });
+
+  // Separate claimable achievements (completed but not claimed)
+  const claimableAchievements = filteredAchievements.filter(
+    (a) => a.is_completed && !a.is_claimed
+  );
+  const otherAchievements = filteredAchievements.filter(
+    (a) => !a.is_completed || a.is_claimed
+  );
 
   const stats = {
     total: achievements.length,
@@ -240,8 +253,113 @@ export default function Achievements() {
             <p className="mt-4 text-gray-600 dark:text-gray-400">업적 불러오는 중...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAchievements.map((achievement) => {
+          <>
+            {/* Claimable Achievements Section */}
+            {claimableAchievements.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Gift className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    보상 받기 ({claimableAchievements.length})
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {claimableAchievements.map((achievement) => {
+                    const progressPercent = Math.min(
+                      (achievement.progress / achievement.requirement_value) * 100,
+                      100
+                    );
+
+                    return (
+                      <motion.div
+                        key={achievement.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg ring-4 ring-green-500 animate-pulse"
+                      >
+                        {/* Header */}
+                        <div
+                          className={`bg-gradient-to-r ${getCategoryColor(
+                            achievement.category
+                          )} p-4 text-white`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              {getCategoryIcon(achievement.category)}
+                              <span className="text-sm font-medium">
+                                {getCategoryName(achievement.category)}
+                              </span>
+                            </div>
+                            <div
+                              className={`px-2 py-1 bg-gradient-to-r ${getDifficultyColor(
+                                achievement.difficulty
+                              )} rounded text-xs font-bold`}
+                            >
+                              {achievement.difficulty === 'EASY' ? '쉬움' : '어려움'}
+                            </div>
+                          </div>
+                          <h3 className="font-bold text-lg">{achievement.title}</h3>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            {achievement.description}
+                          </p>
+
+                          {/* Progress */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between text-sm mb-2">
+                              <span className="text-gray-600 dark:text-gray-400">진행도</span>
+                              <span className="font-bold text-green-600 dark:text-green-400">
+                                완료!
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                              <div
+                                className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: '100%' }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          {/* Reward */}
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">보상</span>
+                            <span className="font-bold text-yellow-600 dark:text-yellow-400">
+                              {achievement.reward.toLocaleString()}P
+                            </span>
+                          </div>
+
+                          {/* Claim Button */}
+                          <button
+                            onClick={() => handleClaim(achievement.id)}
+                            className="w-full py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-lg transition-all transform hover:scale-105 flex items-center justify-center space-x-2"
+                          >
+                            <Gift className="w-5 h-5" />
+                            <span>보상 받기</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Other Achievements Section */}
+            {otherAchievements.length > 0 && (
+              <div>
+                {claimableAchievements.length > 0 && (
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Trophy className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      모든 업적
+                    </h2>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {otherAchievements.map((achievement) => {
               const progressPercent = Math.min(
                 (achievement.progress / achievement.requirement_value) * 100,
                 100
@@ -335,7 +453,10 @@ export default function Achievements() {
                 </motion.div>
               );
             })}
-          </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {filteredAchievements.length === 0 && !loading && (

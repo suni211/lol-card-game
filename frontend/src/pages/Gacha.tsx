@@ -58,17 +58,6 @@ export default function Gacha() {
       },
     },
     {
-      cost: 2500,
-      label: '2025 월즈 우승',
-      probabilities: {
-        common: 0,
-        rare: 70,
-        epic: 25,
-        legendary: 5,
-      },
-      special: true,
-    },
-    {
       cost: 2200,
       label: 'LCK 레전드 카드팩',
       probabilities: {
@@ -127,7 +116,6 @@ export default function Gacha() {
       if (option.cost === 0) gachaType = 'free';
       else if (option.cost === 300) gachaType = 'premium';
       else if (option.cost === 500) gachaType = 'ultra';
-      else if (option.cost === 2500) gachaType = 'worlds_winner';
       else if (option.cost === 2200) gachaType = 'lck_legend';
 
       // 백엔드 API 호출

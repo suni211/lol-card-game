@@ -15,8 +15,8 @@ INSERT INTO players (name, team, position, overall, region, tier, image_url) VAL
 INSERT INTO players (name, team, position, overall, region, tier, image_url) VALUES
 ('25WUD PerfecT', 'KT', 'TOP', 86, 'LCK', 'EPIC', NULL),
 ('25WUD Cuzz', 'KT', 'JUNGLE', 87, 'LCK', 'EPIC', NULL),
-('25WUD HongQ', 'FlyQuest', 'MID', 82, 'LCP', 'EPIC', NULL),
-('25WUD Doggo', 'FlyQuest', 'ADC', 90, 'LCP', 'EPIC', NULL),
+('25WUD HongQ', 'CFO', 'MID', 82, 'LCP', 'EPIC', NULL),
+('25WUD Doggo', 'CFO', 'ADC', 90, 'LCP', 'EPIC', NULL),
 ('25WUD Peter', 'FlyQuest', 'SUPPORT', 89, 'LCP', 'EPIC', NULL);
 
 -- Add special traits for 25WW cards

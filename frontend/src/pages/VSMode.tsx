@@ -56,21 +56,46 @@ export default function VSMode() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log('VS Mode API Response:', response.data);
+
       if (response.data.success) {
-        setStages(response.data.data.stages || []);
+        const stagesData = response.data.data.stages;
         const progressData = response.data.data.progress;
+
+        console.log('Stages data:', stagesData);
+        console.log('Progress data:', progressData);
+
+        // Force ensure stages is array
+        const safeStages = Array.isArray(stagesData) ? stagesData : [];
+
+        // Ensure each stage has enemies array
+        const validatedStages = safeStages.map(stage => ({
+          ...stage,
+          enemies: Array.isArray(stage.enemies) ? stage.enemies : []
+        }));
+
+        setStages(validatedStages);
 
         // Ensure arrays are properly formatted
         if (progressData) {
-          setProgress({
-            ...progressData,
+          const safeProgress = {
+            current_stage: progressData.current_stage || 1,
+            hard_mode_unlocked: progressData.hard_mode_unlocked || false,
             stages_cleared: Array.isArray(progressData.stages_cleared)
               ? progressData.stages_cleared
-              : [],
+              : (typeof progressData.stages_cleared === 'string'
+                  ? JSON.parse(progressData.stages_cleared || '[]')
+                  : []),
             hard_stages_cleared: Array.isArray(progressData.hard_stages_cleared)
               ? progressData.hard_stages_cleared
-              : [],
-          });
+              : (typeof progressData.hard_stages_cleared === 'string'
+                  ? JSON.parse(progressData.hard_stages_cleared || '[]')
+                  : []),
+            total_points_earned: progressData.total_points_earned || 0
+          };
+
+          console.log('Safe progress:', safeProgress);
+          setProgress(safeProgress);
         }
       }
     } catch (error) {

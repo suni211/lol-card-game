@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
+import { getPlayerImageUrl } from '../utils/playerImage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -67,6 +68,8 @@ export default function Match() {
   const [inMatch, setInMatch] = useState(false);
   const [matchId, setMatchId] = useState<string | null>(null);
   const [opponent, setOpponent] = useState<any>(null);
+  const [opponentDeck, setOpponentDeck] = useState<any>(null);
+  const [showLineup, setShowLineup] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
   const [roundTimeLeft, setRoundTimeLeft] = useState(0);
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
@@ -185,18 +188,21 @@ export default function Match() {
     // Realtime match events
     socket.on('matchFound', (data) => {
       console.log('Real-time match found:', data);
-      setInMatch(true);
       setMatchId(data.matchId);
       setOpponent(data.opponent);
+      setOpponentDeck(data.opponent.deck);
+      setShowLineup(true);
       setMatching(false);
       setRoundHistory([]);
       setMyScore(0);
       setOpponentScore(0);
-      toast.success(`매치 시작! 상대: ${data.opponent.username}`);
+      toast.success(`매치 발견! 상대: ${data.opponent.username}`);
     });
 
     socket.on('roundStart', (data) => {
       console.log('Round start:', data);
+      setShowLineup(false);
+      setInMatch(true);
       setCurrentRound(data.round);
       setRoundTimeLeft(Math.floor(data.timeLimit / 1000));
       setSelectedStrategy(null);
@@ -411,6 +417,120 @@ export default function Match() {
               >
                 덱 편성하기
               </a>
+            </div>
+          </motion.div>
+        ) : showLineup ? (
+          /* Lineup Preview Screen */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* Header */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">
+                VS {opponent?.username}
+              </h2>
+              <p className="text-center text-gray-600 dark:text-gray-400">
+                상대 라인업을 확인하세요
+              </p>
+            </div>
+
+            {/* Lineups */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* My Deck */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-blue-500">
+                <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 text-center">
+                  내 라인업
+                </h3>
+                <div className="space-y-3">
+                  {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
+                    const card = deck[pos as keyof Deck] as UserCard | null;
+                    return (
+                      <div key={pos} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        {card && (
+                          <>
+                            <img
+                              src={getPlayerImageUrl(card.player.name, card.player.season || '25', card.player.tier)}
+                              alt={card.player.name}
+                              className="w-16 h-16 rounded-lg object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-sm font-bold text-gray-900 dark:text-white">
+                                {card.player.name}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {card.player.team} · {card.player.position}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-500">
+                                OVR {card.player.overall + card.level}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Opponent Deck */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-red-500">
+                <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4 text-center">
+                  상대 라인업
+                </h3>
+                <div className="space-y-3">
+                  {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
+                    const card = opponentDeck?.[pos];
+                    return (
+                      <div key={pos} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        {card && (
+                          <>
+                            <img
+                              src={getPlayerImageUrl(card.name, card.season || '25', card.tier)}
+                              alt={card.name}
+                              className="w-16 h-16 rounded-lg object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-sm font-bold text-gray-900 dark:text-white">
+                                {card.name}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {card.team}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-500">
+                                OVR {card.overall + card.level}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setShowLineup(false);
+                  setInMatch(true);
+                }}
+                className="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white text-xl font-bold rounded-lg shadow-lg transition-all transform hover:scale-105"
+              >
+                경기 시작
+              </button>
+              <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                10초 후 자동으로 경기가 시작됩니다
+              </p>
             </div>
           </motion.div>
         ) : inMatch ? (

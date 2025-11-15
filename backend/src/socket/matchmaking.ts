@@ -373,14 +373,14 @@ function canMatchPlayers(player1Id: number, player2Id: number, recentMatchesMap:
 }
 
 // Find match for player
-function findMatch(
+async function findMatch(
   player: MatchmakingPlayer,
   queue: MatchmakingPlayer[],
   recentMatchesMap: Map<number, { opponentId: number; timestamp: number }>,
   io: Server,
   isPractice: boolean = false,
   forceMatch: boolean = false
-): boolean {
+): Promise<boolean> {
   const minRating = player.rating - RATING_RANGE;
   const maxRating = player.rating + RATING_RANGE;
 
@@ -453,7 +453,7 @@ function findMatch(
     });
 
     // Create realtime match instead of auto-simulation
-    createRealtimeMatch(
+    await createRealtimeMatch(
       {
         socketId: player.socketId,
         userId: player.userId,
@@ -535,7 +535,7 @@ export function setupMatchmaking(io: Server) {
         const recentMatchesMap = isPractice ? practiceRecentMatches : recentMatches;
 
         // Try to find a match
-        const matched = findMatch(player, queue, recentMatchesMap, io, isPractice);
+        const matched = await findMatch(player, queue, recentMatchesMap, io, isPractice);
 
         if (!matched) {
           // Check if user already in queue (prevent duplicates)
@@ -554,14 +554,14 @@ export function setupMatchmaking(io: Server) {
           queue.push(player);
 
           // Set timeout for auto-match after 30 seconds
-          const timeoutId = setTimeout(() => {
+          const timeoutId = setTimeout(async () => {
             const playerIndex = queue.findIndex(p => p.socketId === socket.id);
             if (playerIndex !== -1) {
               const queuedPlayer = queue[playerIndex];
               queue.splice(playerIndex, 1);
 
               // Try force match (any opponent)
-              const forceMatched = findMatch(queuedPlayer, queue, recentMatchesMap, io, isPractice, true);
+              const forceMatched = await findMatch(queuedPlayer, queue, recentMatchesMap, io, isPractice, true);
 
               if (!forceMatched && isPractice) {
                 // No opponents - match with AI for practice mode

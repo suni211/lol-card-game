@@ -15,6 +15,7 @@ const GACHA_OPTIONS = {
   worlds_winner: { cost: 2500, probabilities: { icon: 0.01, legendary: 5, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   ssg_2017: { cost: 6500, probabilities: { icon: 0.01, legendary: 9.5, epic: 90.49, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
   msi_pack: { cost: 2500, probabilities: { icon: 0.01, legendary: 5, epic: 30, rare: 64.99, common: 0 }, special: 'MSI' }, // MSI cards + Rare+ only (LCK보다 우수)
+  icon_test: { cost: 0, probabilities: { icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
 };
 
 function selectTierByProbability(probabilities: any): string {
@@ -43,6 +44,19 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const option = GACHA_OPTIONS[type as keyof typeof GACHA_OPTIONS];
+
+    // Check admin-only packs
+    if ((option as any).adminOnly) {
+      const [users]: any = await connection.query(
+        'SELECT is_admin FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (users.length === 0 || !users[0].is_admin) {
+        await connection.rollback();
+        return res.status(403).json({ success: false, error: 'Admin access required' });
+      }
+    }
 
     // Check if free draw was used today
     if (type === 'free') {

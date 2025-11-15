@@ -495,14 +495,70 @@ export function setupRealtimeMatch(io: Server, socket: Socket, user: any) {
   });
 }
 
+// 덱 정보 가져오기
+async function getDeckInfo(deckId: number) {
+  const connection = await pool.getConnection();
+  try {
+    const [decks]: any = await connection.query(`
+      SELECT d.*,
+        top_p.id as top_player_id, top_p.name as top_name, top_p.team as top_team,
+        top_p.position as top_position, top_p.overall as top_overall, top_p.tier as top_tier, top_p.season as top_season,
+        top_uc.level as top_level,
+        jungle_p.id as jungle_player_id, jungle_p.name as jungle_name, jungle_p.team as jungle_team,
+        jungle_p.position as jungle_position, jungle_p.overall as jungle_overall, jungle_p.tier as jungle_tier, jungle_p.season as jungle_season,
+        jungle_uc.level as jungle_level,
+        mid_p.id as mid_player_id, mid_p.name as mid_name, mid_p.team as mid_team,
+        mid_p.position as mid_position, mid_p.overall as mid_overall, mid_p.tier as mid_tier, mid_p.season as mid_season,
+        mid_uc.level as mid_level,
+        adc_p.id as adc_player_id, adc_p.name as adc_name, adc_p.team as adc_team,
+        adc_p.position as adc_position, adc_p.overall as adc_overall, adc_p.tier as adc_tier, adc_p.season as adc_season,
+        adc_uc.level as adc_level,
+        support_p.id as support_player_id, support_p.name as support_name, support_p.team as support_team,
+        support_p.position as support_position, support_p.overall as support_overall, support_p.tier as support_tier, support_p.season as support_season,
+        support_uc.level as support_level
+      FROM decks d
+      LEFT JOIN user_cards top_uc ON d.top_card_id = top_uc.id
+      LEFT JOIN players top_p ON top_uc.player_id = top_p.id
+      LEFT JOIN user_cards jungle_uc ON d.jungle_card_id = jungle_uc.id
+      LEFT JOIN players jungle_p ON jungle_uc.player_id = jungle_p.id
+      LEFT JOIN user_cards mid_uc ON d.mid_card_id = mid_uc.id
+      LEFT JOIN players mid_p ON mid_uc.player_id = mid_p.id
+      LEFT JOIN user_cards adc_uc ON d.adc_card_id = adc_uc.id
+      LEFT JOIN players adc_p ON adc_uc.player_id = adc_p.id
+      LEFT JOIN user_cards support_uc ON d.support_card_id = support_uc.id
+      LEFT JOIN players support_p ON support_uc.player_id = support_p.id
+      WHERE d.id = ?
+    `, [deckId]);
+
+    if (decks.length === 0) return null;
+    const deck = decks[0];
+
+    return {
+      top: deck.top_player_id ? { name: deck.top_name, team: deck.top_team, tier: deck.top_tier, season: deck.top_season, overall: deck.top_overall, level: deck.top_level } : null,
+      jungle: deck.jungle_player_id ? { name: deck.jungle_name, team: deck.jungle_team, tier: deck.jungle_tier, season: deck.jungle_season, overall: deck.jungle_overall, level: deck.jungle_level } : null,
+      mid: deck.mid_player_id ? { name: deck.mid_name, team: deck.mid_team, tier: deck.mid_tier, season: deck.mid_season, overall: deck.mid_overall, level: deck.mid_level } : null,
+      adc: deck.adc_player_id ? { name: deck.adc_name, team: deck.adc_team, tier: deck.adc_tier, season: deck.adc_season, overall: deck.adc_overall, level: deck.adc_level } : null,
+      support: deck.support_player_id ? { name: deck.support_name, team: deck.support_team, tier: deck.support_tier, season: deck.support_season, overall: deck.support_overall, level: deck.support_level } : null,
+    };
+  } finally {
+    connection.release();
+  }
+}
+
 // 새로운 매치 생성 (matchmaking에서 호출)
-export function createRealtimeMatch(
+export async function createRealtimeMatch(
   player1: { socketId: string; userId: number; username: string; deckId: number },
   player2: { socketId: string; userId: number; username: string; deckId: number },
   isPractice: boolean,
   io: Server
-): string {
+): Promise<string> {
   const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Get deck information for both players
+  const [player1Deck, player2Deck] = await Promise.all([
+    getDeckInfo(player1.deckId),
+    getDeckInfo(player2.deckId)
+  ]);
 
   const match: ActiveMatch = {
     matchId,
@@ -522,21 +578,27 @@ export function createRealtimeMatch(
 
   activeMatches.set(matchId, match);
 
-  // 양 플레이어에게 매치 시작 알림
+  // 양 플레이어에게 매치 시작 알림 (상대 덱 정보 포함)
   io.to(player1.socketId).emit('matchFound', {
     matchId,
-    opponent: { username: player2.username },
+    opponent: {
+      username: player2.username,
+      deck: player2Deck
+    },
     isPractice,
   });
 
   io.to(player2.socketId).emit('matchFound', {
     matchId,
-    opponent: { username: player1.username },
+    opponent: {
+      username: player1.username,
+      deck: player1Deck
+    },
     isPractice,
   });
 
-  // 첫 라운드 시작 (3초 후)
-  setTimeout(() => startRound(matchId, io), 3000);
+  // 첫 라운드 시작 (10초 후 - 라인업 확인 시간)
+  setTimeout(() => startRound(matchId, io), 10000);
 
   return matchId;
 }

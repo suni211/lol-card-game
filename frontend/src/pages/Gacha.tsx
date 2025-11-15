@@ -85,6 +85,19 @@ export default function Gacha() {
       },
       special: true,
     },
+    // Admin-only ICON test pack
+    ...(user?.isAdmin ? [{
+      cost: 0,
+      label: 'ICON 테스트팩 (관리자 전용)',
+      probabilities: {
+        common: 0,
+        rare: 0,
+        epic: 0,
+        legendary: 0,
+        icon: 100,
+      },
+      special: true,
+    }] : []),
   ];
 
   const getTierColor = (tier: string) => {
@@ -134,7 +147,8 @@ export default function Gacha() {
     try {
       // 가챠 타입 결정
       let gachaType = 'basic';
-      if (option.cost === 0) gachaType = 'free';
+      if (option.label === 'ICON 테스트팩 (관리자 전용)') gachaType = 'icon_test';
+      else if (option.cost === 0) gachaType = 'free';
       else if (option.cost === 300) gachaType = 'premium';
       else if (option.cost === 500) gachaType = 'ultra';
       else if (option.cost === 2200) gachaType = 'lck_legend';

@@ -381,39 +381,52 @@ export default function Deck() {
                     </div>
 
                     {slot.card ? (
-                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 h-40 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(slot.card.player.tier)} rounded text-white text-xs font-bold`}>
-                              {slot.card.player.tier}
-                            </div>
-                            {slot.card.level > 0 && (
-                              <div className="px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded text-white text-xs font-bold">
-                                +{slot.card.level}
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex gap-3">
+                        {/* Player Face */}
+                        <img
+                          src={getPlayerImageUrl(slot.card.player.name, slot.card.player.season, slot.card.player.tier)}
+                          alt={slot.card.player.name}
+                          className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                          }}
+                        />
+
+                        {/* Card Info */}
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(slot.card.player.tier)} rounded text-white text-xs font-bold`}>
+                                {slot.card.player.tier}
                               </div>
-                            )}
+                              {slot.card.level > 0 && (
+                                <div className="px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded text-white text-xs font-bold">
+                                  +{slot.card.level}
+                                </div>
+                              )}
+                            </div>
+                            <p className="font-bold text-gray-900 dark:text-white mb-1 truncate">
+                              {slot.card.player.name}
+                              {slot.card.player.season && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                                  {slot.card.player.season}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                              {slot.card.player.team} • {slot.card.player.position}
+                            </p>
                           </div>
-                          <p className="font-bold text-gray-900 dark:text-white mb-1 truncate">
-                            {slot.card.player.name}
-                            {slot.card.player.season && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
-                                {slot.card.player.season}
+                          <div className="flex items-center justify-between">
+                            <p className={`text-2xl font-bold ${slot.card.player.position === slot.position ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                              {calculateCardOVR(slot.card, slot.position)} OVR
+                            </p>
+                            {slot.card.player.position !== slot.position && (
+                              <span className="text-xs text-orange-600 dark:text-orange-400 font-bold bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">
+                                -10 페널티
                               </span>
                             )}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                            {slot.card.player.team} • {slot.card.player.position}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className={`text-2xl font-bold ${slot.card.player.position === slot.position ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                            {calculateCardOVR(slot.card, slot.position)} OVR
-                          </p>
-                          {slot.card.player.position !== slot.position && (
-                            <span className="text-xs text-orange-600 dark:text-orange-400 font-bold bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">
-                              -10 페널티
-                            </span>
-                          )}
+                          </div>
                         </div>
                       </div>
                     ) : (

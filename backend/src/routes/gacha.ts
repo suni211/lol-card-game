@@ -333,12 +333,12 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
   }
 });
 
-// Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 극악 난이도
-const BASE_ENHANCEMENT_RATES = [50, 40, 30, 20, 15, 10, 5, 3, 1, 0.5];
+// Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 초반 쉬움, 후반 극악
+const BASE_ENHANCEMENT_RATES = [90, 80, 70, 60, 50, 40, 20, 10, 5, 1];
 const MAX_ENHANCEMENT_LEVEL = 10;
 
 // Tier downgrade probabilities on failure (based on enhancement level)
-const TIER_DOWNGRADE_RATES = [0, 0, 10, 20, 30, 40, 50, 60, 70, 80]; // 0→1, 1→2 실패 시 등급 하락 없음
+const TIER_DOWNGRADE_RATES = [0, 0, 0, 0, 0, 10, 20, 30, 50, 70]; // 0→1 ~ 4→5 실패 시 등급 하락 없음
 
 // Calculate success rate based on material card quality (FIFA 4 style)
 function calculateEnhancementRate(

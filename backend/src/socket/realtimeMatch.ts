@@ -202,8 +202,9 @@ async function processRound(matchId: string, io: Server) {
     match.player2.score++;
   }
 
-  // 라운드 결과 전송
-  const roundResult = {
+  // 라운드 결과 전송 (각 플레이어 관점으로)
+  // Player 1 관점
+  io.to(match.player1.socketId).emit('roundResult', {
     round: match.currentRound,
     player1Strategy: match.player1.strategy,
     player2Strategy: match.player2.strategy,
@@ -214,10 +215,21 @@ async function processRound(matchId: string, io: Server) {
       player1: match.player1.score,
       player2: match.player2.score,
     },
-  };
+  });
 
-  io.to(match.player1.socketId).emit('roundResult', roundResult);
-  io.to(match.player2.socketId).emit('roundResult', roundResult);
+  // Player 2 관점 (winner를 반대로)
+  io.to(match.player2.socketId).emit('roundResult', {
+    round: match.currentRound,
+    player1Strategy: match.player2.strategy,
+    player2Strategy: match.player1.strategy,
+    player1Power: result.player2Power,
+    player2Power: result.player1Power,
+    winner: result.winner === 1 ? 2 : 1,
+    currentScore: {
+      player1: match.player2.score,
+      player2: match.player1.score,
+    },
+  });
 
   // 매치 종료 확인 (3승)
   if (match.player1.score >= 3 || match.player2.score >= 3) {

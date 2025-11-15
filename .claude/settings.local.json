@@ -20,7 +20,8 @@
       "Bash(if [ -f \"nul\" ])",
       "Bash(then rm nul)",
       "Bash(fi)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "Bash(node dist/server.js:*)"
     ],
     "deny": [],
     "ask": []

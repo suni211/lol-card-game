@@ -8,13 +8,13 @@ const router = express.Router();
 
 // Gacha probabilities (더 어려운 확률로 조정)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { icon: 0.1, legendary: 0.01, epic: 0.1, rare: 5, common: 94.79 } },
-  basic: { cost: 100, probabilities: { icon: 0.1, legendary: 0.05, epic: 0.5, rare: 10, common: 89.35 } },
-  premium: { cost: 300, probabilities: { icon: 0.1, legendary: 0.2, epic: 3, rare: 18, common: 78.7 } },
-  ultra: { cost: 500, probabilities: { icon: 0.1, legendary: 0.5, epic: 6, rare: 25, common: 68.4 } },
-  worlds_winner: { cost: 2500, probabilities: { icon: 0.1, legendary: 5, epic: 25, rare: 69.9, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
-  ssg_2017: { cost: 6500, probabilities: { icon: 0.1, legendary: 9.5, epic: 90.4, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
-  msi_pack: { cost: 2500, probabilities: { icon: 0.1, legendary: 5, epic: 30, rare: 64.9, common: 0 }, special: 'MSI' }, // MSI cards + Rare+ only (LCK보다 우수)
+  free: { cost: 0, probabilities: { icon: 0.01, legendary: 0.01, epic: 0.1, rare: 5, common: 94.88 } },
+  basic: { cost: 100, probabilities: { icon: 0.01, legendary: 0.05, epic: 0.5, rare: 10, common: 89.44 } },
+  premium: { cost: 300, probabilities: { icon: 0.01, legendary: 0.2, epic: 3, rare: 18, common: 78.79 } },
+  ultra: { cost: 500, probabilities: { icon: 0.01, legendary: 0.5, epic: 6, rare: 25, common: 68.49 } },
+  worlds_winner: { cost: 2500, probabilities: { icon: 0.01, legendary: 5, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
+  ssg_2017: { cost: 6500, probabilities: { icon: 0.01, legendary: 9.5, epic: 90.49, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
+  msi_pack: { cost: 2500, probabilities: { icon: 0.01, legendary: 5, epic: 30, rare: 64.99, common: 0 }, special: 'MSI' }, // MSI cards + Rare+ only (LCK보다 우수)
 };
 
 function selectTierByProbability(probabilities: any): string {

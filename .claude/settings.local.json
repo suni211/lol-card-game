@@ -21,7 +21,8 @@
       "Bash(then rm nul)",
       "Bash(fi)",
       "Bash(ssh:*)",
-      "Bash(node dist/server.js:*)"
+      "Bash(node dist/server.js:*)",
+      "Bash(mysql:*)"
     ],
     "deny": [],
     "ask": []

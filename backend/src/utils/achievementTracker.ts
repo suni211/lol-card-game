@@ -91,7 +91,7 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
       await updateAchievementProgress(userId, 'ai_wins', aiStats[0].ai_wins);
     }
 
-    // Get ranked wins
+    // Get ranked wins (match_history only tracks ranked matches)
     const [rankedStats]: any = await connection.query(
       'SELECT COUNT(*) as ranked_wins FROM match_history WHERE user_id = ? AND result = "WIN"',
       [userId]
@@ -100,14 +100,8 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
       await updateAchievementProgress(userId, 'ranked_wins', rankedStats[0].ranked_wins);
     }
 
-    // Get practice wins
-    const [practiceStats]: any = await connection.query(
-      'SELECT COUNT(*) as practice_wins FROM match_history mh JOIN matches m ON mh.match_id = m.id WHERE mh.user_id = ? AND mh.result = "WIN" AND m.is_practice = TRUE',
-      [userId]
-    );
-    if (practiceStats.length > 0) {
-      await updateAchievementProgress(userId, 'practice_wins', practiceStats[0].practice_wins);
-    }
+    // Note: Practice wins are not tracked in match_history, only in socket matchmaking
+    // For practice wins achievements, we would need a separate tracking table
 
     // Get card count
     const [cardStats]: any = await connection.query(

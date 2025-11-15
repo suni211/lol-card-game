@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trophy, Swords, TrendingUp, Layers, Zap, Shield, MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Swords, Layers, Users, Trophy, Target, Zap, Shield, MapPin } from 'lucide-react';
+import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
-import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 interface Player {
@@ -39,6 +39,21 @@ interface Deck {
   isActive: boolean;
 }
 
+type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
+
+interface RoundResult {
+  round: number;
+  player1Strategy: Strategy;
+  player2Strategy: Strategy;
+  player1Power: number;
+  player2Power: number;
+  winner: 1 | 2;
+  currentScore: {
+    player1: number;
+    player2: number;
+  };
+}
+
 export default function Practice() {
   const { token, user, updateUser } = useAuthStore();
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -46,11 +61,18 @@ export default function Practice() {
   const [matching, setMatching] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
   const [queueSize, setQueueSize] = useState(0);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [currentPhase, setCurrentPhase] = useState(0);
-  const [simulatedPhases, setSimulatedPhases] = useState<any[]>([]);
-  const [tempResult, setTempResult] = useState<any>(null); // Store result during simulation
   const socketRef = useRef<Socket | null>(null);
+
+  // Realtime match state
+  const [inMatch, setInMatch] = useState(false);
+  const [matchId, setMatchId] = useState<string | null>(null);
+  const [opponent, setOpponent] = useState<any>(null);
+  const [currentRound, setCurrentRound] = useState(0);
+  const [roundTimeLeft, setRoundTimeLeft] = useState(0);
+  const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
+  const [roundHistory, setRoundHistory] = useState<RoundResult[]>([]);
+  const [myScore, setMyScore] = useState(0);
+  const [opponentScore, setOpponentScore] = useState(0);
 
   useEffect(() => {
     const fetchDeck = async () => {
@@ -122,27 +144,36 @@ export default function Practice() {
       console.log('Socket connected:', socket.id);
       if (!hasConnected) {
         hasConnected = true;
-        // Only show toast on first connect, not on reconnects
+        // Authenticate for realtime match handlers
+        socket.emit('authenticate', { token });
       }
     });
 
     socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
-      // Don't show toast for every connection error
     });
 
     socket.on('disconnect', () => {
       console.log('Socket disconnected');
     });
 
-    socket.on('practice_queue_update', (data) => {
-      console.log('Practice queue update:', data);
+    socket.on('queue_update', (data) => {
+      console.log('Queue update:', data);
       setQueueSize(data.playersInQueue || 0);
+      if (data.message) {
+        toast(data.message);
+      }
     });
 
     socket.on('queue_error', (data) => {
       console.error('Queue error:', data);
-      toast.error(data.error || '매칭 실패');
+
+      if (data.error === 'Suspended' && data.message) {
+        toast.error(data.message, { duration: 5000 });
+      } else {
+        toast.error(data.error || '매칭 실패');
+      }
+
       setMatching(false);
     });
 
@@ -151,56 +182,73 @@ export default function Practice() {
       toast.success(`매치 발견! 상대: ${data.opponent.username}`);
     });
 
-    socket.on('match_result', async (result) => {
-      console.log('Match result:', result);
+    // Realtime match events
+    socket.on('matchFound', (data) => {
+      console.log('Real-time match found:', data);
+      setInMatch(true);
+      setMatchId(data.matchId);
+      setOpponent(data.opponent);
+      setMatching(false);
+      setRoundHistory([]);
+      setMyScore(0);
+      setOpponentScore(0);
+      toast.success(`매치 시작! 상대: ${data.opponent.username}`);
+    });
 
-      // Start simulation if phases exist
-      if (result.phases && result.phases.length > 0) {
-        setIsSimulating(true);
-        setSimulatedPhases([]);
-        setCurrentPhase(0);
-        setTempResult(result); // Store result for use during simulation
+    socket.on('roundStart', (data) => {
+      console.log('Round start:', data);
+      setCurrentRound(data.round);
+      setRoundTimeLeft(Math.floor(data.timeLimit / 1000));
+      setSelectedStrategy(null);
 
-        // Calculate time per game (6 seconds each for best-of-5)
-        const timePerGame = 6000; // 6 seconds per game
-        const totalGames = result.phases.length;
+      // Start countdown timer
+      const interval = setInterval(() => {
+        setRoundTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-        // Simulate phases (each game takes 6 seconds)
-        for (let i = 0; i < totalGames; i++) {
-          setTimeout(() => {
-            setSimulatedPhases(prev => [...prev, result.phases[i]]);
-            setCurrentPhase(i + 1);
+      return () => clearInterval(interval);
+    });
 
-            // After last phase, show final result
-            if (i === totalGames - 1) {
-              setTimeout(() => {
-                setIsSimulating(false);
-                setMatchResult(result);
-                setTempResult(null);
-                setMatching(false);
+    socket.on('roundResult', (data: RoundResult) => {
+      console.log('Round result:', data);
+      setRoundHistory(prev => [...prev, data]);
+      setMyScore(data.currentScore.player1);
+      setOpponentScore(data.currentScore.player2);
 
-                if (result.won) {
-                  toast.success(`승리! +${result.pointsChange} 포인트`);
-                } else {
-                  toast.error(`패배! +${result.pointsChange} 포인트`);
-                }
-              }, 2000); // 2 second pause before showing result
-            }
-          }, i * timePerGame); // 6 seconds per game
-        }
+      // Show round result toast
+      if (data.winner === 1) {
+        toast.success(`라운드 ${data.round} 승리!`);
       } else {
-        // No phases, show result immediately
-        setMatchResult(result);
-        setMatching(false);
+        toast.error(`라운드 ${data.round} 패배`);
+      }
+    });
 
-        if (result.won) {
-          toast.success(`승리! +${result.pointsChange} 포인트`);
-        } else {
-          toast.error(`패배! +${result.pointsChange} 포인트`);
-        }
+    socket.on('matchComplete', async (data) => {
+      console.log('Match complete:', data);
+      setInMatch(false);
+      setMatchId(null);
+      setMatchResult({
+        won: data.won,
+        myScore: data.myScore,
+        opponentScore: data.opponentScore,
+        opponent: data.opponent,
+        pointsChange: data.pointsChange,
+        ratingChange: data.ratingChange,
+      });
+
+      if (data.won) {
+        toast.success(`승리! +${data.pointsChange} 포인트, +${data.ratingChange} 레이팅`);
+      } else {
+        toast.error(`패배! +${data.pointsChange} 포인트, ${data.ratingChange} 레이팅`);
       }
 
-      // Fetch updated user data from server
+      // Fetch updated user data
       try {
         const response = await axios.get(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -218,6 +266,7 @@ export default function Practice() {
       console.error('Match error:', data);
       toast.error('매치 처리 오류');
       setMatching(false);
+      setInMatch(false);
     });
 
     return () => {
@@ -247,15 +296,68 @@ export default function Practice() {
     }
   };
 
+  const selectStrategy = (strategy: Strategy) => {
+    if (!socketRef.current || !matchId || selectedStrategy) return;
+
+    setSelectedStrategy(strategy);
+    socketRef.current.emit('selectStrategy', { matchId, strategy });
+    toast.success(`${getStrategyName(strategy)} 선택!`);
+  };
+
+  const forfeitMatch = () => {
+    if (!socketRef.current || !matchId) return;
+
+    if (confirm('정말 항복하시겠습니까?')) {
+      socketRef.current.emit('forfeitMatch', { matchId });
+      setInMatch(false);
+      setMatchId(null);
+      toast.error('항복했습니다');
+    }
+  };
+
   const playAgain = () => {
     setMatchResult(null);
+    setRoundHistory([]);
+  };
+
+  const getStrategyName = (strategy: Strategy): string => {
+    switch (strategy) {
+      case 'AGGRESSIVE':
+        return '공격형 (라인전)';
+      case 'TEAMFIGHT':
+        return '한타형';
+      case 'DEFENSIVE':
+        return '수비형 (운영)';
+    }
+  };
+
+  const getStrategyIcon = (strategy: Strategy) => {
+    switch (strategy) {
+      case 'AGGRESSIVE':
+        return <Zap className="w-6 h-6" />;
+      case 'TEAMFIGHT':
+        return <Shield className="w-6 h-6" />;
+      case 'DEFENSIVE':
+        return <MapPin className="w-6 h-6" />;
+    }
+  };
+
+  const getStrategyColor = (strategy: Strategy): string => {
+    switch (strategy) {
+      case 'AGGRESSIVE':
+        return 'from-yellow-500 to-orange-500';
+      case 'TEAMFIGHT':
+        return 'from-blue-500 to-purple-500';
+      case 'DEFENSIVE':
+        return 'from-green-500 to-teal-500';
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-green-900/20 dark:to-blue-900/20 py-12 px-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900/20 dark:to-orange-900/20 py-12 px-4 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">로딩 중...</p>
         </div>
       </div>
@@ -263,7 +365,7 @@ export default function Practice() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-green-900/20 dark:to-blue-900/20 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900/20 dark:to-orange-900/20 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
@@ -271,14 +373,14 @@ export default function Practice() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full mb-4">
-            <Users className="w-12 h-12 text-white" />
+          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-red-500 to-orange-500 rounded-full mb-4">
+            <Swords className="w-12 h-12 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            일반전
+            랭크 경기
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            랭크 변동 없이 포인트만 획득하는 연습 모드
+            실시간 전략 대결!
           </p>
         </motion.div>
 
@@ -311,6 +413,169 @@ export default function Practice() {
               </a>
             </div>
           </motion.div>
+        ) : inMatch ? (
+          /* In Match - Strategy Selection */
+          <div className="space-y-6">
+            {/* Match Info */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="text-center flex-1">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">YOU</div>
+                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mt-2">{myScore}</div>
+                </div>
+                <div className="text-center px-6">
+                  <div className="text-xl font-bold text-gray-600 dark:text-gray-400">VS</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-500 mt-1">라운드 {currentRound}</div>
+                </div>
+                <div className="text-center flex-1">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{opponent?.username}</div>
+                  <div className="text-4xl font-bold text-red-600 dark:text-red-400 mt-2">{opponentScore}</div>
+                </div>
+              </div>
+
+              {/* Round Timer */}
+              {roundTimeLeft > 0 && (
+                <div className="text-center">
+                  <div className="text-6xl font-bold text-primary-600 dark:text-primary-400 mb-2">
+                    {roundTimeLeft}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">초 남음</div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Strategy Selection */}
+            {roundTimeLeft > 0 && !selectedStrategy && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+                  전략을 선택하세요!
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => selectStrategy('AGGRESSIVE')}
+                    className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <Zap className="w-12 h-12" />
+                      <div className="text-xl font-bold">공격형</div>
+                      <div className="text-sm opacity-90">(라인전 스탯 사용)</div>
+                    </div>
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+
+                  <button
+                    onClick={() => selectStrategy('TEAMFIGHT')}
+                    className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <Shield className="w-12 h-12" />
+                      <div className="text-xl font-bold">한타형</div>
+                      <div className="text-sm opacity-90">(한타 스탯 사용)</div>
+                    </div>
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+
+                  <button
+                    onClick={() => selectStrategy('DEFENSIVE')}
+                    className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <MapPin className="w-12 h-12" />
+                      <div className="text-xl font-bold">수비형</div>
+                      <div className="text-sm opacity-90">(운영 스탯 사용)</div>
+                    </div>
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-sm text-blue-900 dark:text-blue-300 text-center">
+                    <strong>가위바위보 상성:</strong> 공격형 {">"} 한타형 {">"} 수비형 {">"} 공격형
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {selectedStrategy && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center"
+              >
+                <div className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  선택 완료! 상대방을 기다리는 중...
+                </div>
+                <div className={`inline-flex items-center gap-3 px-6 py-4 rounded-xl bg-gradient-to-r ${getStrategyColor(selectedStrategy)} text-white`}>
+                  {getStrategyIcon(selectedStrategy)}
+                  <span className="text-2xl font-bold">{getStrategyName(selectedStrategy)}</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Round History */}
+            {roundHistory.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+              >
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">라운드 기록</h3>
+                <div className="space-y-3">
+                  {roundHistory.map((round, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-lg border-2 ${
+                        round.winner === 1
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                          : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                            R{round.round}
+                          </div>
+                          <div className={`px-3 py-1 rounded-lg bg-gradient-to-r ${getStrategyColor(round.player1Strategy)} text-white text-sm font-bold`}>
+                            {getStrategyName(round.player1Strategy)}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">vs</div>
+                          <div className={`px-3 py-1 rounded-lg bg-gradient-to-r ${getStrategyColor(round.player2Strategy)} text-white text-sm font-bold`}>
+                            {getStrategyName(round.player2Strategy)}
+                          </div>
+                        </div>
+                        <div className={`text-xl font-bold ${
+                          round.winner === 1
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {round.winner === 1 ? '승리' : '패배'}
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center">
+                        파워: {round.player1Power} vs {round.player2Power}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Forfeit Button */}
+            <button
+              onClick={forfeitMatch}
+              className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition-colors"
+            >
+              항복
+            </button>
+          </div>
         ) : (
           /* Deck Ready - Show Match Options */
           <div className="space-y-6">
@@ -325,314 +590,165 @@ export default function Practice() {
               </h2>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Trophy className="w-5 h-5 text-green-600 dark:text-green-400" />
-                    <span className="text-sm font-medium text-green-900 dark:text-green-300">총 OVR</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">{calculateTotalOVR()}</p>
-                </div>
-
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
                   <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-medium text-blue-900 dark:text-blue-300">평균 OVR</span>
+                    <Trophy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-medium text-blue-900 dark:text-blue-300">총 OVR</span>
                   </div>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                    {Math.round(calculateTotalOVR() / 5)}
-                  </p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{calculateTotalOVR()}</p>
                 </div>
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
                   <div className="flex items-center gap-2 mb-2">
-                    <Swords className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <span className="text-sm font-medium text-purple-900 dark:text-purple-300">대기 인원</span>
+                    <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <span className="text-sm font-medium text-purple-900 dark:text-purple-300">평균 OVR</span>
                   </div>
-                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{queueSize}명</p>
+                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                    {Math.round(calculateTotalOVR() / 5)}
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-medium text-green-900 dark:text-green-300">전략</span>
+                  </div>
+                  <p className="text-sm font-bold text-green-900 dark:text-green-100">
+                    {deck.laningStrategy}
+                  </p>
                 </div>
               </div>
 
-              {/* Match Simulation */}
-              {isSimulating && (
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">경기 진행 중</h3>
-                    <p className="text-gray-600 dark:text-gray-400">실시간 전투 중...</p>
-                  </div>
-
-                  {/* Game Progress (Bo5) */}
-                  <div className="mb-6">
-                    <div className="text-center mb-3">
-                      <h4 className="text-lg font-bold text-gray-900 dark:text-white">5판 3선승</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        진행중: {currentPhase} / {simulatedPhases.length > 0 ? simulatedPhases[simulatedPhases.length - 1].gameNumber : '?'}게임
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
-                      {[1, 2, 3, 4, 5].map((gameNum) => (
-                        <div
-                          key={gameNum}
-                          className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${
-                            gameNum < currentPhase
-                              ? 'bg-green-500 text-white'
-                              : gameNum === currentPhase
-                              ? 'bg-blue-500 text-white animate-pulse'
-                              : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
-                          }`}
-                        >
-                          {gameNum}
-                        </div>
-                      ))}
+              {/* Roster Preview */}
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { card: deck.top, position: 'TOP', label: '탑' },
+                  { card: deck.jungle, position: 'JUNGLE', label: '정글' },
+                  { card: deck.mid, position: 'MID', label: '미드' },
+                  { card: deck.adc, position: 'ADC', label: '원딜' },
+                  { card: deck.support, position: 'SUPPORT', label: '서폿' },
+                ].map(({ card, position, label }) => (
+                  <div key={position} className="text-center">
+                    <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-lg p-2 mb-1">
+                      <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                        {label}
+                      </div>
+                      {card && (
+                        <>
+                          <div className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                            {card.player.name}
+                          </div>
+                          <div className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                            {calculateCardOVR(card, position)}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
-
-                  {/* Game Results */}
-                  <AnimatePresence>
-                    <div className="space-y-3">
-                      {simulatedPhases.map((phase, idx) => {
-                        // Determine if I won this game
-                        // Use tempResult during simulation, matchResult after
-                        const result = tempResult || matchResult;
-                        if (!result) return null;
-
-                        const amIPlayer1 = result.won ?
-                          (result.myScore > result.opponentScore) :
-                          (result.myScore < result.opponentScore);
-
-                        const iWonThisGame = amIPlayer1 ? (phase.winner === 1) : (phase.winner === 2);
-
-                        return (
-                          <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className={`p-4 rounded-xl border-2 ${
-                              iWonThisGame
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                                : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                {phase.phase === 'LANING' && <Zap className="w-5 h-5 text-yellow-600" />}
-                                {phase.phase === 'TEAMFIGHT' && <Shield className="w-5 h-5 text-blue-600" />}
-                                {phase.phase === 'MACRO' && <MapPin className="w-5 h-5 text-purple-600" />}
-                                <h5 className="text-lg font-bold text-gray-900 dark:text-white">
-                                  {phase.name}
-                                </h5>
-                              </div>
-                              <div className={`text-xl font-bold ${
-                                iWonThisGame
-                                  ? 'text-green-600 dark:text-green-400'
-                                  : 'text-red-600 dark:text-red-400'
-                              }`}>
-                                {iWonThisGame ? '승리!' : '패배'}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-center gap-3 text-2xl font-bold text-gray-900 dark:text-white">
-                              <span className={iWonThisGame ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
-                                {result.myScore}
-                              </span>
-                              <span className="text-gray-400">-</span>
-                              <span className={!iWonThisGame ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
-                                {result.opponentScore}
-                              </span>
-                            </div>
-
-                          {phase.strategyWon && (
-                            <div className="mt-2 text-center">
-                              <span className="inline-block px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full text-xs font-medium">
-                                전략 카운터 성공!
-                              </span>
-                            </div>
-                          )}
-                        </motion.div>
-                        );
-                      })}
-                    </div>
-                  </AnimatePresence>
-                </div>
-              )}
-
-              {/* Match Controls */}
-              {!matching && !matchResult && !isSimulating && (
-                <motion.button
-                  initial={{ scale: 0.95 }}
-                  animate={{ scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={startMatch}
-                  className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-xl rounded-xl shadow-lg transition-all"
-                >
-                  일반전 시작
-                </motion.button>
-              )}
-
-              {matching && !matchResult && !isSimulating && (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mb-4"></div>
-                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      상대를 찾는 중...
-                    </p>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      대기 중인 플레이어: {queueSize}명
-                    </p>
-                  </div>
-                  <button
-                    onClick={cancelMatch}
-                    className="w-full py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition-colors"
-                  >
-                    매칭 취소
-                  </button>
-                </div>
-              )}
+                ))}
+              </div>
             </motion.div>
 
-            {/* Match Result */}
-            <AnimatePresence>
-              {matchResult && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700"
-                >
-                  {/* Result Header */}
-                  <div className="text-center mb-8">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', delay: 0.2 }}
-                      className={`inline-block px-12 py-4 rounded-2xl text-white font-bold text-3xl mb-4 ${
-                        matchResult.won
-                          ? 'bg-gradient-to-r from-green-600 to-emerald-600'
-                          : 'bg-gradient-to-r from-blue-600 to-cyan-600'
-                      }`}
-                    >
-                      {matchResult.won ? '승리!' : '패배'}
-                    </motion.div>
-                  </div>
-
-                  {/* Match Details */}
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">상대</div>
-                        <div className="text-xl font-bold text-gray-900 dark:text-white">
-                          {matchResult.opponent.username}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">Rating</div>
-                        <div className="text-xl font-bold text-gray-900 dark:text-white">
-                          {matchResult.opponent.rating}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center border-2 border-blue-500">
-                        <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">
-                          내 스코어
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                          {matchResult.myScore}
-                        </div>
-                      </div>
-                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center border-2 border-red-500">
-                        <div className="text-sm text-red-600 dark:text-red-400 mb-1">
-                          상대 스코어
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                          {matchResult.opponentScore}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Rewards */}
-                    <div className="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border-2 border-yellow-500">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Trophy className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-                          <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                            획득 포인트
-                          </span>
-                        </div>
-                        <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">
-                          +{matchResult.pointsChange}P
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Rating (No Change) */}
-                    <div className="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <TrendingUp className="w-8 h-8 text-gray-500 dark:text-gray-400" />
-                          <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                            랭크 변동
-                          </span>
-                        </div>
-                        <div className="text-2xl font-bold text-gray-500 dark:text-gray-400">
-                          없음
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={playAgain}
-                      className="py-3 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all"
-                    >
-                      다시 하기
-                    </button>
-                    <button
-                      onClick={startMatch}
-                      className="py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all"
-                    >
-                      새 매치
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Info Cards */}
-            {!matchResult && (
+            {/* Match Button or Result */}
+            {!matchResult ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                transition={{ delay: 0.1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700"
               >
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-green-500 dark:border-green-400 shadow-lg">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                    승리 보상
-                  </h3>
-                  <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
-                    +50P
+                {!matching ? (
+                  <>
+                    <button
+                      onClick={startMatch}
+                      className="w-full px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold text-xl rounded-lg transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <Swords className="w-6 h-6" />
+                        <span>랭크 매칭 시작</span>
+                      </div>
+                    </button>
+                    <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                      실시간 전략 대결 - 5판 3선승
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-6">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">매칭 중...</span>
+                      </div>
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                            대기 중: {queueSize}명
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 text-center text-sm">
+                        상대를 찾고 있습니다<br />
+                        <span className="text-xs">30초 후 자동 매칭됩니다</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={cancelMatch}
+                      className="w-full px-8 py-4 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-bold text-xl rounded-lg transition-all"
+                    >
+                      매칭 취소
+                    </button>
+                  </>
+                )}
+              </motion.div>
+            ) : (
+              /* Match Result */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <div className={`text-center mb-6 ${matchResult.won ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className="text-6xl font-bold mb-2">
+                    {matchResult.won ? '승리!' : '패배'}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    랭크 변동 없음
-                  </p>
+                  <div className="text-2xl font-semibold">
+                    {matchResult.myScore} - {matchResult.opponentScore}
+                  </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-blue-500 dark:border-blue-400 shadow-lg">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                    패배 보상
-                  </h3>
-                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-                    +30P
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-6 mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">상대</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">
+                        {matchResult.opponent.username}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    랭크 변동 없음
-                  </p>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className={`rounded-lg p-4 ${matchResult.pointsChange > 0 ? 'bg-green-100 dark:bg-green-900/20' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">포인트</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      +{matchResult.pointsChange}
+                    </div>
+                  </div>
+                  <div className={`rounded-lg p-4 ${matchResult.ratingChange > 0 ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-red-100 dark:bg-red-900/20'}`}>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">레이팅</div>
+                    <div className={`text-2xl font-bold ${matchResult.ratingChange > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {matchResult.ratingChange > 0 ? '+' : ''}{matchResult.ratingChange}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={playAgain}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all"
+                >
+                  다시 경기하기
+                </button>
               </motion.div>
             )}
           </div>

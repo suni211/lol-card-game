@@ -18,6 +18,7 @@ interface Player {
   overall: number;
   region: string;
   tier: string;
+  season?: string;
 }
 
 interface UserCard {

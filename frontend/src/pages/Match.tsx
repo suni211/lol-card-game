@@ -284,7 +284,7 @@ export default function Match() {
 
     setMatching(true);
     setMatchResult(null);
-    socketRef.current.emit('join_queue', { token });
+    socketRef.current.emit('join_queue', { token, isPractice: false });
     toast.success('매칭 대기열에 참가했습니다');
   };
 

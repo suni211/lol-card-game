@@ -16,7 +16,12 @@ router.get('/', async (req, res) => {
         u.rating,
         COALESCE(MAX(s.wins), 0) as wins,
         COALESCE(MAX(s.losses), 0) as losses,
-        ROUND((COALESCE(MAX(s.wins), 0) / NULLIF(COALESCE(MAX(s.total_matches), 0), 0)) * 100, 1) as win_rate
+        COALESCE(MAX(s.total_matches), 0) as total_matches,
+        COALESCE(MAX(s.current_streak), 0) as current_streak,
+        COALESCE(MAX(s.longest_win_streak), 0) as longest_win_streak,
+        ROUND((COALESCE(MAX(s.wins), 0) / NULLIF(COALESCE(MAX(s.total_matches), 0), 0)) * 100, 1) as win_rate,
+        (SELECT COUNT(*) FROM user_cards uc WHERE uc.user_id = u.id) as total_cards,
+        (SELECT COUNT(*) FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.user_id = u.id AND p.tier = 'LEGENDARY') as legendary_cards
       FROM users u
       LEFT JOIN user_stats s ON u.id = s.user_id
       WHERE u.is_admin = FALSE
@@ -42,7 +47,12 @@ router.get('/', async (req, res) => {
       rating: user.rating,
       wins: user.wins || 0,
       losses: user.losses || 0,
+      totalMatches: user.total_matches || 0,
+      currentStreak: user.current_streak || 0,
+      longestWinStreak: user.longest_win_streak || 0,
       winRate: user.win_rate || 0,
+      totalCards: user.total_cards || 0,
+      legendaryCards: user.legendary_cards || 0,
     }));
 
     res.json({ success: true, data: leaderboard });

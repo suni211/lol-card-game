@@ -14,7 +14,12 @@ interface RankingUser {
   rating: number;
   wins: number;
   losses: number;
+  totalMatches: number;
+  currentStreak: number;
+  longestWinStreak: number;
   winRate: number;
+  totalCards: number;
+  legendaryCards: number;
 }
 
 interface PlayerCard {
@@ -41,6 +46,8 @@ interface UserProfile {
     total_matches: number;
     wins: number;
     losses: number;
+    current_streak: number;
+    longest_win_streak: number;
     winRate: number;
     totalCards: number;
     legendaryCards: number;
@@ -354,22 +361,38 @@ export default function Ranking() {
                       </div>
 
                       {/* Stats */}
-                      <div className="grid grid-cols-4 gap-3 mt-4">
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-white">{selectedUser.stats.wins}</div>
+                      <div className="grid grid-cols-4 gap-2 mt-4">
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-white">{selectedUser.stats.total_matches || 0}</div>
+                          <div className="text-xs text-white/80">총 경기</div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-white">{selectedUser.stats.wins}</div>
                           <div className="text-xs text-white/80">승</div>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-white">{selectedUser.stats.losses}</div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-white">{selectedUser.stats.losses}</div>
                           <div className="text-xs text-white/80">패</div>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-white">{selectedUser.stats.winRate}%</div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-white">{selectedUser.stats.winRate}%</div>
                           <div className="text-xs text-white/80">승률</div>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-white">{selectedUser.stats.totalCards}</div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-white">{selectedUser.stats.current_streak || 0}</div>
+                          <div className="text-xs text-white/80">현재 연승</div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-white">{selectedUser.stats.longest_win_streak || 0}</div>
+                          <div className="text-xs text-white/80">최장 연승</div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-white">{selectedUser.stats.totalCards}</div>
                           <div className="text-xs text-white/80">보유 카드</div>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-yellow-400">{selectedUser.stats.legendaryCards}</div>
+                          <div className="text-xs text-white/80">레전드</div>
                         </div>
                       </div>
                     </div>

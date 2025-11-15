@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import ChatPopup from '../Chat/ChatPopup';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -65,6 +66,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <ChatPopup />
       <Toaster
         position="top-right"
         toastOptions={{

@@ -112,6 +112,10 @@ setSocketIO(io);
 // Track unique online users by socket ID
 const connectedSockets = new Set<string>();
 
+// Chat message history (in-memory, limited to 100 messages)
+const chatHistory: any[] = [];
+const MAX_CHAT_HISTORY = 100;
+
 io.on('connection', (socket) => {
   // Add socket to connected set
   connectedSockets.add(socket.id);
@@ -132,6 +136,33 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('Socket authentication error:', error);
     }
+  });
+
+  // Chat events
+  socket.on('chat_join', () => {
+    // Send chat history to newly joined user
+    socket.emit('chat_history', chatHistory);
+  });
+
+  socket.on('chat_message', (data: { username: string; message: string; tier?: string }) => {
+    const chatMessage = {
+      id: Date.now() + Math.random(),
+      username: data.username,
+      message: data.message,
+      tier: data.tier || 'IRON',
+      timestamp: new Date().toISOString(),
+    };
+
+    // Add to history
+    chatHistory.push(chatMessage);
+
+    // Limit history size
+    if (chatHistory.length > MAX_CHAT_HISTORY) {
+      chatHistory.shift();
+    }
+
+    // Broadcast to all connected clients
+    io.emit('chat_message', chatMessage);
   });
 
   // Remove socket on disconnect

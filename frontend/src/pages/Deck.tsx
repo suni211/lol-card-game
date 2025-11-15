@@ -35,36 +35,24 @@ interface DeckSlot {
 }
 
 const LANING_STRATEGIES = [
-  { value: 'AGGRESSIVE', label: '공격적', description: '적극적인 라인전으로 초반 우위 확보', counters: ['SAFE'], weakTo: ['SCALING'] },
   { value: 'SAFE', label: '안전한', description: '안정적인 성장으로 후반 대비', counters: ['PUSH'], weakTo: ['AGGRESSIVE'] },
-  { value: 'ROAMING', label: '로밍', description: '라인을 빠르게 밀고 다른 라인 지원', counters: ['SCALING'], weakTo: ['PUSH'] },
-  { value: 'SCALING', label: '성장', description: '극후반 캐리를 위한 성장 집중', counters: ['AGGRESSIVE'], weakTo: ['ROAMING'] },
-  { value: 'PUSH', label: '푸쉬', description: '지속적인 라인 푸쉬로 타워 압박', counters: ['ROAMING'], weakTo: ['SAFE'] },
-  { value: 'FREEZE', label: '프리징', description: '라인 프리징으로 상대 성장 차단', counters: ['PUSH'], weakTo: ['ROAMING'] },
-  { value: 'TRADE', label: '트레이딩', description: '짧은 교환으로 체력 우위 확보', counters: ['SCALING'], weakTo: ['ALLKILL'] },
-  { value: 'ALLKILL', label: '올킬', description: '킬 각 노리는 초공격적 라인전', counters: ['TRADE'], weakTo: ['SAFE'] },
+  { value: 'TRADE', label: '트레이딩', description: '짧은 교환으로 체력 우위 확보', counters: ['SAFE'], weakTo: ['AGGRESSIVE'] },
+  { value: 'AGGRESSIVE', label: '공격적', description: '적극적인 라인전으로 초반 우위 확보', counters: ['TRADE'], weakTo: ['PUSH'] },
+  { value: 'PUSH', label: '푸쉬', description: '지속적인 라인 푸쉬로 타워 압박', counters: ['AGGRESSIVE'], weakTo: ['SAFE'] },
 ];
 
 const TEAMFIGHT_STRATEGIES = [
-  { value: 'ENGAGE', label: '이니시에이팅', description: '적극적인 교전 시작', counters: ['POKE'], weakTo: ['DISENGAGE'] },
-  { value: 'DISENGAGE', label: '디스인게이지', description: '불리한 교전 회피 및 역관광', counters: ['ENGAGE'], weakTo: ['POKE'] },
-  { value: 'POKE', label: '포킹', description: '원거리 견제로 상대 소모', counters: ['DISENGAGE'], weakTo: ['ENGAGE'] },
-  { value: 'PROTECT', label: '보호', description: '캐리 보호 중심의 플레이', counters: ['DIVE'], weakTo: ['POKE'] },
-  { value: 'SPLIT', label: '분산', description: '다수의 라인에서 동시 압박', counters: ['PROTECT'], weakTo: ['ENGAGE'] },
-  { value: 'FLANK', label: '측면', description: '측후방에서 기습 진입', counters: ['PROTECT'], weakTo: ['KITE'] },
-  { value: 'KITE', label: '카이팅', description: '뒤로 빠지며 지속 딜', counters: ['ENGAGE'], weakTo: ['FLANK'] },
-  { value: 'DIVE', label: '다이브', description: '백라인 강습', counters: ['KITE'], weakTo: ['PROTECT'] },
+  { value: 'ENGAGE', label: '이니시에이팅', description: '적극적인 교전 시작', counters: ['POKE'], weakTo: ['PROTECT'] },
+  { value: 'POKE', label: '포킹', description: '원거리 견제로 상대 소모', counters: ['PROTECT'], weakTo: ['ENGAGE'] },
+  { value: 'PICK', label: '픽', description: '고립된 적 척살', counters: ['ENGAGE'], weakTo: ['POKE'] },
+  { value: 'PROTECT', label: '보호', description: '캐리 보호 중심의 플레이', counters: ['PICK'], weakTo: ['POKE'] },
 ];
 
 const MACRO_STRATEGIES = [
-  { value: 'OBJECTIVE', label: '오브젝트', description: '드래곤/바론 등 중요 목표 확보', counters: ['SPLITPUSH'], weakTo: ['PICK'] },
-  { value: 'VISION', label: '시야', description: '맵 장악 및 시야 싸움', counters: ['PICK'], weakTo: ['SPLITPUSH'] },
-  { value: 'SPLITPUSH', label: '스플릿', description: '1-4 스플릿 푸쉬 운영', counters: ['GROUPING'], weakTo: ['OBJECTIVE'] },
-  { value: 'GROUPING', label: '그룹핑', description: '5인 뭉쳐서 한 방향 압박', counters: ['VISION'], weakTo: ['SPLITPUSH'] },
-  { value: 'PICK', label: '픽', description: '고립된 적 척살', counters: ['OBJECTIVE'], weakTo: ['VISION'] },
-  { value: 'SIEGE', label: '시즈', description: '포위 후 타워 철거', counters: ['GROUPING'], weakTo: ['ROTATION'] },
-  { value: 'ROTATION', label: '로테이션', description: '빠른 라인 이동으로 압박', counters: ['SIEGE'], weakTo: ['CONTROL'] },
-  { value: 'CONTROL', label: '컨트롤', description: '정글 및 중립 지역 장악', counters: ['ROTATION'], weakTo: ['GROUPING'] },
+  { value: 'OBJECTIVE', label: '오브젝트', description: '드래곤/바론 등 중요 목표 확보', counters: ['SPLIT'], weakTo: ['VISION'] },
+  { value: 'SPLIT', label: '스플릿', description: '1-4 스플릿 푸쉬 운영', counters: ['VISION'], weakTo: ['OBJECTIVE'] },
+  { value: 'VISION', label: '시야', description: '맵 장악 및 시야 싸움', counters: ['TEMPO'], weakTo: ['SPLIT'] },
+  { value: 'TEMPO', label: '템포', description: '빠른 라인 이동으로 압박', counters: ['OBJECTIVE'], weakTo: ['VISION'] },
 ];
 
 // Team mapping for synergy calculation

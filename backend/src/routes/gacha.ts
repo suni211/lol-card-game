@@ -83,27 +83,27 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else if ((option as any).special === 'RE') {
-      // LCK Legend pack - Only LCK region cards (excluding special sets) + 25WW/25WUD
+      // LCK Legend pack - Only LCK RE cards (season = 'RE')
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND ((region = 'LCK' AND name NOT LIKE '17SSG%' AND name NOT LIKE 'MSI %') OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND season = 'RE' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === '17SSG') {
-      // 2017 SSG pack - Only 17SSG cards + 25WW/25WUD
+      // 2017 SSG pack - Only 17SSG cards (name starts with 17SSG)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND name LIKE '17SSG%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === 'MSI') {
-      // MSI pack - Only MSI cards + 25WW/25WUD
+      // MSI pack - Only MSI cards (name starts with MSI)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (name LIKE 'MSI %' OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND name LIKE 'MSI %' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {
-      // Regular packs - exclude 25WW and 25WUD cards
+      // Regular packs - exclude all special cards (25WW, 25WUD, 17SSG, MSI, RE season)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE '17SSG%' AND name NOT LIKE 'MSI %' AND season != 'RE' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }

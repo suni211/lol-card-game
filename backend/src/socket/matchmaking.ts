@@ -387,23 +387,6 @@ function findMatch(
       clearTimeout(opponent.timeoutId);
     }
 
-    // Notify both players that match was found
-    io.to(player.socketId).emit('match_found', {
-      opponent: {
-        username: opponent.username,
-        rating: opponent.rating,
-      },
-      isPractice,
-    });
-
-    io.to(opponent.socketId).emit('match_found', {
-      opponent: {
-        username: player.username,
-        rating: player.rating,
-      },
-      isPractice,
-    });
-
     // Record this match to prevent immediate rematches
     const now = Date.now();
     recentMatchesMap.set(player.userId, { opponentId: opponent.userId, timestamp: now });

@@ -369,31 +369,63 @@ export default function Gacha() {
             <div className="text-center relative">
               {/* Epic and Legendary particle effects - shown from the start */}
               {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
-                <div className="absolute inset-0 overflow-visible pointer-events-none z-10">
-                  {[...Array(drawnCard.tier === 'LEGENDARY' ? 30 : 20)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className={`absolute w-2 h-2 rounded-full ${
-                        drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-400' : 'bg-purple-400'
-                      }`}
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                      }}
-                      animate={{
-                        scale: [0, 2, 0],
-                        opacity: [0, 1, 0],
-                        x: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 300],
-                        y: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 300],
-                      }}
-                      transition={{
-                        duration: 1.5 + Math.random(),
-                        repeat: Infinity,
-                        delay: Math.random() * 2,
-                      }}
-                    />
-                  ))}
-                </div>
+                <>
+                  {/* Left side particles */}
+                  <div className="absolute left-0 top-0 bottom-0 w-32 overflow-visible pointer-events-none z-10">
+                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 25 : 15)].map((_, i) => (
+                      <motion.div
+                        key={`left-${i}`}
+                        className={`absolute w-1.5 h-1.5 rounded-full ${
+                          drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-400 shadow-lg shadow-yellow-500' : 'bg-purple-400 shadow-lg shadow-purple-500'
+                        }`}
+                        style={{
+                          left: 0,
+                          top: `${Math.random() * -20}%`,
+                        }}
+                        animate={{
+                          x: [0, Math.random() * 150 + 50],
+                          y: [0, Math.random() * 600 + 400],
+                          scale: [1, 1.5, 0],
+                          opacity: [1, 0.8, 0],
+                        }}
+                        transition={{
+                          duration: 2 + Math.random() * 1.5,
+                          repeat: Infinity,
+                          delay: Math.random() * 3,
+                          ease: "easeIn",
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Right side particles */}
+                  <div className="absolute right-0 top-0 bottom-0 w-32 overflow-visible pointer-events-none z-10">
+                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 25 : 15)].map((_, i) => (
+                      <motion.div
+                        key={`right-${i}`}
+                        className={`absolute w-1.5 h-1.5 rounded-full ${
+                          drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-400 shadow-lg shadow-yellow-500' : 'bg-purple-400 shadow-lg shadow-purple-500'
+                        }`}
+                        style={{
+                          right: 0,
+                          top: `${Math.random() * -20}%`,
+                        }}
+                        animate={{
+                          x: [0, -(Math.random() * 150 + 50)],
+                          y: [0, Math.random() * 600 + 400],
+                          scale: [1, 1.5, 0],
+                          opacity: [1, 0.8, 0],
+                        }}
+                        transition={{
+                          duration: 2 + Math.random() * 1.5,
+                          repeat: Infinity,
+                          delay: Math.random() * 3,
+                          ease: "easeIn",
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
 
               {/* Step 0: Loading */}
@@ -510,41 +542,11 @@ export default function Gacha() {
                 >
                   {/* Epic and Legendary effects */}
                   {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
-                    <>
-                      {/* Outer glow */}
-                      <div className={`absolute inset-0 bg-gradient-to-r ${
-                        drawnCard.tier === 'LEGENDARY'
-                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
-                          : 'from-purple-400 via-pink-500 to-purple-400'
-                      } rounded-2xl blur-3xl opacity-75 animate-pulse`}></div>
-
-                      {/* Sparks effect */}
-                      <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-                        {[...Array(drawnCard.tier === 'LEGENDARY' ? 20 : 12)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            className={`absolute w-1 h-1 rounded-full ${
-                              drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-400' : 'bg-purple-400'
-                            }`}
-                            style={{
-                              left: `${Math.random() * 100}%`,
-                              top: `${Math.random() * 100}%`,
-                            }}
-                            animate={{
-                              scale: [0, 1.5, 0],
-                              opacity: [0, 1, 0],
-                              x: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 200],
-                              y: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 200],
-                            }}
-                            transition={{
-                              duration: 1 + Math.random(),
-                              repeat: Infinity,
-                              delay: Math.random() * 2,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </>
+                    <div className={`absolute inset-0 bg-gradient-to-r ${
+                      drawnCard.tier === 'LEGENDARY'
+                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                        : 'from-purple-400 via-pink-500 to-purple-400'
+                    } rounded-2xl blur-3xl opacity-75 animate-pulse`}></div>
                   )}
 
                   <div className={`relative w-48 h-64 bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl shadow-2xl p-1`}>
@@ -591,28 +593,57 @@ export default function Gacha() {
                       : 'from-purple-400 via-pink-500 to-purple-400'
                   } rounded-3xl blur-2xl opacity-60 animate-pulse`}></div>
 
-                  {/* Sparks effect */}
-                  <div className="absolute -inset-4 overflow-visible pointer-events-none">
+                  {/* Left side particles for modal */}
+                  <div className="absolute -left-20 top-0 bottom-0 w-20 overflow-visible pointer-events-none">
                     {[...Array(drawnCard.tier === 'LEGENDARY' ? 15 : 10)].map((_, i) => (
                       <motion.div
-                        key={i}
+                        key={`modal-left-${i}`}
                         className={`absolute w-1.5 h-1.5 rounded-full ${
-                          drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-300' : 'bg-purple-300'
+                          drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-300 shadow-lg shadow-yellow-400' : 'bg-purple-300 shadow-lg shadow-purple-400'
                         }`}
                         style={{
-                          left: `${Math.random() * 100}%`,
-                          top: `${Math.random() * 100}%`,
+                          left: 0,
+                          top: `${Math.random() * -20}%`,
                         }}
                         animate={{
-                          scale: [0, 2, 0],
-                          opacity: [0, 1, 0],
-                          x: [(Math.random() - 0.5) * 50, (Math.random() - 0.5) * 150],
-                          y: [(Math.random() - 0.5) * 50, (Math.random() - 0.5) * 150],
+                          x: [0, Math.random() * 100 + 50],
+                          y: [0, Math.random() * 500 + 300],
+                          scale: [1, 1.5, 0],
+                          opacity: [1, 0.8, 0],
                         }}
                         transition={{
-                          duration: 1.5 + Math.random(),
+                          duration: 2 + Math.random() * 1.5,
                           repeat: Infinity,
-                          delay: Math.random() * 2,
+                          delay: Math.random() * 3,
+                          ease: "easeIn",
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Right side particles for modal */}
+                  <div className="absolute -right-20 top-0 bottom-0 w-20 overflow-visible pointer-events-none">
+                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 15 : 10)].map((_, i) => (
+                      <motion.div
+                        key={`modal-right-${i}`}
+                        className={`absolute w-1.5 h-1.5 rounded-full ${
+                          drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-300 shadow-lg shadow-yellow-400' : 'bg-purple-300 shadow-lg shadow-purple-400'
+                        }`}
+                        style={{
+                          right: 0,
+                          top: `${Math.random() * -20}%`,
+                        }}
+                        animate={{
+                          x: [0, -(Math.random() * 100 + 50)],
+                          y: [0, Math.random() * 500 + 300],
+                          scale: [1, 1.5, 0],
+                          opacity: [1, 0.8, 0],
+                        }}
+                        transition={{
+                          duration: 2 + Math.random() * 1.5,
+                          repeat: Infinity,
+                          delay: Math.random() * 3,
+                          ease: "easeIn",
                         }}
                       />
                     ))}

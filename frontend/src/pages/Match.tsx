@@ -738,6 +738,7 @@ export default function Match() {
               항복
             </button>
           </div>
+          </>
         ) : (
           /* Deck Ready - Show Match Options */
           <div className="space-y-6">

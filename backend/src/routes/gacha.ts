@@ -95,9 +95,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         [tier]
       );
     } else if ((option as any).special === 'MSI') {
-      // MSI pack - MSI cards and all Rare+ cards
+      // MSI pack - MSI cards and all Rare+ cards (exclude 17SSG)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE (name LIKE 'MSI %' OR tier IN ('RARE', 'EPIC', 'LEGENDARY')) AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE (name LIKE 'MSI %' OR tier IN ('RARE', 'EPIC', 'LEGENDARY')) AND tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE '17SSG%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {

@@ -144,8 +144,8 @@ export default function VSBattle() {
           enemyScore,
         });
 
-        // Update user points in real-time
-        if (isVictory && completeResponse.data.data.rewardPoints && user) {
+        // Update user points in real-time (only if not already cleared)
+        if (isVictory && completeResponse.data.data.rewardPoints > 0 && user && !completeResponse.data.data.alreadyCleared) {
           updateUser({ points: user.points + completeResponse.data.data.rewardPoints });
         }
 

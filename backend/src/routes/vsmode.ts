@@ -306,7 +306,7 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
 
     // Check if stage 10 hard mode cleared (give legendary pack)
     let legendaryPackAwarded = false;
-    if (isHardMode && stageNumber === 10 && !hardStagesCleared.includes(10)) {
+    if (isHardMode && stageNumber === 10 && !alreadyCleared) {
       // Award legendary pack (we'll add this to gacha or give points equivalent)
       legendaryPackAwarded = true;
     }

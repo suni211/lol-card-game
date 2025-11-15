@@ -76,7 +76,7 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
   if (cardIds.length === 0) return 0;
 
   const [cards]: any = await connection.query(`
-    SELECT uc.level, p.overall, p.team, p.position
+    SELECT uc.id as card_id, uc.level, p.overall, p.team, p.position, p.laning, p.teamfight, p.macro, p.mental
     FROM user_cards uc
     JOIN players p ON uc.player_id = p.id
     WHERE uc.id IN (?)
@@ -135,6 +135,45 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
   return totalPower;
 }
 
+// Calculate deck power for specific stat (laning, teamfight, macro, mental)
+async function calculateDeckStatPower(
+  connection: any,
+  deckId: number,
+  stat: 'laning' | 'teamfight' | 'macro' | 'mental'
+): Promise<number> {
+  const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);
+
+  if (deck.length === 0) return 0;
+
+  const deckData = deck[0];
+  const cardIds = [
+    deckData.top_card_id,
+    deckData.jungle_card_id,
+    deckData.mid_card_id,
+    deckData.adc_card_id,
+    deckData.support_card_id,
+  ].filter(Boolean);
+
+  if (cardIds.length === 0) return 0;
+
+  const [cards]: any = await connection.query(`
+    SELECT uc.level, p.${stat} as stat_value, p.overall
+    FROM user_cards uc
+    JOIN players p ON uc.player_id = p.id
+    WHERE uc.id IN (?)
+  `, [cardIds]);
+
+  let totalPower = 0;
+  cards.forEach((card: any) => {
+    // Combine stat with overall and level
+    const statContribution = (card.stat_value || 50) * 0.7; // 70% from specific stat
+    const overallContribution = card.overall * 0.3; // 30% from overall
+    totalPower += statContribution + overallContribution + card.level;
+  });
+
+  return totalPower;
+}
+
 // Simulate match with detailed phases
 async function simulateMatch(
   connection: any,
@@ -177,23 +216,31 @@ async function simulateMatch(
     let strategyName: string;
     let p1Strategy: string;
     let p2Strategy: string;
+    let statType: 'laning' | 'teamfight' | 'macro' | 'mental';
 
     if (gameNum % 3 === 1) {
       strategyType = 'LANING';
       strategyName = '라인전';
+      statType = 'laning';
       p1Strategy = p1Strategies.laning_strategy;
       p2Strategy = p2Strategies.laning_strategy;
     } else if (gameNum % 3 === 2) {
       strategyType = 'TEAMFIGHT';
       strategyName = '한타';
+      statType = 'teamfight';
       p1Strategy = p1Strategies.teamfight_strategy;
       p2Strategy = p2Strategies.teamfight_strategy;
     } else {
       strategyType = 'MACRO';
       strategyName = '운영';
+      statType = 'macro';
       p1Strategy = p1Strategies.macro_strategy;
       p2Strategy = p2Strategies.macro_strategy;
     }
+
+    // Calculate stat-specific power for this phase
+    const p1StatPower = await calculateDeckStatPower(connection, player1DeckId, statType);
+    const p2StatPower = await calculateDeckStatPower(connection, player2DeckId, statType);
 
     // Calculate advantage for this game
     const advantage = calculateStrategyAdvantage(p1Strategy, p2Strategy, strategyType);
@@ -203,8 +250,9 @@ async function simulateMatch(
     const p1MomentumBonus = p1TotalScore > p2TotalScore ? 1.05 : 1.0;
     const p2MomentumBonus = p2TotalScore > p1TotalScore ? 1.05 : 1.0;
 
-    const p1GamePower = p1Power * advantage * randomFactor * p1MomentumBonus;
-    const p2GamePower = p2Power * (1 / advantage) * randomFactor * p2MomentumBonus;
+    // Use stat-specific power instead of overall power
+    const p1GamePower = p1StatPower * advantage * randomFactor * p1MomentumBonus;
+    const p2GamePower = p2StatPower * (1 / advantage) * randomFactor * p2MomentumBonus;
 
     const gameWinner = p1GamePower > p2GamePower ? 1 : 2;
 

@@ -42,7 +42,11 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
           p.position,
           p.overall,
           p.region,
-          p.tier
+          p.tier,
+          p.laning,
+          p.teamfight,
+          p.macro,
+          p.mental
         FROM user_cards uc
         JOIN players p ON uc.player_id = p.id
         WHERE uc.id IN (?)
@@ -67,6 +71,10 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
               overall: card.overall,
               region: card.region,
               tier: card.tier,
+              laning: card.laning || 50,
+              teamfight: card.teamfight || 50,
+              macro: card.macro || 50,
+              mental: card.mental || 50,
             },
           };
         }

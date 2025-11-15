@@ -30,22 +30,24 @@ export default function Profile() {
 
   const fetchStats = async () => {
     try {
-      // Fetch user cards to calculate card stats
-      const cardsResponse = await axios.get(`${API_URL}/gacha/my-cards`, {
+      // Fetch user profile with stats
+      const profileResponse = await axios.get(`${API_URL}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const cards = cardsResponse.data.data || [];
 
-      setStats({
-        totalMatches: 0,
-        wins: 0,
-        losses: 0,
-        winRate: 0,
-        currentStreak: 0,
-        longestWinStreak: 0,
-        totalCards: cards.length,
-        legendaryCards: cards.filter((card: any) => card.tier === 'LEGENDARY').length,
-      });
+      if (profileResponse.data.success) {
+        const profileStats = profileResponse.data.data.stats;
+        setStats({
+          totalMatches: profileStats.total_matches || 0,
+          wins: profileStats.wins || 0,
+          losses: profileStats.losses || 0,
+          winRate: profileStats.winRate || 0,
+          currentStreak: profileStats.current_streak || 0,
+          longestWinStreak: profileStats.longest_win_streak || 0,
+          totalCards: profileStats.totalCards || 0,
+          legendaryCards: profileStats.legendaryCards || 0,
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }

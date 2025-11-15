@@ -378,6 +378,28 @@ export default function Collection() {
                         </div>
                       </div>
 
+                      {/* Player Stats */}
+                      {card.player.laning && (
+                        <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded p-2">
+                            <div className="text-yellow-700 dark:text-yellow-300 font-semibold">라인전</div>
+                            <div className="text-yellow-900 dark:text-yellow-100 font-bold">{card.player.laning}</div>
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2">
+                            <div className="text-blue-700 dark:text-blue-300 font-semibold">한타</div>
+                            <div className="text-blue-900 dark:text-blue-100 font-bold">{card.player.teamfight}</div>
+                          </div>
+                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded p-2">
+                            <div className="text-purple-700 dark:text-purple-300 font-semibold">운영</div>
+                            <div className="text-purple-900 dark:text-purple-100 font-bold">{card.player.macro}</div>
+                          </div>
+                          <div className="bg-green-50 dark:bg-green-900/20 rounded p-2">
+                            <div className="text-green-700 dark:text-green-300 font-semibold">멘탈</div>
+                            <div className="text-green-900 dark:text-green-100 font-bold">{card.player.mental}</div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Traits */}
                       {card.player.traits && card.player.traits.length > 0 && (
                         <div className="mb-3">

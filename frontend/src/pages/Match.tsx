@@ -443,16 +443,11 @@ export default function Match() {
                 <AnimatePresence>
                   <div className="space-y-4">
                     {simulatedPhases.map((phase, idx) => {
-                      // Determine if I won this game
-                      // Use tempResult during simulation, matchResult after
-                      const result = tempResult || matchResult;
-                      if (!result) return null;
-
-                      const amIPlayer1 = result.won ?
-                        (result.myScore > result.opponentScore) :
-                        (result.myScore < result.opponentScore);
-
-                      const iWonThisGame = amIPlayer1 ? (phase.winner === 1) : (phase.winner === 2);
+                      // The server always sends data from player1's perspective
+                      // We are always player1 in the simulation
+                      const myCurrentScore = phase.score.player1;
+                      const opponentCurrentScore = phase.score.player2;
+                      const iWonThisGame = phase.winner === 1;
 
                       return (
                         <motion.div
@@ -472,7 +467,7 @@ export default function Match() {
                               {phase.phase === 'TEAMFIGHT' && <Shield className="w-6 h-6 text-blue-600" />}
                               {phase.phase === 'MACRO' && <MapPin className="w-6 h-6 text-purple-600" />}
                               <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {phase.name} 단계
+                                {phase.name}
                               </h3>
                             </div>
                             <div className={`text-2xl font-bold ${
@@ -486,11 +481,11 @@ export default function Match() {
 
                           <div className="flex items-center justify-center gap-4 text-3xl font-bold text-gray-900 dark:text-white">
                             <span className={iWonThisGame ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
-                              {result.myScore}
+                              {myCurrentScore}
                             </span>
                             <span className="text-gray-400">-</span>
                             <span className={!iWonThisGame ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
-                              {result.opponentScore}
+                              {opponentCurrentScore}
                             </span>
                           </div>
 

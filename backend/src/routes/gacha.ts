@@ -211,7 +211,11 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         p.region,
         p.tier,
         p.season,
-        p.image_url
+        p.image_url,
+        p.laning,
+        p.teamfight,
+        p.macro,
+        p.mental
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.user_id = ?
@@ -241,6 +245,10 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
           tier: card.tier,
           season: card.season,
           imageUrl: card.image_url,
+          laning: card.laning || 50,
+          teamfight: card.teamfight || 50,
+          macro: card.macro || 50,
+          mental: card.mental || 50,
           traits: traits,
         },
       };
@@ -285,7 +293,11 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
         p.region,
         p.tier,
         p.season,
-        p.image_url
+        p.image_url,
+        p.laning,
+        p.teamfight,
+        p.macro,
+        p.mental
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.user_id = ?
@@ -315,6 +327,10 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
           tier: card.tier,
           season: card.season,
           imageUrl: card.image_url,
+          laning: card.laning || 50,
+          teamfight: card.teamfight || 50,
+          macro: card.macro || 50,
+          mental: card.mental || 50,
           traits: traits,
         },
       };

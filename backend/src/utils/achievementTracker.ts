@@ -133,9 +133,9 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
       }
     }
 
-    // Get gacha count
+    // Get gacha count (실제 가챠를 뽑은 횟수)
     const [gachaStats]: any = await connection.query(
-      'SELECT COUNT(*) as gacha_count FROM user_cards WHERE user_id = ?',
+      'SELECT COUNT(*) as gacha_count FROM gacha_history WHERE user_id = ?',
       [userId]
     );
     if (gachaStats.length > 0) {

@@ -333,8 +333,8 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
   }
 });
 
-// Enhancement success rates per level (0→1, 1→2, ..., 9→10)
-const BASE_ENHANCEMENT_RATES = [80, 65, 60, 50, 45, 40, 20, 10, 5, 1];
+// Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 매우 어려운 난이도
+const BASE_ENHANCEMENT_RATES = [50, 40, 30, 20, 15, 10, 5, 3, 1, 0.5];
 const MAX_ENHANCEMENT_LEVEL = 10;
 
 // Calculate success rate based on material card quality (FIFA 4 style)
@@ -347,25 +347,25 @@ function calculateEnhancementRate(
 ): number {
   let successRate = baseRate;
 
-  // Same player bonus: +30%
+  // Same player bonus: +10% (기존 30% -> 10%로 감소)
   if (targetCard.player_id === materialCard.player_id) {
-    successRate += 30;
+    successRate += 10;
   }
 
-  // Tier bonus/penalty
-  const tierValues: any = { LEGENDARY: 20, EPIC: 10, RARE: 5, COMMON: 0 };
+  // Tier bonus/penalty (기존 20/10/5 -> 5/3/1로 감소)
+  const tierValues: any = { LEGENDARY: 5, EPIC: 3, RARE: 1, COMMON: 0 };
   const tierBonus = tierValues[materialPlayer.tier] || 0;
   successRate += tierBonus;
 
-  // Overall bonus: every 10 overall above 70 = +5%
-  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 5;
+  // Overall bonus: every 10 overall above 70 = +2% (기존 +5% -> +2%로 감소)
+  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 2;
   successRate += overallBonus;
 
-  // Enhancement level of material: each level = +2%
-  successRate += materialCard.level * 2;
+  // Enhancement level of material: each level = +1% (기존 +2% -> +1%로 감소)
+  successRate += materialCard.level * 1;
 
-  // Cap at 95% max, 5% min
-  return Math.min(95, Math.max(5, successRate));
+  // Cap at 80% max, 1% min (기존 95%/5% -> 80%/1%로 변경)
+  return Math.min(80, Math.max(1, successRate));
 }
 
 // Get enhancement rate (for preview before enhance)

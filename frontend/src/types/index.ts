@@ -98,6 +98,7 @@ export interface GachaOption {
     rare: number;
     epic: number;
     legendary: number;
+    icon: number;
   };
   special?: boolean;
 }

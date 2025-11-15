@@ -21,40 +21,44 @@ export default function Gacha() {
       cost: 0,
       label: '일일 무료',
       probabilities: {
-        common: 94.89,
+        common: 94.88,
         rare: 5,
         epic: 0.1,
         legendary: 0.01,
+        icon: 0.01,
       },
     },
     {
       cost: 100,
       label: '기본',
       probabilities: {
-        common: 89.45,
+        common: 89.44,
         rare: 10,
         epic: 0.5,
         legendary: 0.05,
+        icon: 0.01,
       },
     },
     {
       cost: 300,
       label: '고급',
       probabilities: {
-        common: 79.8,
+        common: 78.79,
         rare: 18,
-        epic: 2,
+        epic: 3,
         legendary: 0.2,
+        icon: 0.01,
       },
     },
     {
       cost: 500,
       label: '프리미엄',
       probabilities: {
-        common: 70.5,
+        common: 68.49,
         rare: 25,
-        epic: 4,
+        epic: 6,
         legendary: 0.5,
+        icon: 0.01,
       },
     },
     {
@@ -63,8 +67,9 @@ export default function Gacha() {
       probabilities: {
         common: 0,
         rare: 0,
-        epic: 90.5,
+        epic: 90.49,
         legendary: 9.5,
+        icon: 0.01,
       },
       special: true,
     },
@@ -73,9 +78,10 @@ export default function Gacha() {
       label: 'MSI 레전드 카드팩',
       probabilities: {
         common: 0,
-        rare: 65,
+        rare: 64.99,
         epic: 30,
         legendary: 5,
+        icon: 0.01,
       },
       special: true,
     },
@@ -317,6 +323,12 @@ export default function Gacha() {
                       </p>
                     </div>
                   )}
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-red-600 dark:text-red-400 font-bold">🏆 아이콘</span>
+                    <span className="font-bold text-red-600 dark:text-red-400">
+                      {option.probabilities.icon}%
+                    </span>
+                  </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-yellow-600 dark:text-yellow-400">레전드</span>
                     <span className="font-semibold text-gray-900 dark:text-white">

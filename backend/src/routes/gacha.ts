@@ -333,8 +333,8 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
   }
 });
 
-// Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 매우 어려운 난이도
-const BASE_ENHANCEMENT_RATES = [50, 40, 30, 20, 15, 10, 5, 3, 1, 0.5];
+// Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 극악 난이도 (보너스 감소에 비례하여 하향)
+const BASE_ENHANCEMENT_RATES = [30, 20, 15, 10, 7, 5, 3, 1.5, 0.5, 0.2];
 const MAX_ENHANCEMENT_LEVEL = 10;
 
 // Calculate success rate based on material card quality (FIFA 4 style)

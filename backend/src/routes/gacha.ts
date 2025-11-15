@@ -83,9 +83,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else if ((option as any).special === 'RE') {
-      // LCK Legend pack - Only LCK region cards + 25WW/25WUD
+      // LCK Legend pack - Only LCK region cards (excluding special sets) + 25WW/25WUD
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (region = 'LCK' OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND ((region = 'LCK' AND name NOT LIKE '17SSG%' AND name NOT LIKE 'MSI %') OR name LIKE '25WW%' OR name LIKE '25WUD%') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === '17SSG') {

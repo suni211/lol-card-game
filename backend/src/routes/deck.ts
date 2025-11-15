@@ -111,12 +111,12 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
     await connection.beginTransaction();
 
     const userId = req.user!.id;
-    const { name, topCardId, jungleCardId, midCardId, adcCardId, supportCardId } = req.body;
+    const { name, topCardId, jungleCardId, midCardId, adcCardId, supportCardId, laningStrategy, teamfightStrategy, macroStrategy } = req.body;
 
-    // 전략은 기본값 사용 (실시간 매치에서는 라운드별로 선택)
-    const laningStrategy = 'SAFE';
-    const teamfightStrategy = 'ENGAGE';
-    const macroStrategy = 'OBJECTIVE';
+    // Use provided strategies or default values
+    const finalLaningStrategy = laningStrategy || 'SAFE';
+    const finalTeamfightStrategy = teamfightStrategy || 'ENGAGE';
+    const finalMacroStrategy = macroStrategy || 'OBJECTIVE';
 
     // Validate that all cards belong to user
     const cardIds = [topCardId, jungleCardId, midCardId, adcCardId, supportCardId].filter(Boolean);
@@ -155,12 +155,12 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
           teamfight_strategy = ?,
           macro_strategy = ?
         WHERE id = ?
-      `, [name || 'My Deck', topCardId, jungleCardId, midCardId, adcCardId, supportCardId, laningStrategy || 'SAFE', teamfightStrategy || 'ENGAGE', macroStrategy || 'OBJECTIVE', deckId]);
+      `, [name || 'My Deck', topCardId, jungleCardId, midCardId, adcCardId, supportCardId, finalLaningStrategy, finalTeamfightStrategy, finalMacroStrategy, deckId]);
     } else {
       const [result]: any = await connection.query(`
         INSERT INTO decks (user_id, name, top_card_id, jungle_card_id, mid_card_id, adc_card_id, support_card_id, laning_strategy, teamfight_strategy, macro_strategy, is_active)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)
-      `, [userId, name || 'My Deck', topCardId, jungleCardId, midCardId, adcCardId, supportCardId, laningStrategy || 'SAFE', teamfightStrategy || 'ENGAGE', macroStrategy || 'OBJECTIVE']);
+      `, [userId, name || 'My Deck', topCardId, jungleCardId, midCardId, adcCardId, supportCardId, finalLaningStrategy, finalTeamfightStrategy, finalMacroStrategy]);
       deckId = result.insertId;
     }
 

@@ -23,7 +23,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
         um.expires_at
       FROM missions m
       LEFT JOIN user_missions um ON m.id = um.mission_id AND um.user_id = ?
-      WHERE um.id IS NULL OR um.expires_at > NOW()
+      WHERE (um.id IS NULL OR (um.expires_at > NOW() AND um.is_claimed = FALSE))
       ORDER BY m.type, m.id
     `, [userId]);
 

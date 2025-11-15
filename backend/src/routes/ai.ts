@@ -5,7 +5,7 @@ import { updateMissionProgress } from '../utils/missionTracker';
 
 const router = express.Router();
 
-const AI_BATTLE_LIMIT = 30; // Max AI battles per hour
+const AI_BATTLE_LIMIT = 100; // Max AI battles per hour
 const AI_BATTLE_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
 
 // Calculate deck power (same as matchmaking)

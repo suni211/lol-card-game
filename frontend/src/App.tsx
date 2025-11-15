@@ -23,6 +23,7 @@ import Notices from './pages/Notices';
 import Suggestions from './pages/Suggestions';
 import Profile from './pages/Profile';
 import Fusion from './pages/Fusion';
+import Achievements from './pages/Achievements';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -147,6 +148,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Missions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achievements"
+            element={
+              <ProtectedRoute>
+                <Achievements />
               </ProtectedRoute>
             }
           />

@@ -21,6 +21,7 @@ export default function Navbar() {
     { path: '/ai-battle', label: 'AI 배틀' },
     { path: '/ranking', label: '랭킹' },
     { path: '/missions', label: '미션' },
+    { path: '/achievements', label: '업적' },
     { path: '/trade', label: '트레이드' },
     { path: '/notices', label: '공지사항' },
     { path: '/suggestions', label: '건의사항' },

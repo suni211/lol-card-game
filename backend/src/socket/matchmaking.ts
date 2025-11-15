@@ -119,7 +119,7 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
       const won = winnerId === player.userId;
 
       // Practice mode: lower rewards, no rating change
-      const pointsChange = isPractice ? (won ? 50 : 30) : (won ? 100 : 50);
+      const pointsChange = isPractice ? (won ? 100 : 60) : (won ? 200 : 100);
       let ratingChange = isPractice ? 0 : (won ? 25 : -15);
 
       // Get current rating to prevent going below 1000

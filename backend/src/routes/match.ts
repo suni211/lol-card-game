@@ -310,7 +310,7 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
 
       // Update match history
       const won = winnerId === userId;
-      const pointsChange = won ? 100 : 50;
+      const pointsChange = won ? 200 : 100;
       const ratingChange = won ? 25 : -15;
 
       await connection.query(`

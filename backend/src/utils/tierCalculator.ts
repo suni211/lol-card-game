@@ -1,8 +1,9 @@
 // Tier calculation based on rating
-export type UserTier = 'IRON' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'MASTER' | 'CHALLENGER';
+export type UserTier = 'IRON' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'MASTER' | 'GRANDMASTER' | 'CHALLENGER';
 
 export function calculateTier(rating: number): UserTier {
-  if (rating >= 10001) return 'CHALLENGER';
+  if (rating >= 9001) return 'CHALLENGER';
+  if (rating >= 8001) return 'GRANDMASTER';
   if (rating >= 7001) return 'MASTER';
   if (rating >= 6001) return 'DIAMOND';
   if (rating >= 5001) return 'PLATINUM';
@@ -21,7 +22,8 @@ export function getTierLevel(tier: UserTier): number {
     'PLATINUM': 5,
     'DIAMOND': 6,
     'MASTER': 7,
-    'CHALLENGER': 8,
+    'GRANDMASTER': 8,
+    'CHALLENGER': 9,
   };
   return tierLevels[tier];
 }

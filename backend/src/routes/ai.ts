@@ -78,17 +78,16 @@ function calculateAIDifficulty(aiWins: number): number {
 
 // Calculate points reward based on difficulty
 function calculatePointsReward(aiPower: number, playerPower: number, won: boolean): number {
-  if (!won) return 20; // Loss gives small reward
+  if (!won) return 50; // Loss gives small reward (increased from 20)
 
   const difficultyRatio = aiPower / playerPower;
 
-  // Base reward: 50 points
-  // Increases based on how difficult the AI was
-  let reward = 50;
+  // Base reward increased
+  let reward = 100;
 
-  if (difficultyRatio >= 1.5) reward = 150; // Very hard AI
-  else if (difficultyRatio >= 1.2) reward = 100; // Hard AI
-  else if (difficultyRatio >= 0.9) reward = 70; // Normal AI
+  if (difficultyRatio >= 1.5) reward = 300; // Very hard AI (increased from 150)
+  else if (difficultyRatio >= 1.2) reward = 200; // Hard AI (increased from 100)
+  else if (difficultyRatio >= 0.9) reward = 150; // Normal AI (increased from 70)
 
   return reward;
 }

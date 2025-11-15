@@ -171,14 +171,31 @@ export default function Gacha() {
 
         setDrawnCard(player);
 
-        // Reveal animation sequence: position -> season -> team -> final
-        setTimeout(() => setRevealStep(1), 500);   // Position
-        setTimeout(() => setRevealStep(2), 1500);  // Season
-        setTimeout(() => setRevealStep(3), 2500);  // Team
+        // ICON 카드는 완전히 다른 컷신
+        if (player.tier === 'ICON') {
+          setTimeout(() => setRevealStep(1), 500);   // 암전 + 균열 효과
+          setTimeout(() => setRevealStep(2), 2000);  // ICON 텍스트
+          setTimeout(() => setRevealStep(3), 3500);  // 선수 이름
+          setTimeout(() => {
+            setRevealStep(4);  // Final card
+            setIsDrawing(false);
+            setShowResult(true);
+          }, 5500);
+        } else {
+          // 일반 카드 reveal sequence: position -> season -> team -> final
+          setTimeout(() => setRevealStep(1), 500);   // Position
+          setTimeout(() => setRevealStep(2), 1500);  // Season
+          setTimeout(() => setRevealStep(3), 2500);  // Team
+          setTimeout(() => {
+            setRevealStep(4);  // Final card
+            setIsDrawing(false);
+            setShowResult(true);
+          }, 3500);
+        }
+
+        // 타이머 후 처리
+        const displayDelay = player.tier === 'ICON' ? 5500 : 3500;
         setTimeout(() => {
-          setRevealStep(4);  // Final card
-          setIsDrawing(false);
-          setShowResult(true);
 
           // 포인트 업데이트
           const newPoints = user.points - option.cost + (refundPoints || 0);
@@ -206,7 +223,7 @@ export default function Gacha() {
 
           // Reset reveal step
           setRevealStep(0);
-        }, 3500);
+        }, displayDelay);
       }
     } catch (error: any) {
       setIsDrawing(false);
@@ -541,79 +558,298 @@ export default function Gacha() {
                 </motion.div>
               )}
 
-              {/* Step 1: Position Reveal */}
+              {/* Step 1: ICON - 암전 + 균열 효과 OR 일반 - Position */}
               {revealStep === 1 && (
-                <motion.div
-                  key="position"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="text-center relative"
-                >
-                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
-                    <div className={`absolute inset-0 bg-gradient-to-r ${
-                      drawnCard.tier === 'LEGENDARY'
-                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
-                        : 'from-purple-400 via-pink-500 to-purple-400'
-                    } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
-                  )}
-                  <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-12 py-8 shadow-2xl`}>
-                    <div className="text-white text-6xl font-bold mb-2">
-                      {drawnCard.position}
+                drawnCard.tier === 'ICON' ? (
+                  <motion.div
+                    key="icon-crack"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="relative w-full h-screen flex items-center justify-center"
+                  >
+                    {/* 완전 암전 배경 */}
+                    <motion.div
+                      className="absolute inset-0 bg-black"
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 1 }}
+                    />
+
+                    {/* 황금빛 균열 효과 */}
+                    {[...Array(12)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute bg-gradient-to-r from-transparent via-yellow-400 to-transparent"
+                        style={{
+                          width: `${Math.random() * 400 + 200}px`,
+                          height: '4px',
+                          left: '50%',
+                          top: '50%',
+                          transformOrigin: 'left center',
+                          rotate: `${(360 / 12) * i}deg`,
+                        }}
+                        initial={{ scaleX: 0, opacity: 0 }}
+                        animate={{ scaleX: 1, opacity: [0, 1, 0.8] }}
+                        transition={{
+                          duration: 1.2,
+                          delay: i * 0.08,
+                          ease: 'easeOut',
+                        }}
+                      />
+                    ))}
+
+                    {/* 중앙 빛나는 점 */}
+                    <motion.div
+                      className="absolute w-4 h-4 bg-yellow-300 rounded-full"
+                      style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+                      animate={{
+                        scale: [1, 3, 2],
+                        boxShadow: [
+                          '0 0 20px 10px rgba(251, 191, 36, 0.8)',
+                          '0 0 60px 30px rgba(251, 191, 36, 1)',
+                          '0 0 40px 20px rgba(251, 191, 36, 0.9)',
+                        ],
+                      }}
+                      transition={{ duration: 1.2, repeat: Infinity }}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="position"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative"
+                  >
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${
+                        drawnCard.tier === 'LEGENDARY'
+                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                          : 'from-purple-400 via-pink-500 to-purple-400'
+                      } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
+                    )}
+                    <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-12 py-8 shadow-2xl`}>
+                      <div className="text-white text-6xl font-bold mb-2">
+                        {drawnCard.position}
+                      </div>
+                      <div className="text-white/80 text-xl">포지션</div>
                     </div>
-                    <div className="text-white/80 text-xl">포지션</div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )
               )}
 
-              {/* Step 2: Season Reveal */}
+              {/* Step 2: ICON - "ICON" 텍스트 OR 일반 - Season */}
               {revealStep === 2 && (
-                <motion.div
-                  key="season"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="text-center relative"
-                >
-                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
-                    <div className={`absolute inset-0 bg-gradient-to-r ${
-                      drawnCard.tier === 'LEGENDARY'
-                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
-                        : 'from-purple-400 via-pink-500 to-purple-400'
-                    } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
-                  )}
-                  <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
-                    <div className="text-white text-6xl font-bold mb-2">
-                      {drawnCard.season || '시즌 정보 없음'}
+                drawnCard.tier === 'ICON' ? (
+                  <motion.div
+                    key="icon-text"
+                    initial={{ opacity: 0, scale: 0.3 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative w-full h-screen flex items-center justify-center"
+                  >
+                    {/* 검은 배경 유지 */}
+                    <div className="absolute inset-0 bg-black" />
+
+                    {/* 빛나는 링 효과 */}
+                    <motion.div
+                      className="absolute w-96 h-96 rounded-full border-8 border-yellow-400"
+                      initial={{ scale: 0, opacity: 0, rotate: 0 }}
+                      animate={{
+                        scale: [0, 1.2, 1],
+                        opacity: [0, 0.8, 0.6],
+                        rotate: 360,
+                      }}
+                      transition={{ duration: 1.5, ease: 'easeOut' }}
+                      style={{
+                        boxShadow: '0 0 60px 20px rgba(251, 191, 36, 0.6), inset 0 0 60px 20px rgba(251, 191, 36, 0.4)'
+                      }}
+                    />
+
+                    {/* ICON 텍스트 */}
+                    <motion.div
+                      className="relative z-10 text-center"
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.8 }}
+                    >
+                      <motion.div
+                        className="text-9xl font-black bg-gradient-to-r from-yellow-200 via-yellow-400 to-orange-500 bg-clip-text text-transparent"
+                        animate={{
+                          textShadow: [
+                            '0 0 20px rgba(251, 191, 36, 0.8)',
+                            '0 0 40px rgba(251, 191, 36, 1)',
+                            '0 0 20px rgba(251, 191, 36, 0.8)',
+                          ]
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        ICON
+                      </motion.div>
+                      <motion.div
+                        className="text-2xl text-yellow-200 mt-4 font-bold tracking-widest"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1 }}
+                      >
+                        전설의 선수
+                      </motion.div>
+                    </motion.div>
+
+                    {/* 반짝이는 별 효과 */}
+                    {[...Array(30)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute w-2 h-2 bg-yellow-300 rounded-full"
+                        style={{
+                          left: `${Math.random() * 100}%`,
+                          top: `${Math.random() * 100}%`,
+                        }}
+                        animate={{
+                          opacity: [0, 1, 0],
+                          scale: [0, 1.5, 0],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          delay: Math.random() * 2,
+                        }}
+                      />
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="season"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative"
+                  >
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${
+                        drawnCard.tier === 'LEGENDARY'
+                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                          : 'from-purple-400 via-pink-500 to-purple-400'
+                      } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
+                    )}
+                    <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
+                      <div className="text-white text-6xl font-bold mb-2">
+                        {drawnCard.season || '시즌 정보 없음'}
+                      </div>
+                      <div className="text-white/80 text-xl">시즌</div>
                     </div>
-                    <div className="text-white/80 text-xl">시즌</div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )
               )}
 
-              {/* Step 3: Team Reveal */}
+              {/* Step 3: ICON - 선수 이름 OR 일반 - Team */}
               {revealStep === 3 && (
-                <motion.div
-                  key="team"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="text-center relative"
-                >
-                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
-                    <div className={`absolute inset-0 bg-gradient-to-r ${
-                      drawnCard.tier === 'LEGENDARY'
-                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
-                        : 'from-purple-400 via-pink-500 to-purple-400'
-                    } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
-                  )}
-                  <div className="relative bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
-                    <div className="text-white text-6xl font-bold mb-2">
-                      {drawnCard.team}
+                drawnCard.tier === 'ICON' ? (
+                  <motion.div
+                    key="icon-player-name"
+                    className="relative w-full h-screen flex items-center justify-center"
+                  >
+                    {/* 검은 배경 + 골드 그라데이션 */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-b from-black via-yellow-900/20 to-black"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    />
+
+                    {/* 황금빛 입자들이 위로 올라감 */}
+                    {[...Array(50)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute w-1 h-1 bg-yellow-400 rounded-full"
+                        style={{
+                          left: `${Math.random() * 100}%`,
+                          bottom: '0%',
+                        }}
+                        animate={{
+                          y: [-100, -window.innerHeight],
+                          opacity: [0, 1, 1, 0],
+                          scale: [0, 1, 1, 0],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          delay: Math.random() * 2,
+                          ease: 'linear',
+                        }}
+                      />
+                    ))}
+
+                    {/* 선수 이름 */}
+                    <motion.div
+                      className="relative z-10 text-center"
+                      initial={{ opacity: 0, scale: 0.5, rotateX: -90 }}
+                      animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                      transition={{ duration: 1, ease: 'easeOut' }}
+                    >
+                      <motion.div
+                        className="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 mb-6"
+                        style={{
+                          textShadow: '0 0 80px rgba(251, 191, 36, 0.8)',
+                          WebkitTextStroke: '2px rgba(251, 191, 36, 0.3)',
+                        }}
+                        animate={{
+                          scale: [1, 1.05, 1],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      >
+                        {drawnCard.name}
+                      </motion.div>
+
+                      <motion.div
+                        className="flex items-center justify-center gap-4 text-yellow-200 text-xl"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <span className="font-bold">{drawnCard.team}</span>
+                        <span>•</span>
+                        <span className="font-bold">{drawnCard.position}</span>
+                      </motion.div>
+                    </motion.div>
+
+                    {/* 방사형 빛 효과 */}
+                    <motion.div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(circle at center, rgba(251, 191, 36, 0.1) 0%, transparent 70%)',
+                      }}
+                      animate={{
+                        opacity: [0.3, 0.6, 0.3],
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="team"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative"
+                  >
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${
+                        drawnCard.tier === 'LEGENDARY'
+                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                          : 'from-purple-400 via-pink-500 to-purple-400'
+                      } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
+                    )}
+                    <div className="relative bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
+                      <div className="text-white text-6xl font-bold mb-2">
+                        {drawnCard.team}
+                      </div>
+                      <div className="text-white/80 text-xl">소속팀</div>
                     </div>
-                    <div className="text-white/80 text-xl">소속팀</div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )
               )}
 
               {/* Step 4: Final Card Reveal (will transition to showResult) */}

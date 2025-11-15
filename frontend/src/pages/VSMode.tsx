@@ -35,7 +35,13 @@ export default function VSMode() {
   const { token } = useAuthStore();
   const navigate = useNavigate();
   const [stages, setStages] = useState<Stage[]>([]);
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const [progress, setProgress] = useState<Progress>({
+    current_stage: 1,
+    hard_mode_unlocked: false,
+    stages_cleared: [],
+    hard_stages_cleared: [],
+    total_points_earned: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [selectedMode, setSelectedMode] = useState<'normal' | 'hard'>('normal');
 
@@ -79,21 +85,21 @@ export default function VSMode() {
     const isHardMode = selectedMode === 'hard';
 
     // Check if hard mode is unlocked
-    if (isHardMode && !progress?.hard_mode_unlocked) {
+    if (isHardMode && !progress.hard_mode_unlocked) {
       toast.error('일반 모드를 모두 클리어해야 하드 모드가 열립니다!');
       return;
     }
 
     // Check if stage is unlocked
     if (stage.stage_number > 1) {
-      const clearedStages = isHardMode ? progress?.hard_stages_cleared : progress?.stages_cleared;
-      if (!clearedStages?.includes(stage.stage_number - 1)) {
+      const clearedStages = isHardMode ? progress.hard_stages_cleared : progress.stages_cleared;
+      if (!clearedStages.includes(stage.stage_number - 1)) {
         toast.error('이전 스테이지를 먼저 클리어해야 합니다!');
         return;
       }
     }
 
-    // Navigate to battle (you'll create this page)
+    // Navigate to battle
     navigate(`/vsmode/battle/${stage.stage_number}?mode=${selectedMode}`);
   };
 
@@ -101,16 +107,16 @@ export default function VSMode() {
     if (stageNumber === 1) return true;
 
     const isHardMode = selectedMode === 'hard';
-    if (isHardMode && !progress?.hard_mode_unlocked) return false;
+    if (isHardMode && !progress.hard_mode_unlocked) return false;
 
-    const clearedStages = isHardMode ? progress?.hard_stages_cleared : progress?.stages_cleared;
-    return clearedStages?.includes(stageNumber - 1) || false;
+    const clearedStages = isHardMode ? progress.hard_stages_cleared : progress.stages_cleared;
+    return clearedStages.includes(stageNumber - 1);
   };
 
   const isStageCleared = (stageNumber: number): boolean => {
     const isHardMode = selectedMode === 'hard';
-    const clearedStages = isHardMode ? progress?.hard_stages_cleared : progress?.stages_cleared;
-    return clearedStages?.includes(stageNumber) || false;
+    const clearedStages = isHardMode ? progress.hard_stages_cleared : progress.stages_cleared;
+    return clearedStages.includes(stageNumber);
   };
 
   if (loading) {
@@ -145,19 +151,19 @@ export default function VSMode() {
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
               <div className="text-sm text-gray-600 dark:text-gray-400">일반 모드</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {progress?.stages_cleared.length || 0} / 10
+                {progress.stages_cleared.length} / 10
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
               <div className="text-sm text-gray-600 dark:text-gray-400">하드 모드</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {progress?.hard_stages_cleared.length || 0} / 10
+                {progress.hard_stages_cleared.length} / 10
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
               <div className="text-sm text-gray-600 dark:text-gray-400">획득 포인트</div>
               <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {progress?.total_points_earned.toLocaleString() || 0}P
+                {progress.total_points_earned.toLocaleString()}P
               </div>
             </div>
           </div>
@@ -183,10 +189,10 @@ export default function VSMode() {
                   ? 'bg-red-600 text-white'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
-              disabled={!progress?.hard_mode_unlocked}
+              disabled={!progress.hard_mode_unlocked}
             >
               하드 모드
-              {!progress?.hard_mode_unlocked && (
+              {!progress.hard_mode_unlocked && (
                 <Lock className="w-4 h-4 absolute -top-1 -right-1" />
               )}
             </button>

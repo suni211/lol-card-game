@@ -78,6 +78,45 @@ export default function Achievements() {
     }
   };
 
+  const handleClaimAll = async () => {
+    const claimable = achievements.filter((a) => a.is_completed && !a.is_claimed);
+
+    if (claimable.length === 0) {
+      toast.error('받을 수 있는 보상이 없습니다');
+      return;
+    }
+
+    let totalReward = 0;
+    let successCount = 0;
+
+    for (const achievement of claimable) {
+      try {
+        const response = await axios.post(
+          `${API_URL}/achievements/claim`,
+          { achievementId: achievement.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.data.success) {
+          totalReward += response.data.data.reward;
+          successCount++;
+        }
+      } catch (error) {
+        console.error('Claim error:', error);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount}개 업적 보상 획득! 총 ${totalReward.toLocaleString()}P`);
+
+      // Update user points
+      const updatedUser = { ...user!, points: user!.points + totalReward };
+      useAuthStore.setState({ user: updatedUser });
+
+      fetchAchievements(); // Refresh
+    }
+  };
+
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'BATTLE':
@@ -200,52 +239,6 @@ export default function Achievements() {
           </div>
         </motion.div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                카테고리
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {['ALL', 'BATTLE', 'COLLECTION', 'GACHA', 'MILESTONE'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setFilter(cat)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      filter === cat
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {cat === 'ALL' ? '전체' : getCategoryName(cat)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                난이도
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {['ALL', 'EASY', 'HARD'].map((diff) => (
-                  <button
-                    key={diff}
-                    onClick={() => setDifficultyFilter(diff)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      difficultyFilter === diff
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {diff === 'ALL' ? '전체' : diff === 'EASY' ? '쉬움' : '어려움'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Achievements Grid */}
         {loading ? (
           <div className="text-center py-12">
@@ -257,11 +250,20 @@ export default function Achievements() {
             {/* Claimable Achievements Section */}
             {claimableAchievements.length > 0 && (
               <div className="mb-8">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Gift className="w-6 h-6 text-green-600 dark:text-green-400" />
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    보상 받기 ({claimableAchievements.length})
-                  </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <Gift className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      보상 받기 ({claimableAchievements.length})
+                    </h2>
+                  </div>
+                  <button
+                    onClick={handleClaimAll}
+                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-lg transition-all transform hover:scale-105 flex items-center space-x-2"
+                  >
+                    <Gift className="w-5 h-5" />
+                    <span>모두 받기</span>
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {claimableAchievements.map((achievement) => {
@@ -358,6 +360,52 @@ export default function Achievements() {
                     </h2>
                   </div>
                 )}
+
+                {/* Filters */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        카테고리
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {['ALL', 'BATTLE', 'COLLECTION', 'GACHA', 'MILESTONE'].map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setFilter(cat)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              filter === cat
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {cat === 'ALL' ? '전체' : getCategoryName(cat)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        난이도
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {['ALL', 'EASY', 'HARD'].map((diff) => (
+                          <button
+                            key={diff}
+                            onClick={() => setDifficultyFilter(diff)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              difficultyFilter === diff
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {diff === 'ALL' ? '전체' : diff === 'EASY' ? '쉬움' : '어려움'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {otherAchievements.map((achievement) => {
               const progressPercent = Math.min(

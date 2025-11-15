@@ -350,25 +350,25 @@ function calculateEnhancementRate(
 ): number {
   let successRate = baseRate;
 
-  // Same player bonus: +30%
+  // Same player bonus: +15% (기존 +30%에서 하향)
   if (targetCard.player_id === materialCard.player_id) {
-    successRate += 30;
+    successRate += 15;
   }
 
-  // Tier bonus/penalty
-  const tierValues: any = { LEGENDARY: 20, EPIC: 10, RARE: 5, COMMON: 0 };
+  // Tier bonus/penalty (기존 20/10/5에서 10/5/3으로 하향)
+  const tierValues: any = { LEGENDARY: 10, EPIC: 5, RARE: 3, COMMON: 0 };
   const tierBonus = tierValues[materialPlayer.tier] || 0;
   successRate += tierBonus;
 
-  // Overall bonus: every 10 overall above 70 = +5%
-  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 5;
+  // Overall bonus: every 10 overall above 70 = +3% (기존 +5%에서 하향)
+  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 3;
   successRate += overallBonus;
 
-  // Enhancement level of material: each level = +2%
-  successRate += materialCard.level * 2;
+  // Enhancement level of material: each level = +1% (기존 +2%에서 하향)
+  successRate += materialCard.level * 1;
 
-  // Cap at 95% max, 5% min
-  return Math.min(95, Math.max(5, successRate));
+  // Cap at 85% max, 3% min (기존 95%/5%에서 하향)
+  return Math.min(85, Math.max(3, successRate));
 }
 
 // Get enhancement rate (for preview before enhance)

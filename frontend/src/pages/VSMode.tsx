@@ -8,48 +8,38 @@ import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-interface Stage {
-  id: number;
-  stage_number: number;
-  stage_name: string;
-  is_boss: boolean;
-  reward_points: number;
-  hard_mode_multiplier: number;
-  enemies: Array<{
-    player_name: string;
-    enhancement_level: number;
-    hard_enhancement_level: number;
-    position_order: number;
-  }>;
-}
-
-interface Progress {
-  current_stage: number;
-  hard_mode_unlocked: boolean;
-  stages_cleared: number[];
-  hard_stages_cleared: number[];
-  total_points_earned: number;
-}
-
 export default function VSMode() {
   const { token } = useAuthStore();
   const navigate = useNavigate();
-  const [stages, setStages] = useState<Stage[]>([]);
-  const [progress, setProgress] = useState<Progress>({
-    current_stage: 1,
-    hard_mode_unlocked: false,
-    stages_cleared: [],
-    hard_stages_cleared: [],
-    total_points_earned: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [selectedMode, setSelectedMode] = useState<'normal' | 'hard'>('normal');
+  const [progress, setProgress] = useState({
+    current_stage: 1,
+    hard_mode_unlocked: false,
+    stages_cleared: [] as number[],
+    hard_stages_cleared: [] as number[],
+    total_points_earned: 0,
+  });
+
+  // Static stage definitions
+  const stages = [
+    { id: 1, stage_number: 1, stage_name: '1단계 - 신인 도전', is_boss: false, reward_points: 100 },
+    { id: 2, stage_number: 2, stage_name: '2단계 - 성장하는 선수들', is_boss: false, reward_points: 200 },
+    { id: 3, stage_number: 3, stage_name: '3단계 - 중간보스', is_boss: true, reward_points: 1000 },
+    { id: 4, stage_number: 4, stage_name: '4단계 - 강력한 상대', is_boss: false, reward_points: 500 },
+    { id: 5, stage_number: 5, stage_name: '5단계 - 스타 플레이어', is_boss: false, reward_points: 3000 },
+    { id: 6, stage_number: 6, stage_name: '6단계 - 중간보스', is_boss: true, reward_points: 5000 },
+    { id: 7, stage_number: 7, stage_name: '7단계 - 중간보스', is_boss: true, reward_points: 10000 },
+    { id: 8, stage_number: 8, stage_name: '8단계 - 챔피언들', is_boss: false, reward_points: 5000 },
+    { id: 9, stage_number: 9, stage_name: '9단계 - T1 왕조', is_boss: false, reward_points: 10000 },
+    { id: 10, stage_number: 10, stage_name: '10단계 - 최종보스', is_boss: true, reward_points: 50000 },
+  ];
 
   useEffect(() => {
-    fetchStages();
+    fetchProgress();
   }, []);
 
-  const fetchStages = async () => {
+  const fetchProgress = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/vsmode/stages`, {
@@ -57,46 +47,25 @@ export default function VSMode() {
       });
 
       if (response.data.success) {
-        const stagesData = response.data.data.stages || [];
         const progressData = response.data.data.progress || {};
 
-        // Validate stages array
-        const validatedStages = stagesData.map((stage: any) => ({
-          id: stage.id,
-          stage_number: stage.stage_number,
-          stage_name: stage.stage_name,
-          is_boss: stage.is_boss,
-          reward_points: stage.reward_points,
-          hard_mode_multiplier: stage.hard_mode_multiplier || 3,
-          enemies: Array.isArray(stage.enemies) ? stage.enemies : []
-        }));
-
-        setStages(validatedStages);
-
-        // Validate progress
-        const safeProgress: Progress = {
+        setProgress({
           current_stage: progressData.current_stage || 1,
           hard_mode_unlocked: Boolean(progressData.hard_mode_unlocked),
-          stages_cleared: Array.isArray(progressData.stages_cleared)
-            ? progressData.stages_cleared
-            : [],
-          hard_stages_cleared: Array.isArray(progressData.hard_stages_cleared)
-            ? progressData.hard_stages_cleared
-            : [],
-          total_points_earned: progressData.total_points_earned || 0
-        };
-
-        setProgress(safeProgress);
+          stages_cleared: progressData.stages_cleared || [],
+          hard_stages_cleared: progressData.hard_stages_cleared || [],
+          total_points_earned: progressData.total_points_earned || 0,
+        });
       }
     } catch (error) {
-      console.error('Failed to fetch stages:', error);
-      toast.error('스테이지 정보를 불러오는데 실패했습니다.');
+      console.error('Failed to fetch progress:', error);
+      toast.error('진행 상황을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStageClick = (stage: Stage) => {
+  const handleStageClick = (stageNumber: number) => {
     const isHardMode = selectedMode === 'hard';
 
     // Check if hard mode is unlocked
@@ -106,16 +75,16 @@ export default function VSMode() {
     }
 
     // Check if stage is unlocked
-    if (stage.stage_number > 1) {
+    if (stageNumber > 1) {
       const clearedStages = isHardMode ? progress.hard_stages_cleared : progress.stages_cleared;
-      if (!clearedStages.includes(stage.stage_number - 1)) {
+      if (!clearedStages.includes(stageNumber - 1)) {
         toast.error('이전 스테이지를 먼저 클리어해야 합니다!');
         return;
       }
     }
 
     // Navigate to battle
-    navigate(`/vsmode/battle/${stage.stage_number}?mode=${selectedMode}`);
+    navigate(`/vsmode/battle/${stageNumber}?mode=${selectedMode}`);
   };
 
   const isStageUnlocked = (stageNumber: number): boolean => {
@@ -220,9 +189,7 @@ export default function VSMode() {
             const unlocked = isStageUnlocked(stage.stage_number);
             const cleared = isStageCleared(stage.stage_number);
             const isHardMode = selectedMode === 'hard';
-            const reward = isHardMode
-              ? stage.reward_points * stage.hard_mode_multiplier
-              : stage.reward_points;
+            const reward = isHardMode ? stage.reward_points * 3 : stage.reward_points;
 
             return (
               <motion.div
@@ -233,7 +200,7 @@ export default function VSMode() {
                 className={`relative ${
                   unlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
                 }`}
-                onClick={() => unlocked && handleStageClick(stage)}
+                onClick={() => unlocked && handleStageClick(stage.stage_number)}
               >
                 <div
                   className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 transition-all hover:scale-105 ${
@@ -272,21 +239,6 @@ export default function VSMode() {
                       </span>
                     )}
                   </h3>
-
-                  {/* Enemies */}
-                  <div className="space-y-1 mb-4">
-                    {stage.enemies.map((enemy) => (
-                      <div
-                        key={enemy.position_order}
-                        className="text-xs text-gray-700 dark:text-gray-300 flex justify-between"
-                      >
-                        <span>{enemy.player_name}</span>
-                        <span className="text-yellow-600 dark:text-yellow-400 font-bold">
-                          +{isHardMode ? enemy.hard_enhancement_level : enemy.enhancement_level}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
 
                   {/* Reward */}
                   <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-lg p-2 text-center">

@@ -70,6 +70,8 @@ export default function Fusion() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
+      case 'ICON':
+        return 'from-red-500 via-yellow-400 to-pink-500';
       case 'LEGENDARY':
         return 'from-yellow-400 to-orange-500';
       case 'EPIC':
@@ -83,6 +85,7 @@ export default function Fusion() {
 
   const getTierText = (tier: string) => {
     switch (tier) {
+      case 'ICON': return '아이콘';
       case 'LEGENDARY': return '레전드';
       case 'EPIC': return '에픽';
       case 'RARE': return '레어';
@@ -135,7 +138,9 @@ export default function Fusion() {
         await fetchCards();
         setSelectedCards([]);
 
-        if (player.tier === 'LEGENDARY') {
+        if (player.tier === 'ICON') {
+          toast.success('🏆 ICON 카드 획득! 전설의 선수!', { duration: 8000 });
+        } else if (player.tier === 'LEGENDARY') {
           toast.success('🎉 레전드 카드 획득!', { duration: 5000 });
         } else if (player.tier === 'EPIC') {
           toast.success('⭐ 에픽 카드 획득!');

@@ -83,6 +83,8 @@ export default function Gacha() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
+      case 'ICON':
+        return 'from-red-500 via-yellow-400 to-pink-500';
       case 'LEGENDARY':
         return 'from-yellow-400 to-orange-500';
       case 'EPIC':
@@ -96,6 +98,8 @@ export default function Gacha() {
 
   const getTierText = (tier: string) => {
     switch (tier) {
+      case 'ICON':
+        return '아이콘';
       case 'LEGENDARY':
         return '레전드';
       case 'EPIC':
@@ -161,7 +165,9 @@ export default function Gacha() {
           updateUser({ points: newPoints });
 
           // 티어에 따라 다른 메시지
-          if (player.tier === 'LEGENDARY') {
+          if (player.tier === 'ICON') {
+            toast.success('🏆 ICON 카드 획득! 전설의 선수!', { duration: 8000 });
+          } else if (player.tier === 'LEGENDARY') {
             toast.success('🎉 레전드 카드 획득!', { duration: 5000 });
           } else if (player.tier === 'EPIC') {
             toast.success('⭐ 에픽 카드 획득!');
@@ -382,12 +388,12 @@ export default function Gacha() {
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
             <div className="text-center relative">
-              {/* Epic and Legendary particle effects - shown from the start */}
-              {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+              {/* Epic, Legendary, and ICON particle effects - shown from the start */}
+              {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'ICON') && (
                 <>
                   {/* Left side particles - more natural cascade */}
                   <div className="absolute -left-20 top-0 w-40 h-screen overflow-visible pointer-events-none z-10">
-                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 60 : 40)].map((_, i) => {
+                    {[...Array(drawnCard.tier === 'ICON' ? 80 : drawnCard.tier === 'LEGENDARY' ? 60 : 40)].map((_, i) => {
                       const delay = Math.random() * 5;
                       const xOffset = Math.random() * 200 + 100;
                       const yDistance = Math.random() * 800 + 600;
@@ -398,7 +404,9 @@ export default function Gacha() {
                         <motion.div
                           key={`left-${i}`}
                           className={`absolute rounded-full blur-[1px] ${
-                            drawnCard.tier === 'LEGENDARY'
+                            drawnCard.tier === 'ICON'
+                              ? 'bg-gradient-to-br from-red-400 via-yellow-300 to-pink-400'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-orange-400'
                               : 'bg-gradient-to-br from-purple-300 via-purple-400 to-pink-400'
                           }`}
@@ -407,7 +415,9 @@ export default function Gacha() {
                             height: `${size}px`,
                             left: `${Math.random() * 40}px`,
                             top: `${Math.random() * 100 - 50}px`,
-                            boxShadow: drawnCard.tier === 'LEGENDARY'
+                            boxShadow: drawnCard.tier === 'ICON'
+                              ? '0 0 12px rgba(239, 68, 68, 0.9)'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? '0 0 8px rgba(251, 191, 36, 0.8)'
                               : '0 0 8px rgba(192, 132, 252, 0.8)',
                           }}
@@ -430,7 +440,7 @@ export default function Gacha() {
 
                   {/* Right side particles - more natural cascade */}
                   <div className="absolute -right-20 top-0 w-40 h-screen overflow-visible pointer-events-none z-10">
-                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 60 : 40)].map((_, i) => {
+                    {[...Array(drawnCard.tier === 'ICON' ? 80 : drawnCard.tier === 'LEGENDARY' ? 60 : 40)].map((_, i) => {
                       const delay = Math.random() * 5;
                       const xOffset = -(Math.random() * 200 + 100);
                       const yDistance = Math.random() * 800 + 600;
@@ -441,7 +451,9 @@ export default function Gacha() {
                         <motion.div
                           key={`right-${i}`}
                           className={`absolute rounded-full blur-[1px] ${
-                            drawnCard.tier === 'LEGENDARY'
+                            drawnCard.tier === 'ICON'
+                              ? 'bg-gradient-to-br from-red-400 via-yellow-300 to-pink-400'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-orange-400'
                               : 'bg-gradient-to-br from-purple-300 via-purple-400 to-pink-400'
                           }`}
@@ -450,7 +462,9 @@ export default function Gacha() {
                             height: `${size}px`,
                             right: `${Math.random() * 40}px`,
                             top: `${Math.random() * 100 - 50}px`,
-                            boxShadow: drawnCard.tier === 'LEGENDARY'
+                            boxShadow: drawnCard.tier === 'ICON'
+                              ? '0 0 12px rgba(239, 68, 68, 0.9)'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? '0 0 8px rgba(251, 191, 36, 0.8)'
                               : '0 0 8px rgba(192, 132, 252, 0.8)',
                           }}
@@ -585,6 +599,21 @@ export default function Gacha() {
                   transition={{ type: 'spring', damping: 15 }}
                   className="relative"
                 >
+                  {/* ICON special effects - most dramatic */}
+                  {drawnCard.tier === 'ICON' && (
+                    <>
+                      {/* Multiple layered glows for ICON */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-400 to-pink-500 rounded-2xl blur-3xl opacity-90 animate-pulse"></div>
+                      <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 rounded-2xl blur-2xl opacity-60"></div>
+                      {/* Screen flash effect */}
+                      <motion.div
+                        className="fixed inset-0 bg-white pointer-events-none"
+                        initial={{ opacity: 0.8 }}
+                        animate={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </>
+                  )}
                   {/* Epic and Legendary effects */}
                   {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
                     <div className={`absolute inset-0 bg-gradient-to-r ${
@@ -628,19 +657,26 @@ export default function Gacha() {
               onClick={(e) => e.stopPropagation()}
               className="max-w-md w-full relative"
             >
-              {/* Epic and Legendary effects for result modal */}
-              {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+              {/* Epic, Legendary, and ICON effects for result modal */}
+              {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'ICON') && (
                 <>
                   {/* Outer glow */}
                   <div className={`absolute -inset-4 bg-gradient-to-r ${
-                    drawnCard.tier === 'LEGENDARY'
+                    drawnCard.tier === 'ICON'
+                      ? 'from-red-500 via-yellow-400 to-pink-500'
+                      : drawnCard.tier === 'LEGENDARY'
                       ? 'from-yellow-400 via-orange-500 to-yellow-400'
                       : 'from-purple-400 via-pink-500 to-purple-400'
-                  } rounded-3xl blur-2xl opacity-60 animate-pulse`}></div>
+                  } rounded-3xl blur-2xl opacity-${drawnCard.tier === 'ICON' ? '80' : '60'} animate-pulse`}></div>
+
+                  {/* Additional glow for ICON */}
+                  {drawnCard.tier === 'ICON' && (
+                    <div className="absolute -inset-6 bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 rounded-3xl blur-3xl opacity-50 animate-pulse"></div>
+                  )}
 
                   {/* Left side particles for modal - more natural cascade */}
                   <div className="absolute -left-32 top-0 w-40 h-full overflow-visible pointer-events-none">
-                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 50 : 35)].map((_, i) => {
+                    {[...Array(drawnCard.tier === 'ICON' ? 60 : drawnCard.tier === 'LEGENDARY' ? 50 : 35)].map((_, i) => {
                       const delay = Math.random() * 5;
                       const xOffset = Math.random() * 180 + 80;
                       const yDistance = Math.random() * 600 + 400;
@@ -651,7 +687,9 @@ export default function Gacha() {
                         <motion.div
                           key={`modal-left-${i}`}
                           className={`absolute rounded-full blur-[1px] ${
-                            drawnCard.tier === 'LEGENDARY'
+                            drawnCard.tier === 'ICON'
+                              ? 'bg-gradient-to-br from-red-400 via-yellow-300 to-pink-400'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-orange-400'
                               : 'bg-gradient-to-br from-purple-300 via-purple-400 to-pink-400'
                           }`}
@@ -660,7 +698,9 @@ export default function Gacha() {
                             height: `${size}px`,
                             left: `${Math.random() * 40}px`,
                             top: `${Math.random() * 100 - 50}px`,
-                            boxShadow: drawnCard.tier === 'LEGENDARY'
+                            boxShadow: drawnCard.tier === 'ICON'
+                              ? '0 0 12px rgba(239, 68, 68, 0.9)'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? '0 0 8px rgba(251, 191, 36, 0.8)'
                               : '0 0 8px rgba(192, 132, 252, 0.8)',
                           }}
@@ -683,7 +723,7 @@ export default function Gacha() {
 
                   {/* Right side particles for modal - more natural cascade */}
                   <div className="absolute -right-32 top-0 w-40 h-full overflow-visible pointer-events-none">
-                    {[...Array(drawnCard.tier === 'LEGENDARY' ? 50 : 35)].map((_, i) => {
+                    {[...Array(drawnCard.tier === 'ICON' ? 60 : drawnCard.tier === 'LEGENDARY' ? 50 : 35)].map((_, i) => {
                       const delay = Math.random() * 5;
                       const xOffset = -(Math.random() * 180 + 80);
                       const yDistance = Math.random() * 600 + 400;
@@ -694,7 +734,9 @@ export default function Gacha() {
                         <motion.div
                           key={`modal-right-${i}`}
                           className={`absolute rounded-full blur-[1px] ${
-                            drawnCard.tier === 'LEGENDARY'
+                            drawnCard.tier === 'ICON'
+                              ? 'bg-gradient-to-br from-red-400 via-yellow-300 to-pink-400'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-orange-400'
                               : 'bg-gradient-to-br from-purple-300 via-purple-400 to-pink-400'
                           }`}
@@ -703,7 +745,9 @@ export default function Gacha() {
                             height: `${size}px`,
                             right: `${Math.random() * 40}px`,
                             top: `${Math.random() * 100 - 50}px`,
-                            boxShadow: drawnCard.tier === 'LEGENDARY'
+                            boxShadow: drawnCard.tier === 'ICON'
+                              ? '0 0 12px rgba(239, 68, 68, 0.9)'
+                              : drawnCard.tier === 'LEGENDARY'
                               ? '0 0 8px rgba(251, 191, 36, 0.8)'
                               : '0 0 8px rgba(192, 132, 252, 0.8)',
                           }}

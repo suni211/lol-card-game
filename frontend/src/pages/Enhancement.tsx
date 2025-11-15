@@ -163,6 +163,8 @@ export default function Enhancement() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
+      case 'ICON':
+        return 'from-red-500 via-yellow-400 to-pink-500';
       case 'LEGENDARY':
         return 'from-yellow-400 to-orange-500';
       case 'EPIC':
@@ -176,6 +178,7 @@ export default function Enhancement() {
 
   const getTierText = (tier: string) => {
     switch (tier) {
+      case 'ICON': return '아이콘';
       case 'LEGENDARY': return '레전드';
       case 'EPIC': return '에픽';
       case 'RARE': return '레어';

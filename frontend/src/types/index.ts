@@ -6,7 +6,7 @@ export interface Player {
   position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT';
   overall: number;
   region: 'LCK' | 'LPL' | 'LEC' | 'LCS' | 'PCS' | 'VCS' | 'CBLOL' | 'LJL' | 'LLA';
-  tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+  tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'ICON';
   season?: string; // 25WW, 25WUD, 25, etc.
   laning?: number; // 라인전 스탯 (0-100)
   teamfight?: number; // 한타 스탯 (0-100)

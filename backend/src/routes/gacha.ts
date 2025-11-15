@@ -11,8 +11,8 @@ const GACHA_OPTIONS = {
   basic: { cost: 100, probabilities: { legendary: 0.05, epic: 0.5, rare: 10, common: 89.45 } },
   premium: { cost: 300, probabilities: { legendary: 0.2, epic: 2, rare: 18, common: 79.8 } },
   ultra: { cost: 500, probabilities: { legendary: 0.5, epic: 4, rare: 25, common: 70.5 } },
-  worlds_winner: { cost: 2500, probabilities: { legendary: 15, epic: 35, rare: 50, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
-  lck_legend: { cost: 2200, probabilities: { legendary: 10, epic: 40, rare: 50, common: 0 }, special: 'RE' }, // RE cards and Rare+ only
+  worlds_winner: { cost: 2500, probabilities: { legendary: 5, epic: 25, rare: 70, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
+  lck_legend: { cost: 2200, probabilities: { legendary: 3, epic: 22, rare: 75, common: 0 }, special: 'RE' }, // RE cards and Rare+ only
 };
 
 function selectTierByProbability(probabilities: any): string {

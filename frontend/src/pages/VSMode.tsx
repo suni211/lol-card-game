@@ -56,59 +56,37 @@ export default function VSMode() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log('VS Mode API Response:', response.data);
-
       if (response.data.success) {
-        const stagesData = response.data.data.stages;
-        const progressData = response.data.data.progress;
+        const stagesData = response.data.data.stages || [];
+        const progressData = response.data.data.progress || {};
 
-        console.log('Stages data:', stagesData);
-        console.log('Progress data:', progressData);
+        // Validate stages array
+        const validatedStages = stagesData.map((stage: any) => ({
+          id: stage.id,
+          stage_number: stage.stage_number,
+          stage_name: stage.stage_name,
+          is_boss: stage.is_boss,
+          reward_points: stage.reward_points,
+          hard_mode_multiplier: stage.hard_mode_multiplier || 3,
+          enemies: Array.isArray(stage.enemies) ? stage.enemies : []
+        }));
 
-        // Force ensure stages is array
-        let safeStages = [];
-
-        if (Array.isArray(stagesData)) {
-          safeStages = stagesData;
-        } else {
-          console.error('stagesData is not an array:', stagesData);
-          safeStages = [];
-        }
-
-        // Ensure each stage has enemies array
-        const validatedStages = [];
-        for (let i = 0; i < safeStages.length; i++) {
-          const stage = safeStages[i];
-          validatedStages.push({
-            ...stage,
-            enemies: Array.isArray(stage?.enemies) ? stage.enemies : []
-          });
-        }
-
-        console.log('Validated stages:', validatedStages);
         setStages(validatedStages);
 
-        // Ensure arrays are properly formatted
-        if (progressData) {
-          const safeProgress = {
-            current_stage: progressData.current_stage || 1,
-            hard_mode_unlocked: progressData.hard_mode_unlocked || false,
-            stages_cleared: Array.isArray(progressData.stages_cleared)
-              ? progressData.stages_cleared
-              : (typeof progressData.stages_cleared === 'string'
-                  ? JSON.parse(progressData.stages_cleared || '[]')
-                  : []),
-            hard_stages_cleared: Array.isArray(progressData.hard_stages_cleared)
-              ? progressData.hard_stages_cleared
-              : (typeof progressData.hard_stages_cleared === 'string'
-                  ? JSON.parse(progressData.hard_stages_cleared || '[]')
-                  : []),
-            total_points_earned: progressData.total_points_earned || 0
-          };
+        // Validate progress
+        const safeProgress: Progress = {
+          current_stage: progressData.current_stage || 1,
+          hard_mode_unlocked: Boolean(progressData.hard_mode_unlocked),
+          stages_cleared: Array.isArray(progressData.stages_cleared)
+            ? progressData.stages_cleared
+            : [],
+          hard_stages_cleared: Array.isArray(progressData.hard_stages_cleared)
+            ? progressData.hard_stages_cleared
+            : [],
+          total_points_earned: progressData.total_points_earned || 0
+        };
 
-          console.log('Safe progress:', safeProgress);
-          setProgress(safeProgress);
-        }
+        setProgress(safeProgress);
       }
     } catch (error) {
       console.error('Failed to fetch stages:', error);
@@ -238,7 +216,7 @@ export default function VSMode() {
 
         {/* Stages Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {Array.isArray(stages) && stages.length > 0 && stages.map((stage) => {
+          {stages.map((stage) => {
             const unlocked = isStageUnlocked(stage.stage_number);
             const cleared = isStageCleared(stage.stage_number);
             const isHardMode = selectedMode === 'hard';
@@ -297,7 +275,7 @@ export default function VSMode() {
 
                   {/* Enemies */}
                   <div className="space-y-1 mb-4">
-                    {Array.isArray(stage.enemies) && stage.enemies.length > 0 && stage.enemies.map((enemy) => (
+                    {stage.enemies.map((enemy) => (
                       <div
                         key={enemy.position_order}
                         className="text-xs text-gray-700 dark:text-gray-300 flex justify-between"

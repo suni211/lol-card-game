@@ -115,7 +115,7 @@ export default function Navbar() {
                     onMouseLeave={() => setActiveDropdown(null)}
                   >
                     <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1 ${
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                         isDropActive
                           ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -127,12 +127,12 @@ export default function Navbar() {
 
                     {/* Dropdown */}
                     {activeDropdown === item.label && (
-                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-lg py-2 min-w-[150px] border border-gray-200 dark:border-gray-700">
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-lg py-2 w-auto min-w-[120px] border border-gray-200 dark:border-gray-700 z-50">
                         {item.items.map((subItem) => (
                           <Link
                             key={subItem.path}
                             to={subItem.path}
-                            className={`block px-4 py-2 text-sm transition-colors ${
+                            className={`block px-4 py-2 text-sm transition-colors whitespace-nowrap ${
                               isActive(subItem.path)
                                 ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -151,7 +151,7 @@ export default function Navbar() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                       isActive(item.path)
                         ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

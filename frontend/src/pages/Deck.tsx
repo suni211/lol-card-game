@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { getPlayerImageUrl } from '../utils/playerImage';
-import { calculateEnhancementBonus, getTeamColor, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
+import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 

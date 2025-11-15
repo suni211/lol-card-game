@@ -1,6 +1,6 @@
 // Auto-refresh when new version is deployed
 export function startVersionCheck() {
-  const checkInterval = 30000; // 30초마다 체크
+  const checkInterval = 1800000; // 30분마다 체크 (30 * 60 * 1000)
 
   setInterval(async () => {
     try {

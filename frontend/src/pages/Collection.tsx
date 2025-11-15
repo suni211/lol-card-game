@@ -5,6 +5,7 @@ import type { UserCard } from '../types';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { getPlayerImageUrl } from '../utils/playerImage';
+import { calculateEnhancementBonus, getTeamColor, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -50,35 +51,8 @@ export default function Collection() {
     }
   };
 
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'LEGENDARY':
-        return 'from-yellow-400 to-orange-500';
-      case 'EPIC':
-        return 'from-purple-400 to-pink-500';
-      case 'RARE':
-        return 'from-blue-400 to-cyan-500';
-      default:
-        return 'from-gray-400 to-gray-500';
-    }
-  };
-
-  const getPositionColor = (position: string) => {
-    switch (position) {
-      case 'TOP':
-        return 'bg-red-500';
-      case 'JUNGLE':
-        return 'bg-green-500';
-      case 'MID':
-        return 'bg-blue-500';
-      case 'ADC':
-        return 'bg-yellow-500';
-      case 'SUPPORT':
-        return 'bg-purple-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
+  const getTierColor = getTierColorHelper;
+  const getPositionColor = getPositionColorHelper;
 
   const handleEnhancement = async () => {
     if (!targetCard || !materialCard || !user) return;
@@ -362,18 +336,28 @@ export default function Collection() {
                           </span>
                         )}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        {card.player.team} • {card.player.region}
+                      <p className="text-sm mb-3 flex items-center gap-2">
+                        <span className={`${getTeamColor(card.player.team)} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                          {card.player.team}
+                        </span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          {card.player.region}
+                        </span>
                       </p>
 
                       {/* Overall Rating */}
                       <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
                         <div className="text-center">
                           <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                            {card.player.overall + card.level}
+                            {card.player.overall + calculateEnhancementBonus(card.level)}
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400">
                             Overall
+                            {card.level > 0 && (
+                              <span className="ml-1 text-yellow-600 dark:text-yellow-400">
+                                ({card.player.overall}+{calculateEnhancementBonus(card.level)})
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

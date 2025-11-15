@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { getPlayerImageUrl } from '../utils/playerImage';
+import { calculateEnhancementBonus, getTeamColor, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -194,17 +195,7 @@ export default function Deck() {
   };
 
   const calculateCardOVR = (card: UserCard, position: string) => {
-    // 강화 등급별 오버롤 보너스 계산
-    let levelBonus = 0;
-    if (card.level <= 4) {
-      levelBonus = card.level; // 1~4강: +1씩
-    } else if (card.level <= 7) {
-      levelBonus = 4 + (card.level - 4) * 2; // 5~7강: +2씩
-    } else {
-      levelBonus = 10 + (card.level - 7) * 4; // 8~10강: +4씩
-    }
-
-    const baseStat = card.player.overall + levelBonus;
+    const baseStat = card.player.overall + calculateEnhancementBonus(card.level);
     const positionMatch = card.player.position === position;
     return positionMatch ? baseStat : baseStat - 10;
   };
@@ -216,35 +207,8 @@ export default function Deck() {
     }, 0);
   };
 
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'LEGENDARY':
-        return 'from-yellow-400 to-orange-500';
-      case 'EPIC':
-        return 'from-purple-400 to-pink-500';
-      case 'RARE':
-        return 'from-blue-400 to-cyan-500';
-      default:
-        return 'from-gray-400 to-gray-500';
-    }
-  };
-
-  const getPositionColor = (position: string) => {
-    switch (position) {
-      case 'TOP':
-        return 'bg-red-500';
-      case 'JUNGLE':
-        return 'bg-green-500';
-      case 'MID':
-        return 'bg-blue-500';
-      case 'ADC':
-        return 'bg-yellow-500';
-      case 'SUPPORT':
-        return 'bg-purple-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
+  const getTierColor = getTierColorHelper;
+  const getPositionColor = getPositionColorHelper;
 
   if (loading) {
     return (

@@ -6,8 +6,8 @@ import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 
 const router = express.Router();
 
-const AI_BATTLE_LIMIT = 100; // Max AI battles per hour
-const AI_BATTLE_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+const AI_BATTLE_LIMIT = 100; // Max AI battles per 30 minutes
+const AI_BATTLE_WINDOW = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 // Calculate deck power (same as matchmaking)
 async function calculateDeckPower(deckId: number): Promise<number> {
@@ -114,7 +114,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       return res.status(400).json({
         success: false,
         error: 'AI battle limit reached',
-        message: `1시간에 최대 ${AI_BATTLE_LIMIT}번의 AI 배틀만 가능합니다.`,
+        message: `30분에 최대 ${AI_BATTLE_LIMIT}번의 AI 배틀만 가능합니다.`,
       });
     }
 

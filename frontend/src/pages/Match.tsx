@@ -368,6 +368,16 @@ export default function Match() {
     }
   };
 
+  // Debug logging for render state
+  console.log('=== RENDER STATE ===');
+  console.log('loading:', loading);
+  console.log('deck:', deck ? 'exists' : 'null');
+  console.log('isDeckComplete:', isDeckComplete());
+  console.log('showLineup:', showLineup);
+  console.log('inMatch:', inMatch);
+  console.log('matching:', matching);
+  console.log('opponentDeck:', opponentDeck);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900/20 dark:to-orange-900/20 py-12 px-4 flex items-center justify-center">
@@ -401,6 +411,8 @@ export default function Match() {
 
         {!deck || !isDeckComplete() ? (
           /* Empty State - Need Deck */
+          <>
+            {console.log('>>> SHOWING EMPTY STATE (no deck or incomplete)')}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -428,8 +440,11 @@ export default function Match() {
               </a>
             </div>
           </motion.div>
+          </>
         ) : showLineup ? (
           /* Lineup Preview Screen */
+          <>
+            {console.log('>>> SHOWING LINEUP PREVIEW')}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -557,8 +572,11 @@ export default function Match() {
               </p>
             </div>
           </motion.div>
+          </>
         ) : inMatch ? (
           /* In Match - Strategy Selection */
+          <>
+            {console.log('>>> SHOWING IN MATCH (strategy selection)')}
           <div className="space-y-6">
             {/* Match Info */}
             <motion.div

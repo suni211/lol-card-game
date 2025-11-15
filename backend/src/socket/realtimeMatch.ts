@@ -47,7 +47,7 @@ interface ActiveMatch {
 export const activeMatches = new Map<string, ActiveMatch>();
 const ROUND_TIME_LIMIT = 10000; // 10 seconds
 
-// 덱의 특정 스탯 파워 계산
+// 덱의 특정 스탯 파워 계산 (시너지 및 특성 포함)
 async function calculateDeckStatPower(
   deckId: number,
   stat: 'laning' | 'teamfight' | 'macro'
@@ -70,17 +70,62 @@ async function calculateDeckStatPower(
     if (cardIds.length === 0) return 0;
 
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.${stat} as stat_value
+      SELECT uc.level, p.overall, p.${stat} as stat_value, p.team, p.position
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)
     `, [cardIds]);
 
+    // 팀 시너지 계산
+    const teams: any = {};
+    const teamMapping: any = {
+      'NJS': 'BRO',
+      'AZF': 'CJ',
+      'MVP': 'GEN',
+      'SKT': 'T1',
+    };
+
     let totalPower = 0;
-    cards.forEach((card: any) => {
-      const statContribution = (card.stat_value || 50) * 0.7;
-      const overallContribution = card.overall * 0.3;
-      totalPower += statContribution + overallContribution + card.level;
+    cards.forEach((card: any, index: number) => {
+      // Overall 50%, 스탯 40%, 레벨 10%
+      const statContribution = (card.stat_value || 50) * 0.4;
+      const overallContribution = card.overall * 0.5;
+      const levelContribution = card.level * 10;
+      totalPower += statContribution + overallContribution + levelContribution;
+
+      // 팀 시너지 카운팅
+      const synergyTeam = teamMapping[card.team] || card.team;
+      teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+    });
+
+    // 팀 시너지 보너스: 3명 = +30, 4명 = +80, 5명 = +150
+    let synergyBonus = 0;
+    Object.values(teams).forEach((count: any) => {
+      if (count === 3) synergyBonus += 30;
+      if (count === 4) synergyBonus += 80;
+      if (count === 5) synergyBonus += 150;
+    });
+
+    totalPower += synergyBonus;
+
+    // 특성 보너스 (해당 스탯에 맞는 특성이 있으면 추가 보너스)
+    const [traits]: any = await connection.query(`
+      SELECT pt.type, pt.value
+      FROM player_traits pt
+      JOIN user_cards uc ON pt.player_id = uc.player_id
+      WHERE uc.id IN (?)
+    `, [cardIds]);
+
+    const traitStatMap: any = {
+      'LANING_KING': 'laning',
+      'TEAMFIGHT_GOD': 'teamfight',
+      'MACRO_GENIUS': 'macro',
+    };
+
+    traits.forEach((trait: any) => {
+      if (traitStatMap[trait.type] === stat) {
+        totalPower += 50; // 특성 매칭시 +50
+      }
     });
 
     return totalPower;
@@ -104,25 +149,25 @@ async function calculateRoundResult(
   const p1BasePower = await calculateDeckStatPower(match.player1.deckId, p1Stat);
   const p2BasePower = await calculateDeckStatPower(match.player2.deckId, p2Stat);
 
-  // 전략 상성 보너스
+  // 전략 상성 보너스 (약하게 조정: ±5%)
   let p1Bonus = 1.0;
   let p2Bonus = 1.0;
 
   if (STRATEGY_COUNTERS[p1Strategy].beats === p2Strategy) {
-    p1Bonus = 1.2; // +20% advantage
+    p1Bonus = 1.05; // +5% advantage
   } else if (STRATEGY_COUNTERS[p1Strategy].losesTo === p2Strategy) {
-    p1Bonus = 0.8; // -20% disadvantage
+    p1Bonus = 0.95; // -5% disadvantage
   }
 
   if (STRATEGY_COUNTERS[p2Strategy].beats === p1Strategy) {
-    p2Bonus = 1.2;
+    p2Bonus = 1.05;
   } else if (STRATEGY_COUNTERS[p2Strategy].losesTo === p1Strategy) {
-    p2Bonus = 0.8;
+    p2Bonus = 0.95;
   }
 
-  // 랜덤 요소 (±10%)
-  const p1Random = 0.9 + Math.random() * 0.2;
-  const p2Random = 0.9 + Math.random() * 0.2;
+  // 랜덤 요소 (±5%)
+  const p1Random = 0.95 + Math.random() * 0.1;
+  const p2Random = 0.95 + Math.random() * 0.1;
 
   // 최종 파워 계산
   const p1FinalPower = p1BasePower * p1Bonus * p1Random;

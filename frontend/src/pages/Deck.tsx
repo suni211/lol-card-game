@@ -250,13 +250,6 @@ export default function Deck() {
     return positionMatch ? baseStat : baseStat - 10;
   };
 
-  const calculateTotalOVR = () => {
-    return deckSlots.reduce((total, slot) => {
-      if (!slot.card) return total;
-      return total + calculateCardOVR(slot.card, slot.position);
-    }, 0);
-  };
-
   const getTierColor = getTierColorHelper;
   const getPositionColor = getPositionColorHelper;
 

@@ -357,9 +357,16 @@ async function endMatch(matchId: string, io: Server) {
       player1PointsChange = player1Won ? 100 : 60;
       player2PointsChange = player1Won ? 60 : 100;
     } else {
-      // 경쟁전: 레이팅 변화에 비례한 포인트 (기본 100 + 레이팅 변화량)
-      player1PointsChange = player1Won ? 100 + Math.abs(player1RatingChange) * 2 : 50 + Math.abs(player1RatingChange);
-      player2PointsChange = player1Won ? 50 + Math.abs(player2RatingChange) : 100 + Math.abs(player2RatingChange) * 2;
+      // 경쟁전: 레이팅 변화에 비례한 포인트 (승리 최소 20, 패배 최소 10)
+      const winPoints = Math.max(20, 100 + Math.abs(player1RatingChange) * 2);
+      const losePoints = Math.max(10, 50 + Math.abs(player1RatingChange));
+
+      player1PointsChange = player1Won ? winPoints : losePoints;
+
+      const winPoints2 = Math.max(20, 100 + Math.abs(player2RatingChange) * 2);
+      const losePoints2 = Math.max(10, 50 + Math.abs(player2RatingChange));
+
+      player2PointsChange = player1Won ? losePoints2 : winPoints2;
     }
 
     // matches 테이블에 저장

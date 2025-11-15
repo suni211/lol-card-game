@@ -21,6 +21,7 @@ import suggestionsRoutes from './routes/suggestions';
 import fusionRoutes from './routes/fusion';
 import achievementsRoutes from './routes/achievements';
 import adminRoutes from './routes/admin';
+import marketRoutes from './routes/market';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -78,6 +79,7 @@ app.use('/api/notices', noticesRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/suggestions', suggestionsRoutes);
+app.use('/api/market', marketRoutes);
 app.use('/api/fusion', fusionRoutes);
 app.use('/api/achievements', achievementsRoutes);
 app.use('/api/admin', adminRoutes);

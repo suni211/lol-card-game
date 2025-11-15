@@ -25,6 +25,7 @@ import Profile from './pages/Profile';
 import Fusion from './pages/Fusion';
 import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
+import Market from './pages/Market';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -189,6 +190,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/market"
+            element={
+              <ProtectedRoute>
+                <Market />
               </ProtectedRoute>
             }
           />

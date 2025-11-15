@@ -333,9 +333,12 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
   }
 });
 
-// Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 극악 난이도 (보너스 감소에 비례하여 하향)
-const BASE_ENHANCEMENT_RATES = [30, 20, 15, 10, 7, 5, 3, 1.5, 0.5, 0.2];
+// Enhancement success rates per level (0→1, 1→2, ..., 9→10)
+const BASE_ENHANCEMENT_RATES = [80, 65, 60, 50, 45, 40, 20, 10, 5, 1];
 const MAX_ENHANCEMENT_LEVEL = 10;
+
+// Tier downgrade probabilities on failure (based on enhancement level)
+const TIER_DOWNGRADE_RATES = [0, 0, 10, 20, 30, 40, 50, 60, 70, 80]; // 0→1, 1→2 실패 시 등급 하락 없음
 
 // Calculate success rate based on material card quality (FIFA 4 style)
 function calculateEnhancementRate(
@@ -347,25 +350,25 @@ function calculateEnhancementRate(
 ): number {
   let successRate = baseRate;
 
-  // Same player bonus: +10% (기존 30% -> 10%로 감소)
+  // Same player bonus: +30%
   if (targetCard.player_id === materialCard.player_id) {
-    successRate += 10;
+    successRate += 30;
   }
 
-  // Tier bonus/penalty (기존 20/10/5 -> 5/3/1로 감소)
-  const tierValues: any = { LEGENDARY: 5, EPIC: 3, RARE: 1, COMMON: 0 };
+  // Tier bonus/penalty
+  const tierValues: any = { LEGENDARY: 20, EPIC: 10, RARE: 5, COMMON: 0 };
   const tierBonus = tierValues[materialPlayer.tier] || 0;
   successRate += tierBonus;
 
-  // Overall bonus: every 10 overall above 70 = +2% (기존 +5% -> +2%로 감소)
-  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 2;
+  // Overall bonus: every 10 overall above 70 = +5%
+  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 5;
   successRate += overallBonus;
 
-  // Enhancement level of material: each level = +1% (기존 +2% -> +1%로 감소)
-  successRate += materialCard.level * 1;
+  // Enhancement level of material: each level = +2%
+  successRate += materialCard.level * 2;
 
-  // Cap at 80% max, 1% min (기존 95%/5% -> 80%/1%로 변경)
-  return Math.min(80, Math.max(1, successRate));
+  // Cap at 95% max, 5% min
+  return Math.min(95, Math.max(5, successRate));
 }
 
 // Get enhancement rate (for preview before enhance)
@@ -405,6 +408,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     );
 
     const cost = (targetCard.level + 1) * 100;
+    const downgradeRate = TIER_DOWNGRADE_RATES[targetCard.level] || 0;
 
     res.json({
       success: true,
@@ -412,6 +416,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
         baseRate,
         successRate,
         cost,
+        downgradeRate,
         isSamePlayer: targetCard.player_id === materialCard.player_id,
         materialTier: materialCard.tier,
         materialOverall: materialCard.overall,
@@ -503,9 +508,29 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     // Deduct points
     await connection.query('UPDATE users SET points = points - ? WHERE id = ?', [cost, userId]);
 
+    let tierDowngraded = false;
+    let newTier = targetCard.tier;
+
     // Update target card level if success
     if (isSuccess) {
       await connection.query('UPDATE user_cards SET level = level + 1 WHERE id = ?', [targetCardId]);
+    } else {
+      // On failure, check for tier downgrade
+      const downgradeRate = TIER_DOWNGRADE_RATES[targetCard.level] || 0;
+      const downgradeRandom = Math.random() * 100;
+
+      if (downgradeRandom < downgradeRate && targetCard.tier !== 'COMMON') {
+        tierDowngraded = true;
+        const tierOrder = ['COMMON', 'RARE', 'EPIC', 'LEGENDARY'];
+        const currentTierIndex = tierOrder.indexOf(targetCard.tier);
+        newTier = tierOrder[Math.max(0, currentTierIndex - 1)];
+
+        // Update player tier in database
+        await connection.query(
+          'UPDATE players SET tier = ? WHERE id = ?',
+          [newTier, targetCard.player_id]
+        );
+      }
     }
 
     await connection.commit();
@@ -520,6 +545,9 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         successRate,
         playerName: targetCard.player_name,
         materialCardName: materialCard.player_name,
+        tierDowngraded,
+        newTier: tierDowngraded ? newTier : targetCard.tier,
+        downgradeRate: TIER_DOWNGRADE_RATES[targetCard.level] || 0,
       },
     });
   } catch (error: any) {

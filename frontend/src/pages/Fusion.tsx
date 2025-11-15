@@ -105,9 +105,9 @@ export default function Fusion() {
   };
 
   const getExpectedTier = (totalOverall: number) => {
-    if (totalOverall >= 480) return 'EPIC / LEGENDARY';
-    if (totalOverall >= 420) return 'RARE / EPIC';
-    if (totalOverall >= 360) return 'COMMON / RARE';
+    if (totalOverall >= 450) return 'EPIC / LEGENDARY';
+    if (totalOverall >= 400) return 'RARE / EPIC';
+    if (totalOverall >= 350) return 'COMMON / RARE';
     return 'COMMON';
   };
 
@@ -189,10 +189,10 @@ export default function Fusion() {
               </h3>
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
                 <li>• 2~5장의 카드를 선택하여 합성할 수 있습니다</li>
-                <li>• 합산 오버롤 480 이상: 에픽/레전드 확정 (70% 에픽, 30% 레전드)</li>
-                <li>• 합산 오버롤 420-479: 레어/에픽 (60% 레어, 40% 에픽)</li>
-                <li>• 합산 오버롤 360-419: 일반/레어 (50% 일반, 50% 레어)</li>
-                <li>• 합산 오버롤 360 미만: 일반</li>
+                <li>• 합산 오버롤 450 이상: 에픽/레전드 확정 (70% 에픽, 30% 레전드)</li>
+                <li>• 합산 오버롤 400-449: 레어/에픽 (60% 레어, 40% 에픽)</li>
+                <li>• 합산 오버롤 350-399: 일반/레어 (50% 일반, 50% 레어)</li>
+                <li>• 합산 오버롤 350 미만: 일반</li>
                 <li>• 중복 카드 획득 시 100P 환급</li>
                 <li>• 합성에 사용된 카드는 소멸됩니다</li>
               </ul>

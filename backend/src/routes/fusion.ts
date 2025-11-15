@@ -6,17 +6,17 @@ const router = express.Router();
 
 // Fusion tier determination based on total overall
 function calculateFusionTier(totalOverall: number): string {
-  if (totalOverall >= 480) {
-    // 480+ = Epic or Legendary (70% Epic, 30% Legendary)
+  if (totalOverall >= 450) {
+    // 450+ = Epic or Legendary (70% Epic, 30% Legendary)
     return Math.random() < 0.7 ? 'EPIC' : 'LEGENDARY';
-  } else if (totalOverall >= 420) {
-    // 420-479 = Rare or Epic (60% Rare, 40% Epic)
+  } else if (totalOverall >= 400) {
+    // 400-449 = Rare or Epic (60% Rare, 40% Epic)
     return Math.random() < 0.6 ? 'RARE' : 'EPIC';
-  } else if (totalOverall >= 360) {
-    // 360-419 = Common or Rare (50% Common, 50% Rare)
+  } else if (totalOverall >= 350) {
+    // 350-399 = Common or Rare (50% Common, 50% Rare)
     return Math.random() < 0.5 ? 'COMMON' : 'RARE';
   } else {
-    // Below 360 = Common
+    // Below 350 = Common
     return 'COMMON';
   }
 }

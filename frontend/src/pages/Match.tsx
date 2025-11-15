@@ -188,20 +188,28 @@ export default function Match() {
 
     // Realtime match events
     socket.on('matchFound', (data) => {
-      console.log('Real-time match found:', data);
+      console.log('=== MATCH FOUND ===');
+      console.log('Match ID:', data.matchId);
+      console.log('Opponent:', data.opponent);
+      console.log('Opponent Deck:', data.opponent?.deck);
+      console.log('Setting showLineup to TRUE');
+
       setMatchId(data.matchId);
       setOpponent(data.opponent);
-      setOpponentDeck(data.opponent.deck);
+      setOpponentDeck(data.opponent?.deck || null);
       setShowLineup(true);
+      setInMatch(false); // Make sure inMatch is false
       setMatching(false);
       setRoundHistory([]);
       setMyScore(0);
       setOpponentScore(0);
-      toast.success(`매치 발견! 상대: ${data.opponent.username}`);
+      toast.success(`매치 발견! 상대: ${data.opponent.username}`, { duration: 3000 });
     });
 
     socket.on('roundStart', (data) => {
-      console.log('Round start:', data);
+      console.log('=== ROUND START ===');
+      console.log('Round:', data.round);
+      console.log('Setting showLineup to FALSE, inMatch to TRUE');
       setShowLineup(false);
       setInMatch(true);
       setCurrentRound(data.round);
@@ -428,12 +436,17 @@ export default function Match() {
             className="space-y-6"
           >
             {/* Header */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-4 border-yellow-500">
+              <div className="text-center mb-4">
+                <div className="inline-block px-4 py-2 bg-yellow-500 text-white font-bold rounded-lg mb-2">
+                  라인업 확인 중
+                </div>
+              </div>
               <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">
                 VS {opponent?.username}
               </h2>
               <p className="text-center text-gray-600 dark:text-gray-400">
-                상대 라인업을 확인하세요
+                상대 라인업을 확인하세요 (10초 후 자동 시작)
               </p>
             </div>
 
@@ -483,38 +496,48 @@ export default function Match() {
                 <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4 text-center">
                   상대 라인업
                 </h3>
-                <div className="space-y-3">
-                  {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
-                    const card = opponentDeck?.[pos];
-                    return (
-                      <div key={pos} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        {card && (
-                          <>
-                            <img
-                              src={getPlayerImageUrl(card.name, card.season || '25', card.tier)}
-                              alt={card.name}
-                              className="w-16 h-16 rounded-lg object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/players/placeholder.png';
-                              }}
-                            />
-                            <div className="flex-1">
-                              <div className="text-sm font-bold text-gray-900 dark:text-white">
-                                {card.name}
+                {!opponentDeck ? (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    상대 덱 정보를 불러오는 중...
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
+                      const card = opponentDeck?.[pos];
+                      return (
+                        <div key={pos} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          {card ? (
+                            <>
+                              <img
+                                src={getPlayerImageUrl(card.name, card.season || '25', card.tier)}
+                                alt={card.name}
+                                className="w-16 h-16 rounded-lg object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                                  {card.name}
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  {card.team} · {pos.toUpperCase()}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-500">
+                                  OVR {card.overall + (card.level || 0)}
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {card.team}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-500">
-                                OVR {card.overall + card.level}
-                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-gray-400">
+                              {pos.toUpperCase()} 정보 없음
                             </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

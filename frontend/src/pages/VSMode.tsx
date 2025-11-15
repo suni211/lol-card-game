@@ -102,7 +102,10 @@ export default function VSMode() {
           <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-orange-500 to-red-500 rounded-full mb-4">
             <Flame className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">VS 모드</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">VS 모드</h1>
+          <div className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold mb-4">
+            시즌 1
+          </div>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">10단계의 도전을 클리어하고 레전드 확정팩을 획득하세요!</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">

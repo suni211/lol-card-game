@@ -289,6 +289,23 @@ async function processRound(matchId: string, io: Server) {
   }
 }
 
+// MMR 기반 레이팅 변화 계산
+function calculateRatingChange(winnerRating: number, loserRating: number, isWinner: boolean): number {
+  const K = 32; // K-factor (변화량 계수)
+  const ratingDiff = loserRating - winnerRating;
+
+  // Expected score 계산 (ELO 공식)
+  const expectedScore = 1 / (1 + Math.pow(10, ratingDiff / 400));
+
+  // 실제 결과 (승리 = 1, 패배 = 0)
+  const actualScore = isWinner ? 1 : 0;
+
+  // 레이팅 변화 = K * (실제 - 예상)
+  const change = Math.round(K * (actualScore - expectedScore));
+
+  return change;
+}
+
 // 매치 종료 및 결과 저장
 async function endMatch(matchId: string, io: Server) {
   const match = activeMatches.get(matchId);
@@ -302,11 +319,39 @@ async function endMatch(matchId: string, io: Server) {
     const winnerId = match.player1.score > match.player2.score ? match.player1.userId : match.player2.userId;
     const player1Won = winnerId === match.player1.userId;
 
-    // Practice vs Ranked rewards
-    const player1PointsChange = match.isPractice ? (player1Won ? 100 : 60) : (player1Won ? 200 : 100);
-    const player2PointsChange = match.isPractice ? (!player1Won ? 100 : 60) : (!player1Won ? 200 : 100);
-    const player1RatingChange = match.isPractice ? 0 : (player1Won ? 25 : -15);
-    const player2RatingChange = match.isPractice ? 0 : (!player1Won ? 25 : -15);
+    // 현재 레이팅 조회
+    const [player1Data]: any = await connection.query('SELECT rating FROM users WHERE id = ?', [match.player1.userId]);
+    const [player2Data]: any = await connection.query('SELECT rating FROM users WHERE id = ?', [match.player2.userId]);
+
+    const player1Rating = player1Data[0]?.rating || 1500;
+    const player2Rating = player2Data[0]?.rating || 1500;
+
+    // MMR 기반 레이팅 변화 계산
+    let player1RatingChange = 0;
+    let player2RatingChange = 0;
+
+    if (!match.isPractice) {
+      if (player1Won) {
+        player1RatingChange = calculateRatingChange(player1Rating, player2Rating, true);
+        player2RatingChange = calculateRatingChange(player2Rating, player1Rating, false);
+      } else {
+        player1RatingChange = calculateRatingChange(player1Rating, player2Rating, false);
+        player2RatingChange = calculateRatingChange(player2Rating, player1Rating, true);
+      }
+    }
+
+    // Practice vs Ranked rewards (포인트는 MMR 기반으로 조정)
+    let player1PointsChange = 0;
+    let player2PointsChange = 0;
+
+    if (match.isPractice) {
+      player1PointsChange = player1Won ? 100 : 60;
+      player2PointsChange = player1Won ? 60 : 100;
+    } else {
+      // 경쟁전: 레이팅 변화에 비례한 포인트 (기본 100 + 레이팅 변화량)
+      player1PointsChange = player1Won ? 100 + Math.abs(player1RatingChange) * 2 : 50 + Math.abs(player1RatingChange);
+      player2PointsChange = player1Won ? 50 + Math.abs(player2RatingChange) : 100 + Math.abs(player2RatingChange) * 2;
+    }
 
     // matches 테이블에 저장
     const [matchResult]: any = await connection.query(`

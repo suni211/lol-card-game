@@ -31,7 +31,7 @@ interface EnhancementPreview {
   baseRate: number;
   successRate: number;
   cost: number;
-  downgradeRate: number;
+  ovrDowngrade: number;
   isSamePlayer: boolean;
   materialTier: string;
   materialOverall: number;
@@ -146,8 +146,8 @@ export default function Enhancement() {
         if (data.isSuccess) {
           toast.success(`강화 성공! ${data.playerName} +${data.newLevel}`);
         } else {
-          if (data.tierDowngraded) {
-            toast.error(`강화 실패... 재료 카드 소멸 + 등급 하락!`);
+          if (data.ovrDowngraded) {
+            toast.error(`강화 실패... 재료 카드 소멸 + OVR -${data.ovrLost}!`);
           } else {
             toast.error(`강화 실패... 재료 카드가 소멸되었습니다`);
           }
@@ -275,8 +275,8 @@ export default function Enhancement() {
                 <li>• 재료 오버롤 70 이상: 10마다 +3% (예: 80 = +3%, 90 = +6%)</li>
                 <li>• 재료 강화도: 1강당 +1% (예: +5강 재료 = +5%)</li>
                 <li>• 강화 비용: (현재 강화도 + 1) × 100P</li>
-                <li className="text-red-600 dark:text-red-400 font-bold">⚠️ 실패 시 재료 카드 소멸 + 등급 하락 위험!</li>
-                <li className="text-red-600 dark:text-red-400">• 등급 하락: +5강부터 (10%, 20%, 30%, 50%, 70%)</li>
+                <li className="text-red-600 dark:text-red-400 font-bold">⚠️ 실패 시 재료 카드 소멸 + OVR 하락 위험!</li>
+                <li className="text-red-600 dark:text-red-400">• OVR 하락: +5강 -1, +6강 -2, +7강 -3, +8강 -5, +9강 -7</li>
                 <li>• 최대 강화: +10강 (최대 성공률 85%)</li>
               </ul>
             </div>
@@ -364,10 +364,10 @@ export default function Enhancement() {
                     </div>
                   )}
 
-                  {preview.downgradeRate > 0 && (
+                  {preview.ovrDowngrade > 0 && (
                     <div className="flex items-center justify-between mb-2 text-red-600 dark:text-red-400">
-                      <span className="text-sm font-bold">⚠️ 실패 시 등급 하락</span>
-                      <span className="font-bold">{preview.downgradeRate}%</span>
+                      <span className="text-sm font-bold">⚠️ 실패 시 OVR 하락</span>
+                      <span className="font-bold">-{preview.ovrDowngrade}</span>
                     </div>
                   )}
 
@@ -514,14 +514,14 @@ export default function Enhancement() {
                       <p className="text-red-600 dark:text-red-400 mt-2">
                         {result.materialCardName} 카드가 소멸되었습니다
                       </p>
-                      {result.tierDowngraded && (
+                      {result.ovrDowngraded && (
                         <p className="text-red-600 dark:text-red-400 font-bold mt-2">
-                          ⚠️ 등급 하락: {getTierText(result.newTier)}
+                          ⚠️ OVR 하락: -{result.ovrLost} (현재 OVR: {result.newOverall})
                         </p>
                       )}
-                      {!result.isSuccess && result.downgradeRate > 0 && !result.tierDowngraded && (
+                      {!result.isSuccess && result.ovrDowngradeAmount > 0 && !result.ovrDowngraded && (
                         <p className="text-yellow-600 dark:text-yellow-400 mt-2">
-                          등급 하락 회피! (확률: {result.downgradeRate}%)
+                          OVR 하락 없음 (다행!)
                         </p>
                       )}
                     </div>

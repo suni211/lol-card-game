@@ -337,8 +337,8 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
 const BASE_ENHANCEMENT_RATES = [90, 80, 70, 60, 50, 40, 20, 10, 5, 1];
 const MAX_ENHANCEMENT_LEVEL = 10;
 
-// Tier downgrade probabilities on failure (based on enhancement level)
-const TIER_DOWNGRADE_RATES = [0, 0, 0, 0, 0, 10, 20, 30, 50, 70]; // 0→1 ~ 4→5 실패 시 등급 하락 없음
+// OVR downgrade amounts on failure (based on enhancement level)
+const OVR_DOWNGRADE_RATES = [0, 0, 0, 0, 0, 1, 2, 3, 5, 7]; // 0→1 ~ 4→5 실패 시 OVR 하락 없음, 이후 1~7 하락
 
 // Calculate success rate based on material card quality (FIFA 4 style)
 function calculateEnhancementRate(
@@ -408,7 +408,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     );
 
     const cost = (targetCard.level + 1) * 100;
-    const downgradeRate = TIER_DOWNGRADE_RATES[targetCard.level] || 0;
+    const ovrDowngrade = OVR_DOWNGRADE_RATES[targetCard.level] || 0;
 
     res.json({
       success: true,
@@ -416,7 +416,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
         baseRate,
         successRate,
         cost,
-        downgradeRate,
+        ovrDowngrade,
         isSamePlayer: targetCard.player_id === materialCard.player_id,
         materialTier: materialCard.tier,
         materialOverall: materialCard.overall,
@@ -508,27 +508,26 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     // Deduct points
     await connection.query('UPDATE users SET points = points - ? WHERE id = ?', [cost, userId]);
 
-    let tierDowngraded = false;
-    let newTier = targetCard.tier;
+    let ovrDowngraded = false;
+    let ovrLost = 0;
+    let newOverall = targetCard.overall;
 
     // Update target card level if success
     if (isSuccess) {
       await connection.query('UPDATE user_cards SET level = level + 1 WHERE id = ?', [targetCardId]);
     } else {
-      // On failure, check for tier downgrade
-      const downgradeRate = TIER_DOWNGRADE_RATES[targetCard.level] || 0;
-      const downgradeRandom = Math.random() * 100;
+      // On failure, check for OVR downgrade
+      const ovrDowngradeAmount = OVR_DOWNGRADE_RATES[targetCard.level] || 0;
 
-      if (downgradeRandom < downgradeRate && targetCard.tier !== 'COMMON') {
-        tierDowngraded = true;
-        const tierOrder = ['COMMON', 'RARE', 'EPIC', 'LEGENDARY'];
-        const currentTierIndex = tierOrder.indexOf(targetCard.tier);
-        newTier = tierOrder[Math.max(0, currentTierIndex - 1)];
+      if (ovrDowngradeAmount > 0) {
+        ovrDowngraded = true;
+        ovrLost = ovrDowngradeAmount;
+        newOverall = Math.max(1, targetCard.overall - ovrDowngradeAmount); // 최소 1
 
-        // Update player tier in database
+        // Update player overall in database
         await connection.query(
-          'UPDATE players SET tier = ? WHERE id = ?',
-          [newTier, targetCard.player_id]
+          'UPDATE players SET overall = ? WHERE id = ?',
+          [newOverall, targetCard.player_id]
         );
       }
     }
@@ -545,9 +544,10 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         successRate,
         playerName: targetCard.player_name,
         materialCardName: materialCard.player_name,
-        tierDowngraded,
-        newTier: tierDowngraded ? newTier : targetCard.tier,
-        downgradeRate: TIER_DOWNGRADE_RATES[targetCard.level] || 0,
+        ovrDowngraded,
+        ovrLost,
+        newOverall: ovrDowngraded ? newOverall : targetCard.overall,
+        ovrDowngradeAmount: OVR_DOWNGRADE_RATES[targetCard.level] || 0,
       },
     });
   } catch (error: any) {

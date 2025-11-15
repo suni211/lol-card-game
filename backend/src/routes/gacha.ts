@@ -83,27 +83,27 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else if ((option as any).special === 'RE') {
-      // LCK Legend pack - Only LCK RE cards (season = 'RE')
+      // LCK Legend pack - Only LCK RE cards + 25 season cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND season = 'RE' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (season = 'RE' OR season = '25') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === '17SSG') {
-      // 2017 SSG pack - Only 17SSG cards (name starts with 17SSG)
+      // 2017 SSG pack - Only 17SSG cards + 25 season cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND name LIKE '17SSG%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if ((option as any).special === 'MSI') {
-      // MSI pack - Only MSI cards (name starts with MSI)
+      // MSI pack - Only MSI cards + 25 season cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND name LIKE 'MSI %' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (name LIKE 'MSI %' OR season = '25') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else {
-      // Regular packs - exclude all special cards (25WW, 25WUD, 17SSG, MSI, RE season)
+      // Regular packs - Only 25 season cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE '17SSG%' AND name NOT LIKE 'MSI %' AND season != 'RE' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND season = '25' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }

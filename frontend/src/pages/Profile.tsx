@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Target, Flame, Award, TrendingUp, Calendar, Gift } from 'lucide-react';
+import { Trophy, Target, Flame, Award, TrendingUp, Calendar, Gift, Edit2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -22,6 +22,8 @@ export default function Profile() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [canCheckIn, setCanCheckIn] = useState(true);
   const [consecutiveDays, setConsecutiveDays] = useState(0);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
 
   useEffect(() => {
     fetchStats();
@@ -115,6 +117,33 @@ export default function Profile() {
     }
   };
 
+  const handleChangeUsername = async () => {
+    if (!newUsername || newUsername.trim().length < 3) {
+      toast.error('닉네임은 3자 이상이어야 합니다');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/auth/change-username`,
+        { newUsername: newUsername.trim() },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        updateUser(response.data.data);
+        setIsEditingUsername(false);
+        setNewUsername('');
+        toast.success('닉네임이 변경되었습니다!');
+      }
+    } catch (error: any) {
+      console.error('Change username error:', error);
+      toast.error(error.response?.data?.error || '닉네임 변경에 실패했습니다');
+    }
+  };
+
   if (!user) return null;
 
   const getTierColor = (tier: string) => {
@@ -162,7 +191,56 @@ export default function Profile() {
 
             {/* User Info */}
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-4xl font-bold mb-2">{user.username}</h1>
+              <div className="flex items-center justify-center md:justify-start space-x-3 mb-2">
+                {isEditingUsername ? (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      placeholder={user.username}
+                      className="px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleChangeUsername();
+                        if (e.key === 'Escape') {
+                          setIsEditingUsername(false);
+                          setNewUsername('');
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleChangeUsername}
+                      className="px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-white hover:bg-white/30 transition-colors"
+                    >
+                      확인
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingUsername(false);
+                        setNewUsername('');
+                      }}
+                      className="px-4 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-white hover:bg-white/30 transition-colors"
+                    >
+                      취소
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <h1 className="text-4xl font-bold">{user.username}</h1>
+                    <button
+                      onClick={() => {
+                        setIsEditingUsername(true);
+                        setNewUsername(user.username);
+                      }}
+                      className="p-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg hover:bg-white/30 transition-colors"
+                      title="닉네임 변경"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+              </div>
               <p className="text-white/80 mb-6">{user.email}</p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

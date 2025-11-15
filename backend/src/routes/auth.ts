@@ -232,4 +232,64 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Change username
+router.post('/change-username', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    const { newUsername } = req.body;
+
+    // Validate username
+    if (!newUsername || newUsername.length < 3 || newUsername.length > 50) {
+      return res.status(400).json({
+        success: false,
+        error: '닉네임은 3자 이상 50자 이하여야 합니다.',
+      });
+    }
+
+    // Check if username is already taken
+    const [existing]: any = await pool.query(
+      'SELECT id FROM users WHERE username = ? AND id != ?',
+      [newUsername, userId]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: '이미 사용 중인 닉네임입니다.',
+      });
+    }
+
+    // Update username
+    await pool.query(
+      'UPDATE users SET username = ? WHERE id = ?',
+      [newUsername, userId]
+    );
+
+    // Get updated user data
+    const [users]: any = await pool.query(
+      'SELECT id, username, email, points, tier, rating, is_admin FROM users WHERE id = ?',
+      [userId]
+    );
+
+    const user = users[0];
+
+    res.json({
+      success: true,
+      message: '닉네임이 성공적으로 변경되었습니다.',
+      data: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        points: user.points,
+        tier: user.tier,
+        rating: user.rating,
+        isAdmin: user.is_admin === 1,
+      },
+    });
+  } catch (error: any) {
+    console.error('Change username error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 export default router;

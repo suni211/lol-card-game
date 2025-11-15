@@ -110,20 +110,23 @@ async function calculateDeckStatPower(
 
     // 특성 보너스 (해당 스탯에 맞는 특성이 있으면 추가 보너스)
     const [traits]: any = await connection.query(`
-      SELECT pt.type, pt.value
+      SELECT pt.name, pt.effect
       FROM player_traits pt
       JOIN user_cards uc ON pt.player_id = uc.player_id
       WHERE uc.id IN (?)
     `, [cardIds]);
 
     const traitStatMap: any = {
-      'LANING_KING': 'laning',
-      'TEAMFIGHT_GOD': 'teamfight',
-      'MACRO_GENIUS': 'macro',
+      '라인전 장인': 'laning',
+      '한타 장인': 'teamfight',
+      '운영 장인': 'macro',
+      '라인전 킹': 'laning',
+      '한타의 신': 'teamfight',
+      '운영 천재': 'macro',
     };
 
     traits.forEach((trait: any) => {
-      if (traitStatMap[trait.type] === stat) {
+      if (traitStatMap[trait.name] === stat) {
         totalPower += 50; // 특성 매칭시 +50
       }
     });

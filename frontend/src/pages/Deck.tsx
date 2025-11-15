@@ -194,7 +194,7 @@ export default function Deck() {
   };
 
   const calculateCardOVR = (card: UserCard, position: string) => {
-    const baseStat = card.player.overall;
+    const baseStat = card.player.overall + (card.level * 10);
     const positionMatch = card.player.position === position;
     return positionMatch ? baseStat : baseStat - 10;
   };

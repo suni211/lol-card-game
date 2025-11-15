@@ -81,17 +81,17 @@ export default function VSMode() {
     );
   }
 
-  // 스테이지 정의
-  const stage1 = { num: 1, name: '1단계 - 조합', boss: false, pts: 100, enemies: ['DuDu +0', 'Pyosik +0', 'BuLLDoG +0', 'Berserker +0', 'Life +0'], enemiesHard: ['DuDu +2', 'Pyosik +2', 'BuLLDoG +2', 'Berserker +2', 'Life +2'] };
-  const stage2 = { num: 2, name: '2단계', boss: false, pts: 200, enemies: ['Rich +0', 'Sponge +0', 'Kyeahoo +0', 'Teddy +2', 'Andil +1'], enemiesHard: ['Rich +3', 'Sponge +3', 'Kyeahoo +3', 'Teddy +3', 'Andil +3'] };
-  const stage3 = { num: 3, name: '3단계 - 중간보스', boss: true, pts: 1000, enemies: ['Morgan +3', 'Croco +3', 'Clozer +5', 'Hype +3', 'Pollu +3'], enemiesHard: ['Morgan +5', 'Croco +5', 'Clozer +5', 'Hype +5', 'Pollu +5'] };
-  const stage4 = { num: 4, name: '4단계', boss: false, pts: 500, enemies: ['Kingen +3', 'GIDEON +3', 'Calix +3', 'Jiwoo +3', 'Lehends +3'], enemiesHard: ['Kingen +5', 'GIDEON +5', 'Calix +5', 'Jiwoo +5', 'Lehends +5'] };
-  const stage5 = { num: 5, name: '5단계', boss: false, pts: 3000, enemies: ['Siwoo +1', 'Lucid +1', 'ShowMaker +3', 'Aiming +3', 'BeryL +1'], enemiesHard: ['Siwoo +3', 'Lucid +3', 'ShowMaker +6', 'Aiming +6', 'BeryL +5'] };
-  const stage6 = { num: 6, name: '6단계 - 중간보스', boss: true, pts: 5000, enemies: ['Clear +5', 'Raptor +5', 'VicLa +5', 'Diable +5', 'Kellin +5'], enemiesHard: ['Clear +8', 'Raptor +8', 'VicLa +8', 'Diable +8', 'Kellin +8'] };
-  const stage7 = { num: 7, name: '7단계 - 중간보스', boss: true, pts: 10000, enemies: ['PerfecT +5', 'Cuzz +5', 'Bdd +5', 'deokdam +5', 'Peter +5'], enemiesHard: ['PerfecT +8', 'Cuzz +8', 'Bdd +8', 'deokdam +8', 'Peter +8'] };
-  const stage8 = { num: 8, name: '8단계', boss: false, pts: 5000, enemies: ['Zeus +5', 'Peanut +5', 'zeka +3', 'Viper +3', 'Delight +3'], enemiesHard: ['Zeus +8', 'Peanut +8', 'zeka +6', 'Viper +6', 'Delight +6'] };
-  const stage9 = { num: 9, name: '9단계', boss: false, pts: 10000, enemies: ['Doran +6', 'Oner +6', 'Faker +6', 'Gumayusi +6', 'Keria +6'], enemiesHard: ['Doran +8', 'Oner +8', 'Faker +8', 'Gumayusi +8', 'Keria +8'] };
-  const stage10 = { num: 10, name: '10단계 - 최종보스', boss: true, pts: 50000, enemies: ['Kiin +8', 'Canyon +8', 'Chovy +8', 'Ruler +8', 'Duro +8'], enemiesHard: ['Kiin +10', 'Canyon +10', 'Chovy +10', 'Ruler +10', 'Duro +10'] };
+  // 스테이지 정의 (25시즌 DB 기준)
+  const stage1 = { num: 1, name: '1단계 - 조합', boss: false, pts: 100, enemies: ['DuDu (68) +0', 'Pyosik (70) +0', 'BuLLDoG (71) +0', 'Berserker (74) +0', 'Life (73) +0'], enemiesHard: ['DuDu (68) +2', 'Pyosik (70) +2', 'BuLLDoG (71) +2', 'Berserker (74) +2', 'Life (73) +2'] };
+  const stage2 = { num: 2, name: '2단계', boss: false, pts: 200, enemies: ['Rich (73) +0', 'Sponge (71) +0', 'kyeahoo (70) +0', 'Teddy (77) +2', 'Andil (80) +1'], enemiesHard: ['Rich (73) +3', 'Sponge (71) +3', 'kyeahoo (70) +3', 'Teddy (77) +3', 'Andil (80) +3'] };
+  const stage3 = { num: 3, name: '3단계 - 중간보스', boss: true, pts: 1000, enemies: ['Morgan (80) +3', 'Croco (73) +3', 'Clozer (85) +5', 'Hype (72) +3', 'Pollu (71) +3'], enemiesHard: ['Morgan (80) +5', 'Croco (73) +5', 'Clozer (85) +5', 'Hype (72) +5', 'Pollu (71) +5'] };
+  const stage4 = { num: 4, name: '4단계', boss: false, pts: 500, enemies: ['Kingen (85) +3', 'GIDEON (77) +3', 'Calix (80) +3', 'Jiwoo (79) +3', 'Lehends (81) +3'], enemiesHard: ['Kingen (85) +5', 'GIDEON (77) +5', 'Calix (80) +5', 'Jiwoo (79) +5', 'Lehends (81) +5'] };
+  const stage5 = { num: 5, name: '5단계', boss: false, pts: 3000, enemies: ['Siwoo (82) +1', 'Lucid (85) +1', 'ShowMaker (85) +3', 'Aiming (80) +3', 'BeryL (84) +1'], enemiesHard: ['Siwoo (82) +3', 'Lucid (85) +3', 'ShowMaker (85) +6', 'Aiming (80) +6', 'BeryL (84) +5'] };
+  const stage6 = { num: 6, name: '6단계 - 중간보스', boss: true, pts: 5000, enemies: ['Clear (74) +5', 'raptor (75) +5', 'VicLa (79) +5', 'Diable (88) +5', 'Kellin (80) +5'], enemiesHard: ['Clear (74) +8', 'raptor (75) +8', 'VicLa (79) +8', 'Diable (88) +8', 'Kellin (80) +8'] };
+  const stage7 = { num: 7, name: '7단계 - 중간보스', boss: true, pts: 10000, enemies: ['PerfecT (82) +5', 'Cuzz (82) +5', 'Bdd (90) +5', 'deokdam (81) +5', 'Peter (84) +5'], enemiesHard: ['PerfecT (82) +8', 'Cuzz (82) +8', 'Bdd (90) +8', 'deokdam (81) +8', 'Peter (84) +8'] };
+  const stage8 = { num: 8, name: '8단계', boss: false, pts: 5000, enemies: ['Zeus (93) +5', 'Peanut (85) +5', 'Zeka (86) +3', 'Viper (94) +3', 'Delight (83) +3'], enemiesHard: ['Zeus (93) +8', 'Peanut (85) +8', 'Zeka (86) +6', 'Viper (94) +6', 'Delight (83) +6'] };
+  const stage9 = { num: 9, name: '9단계', boss: false, pts: 10000, enemies: ['Doran (89) +6', 'Oner (93) +6', 'Faker (98) +6', 'Gumayusi (95) +6', 'Keria (93) +6'], enemiesHard: ['Doran (89) +8', 'Oner (93) +8', 'Faker (98) +8', 'Gumayusi (95) +8', 'Keria (93) +8'] };
+  const stage10 = { num: 10, name: '10단계 - 최종보스', boss: true, pts: 50000, enemies: ['Kiin (92) +8', 'Canyon (88) +8', 'Chovy (93) +8', 'Ruler (95) +8', 'Duro (88) +8'], enemiesHard: ['Kiin (92) +10', 'Canyon (88) +10', 'Chovy (93) +10', 'Ruler (95) +10', 'Duro (88) +10'] };
 
   const allStages = [stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8, stage9, stage10];
 

@@ -301,16 +301,20 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
       [userId, listing.card_id]
     );
 
+    // Calculate fee (30%)
+    const fee = Math.floor(listing.listing_price * 0.3);
+    const sellerReceives = listing.listing_price - fee;
+
     // Update buyer points
     await connection.query(
       'UPDATE users SET points = points - ? WHERE id = ?',
       [listing.listing_price, userId]
     );
 
-    // Update seller points
+    // Update seller points (price - 30% fee)
     await connection.query(
       'UPDATE users SET points = points + ? WHERE id = ?',
-      [listing.listing_price, listing.seller_id]
+      [sellerReceives, listing.seller_id]
     );
 
     // Update listing status

@@ -583,6 +583,22 @@ export default function Market() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                     가격 범위: {priceRange.floor.toLocaleString()}P ~ {priceRange.ceiling.toLocaleString()}P
                   </p>
+                  {sellPrice > 0 && (
+                    <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 dark:text-gray-300">판매 가격:</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{sellPrice.toLocaleString()}P</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <span className="text-gray-700 dark:text-gray-300">수수료 (30%):</span>
+                        <span className="font-bold text-red-600 dark:text-red-400">-{Math.floor(sellPrice * 0.3).toLocaleString()}P</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-700">
+                        <span className="font-bold text-gray-900 dark:text-white">실제 수령액:</span>
+                        <span className="font-bold text-green-600 dark:text-green-400">{(sellPrice - Math.floor(sellPrice * 0.3)).toLocaleString()}P</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex space-x-3">

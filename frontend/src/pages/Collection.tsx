@@ -24,6 +24,8 @@ export default function Collection() {
   const [targetCard, setTargetCard] = useState<UserCard | null>(null);
   const [materialCard, setMaterialCard] = useState<UserCard | null>(null);
   const [enhancing, setEnhancing] = useState(false);
+  const [showMerging, setShowMerging] = useState(false);
+  const [showResult, setShowResult] = useState(false);
   const [enhancementResult, setEnhancementResult] = useState<{
     isSuccess: boolean;
     newLevel: number;
@@ -65,6 +67,13 @@ export default function Collection() {
 
     try {
       setEnhancing(true);
+      setShowMerging(true);
+
+      // Phase 1: Merging animation (1.5s)
+      setTimeout(() => {
+        setShowMerging(false);
+      }, 1500);
+
       const response = await axios.post(
         `${API_URL}/gacha/enhance`,
         {
@@ -75,14 +84,20 @@ export default function Collection() {
       );
 
       const result = response.data.data;
-      setEnhancementResult(result);
 
-      // Update user points
-      updateUser({ points: user.points - cost });
+      // Phase 2: Suspense (1s after merging)
+      setTimeout(() => {
+        setEnhancementResult(result);
+        setShowResult(true);
 
-      // Wait for animation
+        // Update user points
+        updateUser({ points: user.points - cost });
+      }, 1500);
+
+      // Phase 3: Show result and cleanup (2s after result shown)
       setTimeout(() => {
         setEnhancing(false);
+        setShowResult(false);
 
         if (result.isSuccess) {
           toast.success(`강화 성공! ${result.playerName} +${result.newLevel}`);
@@ -96,9 +111,11 @@ export default function Collection() {
         setEnhancementMode(false);
         setEnhancementResult(null);
         fetchCards();
-      }, 3000);
+      }, 4500);
     } catch (error: any) {
       setEnhancing(false);
+      setShowMerging(false);
+      setShowResult(false);
       toast.error(error.response?.data?.error || '강화 실패');
     }
   };
@@ -471,39 +488,170 @@ export default function Collection() {
                 {/* Enhancement Animation */}
                 {enhancing ? (
                   <div className="text-center py-20">
-                    <motion.div
-                      className="relative inline-block"
-                      animate={{
-                        scale: [1, 1.2, 1],
-                        rotate: [0, 180, 360],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 rounded-full blur-xl opacity-75"></div>
-                      <Zap className="relative w-24 h-24 text-yellow-400" />
-                    </motion.div>
+                    {/* Phase 1: Cards Merging */}
+                    {showMerging && targetCard && materialCard && (
+                      <div className="relative h-96 flex items-center justify-center mb-8">
+                        {/* Target Card - Left */}
+                        <motion.div
+                          initial={{ x: -200, opacity: 1, scale: 1 }}
+                          animate={{ x: 0, opacity: 0.5, scale: 0.8 }}
+                          transition={{ duration: 1.5, ease: "easeInOut" }}
+                          className={`absolute bg-gradient-to-br ${getTierColor(targetCard.player.tier)} p-1 rounded-xl`}
+                          style={{ left: '20%' }}
+                        >
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-48">
+                            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                              {targetCard.player.name}
+                            </h4>
+                            <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                              +{targetCard.level}
+                            </div>
+                          </div>
+                        </motion.div>
 
-                    <motion.h2
-                      className="text-3xl font-bold text-gray-900 dark:text-white mt-8 mb-4"
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    >
-                      강화 중...
-                    </motion.h2>
+                        {/* Material Card - Right */}
+                        <motion.div
+                          initial={{ x: 200, opacity: 1, scale: 1 }}
+                          animate={{ x: 0, opacity: 0.5, scale: 0.8 }}
+                          transition={{ duration: 1.5, ease: "easeInOut" }}
+                          className={`absolute bg-gradient-to-br ${getTierColor(materialCard.player.tier)} p-1 rounded-xl`}
+                          style={{ right: '20%' }}
+                        >
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-48">
+                            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                              {materialCard.player.name}
+                            </h4>
+                            <div className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                              +{materialCard.level}
+                            </div>
+                          </div>
+                        </motion.div>
 
-                    {enhancementResult && (
+                        {/* Merging Effect */}
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: [0, 1.5, 1], opacity: [0, 1, 1] }}
+                          transition={{ duration: 1.5, times: [0, 0.5, 1] }}
+                          className="absolute"
+                        >
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 rounded-full blur-2xl opacity-75 animate-pulse"></div>
+                            <Zap className="relative w-32 h-32 text-yellow-400" />
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+
+                    {/* Phase 2: Suspense - No result yet */}
+                    {!showMerging && !showResult && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className={`text-2xl font-bold mt-4 ${
-                          enhancementResult.isSuccess ? 'text-green-500' : 'text-red-500'
-                        }`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="py-20"
                       >
-                        {enhancementResult.isSuccess ? '강화 성공!' : '강화 실패...'}
+                        <motion.div
+                          animate={{
+                            scale: [1, 1.1, 1],
+                            rotate: [0, 5, -5, 0],
+                          }}
+                          transition={{
+                            duration: 0.5,
+                            repeat: Infinity,
+                            repeatType: "reverse",
+                          }}
+                        >
+                          <div className="relative inline-block">
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full blur-3xl opacity-60 animate-pulse"></div>
+                            <div className="relative w-40 h-40 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                              <span className="text-6xl">❓</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                        <motion.h2
+                          className="text-3xl font-bold text-gray-900 dark:text-white mt-8"
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 0.8, repeat: Infinity }}
+                        >
+                          강화 중...
+                        </motion.h2>
+                        <motion.p
+                          className="text-lg text-gray-600 dark:text-gray-400 mt-4"
+                          animate={{ opacity: [0.3, 0.7, 0.3] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                        >
+                          결과를 확인하고 있습니다...
+                        </motion.p>
+                      </motion.div>
+                    )}
+
+                    {/* Phase 3: Result Display */}
+                    {showResult && enhancementResult && (
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", duration: 0.8 }}
+                        className="py-20"
+                      >
+                        {enhancementResult.isSuccess ? (
+                          <>
+                            <motion.div
+                              animate={{
+                                scale: [1, 1.2, 1],
+                                rotate: [0, 10, -10, 0],
+                              }}
+                              transition={{ duration: 0.6 }}
+                              className="relative inline-block"
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 rounded-full blur-3xl opacity-75"></div>
+                              <div className="relative text-9xl">✨</div>
+                            </motion.div>
+                            <motion.h2
+                              initial={{ y: 20, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              transition={{ delay: 0.3 }}
+                              className="text-5xl font-black text-green-500 mt-6 mb-4"
+                            >
+                              강화 성공!
+                            </motion.h2>
+                            <motion.div
+                              initial={{ y: 20, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              transition={{ delay: 0.5 }}
+                              className="text-3xl font-bold text-gray-900 dark:text-white"
+                            >
+                              {enhancementResult.playerName} +{enhancementResult.newLevel}
+                            </motion.div>
+                          </>
+                        ) : (
+                          <>
+                            <motion.div
+                              animate={{
+                                scale: [1, 0.9, 1],
+                              }}
+                              transition={{ duration: 0.6 }}
+                              className="relative inline-block"
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 rounded-full blur-3xl opacity-60"></div>
+                              <div className="relative text-9xl">💔</div>
+                            </motion.div>
+                            <motion.h2
+                              initial={{ y: 20, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              transition={{ delay: 0.3 }}
+                              className="text-5xl font-black text-red-500 mt-6 mb-4"
+                            >
+                              강화 실패...
+                            </motion.h2>
+                            <motion.div
+                              initial={{ y: 20, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              transition={{ delay: 0.5 }}
+                              className="text-xl text-gray-600 dark:text-gray-400"
+                            >
+                              성공률 {enhancementResult.successRate}%
+                            </motion.div>
+                          </>
+                        )}
                       </motion.div>
                     )}
                   </div>

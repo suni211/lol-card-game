@@ -13,7 +13,6 @@ const GACHA_OPTIONS = {
   premium: { cost: 300, probabilities: { legendary: 0.2, epic: 2, rare: 18, common: 79.8 } },
   ultra: { cost: 500, probabilities: { legendary: 0.5, epic: 4, rare: 25, common: 70.5 } },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5, epic: 25, rare: 70, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
-  lck_legend: { cost: 2200, probabilities: { legendary: 3, epic: 22, rare: 75, common: 0 }, special: 'RE' }, // RE cards and Rare+ only
   ssg_2017: { cost: 6500, probabilities: { legendary: 9.5, epic: 90.5, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
   msi_pack: { cost: 2500, probabilities: { legendary: 5, epic: 30, rare: 65, common: 0 }, special: 'MSI' }, // MSI cards + Rare+ only (LCK보다 우수)
 };
@@ -82,12 +81,6 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       // WORLDS pack is now CLOSED - no more 25WW/25WUD cards available
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
-    } else if ((option as any).special === 'RE') {
-      // LCK Legend pack - Only LCK RE cards + 25 season cards
-      [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (season = 'RE' OR season = '25') ORDER BY RAND() LIMIT 1",
-        [tier]
-      );
     } else if ((option as any).special === '17SSG') {
       // 2017 SSG pack - Only 17SSG cards + 25 season cards
       [players] = await connection.query(
@@ -101,9 +94,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         [tier]
       );
     } else {
-      // Regular packs - Only 25 season cards
+      // Regular packs - 25 season cards + RE (LCK Legend) cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND season = '25' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }

@@ -58,17 +58,6 @@ export default function Gacha() {
       },
     },
     {
-      cost: 2200,
-      label: 'LCK 레전드 카드팩',
-      probabilities: {
-        common: 0,
-        rare: 75,
-        epic: 22,
-        legendary: 3,
-      },
-      special: true,
-    },
-    {
       cost: 6500,
       label: '2017 SSG 월즈 우승 카드팩',
       probabilities: {

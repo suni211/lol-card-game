@@ -111,7 +111,12 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
     await connection.beginTransaction();
 
     const userId = req.user!.id;
-    const { name, topCardId, jungleCardId, midCardId, adcCardId, supportCardId, laningStrategy, teamfightStrategy, macroStrategy } = req.body;
+    const { name, topCardId, jungleCardId, midCardId, adcCardId, supportCardId } = req.body;
+
+    // 전략은 기본값 사용 (실시간 매치에서는 라운드별로 선택)
+    const laningStrategy = 'SAFE';
+    const teamfightStrategy = 'ENGAGE';
+    const macroStrategy = 'OBJECTIVE';
 
     // Validate that all cards belong to user
     const cardIds = [topCardId, jungleCardId, midCardId, adcCardId, supportCardId].filter(Boolean);

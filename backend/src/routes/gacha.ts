@@ -7,11 +7,12 @@ const router = express.Router();
 
 // Gacha probabilities (더 어려운 확률로 조정)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { legendary: 0.05, epic: 0.5, rare: 10, common: 89.45 } },
-  basic: { cost: 100, probabilities: { legendary: 0.2, epic: 1, rare: 15, common: 83.8 } },
-  premium: { cost: 300, probabilities: { legendary: 0.5, epic: 3, rare: 25, common: 71.5 } },
-  ultra: { cost: 500, probabilities: { legendary: 1.5, epic: 6, rare: 30, common: 62.5 } },
+  free: { cost: 0, probabilities: { legendary: 0.01, epic: 0.1, rare: 5, common: 94.89 } },
+  basic: { cost: 100, probabilities: { legendary: 0.05, epic: 0.5, rare: 10, common: 89.45 } },
+  premium: { cost: 300, probabilities: { legendary: 0.2, epic: 2, rare: 18, common: 79.8 } },
+  ultra: { cost: 500, probabilities: { legendary: 0.5, epic: 4, rare: 25, common: 70.5 } },
   worlds_winner: { cost: 2500, probabilities: { legendary: 15, epic: 35, rare: 50, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
+  lck_legend: { cost: 2200, probabilities: { legendary: 10, epic: 40, rare: 50, common: 0 }, special: 'RE' }, // RE cards and Rare+ only
 };
 
 function selectTierByProbability(probabilities: any): string {
@@ -88,6 +89,12 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
           [tier]
         );
       }
+    } else if ((option as any).special === 'RE') {
+      // LCK Legend pack - RE cards and all Rare+ cards
+      [players] = await connection.query(
+        "SELECT * FROM players WHERE tier IN ('RARE', 'EPIC', 'LEGENDARY') AND tier = ? ORDER BY RAND() LIMIT 1",
+        [tier]
+      );
     } else {
       [players] = await connection.query(
         'SELECT * FROM players WHERE tier = ? ORDER BY RAND() LIMIT 1',

@@ -21,40 +21,40 @@ export default function Gacha() {
       cost: 0,
       label: '일일 무료',
       probabilities: {
-        common: 70,
-        rare: 25,
-        epic: 4.5,
-        legendary: 0.5,
+        common: 94.89,
+        rare: 5,
+        epic: 0.1,
+        legendary: 0.01,
       },
     },
     {
       cost: 100,
       label: '기본',
       probabilities: {
-        common: 65,
-        rare: 28,
-        epic: 6,
-        legendary: 1,
+        common: 89.45,
+        rare: 10,
+        epic: 0.5,
+        legendary: 0.05,
       },
     },
     {
       cost: 300,
       label: '고급',
       probabilities: {
-        common: 50,
-        rare: 35,
-        epic: 12,
-        legendary: 3,
+        common: 79.8,
+        rare: 18,
+        epic: 2,
+        legendary: 0.2,
       },
     },
     {
       cost: 500,
       label: '프리미엄',
       probabilities: {
-        common: 30,
-        rare: 40,
-        epic: 22,
-        legendary: 8,
+        common: 70.5,
+        rare: 25,
+        epic: 4,
+        legendary: 0.5,
       },
     },
     {
@@ -62,9 +62,20 @@ export default function Gacha() {
       label: '2025 월즈 우승',
       probabilities: {
         common: 0,
-        rare: 45,
-        epic: 40,
+        rare: 50,
+        epic: 35,
         legendary: 15,
+      },
+      special: true,
+    },
+    {
+      cost: 2200,
+      label: 'LCK 레전드 카드팩',
+      probabilities: {
+        common: 0,
+        rare: 50,
+        epic: 40,
+        legendary: 10,
       },
       special: true,
     },
@@ -117,6 +128,7 @@ export default function Gacha() {
       else if (option.cost === 300) gachaType = 'premium';
       else if (option.cost === 500) gachaType = 'ultra';
       else if (option.cost === 2500) gachaType = 'worlds_winner';
+      else if (option.cost === 2200) gachaType = 'lck_legend';
 
       // 백엔드 API 호출
       const response = await axios.post(
@@ -270,10 +282,17 @@ export default function Gacha() {
 
                 {/* Probabilities */}
                 <div className="space-y-2 mb-6">
-                  {option.special && (
+                  {option.special && option.cost === 2500 && (
                     <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
                         25WW, 25WUD + 레어 이상 확정!
+                      </p>
+                    </div>
+                  )}
+                  {option.special && option.cost === 2200 && (
+                    <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
+                        RE 카드 + 레어 이상 확정!
                       </p>
                     </div>
                   )}

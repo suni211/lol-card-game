@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { updateMissionProgress } from '../utils/missionTracker';
+import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 
 const router = express.Router();
 
@@ -223,6 +224,11 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     // Update mission progress (don't await to avoid slowing down response)
     updateMissionProgress(userId, 'ai_battle', 1).catch(err =>
       console.error('Mission update error:', err)
+    );
+
+    // Update achievements
+    checkAndUpdateAchievements(userId).catch(err =>
+      console.error('Achievement update error:', err)
     );
 
     res.json({
@@ -452,6 +458,11 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
     // Update mission progress for all battles
     updateMissionProgress(userId, 'ai_battle', count).catch(err =>
       console.error('Mission update error:', err)
+    );
+
+    // Update achievements
+    checkAndUpdateAchievements(userId).catch(err =>
+      console.error('Achievement update error:', err)
     );
 
     res.json({

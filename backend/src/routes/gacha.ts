@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { updateMissionProgress } from '../utils/missionTracker';
+import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 
 const router = express.Router();
 
@@ -142,6 +143,11 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
     // Update mission progress
     updateMissionProgress(userId, 'gacha', 1).catch(err =>
       console.error('Mission update error:', err)
+    );
+
+    // Update achievements
+    checkAndUpdateAchievements(userId).catch(err =>
+      console.error('Achievement update error:', err)
     );
 
     // Get player traits

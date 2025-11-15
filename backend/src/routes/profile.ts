@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 
 const router = express.Router();
 
@@ -295,6 +296,11 @@ router.post('/checkin', authMiddleware, async (req: AuthRequest, res) => {
     `, [consecutiveDays, totalReward, userId]);
 
     await connection.commit();
+
+    // Update achievements
+    checkAndUpdateAchievements(userId).catch(err =>
+      console.error('Achievement update error:', err)
+    );
 
     res.json({
       success: true,

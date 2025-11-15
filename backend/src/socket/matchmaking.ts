@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../config/database';
 import { calculateTier, canMatchTiers, UserTier } from '../utils/tierCalculator';
 import { updateMissionProgress } from '../utils/missionTracker';
+import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 
 interface MatchmakingPlayer {
   socketId: string;
@@ -201,6 +202,14 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
         console.error('Mission update error:', err)
       );
     }
+
+    // Update achievements for both players
+    checkAndUpdateAchievements(player1.userId).catch(err =>
+      console.error('Achievement update error:', err)
+    );
+    checkAndUpdateAchievements(player2.userId).catch(err =>
+      console.error('Achievement update error:', err)
+    );
 
     // Calculate actual values for each player
     const player1Won = winnerId === player1.userId;

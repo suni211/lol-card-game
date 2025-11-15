@@ -29,7 +29,6 @@ import Admin from './pages/Admin';
 import Market from './pages/Market';
 import VSMode from './pages/VSMode';
 import VSBattle from './pages/VSBattle';
-import Tutorial from './pages/Tutorial';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -73,14 +72,6 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/notices" element={<Notices />} />
           <Route path="/ranking" element={<Ranking />} />
-          <Route
-            path="/tutorial"
-            element={
-              <ProtectedRoute>
-                <Tutorial />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Auth Routes */}
           <Route

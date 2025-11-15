@@ -242,83 +242,87 @@ async function endMatch(matchId: string, io: Server) {
     const winnerId = match.player1.score > match.player2.score ? match.player1.userId : match.player2.userId;
     const player1Won = winnerId === match.player1.userId;
 
-    // 매치 결과 저장 (일반전이 아닌 경우만)
+    // Practice vs Ranked rewards
+    const player1PointsChange = match.isPractice ? (player1Won ? 100 : 60) : (player1Won ? 200 : 100);
+    const player2PointsChange = match.isPractice ? (!player1Won ? 100 : 60) : (!player1Won ? 200 : 100);
+    const player1RatingChange = match.isPractice ? 0 : (player1Won ? 25 : -15);
+    const player2RatingChange = match.isPractice ? 0 : (!player1Won ? 25 : -15);
+
+    // matches 테이블에 저장
+    const [matchResult]: any = await connection.query(`
+      INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at, match_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED', NOW(), ?)
+    `, [match.player1.userId, match.player2.userId, match.player1.deckId, match.player2.deckId, winnerId, match.player1.score, match.player2.score, match.isPractice ? 'PRACTICE' : 'RANKED']);
+
+    const dbMatchId = matchResult.insertId;
+
+    // match_history 저장
+    await connection.query(`
+      INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
+      VALUES (?, ?, ?, ?, ?)
+    `, [match.player1.userId, dbMatchId, player1Won ? 'WIN' : 'LOSE', player1PointsChange, player1RatingChange]);
+
+    await connection.query(`
+      INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
+      VALUES (?, ?, ?, ?, ?)
+    `, [match.player2.userId, dbMatchId, player1Won ? 'LOSE' : 'WIN', player2PointsChange, player2RatingChange]);
+
+    // 유저 포인트 업데이트 (일반전/경쟁전 모두)
+    await connection.query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
+      [player1PointsChange, match.player1.userId]
+    );
+
+    await connection.query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
+      [player2PointsChange, match.player2.userId]
+    );
+
+    // 경쟁전만 레이팅 및 통계 업데이트
     if (!match.isPractice) {
-      const pointsChange = player1Won ? 200 : 100;
-      const ratingChange = player1Won ? 25 : -15;
-
-      // matches 테이블에 저장
-      const [matchResult]: any = await connection.query(`
-        INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED', NOW())
-      `, [match.player1.userId, match.player2.userId, match.player1.deckId, match.player2.deckId, winnerId, match.player1.score, match.player2.score]);
-
-      const dbMatchId = matchResult.insertId;
-
-      // match_history 저장
-      await connection.query(`
-        INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
-        VALUES (?, ?, ?, ?, ?)
-      `, [match.player1.userId, dbMatchId, player1Won ? 'WIN' : 'LOSE', player1Won ? pointsChange : 100, player1Won ? ratingChange : -15]);
-
-      await connection.query(`
-        INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
-        VALUES (?, ?, ?, ?, ?)
-      `, [match.player2.userId, dbMatchId, player1Won ? 'LOSE' : 'WIN', player1Won ? 100 : pointsChange, player1Won ? -15 : ratingChange]);
-
-      // 유저 포인트 및 레이팅 업데이트
       await connection.query(
-        'UPDATE users SET points = points + ?, rating = GREATEST(1000, rating + ?) WHERE id = ?',
-        [player1Won ? pointsChange : 100, player1Won ? ratingChange : -15, match.player1.userId]
+        'UPDATE users SET rating = GREATEST(1000, rating + ?) WHERE id = ?',
+        [player1RatingChange, match.player1.userId]
       );
 
       await connection.query(
-        'UPDATE users SET points = points + ?, rating = GREATEST(1000, rating + ?) WHERE id = ?',
-        [player1Won ? 100 : pointsChange, player1Won ? -15 : ratingChange, match.player2.userId]
+        'UPDATE users SET rating = GREATEST(1000, rating + ?) WHERE id = ?',
+        [player2RatingChange, match.player2.userId]
       );
 
       // 통계 업데이트
       await connection.query(`
         UPDATE user_stats
-        SET total_matches = total_matches + 1, wins = wins + ?, losses = losses + ?, current_streak = ?, longest_win_streak = GREATEST(longest_win_streak, ?)
+        SET total_matches = total_matches + 1, wins = wins + ?, losses = losses + ?
         WHERE user_id = ?
-      `, [player1Won ? 1 : 0, player1Won ? 0 : 1, player1Won ? 1 : 0, player1Won ? 1 : 0, match.player1.userId]);
+      `, [player1Won ? 1 : 0, player1Won ? 0 : 1, match.player1.userId]);
 
       await connection.query(`
         UPDATE user_stats
-        SET total_matches = total_matches + 1, wins = wins + ?, losses = losses + ?, current_streak = ?, longest_win_streak = GREATEST(longest_win_streak, ?)
+        SET total_matches = total_matches + 1, wins = wins + ?, losses = losses + ?
         WHERE user_id = ?
-      `, [player1Won ? 0 : 1, player1Won ? 1 : 0, player1Won ? 0 : 1, player1Won ? 0 : 1, match.player2.userId]);
+      `, [player1Won ? 0 : 1, player1Won ? 1 : 0, match.player2.userId]);
     }
 
     await connection.commit();
 
     // 최종 결과 전송
-    const finalResult = {
-      won: true,
-      myScore: match.player1.score,
-      opponentScore: match.player2.score,
-      opponent: {
-        username: match.player2.username,
-      },
-      pointsChange: match.isPractice ? 0 : (player1Won ? 200 : 100),
-      ratingChange: match.isPractice ? 0 : (player1Won ? 25 : -15),
-    };
-
     io.to(match.player1.socketId).emit('matchComplete', {
-      ...finalResult,
       won: player1Won,
       myScore: match.player1.score,
       opponentScore: match.player2.score,
       opponent: { username: match.player2.username },
+      pointsChange: player1PointsChange,
+      ratingChange: player1RatingChange,
     });
 
     io.to(match.player2.socketId).emit('matchComplete', {
-      ...finalResult,
       won: !player1Won,
       myScore: match.player2.score,
       opponentScore: match.player1.score,
       opponent: { username: match.player1.username },
+      pointsChange: player2PointsChange,
+      ratingChange: player2RatingChange,
     });
 
   } catch (error) {

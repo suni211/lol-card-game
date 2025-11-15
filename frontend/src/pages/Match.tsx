@@ -188,21 +188,27 @@ export default function Match() {
 
     // Realtime match events
     socket.on('matchFound', (data) => {
-      console.log('=== MATCH FOUND ===');
+      console.log('=== MATCH FOUND EVENT RECEIVED ===');
       console.log('Match ID:', data.matchId);
       console.log('Opponent:', data.opponent);
       console.log('Opponent Deck:', data.opponent?.deck);
-      console.log('Setting showLineup to TRUE');
 
-      setMatchId(data.matchId);
-      setOpponent(data.opponent);
-      setOpponentDeck(data.opponent?.deck || null);
-      setShowLineup(true);
-      setInMatch(false); // Make sure inMatch is false
+      // Reset all states first
+      setInMatch(false);
       setMatching(false);
       setRoundHistory([]);
       setMyScore(0);
       setOpponentScore(0);
+
+      // Then set match data
+      setMatchId(data.matchId);
+      setOpponent(data.opponent);
+      setOpponentDeck(data.opponent?.deck || null);
+
+      // Set showLineup last to ensure all other states are ready
+      console.log('>>> SETTING showLineup to TRUE <<<');
+      setShowLineup(true);
+
       toast.success(`매치 발견! 상대: ${data.opponent.username}`, { duration: 3000 });
     });
 
@@ -372,11 +378,23 @@ export default function Match() {
   console.log('=== RENDER STATE ===');
   console.log('loading:', loading);
   console.log('deck:', deck ? 'exists' : 'null');
-  console.log('isDeckComplete:', isDeckComplete());
+  console.log('isDeckComplete():', isDeckComplete());
   console.log('showLineup:', showLineup);
   console.log('inMatch:', inMatch);
   console.log('matching:', matching);
-  console.log('opponentDeck:', opponentDeck);
+  console.log('opponentDeck:', opponentDeck ? 'exists' : 'null');
+  console.log('opponent:', opponent);
+
+  // Determine which screen will be shown
+  if (!deck || !isDeckComplete()) {
+    console.log('>>> WILL SHOW: Empty State (no deck or incomplete)');
+  } else if (showLineup) {
+    console.log('>>> WILL SHOW: Lineup Preview <<<');
+  } else if (inMatch) {
+    console.log('>>> WILL SHOW: In Match (strategy selection)');
+  } else {
+    console.log('>>> WILL SHOW: Queue/Waiting screen');
+  }
 
   if (loading) {
     return (
@@ -411,8 +429,6 @@ export default function Match() {
 
         {!deck || !isDeckComplete() ? (
           /* Empty State - Need Deck */
-          <>
-            {console.log('>>> SHOWING EMPTY STATE (no deck or incomplete)')}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -440,11 +456,8 @@ export default function Match() {
               </a>
             </div>
           </motion.div>
-          </>
         ) : showLineup ? (
           /* Lineup Preview Screen */
-          <>
-            {console.log('>>> SHOWING LINEUP PREVIEW')}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -572,11 +585,8 @@ export default function Match() {
               </p>
             </div>
           </motion.div>
-          </>
         ) : inMatch ? (
           /* In Match - Strategy Selection */
-          <>
-            {console.log('>>> SHOWING IN MATCH (strategy selection)')}
           <div className="space-y-6">
             {/* Match Info */}
             <motion.div
@@ -738,7 +748,6 @@ export default function Match() {
               항복
             </button>
           </div>
-          </>
         ) : (
           /* Deck Ready - Show Match Options */
           <div className="space-y-6">

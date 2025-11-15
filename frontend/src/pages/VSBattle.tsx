@@ -114,13 +114,20 @@ export default function VSBattle() {
       (userDeck.support_overall + userDeck.support_level);
 
     const enemyPower = battleData.enemies.reduce(
-      (sum: number, enemy: any) => sum + enemy.overall + enemy.level,
+      (sum: number, enemy: any) => sum + (enemy.overall + enemy.level),
       0
     );
 
     const userScore = userPower + Math.floor(Math.random() * 50);
     const enemyScore = enemyPower + Math.floor(Math.random() * 50);
     const isVictory = userScore > enemyScore;
+
+    console.log('Battle Simulation:');
+    console.log('User Power:', userPower, '(+랜덤:', userScore - userPower, ') = Total:', userScore);
+    console.log('Enemy Power:', enemyPower, '(+랜덤:', enemyScore - enemyPower, ') = Total:', enemyScore);
+    battleData.enemies.forEach((e: any) => {
+      console.log(`  ${e.name}: ${e.overall} + ${e.level} = ${e.overall + e.level}`);
+    });
 
     try {
       const completeResponse = await axios.post(

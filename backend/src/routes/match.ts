@@ -204,7 +204,7 @@ async function simulateMatch(
     const p2MomentumBonus = p2TotalScore > p1TotalScore ? 1.05 : 1.0;
 
     const p1GamePower = p1Power * advantage * randomFactor * p1MomentumBonus;
-    const p2GamePower = p2Power * (2 - advantage) * randomFactor * p2MomentumBonus;
+    const p2GamePower = p2Power * (1 / advantage) * randomFactor * p2MomentumBonus;
 
     const gameWinner = p1GamePower > p2GamePower ? 1 : 2;
 

@@ -267,11 +267,6 @@ export default function Achievements() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {claimableAchievements.map((achievement) => {
-                    const progressPercent = Math.min(
-                      (achievement.progress / achievement.requirement_value) * 100,
-                      100
-                    );
-
                     return (
                       <motion.div
                         key={achievement.id}

@@ -334,7 +334,7 @@ export default function Admin() {
                   type="text"
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder="선수명 입력 (예: Faker)"
+                  placeholder="선수명 입력 (예: ICON Uzi, Faker)"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -370,7 +370,8 @@ export default function Admin() {
                   <p className="font-semibold mb-1">안내</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>선수명은 부분 일치로 검색됩니다</li>
-                    <li>여러 선수가 검색되면 정확한 이름을 입력하세요</li>
+                    <li>"ICON Uzi" 형태로 티어를 지정할 수 있습니다</li>
+                    <li>여러 선수가 검색되면 티어를 함께 입력하세요</li>
                     <li>카드는 레벨 0으로 지급됩니다</li>
                     <li>모든 작업은 로그에 기록됩니다</li>
                   </ul>

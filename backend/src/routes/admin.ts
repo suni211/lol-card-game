@@ -218,17 +218,40 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
 
     const targetUser = users[0];
 
-    // 선수 찾기
-    const [players]: any = await connection.query(
-      'SELECT id, name, tier FROM players WHERE name LIKE ?',
-      [`%${playerName}%`]
-    );
+    // 선수 찾기 - "ICON Uzi" 형태 지원
+    let searchName = playerName.trim();
+    let searchTier = null;
+
+    // "TIER NAME" 형태로 입력된 경우 분리
+    const tierPattern = /^(ICON|LEGENDARY|EPIC|RARE|COMMON)\s+(.+)$/i;
+    const tierMatch = searchName.match(tierPattern);
+
+    if (tierMatch) {
+      searchTier = tierMatch[1].toUpperCase();
+      searchName = tierMatch[2];
+    }
+
+    // 선수 검색
+    let players: any;
+    if (searchTier) {
+      [players] = await connection.query(
+        'SELECT id, name, tier FROM players WHERE name LIKE ? AND tier = ?',
+        [`%${searchName}%`, searchTier]
+      );
+    } else {
+      [players] = await connection.query(
+        'SELECT id, name, tier FROM players WHERE name LIKE ?',
+        [`%${searchName}%`]
+      );
+    }
 
     if (players.length === 0) {
       await connection.rollback();
       return res.status(404).json({
         success: false,
-        error: '해당 선수를 찾을 수 없습니다.',
+        error: searchTier
+          ? `${searchTier} 등급의 "${searchName}" 선수를 찾을 수 없습니다.`
+          : `"${searchName}" 선수를 찾을 수 없습니다.`,
       });
     }
 
@@ -236,7 +259,7 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
       await connection.rollback();
       return res.status(400).json({
         success: false,
-        error: `여러 선수가 검색되었습니다: ${players.map((p: any) => p.name).join(', ')}`,
+        error: `여러 선수가 검색되었습니다: ${players.map((p: any) => `${p.name} (${p.tier})`).join(', ')}`,
         players: players.map((p: any) => ({ id: p.id, name: p.name, tier: p.tier })),
       });
     }

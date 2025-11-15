@@ -8,29 +8,6 @@ import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-interface Enemy {
-  player_name: string;
-  enhancement_level: number;
-  hard_enhancement_level: number;
-  position_order: number;
-  level: number;
-  overall: number;
-  position: string;
-  tier: string;
-  team: string;
-  laning?: number;
-  fighting?: number;
-}
-
-interface Stage {
-  id: number;
-  stage_number: number;
-  stage_name: string;
-  is_boss: boolean;
-  reward_points: number;
-  hard_mode_multiplier: number;
-}
-
 interface Deck {
   id: number;
   name: string;

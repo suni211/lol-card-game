@@ -333,8 +333,8 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
   }
 });
 
-// Enhancement success rates per level (0→1, 1→2, ..., 9→10)
-const BASE_ENHANCEMENT_RATES = [80, 65, 60, 50, 45, 40, 20, 10, 5, 1];
+// Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 극악 난이도
+const BASE_ENHANCEMENT_RATES = [50, 40, 30, 20, 15, 10, 5, 3, 1, 0.5];
 const MAX_ENHANCEMENT_LEVEL = 10;
 
 // Tier downgrade probabilities on failure (based on enhancement level)

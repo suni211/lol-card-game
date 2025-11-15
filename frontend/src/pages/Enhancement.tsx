@@ -264,17 +264,18 @@ export default function Enhancement() {
             <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                강화 안내 (FIFA 4 방식)
+                강화 안내 (극악 난이도 + 등급 하락)
               </h3>
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
                 <li>• 아무 카드나 재료로 사용 가능합니다</li>
+                <li className="text-orange-600 dark:text-orange-400 font-bold">• 기본 성공률: +0강 50%, +1강 40%, +2강 30%, +3강 20%...</li>
                 <li>• 같은 선수 카드 사용 시: 성공률 +30%</li>
                 <li>• 재료 등급별 보너스: 레전드 +20%, 에픽 +10%, 레어 +5%</li>
                 <li>• 재료 오버롤 70 이상: 10마다 +5% (예: 80 = +5%, 90 = +10%)</li>
                 <li>• 재료 강화도: 1강당 +2% (예: +5강 재료 = +10%)</li>
                 <li>• 강화 비용: (현재 강화도 + 1) × 100P</li>
                 <li className="text-red-600 dark:text-red-400 font-bold">⚠️ 실패 시 재료 카드 소멸 + 등급 하락 위험!</li>
-                <li>• 등급 하락 확률: +2강부터 10%, +3강 20%, ... +9강 80%</li>
+                <li className="text-red-600 dark:text-red-400">• 등급 하락 확률: +2강부터 10%, +3강 20%, ... +9강 80%</li>
                 <li>• 최대 강화: +10강</li>
               </ul>
             </div>

@@ -296,6 +296,13 @@ export default function Gacha() {
                       </p>
                     </div>
                   )}
+                  {option.special && option.cost === 6500 && (
+                    <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
+                        17SSG 카드 + 에픽 이상 확정!
+                      </p>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-yellow-600 dark:text-yellow-400">레전드</span>
                     <span className="font-semibold text-gray-900 dark:text-white">

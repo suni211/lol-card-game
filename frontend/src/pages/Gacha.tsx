@@ -366,7 +366,36 @@ export default function Gacha() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
-            <div className="text-center">
+            <div className="text-center relative">
+              {/* Epic and Legendary particle effects - shown from the start */}
+              {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                <div className="absolute inset-0 overflow-visible pointer-events-none z-10">
+                  {[...Array(drawnCard.tier === 'LEGENDARY' ? 30 : 20)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className={`absolute w-2 h-2 rounded-full ${
+                        drawnCard.tier === 'LEGENDARY' ? 'bg-yellow-400' : 'bg-purple-400'
+                      }`}
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                      }}
+                      animate={{
+                        scale: [0, 2, 0],
+                        opacity: [0, 1, 0],
+                        x: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 300],
+                        y: [(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 300],
+                      }}
+                      transition={{
+                        duration: 1.5 + Math.random(),
+                        repeat: Infinity,
+                        delay: Math.random() * 2,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
               {/* Step 0: Loading */}
               {revealStep === 0 && (
                 <motion.div
@@ -375,7 +404,20 @@ export default function Gacha() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="relative"
                 >
-                  <div className="w-48 h-64 bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 rounded-xl shadow-2xl"></div>
+                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    <div className={`absolute inset-0 bg-gradient-to-r ${
+                      drawnCard.tier === 'LEGENDARY'
+                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                        : 'from-purple-400 via-pink-500 to-purple-400'
+                    } rounded-xl blur-3xl opacity-75 animate-pulse`}></div>
+                  )}
+                  <div className={`relative w-48 h-64 bg-gradient-to-br ${
+                    drawnCard.tier === 'LEGENDARY'
+                      ? 'from-yellow-400 via-orange-500 to-yellow-600'
+                      : drawnCard.tier === 'EPIC'
+                      ? 'from-purple-500 via-pink-500 to-purple-600'
+                      : 'from-primary-500 via-purple-500 to-pink-500'
+                  } rounded-xl shadow-2xl`}></div>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Sparkles className="w-24 h-24 text-white animate-spin" />
                   </div>
@@ -389,9 +431,16 @@ export default function Gacha() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="text-center"
+                  className="text-center relative"
                 >
-                  <div className={`inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-12 py-8 shadow-2xl`}>
+                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    <div className={`absolute inset-0 bg-gradient-to-r ${
+                      drawnCard.tier === 'LEGENDARY'
+                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                        : 'from-purple-400 via-pink-500 to-purple-400'
+                    } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
+                  )}
+                  <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-12 py-8 shadow-2xl`}>
                     <div className="text-white text-6xl font-bold mb-2">
                       {drawnCard.position}
                     </div>
@@ -407,9 +456,16 @@ export default function Gacha() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="text-center"
+                  className="text-center relative"
                 >
-                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl px-12 py-8 shadow-2xl">
+                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    <div className={`absolute inset-0 bg-gradient-to-r ${
+                      drawnCard.tier === 'LEGENDARY'
+                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                        : 'from-purple-400 via-pink-500 to-purple-400'
+                    } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
+                  )}
+                  <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
                     <div className="text-white text-6xl font-bold mb-2">
                       {drawnCard.season || '시즌 정보 없음'}
                     </div>
@@ -425,9 +481,16 @@ export default function Gacha() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="text-center"
+                  className="text-center relative"
                 >
-                  <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl px-12 py-8 shadow-2xl">
+                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    <div className={`absolute inset-0 bg-gradient-to-r ${
+                      drawnCard.tier === 'LEGENDARY'
+                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                        : 'from-purple-400 via-pink-500 to-purple-400'
+                    } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
+                  )}
+                  <div className="relative bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
                     <div className="text-white text-6xl font-bold mb-2">
                       {drawnCard.team}
                     </div>

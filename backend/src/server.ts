@@ -18,6 +18,7 @@ import noticesRoutes, { setSocketIO } from './routes/notices';
 import profileRoutes from './routes/profile';
 import aiRoutes from './routes/ai';
 import suggestionsRoutes from './routes/suggestions';
+import fusionRoutes from './routes/fusion';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -73,6 +74,7 @@ app.use('/api/notices', noticesRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/suggestions', suggestionsRoutes);
+app.use('/api/fusion', fusionRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

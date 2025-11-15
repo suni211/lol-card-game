@@ -22,6 +22,7 @@ import Trade from './pages/Trade';
 import Notices from './pages/Notices';
 import Suggestions from './pages/Suggestions';
 import Profile from './pages/Profile';
+import Fusion from './pages/Fusion';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -90,6 +91,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Gacha />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fusion"
+            element={
+              <ProtectedRoute>
+                <Fusion />
               </ProtectedRoute>
             }
           />

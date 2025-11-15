@@ -13,6 +13,7 @@ export default function Navbar() {
   const navLinks = [
     { path: '/', label: '홈' },
     { path: '/gacha', label: '카드 뽑기' },
+    { path: '/fusion', label: '카드 합성' },
     { path: '/collection', label: '내 카드' },
     { path: '/deck', label: '덱 편성' },
     { path: '/match', label: '랭크전' },

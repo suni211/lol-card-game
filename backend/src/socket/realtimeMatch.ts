@@ -44,7 +44,7 @@ interface ActiveMatch {
   isPractice: boolean;
 }
 
-const activeMatches = new Map<string, ActiveMatch>();
+export const activeMatches = new Map<string, ActiveMatch>();
 const ROUND_TIME_LIMIT = 10000; // 10 seconds
 
 // 덱의 특정 스탯 파워 계산
@@ -430,4 +430,30 @@ export function createRealtimeMatch(
   setTimeout(() => startRound(matchId, io), 3000);
 
   return matchId;
+}
+
+// 플레이어 disconnect 처리
+export async function handlePlayerDisconnect(socketId: string, io: Server) {
+  // 해당 소켓이 참여중인 매치 찾기
+  for (const [matchId, match] of activeMatches.entries()) {
+    if (match.player1.socketId === socketId || match.player2.socketId === socketId) {
+      // 타이머 정리
+      if (match.roundTimer) {
+        clearTimeout(match.roundTimer);
+      }
+
+      // 나간 플레이어의 반대편을 승자로
+      if (match.player1.socketId === socketId) {
+        match.player2.score = 3;
+        match.player1.score = 0;
+      } else {
+        match.player1.score = 3;
+        match.player2.score = 0;
+      }
+
+      // 매치 종료
+      await endMatch(matchId, io);
+      break;
+    }
+  }
 }

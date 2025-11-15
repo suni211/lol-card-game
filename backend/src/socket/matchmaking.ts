@@ -4,7 +4,7 @@ import pool from '../config/database';
 import { calculateTier, canMatchTiers, UserTier } from '../utils/tierCalculator';
 import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
-import { createRealtimeMatch, setupRealtimeMatch } from './realtimeMatch';
+import { createRealtimeMatch, setupRealtimeMatch, handlePlayerDisconnect } from './realtimeMatch';
 
 interface MatchmakingPlayer {
   socketId: string;
@@ -561,7 +561,7 @@ export function setupMatchmaking(io: Server) {
     });
 
     // Disconnect
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       // Check both queues
       let index = rankedQueue.findIndex((p) => p.socketId === socket.id);
       let queue = rankedQueue;
@@ -587,6 +587,10 @@ export function setupMatchmaking(io: Server) {
         // Update queue size for remaining players
         broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');
       }
+
+      // 실행중인 매치에서 disconnect 처리
+      await handlePlayerDisconnect(socket.id, io);
+
       console.log('Client disconnected:', socket.id);
     });
   });

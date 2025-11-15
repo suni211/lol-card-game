@@ -10,8 +10,8 @@ const router = express.Router();
 const GACHA_OPTIONS = {
   free: { cost: 0, probabilities: { legendary: 0.01, epic: 0.1, rare: 5, common: 94.89 } },
   basic: { cost: 100, probabilities: { legendary: 0.05, epic: 0.5, rare: 10, common: 89.45 } },
-  premium: { cost: 300, probabilities: { legendary: 0.2, epic: 2, rare: 18, common: 79.8 } },
-  ultra: { cost: 500, probabilities: { legendary: 0.5, epic: 4, rare: 25, common: 70.5 } },
+  premium: { cost: 300, probabilities: { legendary: 0.2, epic: 3, rare: 18, common: 78.8 } },
+  ultra: { cost: 500, probabilities: { legendary: 0.5, epic: 6, rare: 25, common: 68.5 } },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5, epic: 25, rare: 70, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   ssg_2017: { cost: 6500, probabilities: { legendary: 9.5, epic: 90.5, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
   msi_pack: { cost: 2500, probabilities: { legendary: 5, epic: 30, rare: 65, common: 0 }, special: 'MSI' }, // MSI cards + Rare+ only (LCK보다 우수)

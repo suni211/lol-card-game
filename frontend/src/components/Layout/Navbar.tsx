@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User, LogOut, Users } from 'lucide-react';
+import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useThemeStore } from '../../store/themeStore';
@@ -12,6 +12,7 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const location = useLocation();
   const [onlineUsers, setOnlineUsers] = useState(0);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     const socket = io(SOCKET_URL, {
@@ -42,17 +43,26 @@ export default function Navbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const navLinks = [
+  const navStructure = [
     { path: '/', label: '홈' },
-    { path: '/gacha', label: '카드 뽑기' },
-    { path: '/fusion', label: '카드 합성' },
-    { path: '/enhancement', label: '카드 강화' },
-    { path: '/collection', label: '내 카드' },
+    {
+      label: '카드',
+      items: [
+        { path: '/gacha', label: '뽑기' },
+        { path: '/fusion', label: '합성' },
+        { path: '/enhancement', label: '강화' },
+      ]
+    },
     { path: '/deck', label: '덱 편성' },
-    { path: '/match', label: '랭크전' },
-    { path: '/practice', label: '일반전' },
-    { path: '/ai-battle', label: 'AI 배틀' },
-    { path: '/vsmode', label: 'VS 모드' },
+    {
+      label: '경기',
+      items: [
+        { path: '/match', label: '랭크전' },
+        { path: '/practice', label: '일반전' },
+        { path: '/ai-battle', label: 'AI 배틀' },
+        { path: '/vsmode', label: 'VS 모드' },
+      ]
+    },
     { path: '/market', label: '이적시장' },
     { path: '/ranking', label: '랭킹' },
     { path: '/missions', label: '미션' },
@@ -62,10 +72,14 @@ export default function Navbar() {
     { path: '/suggestions', label: '건의사항' },
   ];
 
+  const isDropdownActive = (items: any[]) => {
+    return items.some(item => location.pathname === item.path);
+  };
+
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16 gap-2">
+        <div className="flex items-center h-16 gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
             <div className="flex items-center space-x-2">
@@ -76,28 +90,74 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-0.5 flex-1 justify-center">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`px-1.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                  isActive(link.path)
-                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <div className="hidden lg:flex items-center space-x-1 flex-1">
+            {navStructure.map((item, index) => {
+              if ('items' in item) {
+                // Dropdown menu
+                const isDropActive = isDropdownActive(item.items);
+                return (
+                  <div
+                    key={index}
+                    className="relative group"
+                    onMouseEnter={() => setActiveDropdown(item.label)}
+                    onMouseLeave={() => setActiveDropdown(null)}
+                  >
+                    <button
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1 ${
+                        isDropActive
+                          ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {item.label}
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+
+                    {/* Dropdown */}
+                    {activeDropdown === item.label && (
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-lg py-2 min-w-[150px] border border-gray-200 dark:border-gray-700">
+                        {item.items.map((subItem) => (
+                          <Link
+                            key={subItem.path}
+                            to={subItem.path}
+                            className={`block px-4 py-2 text-sm transition-colors ${
+                              isActive(subItem.path)
+                                ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {subItem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                // Regular link
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(item.path)
+                        ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+            })}
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-1 flex-shrink-0">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             {/* Online Users */}
-            <div className="hidden lg:flex items-center space-x-1 px-2 py-1 bg-green-100 dark:bg-green-900 rounded-lg">
-              <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
-              <span className="text-xs font-semibold text-green-700 dark:text-green-300">
+            <div className="hidden lg:flex items-center space-x-1 px-3 py-1.5 bg-green-100 dark:bg-green-900 rounded-lg">
+              <Users className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-semibold text-green-700 dark:text-green-300">
                 {onlineUsers}
               </span>
             </div>
@@ -105,16 +165,16 @@ export default function Navbar() {
             {isAuthenticated && user ? (
               <>
                 {/* Points Display */}
-                <div className="hidden lg:flex items-center space-x-1 px-2 py-1 bg-primary-100 dark:bg-primary-900 rounded-lg">
-                  <Trophy className="w-3 h-3 text-primary-600 dark:text-primary-400" />
-                  <span className="text-xs font-semibold text-primary-700 dark:text-primary-300">
+                <div className="hidden lg:flex items-center space-x-1 px-3 py-1.5 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                  <Trophy className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
                     {user.points.toLocaleString()}
                   </span>
                 </div>
 
                 {/* Tier Badge */}
-                <div className="hidden lg:flex items-center px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                  <span className="text-xs font-bold text-white">
+                <div className="hidden lg:flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                  <span className="text-sm font-bold text-white">
                     {user.tier}
                   </span>
                 </div>
@@ -122,10 +182,10 @@ export default function Navbar() {
                 {/* Profile */}
                 <Link
                   to="/profile"
-                  className="flex items-center space-x-1 p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  className="flex items-center space-x-1 px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
                   <User className="w-4 h-4" />
-                  <span className="hidden lg:inline text-xs font-medium">
+                  <span className="hidden lg:inline text-sm font-medium">
                     {user.username}
                   </span>
                 </Link>
@@ -133,7 +193,7 @@ export default function Navbar() {
                 {/* Logout */}
                 <button
                   onClick={logout}
-                  className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                   title="로그아웃"
                 >
                   <LogOut className="w-4 h-4" />
@@ -164,21 +224,39 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden pb-3 overflow-x-auto scrollbar-hide">
+        <div className="lg:hidden pb-3 overflow-x-auto scrollbar-hide">
           <div className="flex space-x-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                  isActive(link.path)
-                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navStructure.map((item, index) => {
+              if ('items' in item) {
+                return item.items.map((subItem) => (
+                  <Link
+                    key={subItem.path}
+                    to={subItem.path}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                      isActive(subItem.path)
+                        ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {item.label} - {subItem.label}
+                  </Link>
+                ));
+              } else {
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                      isActive(item.path)
+                        ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+            })}
           </div>
         </div>
       </div>

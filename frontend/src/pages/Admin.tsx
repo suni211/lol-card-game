@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, DollarSign, Minus, FileText, AlertCircle } from 'lucide-react';
+import { Shield, DollarSign, Minus, FileText, AlertCircle, CreditCard } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -21,6 +21,7 @@ export default function Admin() {
   const [username, setUsername] = useState('');
   const [points, setPoints] = useState('');
   const [reason, setReason] = useState('');
+  const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -132,6 +133,46 @@ export default function Admin() {
     }
   };
 
+  const handleGiveCard = async () => {
+    if (!username || !playerName) {
+      toast.error('유저명과 선수명을 입력해주세요.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        `${API_URL}/admin/give-card`,
+        { username, playerName, reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setUsername('');
+        setPlayerName('');
+        setReason('');
+        fetchLogs();
+      }
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        toast.error('관리자 권한이 없습니다.');
+      } else if (error.response?.data?.players) {
+        // Multiple players found
+        const playerList = error.response.data.players
+          .map((p: any) => `${p.name} (${p.tier})`)
+          .join(', ');
+        toast.error(`여러 선수가 검색되었습니다: ${playerList}`);
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('카드 지급 실패');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ko-KR');
   };
@@ -142,6 +183,8 @@ export default function Admin() {
         return '포인트 지급';
       case 'DEDUCT_POINTS':
         return '포인트 차감';
+      case 'GIVE_CARD':
+        return '카드 지급';
       default:
         return action;
     }
@@ -167,7 +210,7 @@ export default function Admin() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           {/* Point Management */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -257,10 +300,90 @@ export default function Admin() {
             </div>
           </motion.div>
 
+          {/* Card Management */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+              <CreditCard className="w-6 h-6 mr-2 text-purple-600" />
+              카드 지급
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  유저명
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="유저명 입력"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  선수명
+                </label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="선수명 입력 (예: Faker)"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  사유 (선택)
+                </label>
+                <input
+                  type="text"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="지급 사유"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <button
+                onClick={handleGiveCard}
+                disabled={loading}
+                className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+              >
+                <CreditCard className="w-5 h-5 inline mr-2" />
+                카드 지급
+              </button>
+            </div>
+
+            {/* Info */}
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-800 dark:text-blue-200">
+                  <p className="font-semibold mb-1">안내</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>선수명은 부분 일치로 검색됩니다</li>
+                    <li>여러 선수가 검색되면 정확한 이름을 입력하세요</li>
+                    <li>카드는 레벨 0으로 지급됩니다</li>
+                    <li>모든 작업은 로그에 기록됩니다</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Admin Logs */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
           >
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
@@ -297,7 +420,11 @@ export default function Admin() {
                             className={`px-2 py-1 rounded text-xs font-bold ${
                               log.action === 'GIVE_POINTS'
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                : log.action === 'DEDUCT_POINTS'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                : log.action === 'GIVE_CARD'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
                             }`}
                           >
                             {getActionText(log.action)}
@@ -324,6 +451,19 @@ export default function Admin() {
                             <span className="font-bold">
                               {details.points.toLocaleString()}P
                             </span>
+                          </p>
+                        )}
+                        {details.playerName && (
+                          <p className="mt-1">
+                            선수:{' '}
+                            <span className="font-bold text-purple-600 dark:text-purple-400">
+                              {details.playerName}
+                            </span>
+                            {details.tier && (
+                              <span className="ml-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-xs">
+                                {details.tier}
+                              </span>
+                            )}
                           </p>
                         )}
                         {details.reason && details.reason !== '없음' && (

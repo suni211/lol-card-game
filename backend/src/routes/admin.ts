@@ -186,6 +186,99 @@ router.post('/deduct-points', authMiddleware, adminMiddleware, async (req: AuthR
   }
 });
 
+// 카드 지급
+router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { username, playerName, reason } = req.body;
+
+    if (!username || !playerName) {
+      return res.status(400).json({
+        success: false,
+        error: '유저명과 선수명을 입력해주세요.',
+      });
+    }
+
+    // 유저 찾기
+    const [users]: any = await connection.query(
+      'SELECT id, username FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        error: '해당 유저를 찾을 수 없습니다.',
+      });
+    }
+
+    const targetUser = users[0];
+
+    // 선수 찾기
+    const [players]: any = await connection.query(
+      'SELECT id, name, tier FROM players WHERE name LIKE ?',
+      [`%${playerName}%`]
+    );
+
+    if (players.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        error: '해당 선수를 찾을 수 없습니다.',
+      });
+    }
+
+    if (players.length > 1) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: `여러 선수가 검색되었습니다: ${players.map((p: any) => p.name).join(', ')}`,
+        players: players.map((p: any) => ({ id: p.id, name: p.name, tier: p.tier })),
+      });
+    }
+
+    const player = players[0];
+
+    // 카드 지급
+    await connection.query(
+      'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
+      [targetUser.id, player.id]
+    );
+
+    // 관리자 로그 기록
+    await connection.query(
+      'INSERT INTO admin_logs (admin_id, action, target_user_id, details) VALUES (?, ?, ?, ?)',
+      [req.user!.id, 'GIVE_CARD', targetUser.id, JSON.stringify({ playerName: player.name, playerId: player.id, tier: player.tier, reason: reason || '없음' })]
+    );
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: `${username}님에게 ${player.name} 카드를 지급했습니다.`,
+      data: {
+        username: targetUser.username,
+        playerName: player.name,
+        tier: player.tier,
+      },
+    });
+
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Give card error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  } finally {
+    connection.release();
+  }
+});
+
 // 관리자 로그 조회
 router.get('/logs', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   try {

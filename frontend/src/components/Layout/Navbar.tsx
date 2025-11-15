@@ -43,7 +43,19 @@ export default function Navbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const navStructure = [
+  type NavItem = {
+    path: string;
+    label: string;
+  };
+
+  type NavDropdown = {
+    label: string;
+    items: NavItem[];
+  };
+
+  type NavStructureItem = NavItem | NavDropdown;
+
+  const navStructure: NavStructureItem[] = [
     { path: '/', label: '홈' },
     {
       label: '카드',
@@ -72,7 +84,7 @@ export default function Navbar() {
     { path: '/suggestions', label: '건의사항' },
   ];
 
-  const isDropdownActive = (items: any[]) => {
+  const isDropdownActive = (items: NavItem[]) => {
     return items.some(item => location.pathname === item.path);
   };
 
@@ -226,7 +238,7 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         <div className="lg:hidden pb-3 overflow-x-auto scrollbar-hide">
           <div className="flex space-x-2">
-            {navStructure.map((item, index) => {
+            {navStructure.map((item) => {
               if ('items' in item) {
                 return item.items.map((subItem) => (
                   <Link

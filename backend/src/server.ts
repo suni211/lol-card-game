@@ -109,21 +109,36 @@ setupMatchmaking(io);
 // Setup socket.io for notices
 setSocketIO(io);
 
-// Track unique online users by socket ID
-const connectedSockets = new Set<string>();
+// Track unique online users by IP address instead of socket ID
+const connectedIPs = new Map<string, Set<string>>(); // IP -> Set of socket IDs
 
 // Chat message history (in-memory, limited to 100 messages)
 const chatHistory: any[] = [];
 const MAX_CHAT_HISTORY = 100;
 
+// Helper function to get client IP
+function getClientIP(socket: any): string {
+  const forwarded = socket.handshake.headers['x-forwarded-for'];
+  if (forwarded) {
+    return typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
+  }
+  return socket.handshake.address || 'unknown';
+}
+
 io.on('connection', (socket) => {
-  // Add socket to connected set
-  connectedSockets.add(socket.id);
+  // Get client IP
+  const clientIP = getClientIP(socket);
 
-  // Emit updated count
-  io.emit('online_users', connectedSockets.size);
+  // Add socket to IP's socket set
+  if (!connectedIPs.has(clientIP)) {
+    connectedIPs.set(clientIP, new Set());
+  }
+  connectedIPs.get(clientIP)!.add(socket.id);
 
-  console.log(`User connected: ${socket.id}, Total: ${connectedSockets.size}`);
+  // Emit updated unique user count (number of unique IPs)
+  io.emit('online_users', connectedIPs.size);
+
+  console.log(`User connected: ${socket.id} (IP: ${clientIP}), Unique users: ${connectedIPs.size}`);
 
   // Verify user token and setup realtime match handlers
   socket.on('authenticate', (data: { token: string }) => {
@@ -167,9 +182,21 @@ io.on('connection', (socket) => {
 
   // Remove socket on disconnect
   socket.on('disconnect', () => {
-    connectedSockets.delete(socket.id);
-    io.emit('online_users', connectedSockets.size);
-    console.log(`User disconnected: ${socket.id}, Total: ${connectedSockets.size}`);
+    const clientIP = getClientIP(socket);
+
+    // Remove socket from IP's socket set
+    if (connectedIPs.has(clientIP)) {
+      connectedIPs.get(clientIP)!.delete(socket.id);
+
+      // If no more sockets from this IP, remove the IP entry
+      if (connectedIPs.get(clientIP)!.size === 0) {
+        connectedIPs.delete(clientIP);
+      }
+    }
+
+    // Emit updated unique user count
+    io.emit('online_users', connectedIPs.size);
+    console.log(`User disconnected: ${socket.id} (IP: ${clientIP}), Unique users: ${connectedIPs.size}`);
   });
 });
 

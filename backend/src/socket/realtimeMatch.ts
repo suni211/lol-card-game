@@ -203,15 +203,27 @@ function startRound(matchId: string, io: Server) {
   match.player2.strategy = undefined;
   match.roundStartTime = Date.now();
 
-  // 양 플레이어에게 라운드 시작 알림
+  // Check if player2 is AI
+  const isPlayer2AI = match.player2.socketId.startsWith('ai_');
+
+  // 양 플레이어에게 라운드 시작 알림 (AI는 제외)
   io.to(match.player1.socketId).emit('roundStart', {
     round: match.currentRound,
     timeLimit: ROUND_TIME_LIMIT,
   });
-  io.to(match.player2.socketId).emit('roundStart', {
-    round: match.currentRound,
-    timeLimit: ROUND_TIME_LIMIT,
-  });
+
+  if (!isPlayer2AI) {
+    io.to(match.player2.socketId).emit('roundStart', {
+      round: match.currentRound,
+      timeLimit: ROUND_TIME_LIMIT,
+    });
+  } else {
+    // AI는 즉시 랜덤 전략 선택
+    const strategies: Strategy[] = ['AGGRESSIVE', 'TEAMFIGHT', 'DEFENSIVE'];
+    match.player2.strategy = strategies[Math.floor(Math.random() * strategies.length)];
+    match.player2.ready = true;
+    console.log(`AI selected strategy: ${match.player2.strategy}`);
+  }
 
   // 타임아웃 설정 (10초)
   match.roundTimer = setTimeout(() => {
@@ -471,7 +483,10 @@ export function setupRealtimeMatch(io: Server, socket: Socket, user: any) {
       match.player2.ready = true;
     }
 
-    // 둘 다 준비되면 라운드 처리
+    // Check if player2 is AI - if so, AI already selected strategy automatically
+    const isPlayer2AI = match.player2.socketId.startsWith('ai_');
+
+    // 둘 다 준비되면 라운드 처리 (AI는 이미 준비됨)
     if (match.player1.ready && match.player2.ready) {
       await processRound(data.matchId, io);
     }
@@ -550,15 +565,26 @@ export async function createRealtimeMatch(
   player1: { socketId: string; userId: number; username: string; deckId: number },
   player2: { socketId: string; userId: number; username: string; deckId: number },
   isPractice: boolean,
-  io: Server
+  io: Server,
+  aiDeck?: any // Optional AI deck for AI matches
 ): Promise<string> {
   const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Get deck information for both players
-  const [player1Deck, player2Deck] = await Promise.all([
-    getDeckInfo(player1.deckId),
-    getDeckInfo(player2.deckId)
-  ]);
+  // If aiDeck is provided (AI match), use it for player2
+  let player1Deck, player2Deck;
+
+  if (aiDeck) {
+    // AI match: get player1's deck, use provided AI deck for player2
+    player1Deck = await getDeckInfo(player1.deckId);
+    player2Deck = aiDeck;
+  } else {
+    // Normal match: get both decks from database
+    [player1Deck, player2Deck] = await Promise.all([
+      getDeckInfo(player1.deckId),
+      getDeckInfo(player2.deckId)
+    ]);
+  }
 
   const match: ActiveMatch = {
     matchId,
@@ -588,14 +614,17 @@ export async function createRealtimeMatch(
     isPractice,
   });
 
-  io.to(player2.socketId).emit('matchFound', {
-    matchId,
-    opponent: {
-      username: player1.username,
-      deck: player1Deck
-    },
-    isPractice,
-  });
+  // Only emit to player2 if not AI (AI has fake socket ID)
+  if (!aiDeck) {
+    io.to(player2.socketId).emit('matchFound', {
+      matchId,
+      opponent: {
+        username: player1.username,
+        deck: player1Deck
+      },
+      isPractice,
+    });
+  }
 
   // 첫 라운드 시작 (10초 후 - 라인업 확인 시간)
   setTimeout(() => startRound(matchId, io), 10000);

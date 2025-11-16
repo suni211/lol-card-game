@@ -113,60 +113,62 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
 
     const aiUser = aiUsers[0];
 
-    // Get player's deck power
-    const playerPower = await calculateDeckPower(player.deckId);
+    // Create random AI deck - select random player for each position
+    const positions = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
+    const aiDeck: any = {};
 
-    // Create a similar AI opponent
-    const aiPower = playerPower + Math.floor(Math.random() * 21) - 10; // ±10 power difference
+    for (const position of positions) {
+      const [randomPlayers]: any = await connection.query(`
+        SELECT id, name, team, position, overall, tier, season, laning, teamfight, macro, mental
+        FROM players
+        WHERE position = ?
+        ORDER BY RAND()
+        LIMIT 1
+      `, [position]);
 
-    // Import simulateMatch
-    const { simulateMatch } = require('../routes/match');
-
-    // Create AI vs player match (note: AI doesn't have a real deck)
-    // We'll simulate with player's power vs AI power
-    const matchSimulation = await simulateMatch(connection, player.deckId, player.deckId); // Use same deck for simulation
-
-    // Adjust result based on AI power difference
-    const powerRatio = aiPower / playerPower;
-    const isPlayerWin = Math.random() > (powerRatio - 0.5); // Slightly favor player
-
-    const winnerId = isPlayerWin ? player.userId : aiUser.id;
-    const player1Score = matchSimulation.finalScore.player1;
-    const player2Score = Math.floor(player1Score * powerRatio);
-
-    // Create match record with AI user
-    const [matchResult]: any = await connection.query(`
-      INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at, match_type)
-      VALUES (?, ?, ?, NULL, ?, ?, ?, 'COMPLETED', NOW(), 'PRACTICE')
-    `, [player.userId, aiUser.id, player.deckId, winnerId, player1Score, player2Score]);
-
-    const matchId = matchResult.insertId;
+      if (randomPlayers.length > 0) {
+        const p = randomPlayers[0];
+        aiDeck[position.toLowerCase()] = {
+          name: p.name,
+          team: p.team,
+          tier: p.tier,
+          season: p.season || '25',
+          overall: p.overall,
+          level: 0, // AI doesn't have card levels
+        };
+      }
+    }
 
     await connection.commit();
 
-    // Emit match result to player
-    io.to(player.socketId).emit('match_found', {
-      matchId,
-      opponent: {
-        username: aiUser.username,
-        deckId: null,
-        power: aiPower,
+    console.log(`Player ${player.username} matched with AI ${aiUser.username}`);
+    console.log('AI Deck:', aiDeck);
+
+    // Use realtime match system
+    const { createRealtimeMatch } = require('./realtimeMatch');
+
+    // Create a fake socket ID for AI
+    const aiSocketId = `ai_${Date.now()}`;
+
+    // Create realtime match with AI (AI has no real deck ID, using -1 as placeholder)
+    await createRealtimeMatch(
+      {
+        socketId: player.socketId,
+        userId: player.userId,
+        username: player.username,
+        deckId: player.deckId,
       },
-      isPractice: true,
-    });
+      {
+        socketId: aiSocketId,
+        userId: aiUser.id,
+        username: aiUser.username,
+        deckId: -1, // Placeholder for AI (will be ignored)
+      },
+      true, // isPractice
+      io,
+      aiDeck // Pass AI deck directly
+    );
 
-    // Emit match complete
-    io.to(player.socketId).emit('match_complete', {
-      matchId,
-      winnerId: isPlayerWin ? player.userId : null,
-      isWinner: isPlayerWin,
-      isDraw: false,
-      rounds: matchSimulation.rounds,
-      finalScore: { player1: player1Score, player2: player2Score },
-      matchType: 'PRACTICE',
-    });
-
-    console.log(`Player ${player.username} matched with AI`);
   } catch (error) {
     await connection.rollback();
     console.error('AI match error:', error);

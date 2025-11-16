@@ -7,6 +7,7 @@ import { useAudioStore } from './store/audioStore';
 // Layout
 import Layout from './components/Layout/Layout';
 import { AudioControls } from './components/AudioControls';
+import GlobalMessageBanner from './components/GlobalMessageBanner';
 
 // Pages
 import Home from './pages/Home';
@@ -73,18 +74,27 @@ function App() {
     // Initialize audio
     initAudio();
 
+    let hasPlayed = false;
+
     // Play BGM on first user interaction
     const playOnInteraction = () => {
-      playRandomLobbyBGM();
-      // Remove listeners after first interaction
-      document.removeEventListener('click', playOnInteraction);
-      document.removeEventListener('keydown', playOnInteraction);
-      document.removeEventListener('touchstart', playOnInteraction);
+      if (!hasPlayed) {
+        hasPlayed = true;
+        playRandomLobbyBGM();
+        // Remove listeners after first interaction
+        document.removeEventListener('click', playOnInteraction);
+        document.removeEventListener('keydown', playOnInteraction);
+        document.removeEventListener('touchstart', playOnInteraction);
+      }
     };
 
-    document.addEventListener('click', playOnInteraction);
-    document.addEventListener('keydown', playOnInteraction);
-    document.addEventListener('touchstart', playOnInteraction);
+    // Try to play immediately (will fail on some browsers but worth trying)
+    playRandomLobbyBGM();
+
+    // Also add event listeners as fallback
+    document.addEventListener('click', playOnInteraction, { once: true });
+    document.addEventListener('keydown', playOnInteraction, { once: true });
+    document.addEventListener('touchstart', playOnInteraction, { once: true });
 
     return () => {
       document.removeEventListener('click', playOnInteraction);
@@ -96,6 +106,7 @@ function App() {
   return (
     <Router>
       <AudioControls />
+      <GlobalMessageBanner />
       <Routes>
         <Route element={<Layout />}>
           {/* Public Routes */}

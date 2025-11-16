@@ -861,6 +861,9 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
     teal: 'bg-teal-500',
   };
 
+  // Stats are on a 0-200 scale, convert to percentage for display
+  const percentage = Math.min(100, (value / 200) * 100);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
@@ -870,7 +873,7 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
         <div
           className={`h-2 rounded-full ${colorClasses[color] || 'bg-gray-500'}`}
-          style={{ width: `${value}%` }}
+          style={{ width: `${percentage}%` }}
         ></div>
       </div>
     </div>

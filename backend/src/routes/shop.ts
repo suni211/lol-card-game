@@ -1,11 +1,11 @@
 import express from 'express';
-import pool from '../db';
-import { authMiddleware } from '../middleware/auth';
+import pool from '../config/database';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
 // 확성기 구매
-router.post('/megaphone/purchase', authMiddleware, async (req, res) => {
+router.post('/megaphone/purchase', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
 
   try {
@@ -80,7 +80,7 @@ router.post('/megaphone/purchase', authMiddleware, async (req, res) => {
 });
 
 // 확성기 개수 조회
-router.get('/megaphone', authMiddleware, async (req, res) => {
+router.get('/megaphone', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
 
@@ -100,7 +100,7 @@ router.get('/megaphone', authMiddleware, async (req, res) => {
 });
 
 // 전체 메시지 전송
-router.post('/megaphone/broadcast', authMiddleware, async (req, res) => {
+router.post('/megaphone/broadcast', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
 
   try {

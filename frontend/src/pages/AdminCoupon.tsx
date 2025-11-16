@@ -12,6 +12,7 @@ interface Coupon {
   reward_pack_type: string | null;
   reward_pack_count: number;
   max_uses: number;
+  max_users: number | null;
   current_uses: number;
   expires_at: string | null;
   is_active: boolean;
@@ -19,6 +20,7 @@ interface Coupon {
   created_by_username: string;
   created_at: string;
   redemption_count: number;
+  unique_user_count: number;
 }
 
 export default function AdminCoupon() {
@@ -33,6 +35,7 @@ export default function AdminCoupon() {
     rewardPackType: '',
     rewardPackCount: '1',
     maxUses: '1',
+    maxUsers: '',
     expiresAt: '',
     description: '',
     customCode: '',
@@ -64,6 +67,7 @@ export default function AdminCoupon() {
       const body: any = {
         type: createForm.type,
         maxUses: parseInt(createForm.maxUses) || 1,
+        maxUsers: createForm.maxUsers ? parseInt(createForm.maxUsers) : null,
         description: createForm.description || null,
         customCode: createForm.customCode || null,
       };
@@ -101,6 +105,7 @@ export default function AdminCoupon() {
           rewardPackType: '',
           rewardPackCount: '1',
           maxUses: '1',
+          maxUsers: '',
           expiresAt: '',
           description: '',
           customCode: '',
@@ -194,7 +199,7 @@ export default function AdminCoupon() {
                     <p className="text-white text-lg mb-3">{coupon.description}</p>
                   )}
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
                     <div className="bg-white/5 rounded-lg p-3">
                       <p className="text-gray-400 text-sm mb-1">보상</p>
                       <p className="text-white font-bold">
@@ -206,12 +211,19 @@ export default function AdminCoupon() {
                     </div>
 
                     <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-gray-400 text-sm mb-1 flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        사용 현황
-                      </p>
+                      <p className="text-gray-400 text-sm mb-1">사용 현황</p>
                       <p className="text-white font-bold">
                         {coupon.current_uses} / {coupon.max_uses || '∞'}
+                      </p>
+                    </div>
+
+                    <div className="bg-white/5 rounded-lg p-3">
+                      <p className="text-gray-400 text-sm mb-1 flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        사용자 수
+                      </p>
+                      <p className="text-white font-bold">
+                        {coupon.unique_user_count} / {coupon.max_users || '∞'}
                       </p>
                     </div>
 
@@ -345,6 +357,22 @@ export default function AdminCoupon() {
                     className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white"
                     placeholder="1"
                   />
+                  <p className="text-gray-400 text-xs mt-1">총 사용 가능 횟수 (사용자 중복 포함)</p>
+                </div>
+
+                {/* Max Users */}
+                <div>
+                  <label className="text-white text-sm font-bold mb-2 block">
+                    최대 사용자 수 (선택)
+                  </label>
+                  <input
+                    type="number"
+                    value={createForm.maxUsers}
+                    onChange={(e) => setCreateForm({ ...createForm, maxUsers: e.target.value })}
+                    className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white"
+                    placeholder="무제한"
+                  />
+                  <p className="text-gray-400 text-xs mt-1">쿠폰을 사용할 수 있는 최대 유저 수</p>
                 </div>
 
                 {/* Expires At */}

@@ -39,6 +39,7 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
       rewardPackType,
       rewardPackCount,
       maxUses,
+      maxUsers,
       expiresAt,
       description,
       customCode,
@@ -66,8 +67,8 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
     await connection.query(
       `INSERT INTO coupons
        (code, type, reward_value, reward_player_id, reward_pack_type, reward_pack_count,
-        max_uses, expires_at, created_by, description)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        max_uses, max_users, expires_at, created_by, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         code,
         type,
@@ -76,6 +77,7 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
         rewardPackType || null,
         rewardPackCount || 1,
         maxUses || 1,
+        maxUsers || null,
         expiresAt || null,
         userId,
         description || null,
@@ -137,6 +139,18 @@ router.post('/redeem', authMiddleware, async (req: AuthRequest, res) => {
     if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Coupon has reached maximum uses' });
+    }
+
+    // Check max users (unique user count)
+    if (coupon.max_users) {
+      const [userCount]: any = await connection.query(
+        'SELECT COUNT(DISTINCT user_id) as unique_users FROM coupon_redemptions WHERE coupon_id = ?',
+        [coupon.id]
+      );
+      if (userCount[0].unique_users >= coupon.max_users) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, error: 'Coupon has reached maximum user limit' });
+      }
     }
 
     // Check if user already used this coupon
@@ -247,7 +261,8 @@ router.get('/admin/list', authMiddleware, async (req: AuthRequest, res) => {
         c.*,
         u.username as created_by_username,
         p.name as reward_player_name,
-        (SELECT COUNT(*) FROM coupon_redemptions WHERE coupon_id = c.id) as redemption_count
+        (SELECT COUNT(*) FROM coupon_redemptions WHERE coupon_id = c.id) as redemption_count,
+        (SELECT COUNT(DISTINCT user_id) FROM coupon_redemptions WHERE coupon_id = c.id) as unique_user_count
       FROM coupons c
       LEFT JOIN users u ON c.created_by = u.id
       LEFT JOIN players p ON c.reward_player_id = p.id

@@ -187,8 +187,10 @@ export default function Match() {
 
     // Realtime match events
     socket.on('matchFound', (data) => {
-      console.log('🎯 MATCH FOUND! Opponent:', data.opponent.username);
-      console.log('📋 Opponent Deck:', data.opponent?.deck);
+      console.log('🎯 MATCH FOUND EVENT RECEIVED');
+      console.log('  ├─ Opponent:', data.opponent.username);
+      console.log('  ├─ Opponent Deck:', data.opponent?.deck);
+      console.log('  └─ Match ID:', data.matchId);
 
       // Set all match data
       setMatchId(data.matchId);
@@ -200,8 +202,9 @@ export default function Match() {
       setOpponentScore(0);
 
       // Show lineup preview
+      console.log('🔄 SETTING MATCH STATE TO: lineup');
       setMatchState('lineup');
-      console.log('✅ Match state changed to: lineup');
+      console.log('✅ State set complete, lineup should now render');
 
       toast.success(`매치 성사! VS ${data.opponent.username}`, { duration: 3000 });
     });
@@ -367,10 +370,14 @@ export default function Match() {
     }
   };
 
-  // Debug logging - SIMPLIFIED
-  console.log('🎮 Match State:', matchState);
+  // Debug logging - DETAILED
+  console.log('═══════════════════════════════════');
+  console.log('🎮 RENDER - Match State:', matchState);
   console.log('👥 Opponent:', opponent?.username || 'none');
   console.log('📋 Opponent Deck:', opponentDeck ? 'loaded' : 'none');
+  console.log('🎯 Match ID:', matchId || 'none');
+  console.log('✅ Deck complete:', isDeckComplete());
+  console.log('═══════════════════════════════════');
 
   if (loading) {
     return (
@@ -402,6 +409,18 @@ export default function Match() {
             실시간 전략 대결!
           </p>
         </motion.div>
+
+        {(() => {
+          if (!deck || !isDeckComplete()) {
+            console.log('🖥️ RENDERING: Empty State (No deck)');
+          } else if (matchState === 'lineup') {
+            console.log('🖥️ RENDERING: Lineup Preview');
+          } else if (matchState === 'playing') {
+            console.log('🖥️ RENDERING: In Match (Playing)');
+          } else {
+            console.log('🖥️ RENDERING: Queue Screen (Idle)');
+          }
+        })()}
 
         {!deck || !isDeckComplete() ? (
           /* Empty State - Need Deck */

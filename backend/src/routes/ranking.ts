@@ -166,7 +166,6 @@ router.get('/top-decks', async (req, res) => {
         u.username,
         u.rating,
         u.tier,
-        d.deck_name,
         d.laning_strategy,
         d.teamfight_strategy,
         d.macro_strategy,

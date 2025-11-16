@@ -38,6 +38,8 @@ interface ActiveMatch {
     ready: boolean;
     strategy?: Strategy;
   };
+  player1Deck?: any; // Deck data for player1
+  player2Deck?: any; // Deck data for player2 (can be AI deck)
   currentRound: number;
   roundStartTime?: number;
   roundTimer?: NodeJS.Timeout;
@@ -46,6 +48,59 @@ interface ActiveMatch {
 
 export const activeMatches = new Map<string, ActiveMatch>();
 const ROUND_TIME_LIMIT = 10000; // 10 seconds
+
+// Calculate power from deck object directly (for AI decks)
+function calculateDeckObjectPower(
+  deckObj: any,
+  stat: 'laning' | 'teamfight' | 'macro'
+): number {
+  const positions = ['top', 'jungle', 'mid', 'adc', 'support'];
+  const teamMapping: any = {
+    'NJS': 'BRO',
+    'AZF': 'CJ',
+    'MVP': 'GEN',
+    'SKT': 'T1',
+  };
+
+  const teams: any = {};
+  let totalPower = 0;
+
+  positions.forEach((pos) => {
+    const card = deckObj[pos];
+    if (!card) return;
+
+    // Calculate level bonus
+    const level = card.level || 0;
+    let levelBonus = 0;
+    if (level <= 4) {
+      levelBonus = level; // 1~4강: +1씩
+    } else if (level <= 7) {
+      levelBonus = 4 + (level - 4) * 2; // 5~7강: +2씩
+    } else {
+      levelBonus = 10 + (level - 7) * 4; // 8~10강: +4씩
+    }
+
+    // Overall 50%, stat 40%
+    const statValue = card[stat] || 50;
+    const cardPower = (card.overall + levelBonus) * 0.5 + statValue * 0.4;
+
+    totalPower += cardPower;
+
+    // Track teams for synergy
+    const normalizedTeam = teamMapping[card.team] || card.team;
+    teams[normalizedTeam] = (teams[normalizedTeam] || 0) + 1;
+  });
+
+  // Team synergy bonus
+  for (const team in teams) {
+    const count = teams[team];
+    if (count >= 5) totalPower *= 1.20; // 5명: +20%
+    else if (count >= 3) totalPower *= 1.10; // 3명: +10%
+    else if (count >= 2) totalPower *= 1.05; // 2명: +5%
+  }
+
+  return Math.round(totalPower);
+}
 
 // 덱의 특정 스탯 파워 계산 (시너지 및 특성 포함)
 async function calculateDeckStatPower(
@@ -158,8 +213,24 @@ async function calculateRoundResult(
   const p2Stat = STRATEGY_STATS[p2Strategy];
 
   // 덱 파워 계산
-  const p1BasePower = await calculateDeckStatPower(match.player1.deckId, p1Stat);
-  const p2BasePower = await calculateDeckStatPower(match.player2.deckId, p2Stat);
+  // Check if using deck objects (AI match) or deck IDs (normal match)
+  let p1BasePower, p2BasePower;
+
+  if (match.player1Deck && match.player1.deckId === -1) {
+    // AI match - use deck object
+    p1BasePower = calculateDeckObjectPower(match.player1Deck, p1Stat);
+  } else {
+    // Normal match - use deck ID
+    p1BasePower = await calculateDeckStatPower(match.player1.deckId, p1Stat);
+  }
+
+  if (match.player2Deck && match.player2.deckId === -1) {
+    // AI match - use deck object
+    p2BasePower = calculateDeckObjectPower(match.player2Deck, p2Stat);
+  } else {
+    // Normal match - use deck ID
+    p2BasePower = await calculateDeckStatPower(match.player2.deckId, p2Stat);
+  }
 
   // 전략 상성 보너스 (약하게 조정: ±5%)
   let p1Bonus = 1.0;
@@ -598,6 +669,8 @@ export async function createRealtimeMatch(
       score: 0,
       ready: false,
     },
+    player1Deck,
+    player2Deck,
     currentRound: 1,
     isPractice,
   };

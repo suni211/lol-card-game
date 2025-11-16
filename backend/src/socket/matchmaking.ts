@@ -135,6 +135,10 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
           season: p.season || '25',
           overall: p.overall,
           level: 0, // AI doesn't have card levels
+          laning: p.laning || 50,
+          teamfight: p.teamfight || 50,
+          macro: p.macro || 50,
+          mental: p.mental || 50,
         };
       }
     }

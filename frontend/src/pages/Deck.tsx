@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Info, Target, Users, Map } from 'lucide-react';
+import { Save, Info, Target, Users, Map, X, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
@@ -18,6 +18,20 @@ interface Player {
   region: string;
   tier: string;
   season?: string;
+  // 기존 4개 스탯
+  laning?: number;
+  teamfight?: number;
+  macro?: number;
+  mental?: number;
+  // 8개 세부 스탯
+  cs_ability?: number;
+  lane_pressure?: number;
+  damage_dealing?: number;
+  survivability?: number;
+  objective_control?: number;
+  vision_control?: number;
+  decision_making?: number;
+  consistency?: number;
 }
 
 interface UserCard {
@@ -120,6 +134,7 @@ export default function Deck() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [seasonFilter, setSeasonFilter] = useState<string>('ALL');
+  const [detailCard, setDetailCard] = useState<UserCard | null>(null);
 
   const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
 
@@ -190,7 +205,13 @@ export default function Deck() {
       )
     );
 
+    setDetailCard(null);
     setSelectedPosition(null);
+  };
+
+  const handleCardClick = (card: UserCard) => {
+    // Show detail modal
+    setDetailCard(card);
   };
 
   const handleRemoveCard = (position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT') => {
@@ -629,8 +650,7 @@ export default function Deck() {
                         <motion.div
                           key={card.id}
                           whileHover={{ scale: 1.02 }}
-                          onClick={() => handleCardSelect(card)}
-                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          className={`p-3 rounded-lg border-2 transition-all ${
                             !positionMatch
                               ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
                               : 'border-gray-200 dark:border-gray-700 hover:border-primary-400'
@@ -685,6 +705,29 @@ export default function Deck() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardClick(card);
+                              }}
+                              className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
+                            >
+                              <Eye className="w-4 h-4" />
+                              자세히
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardSelect(card);
+                              }}
+                              className="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              선택
+                            </button>
+                          </div>
                         </motion.div>
                       );
                     })}
@@ -703,6 +746,132 @@ export default function Deck() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Player Detail Modal */}
+      {detailCard && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDetailCard(null)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex gap-4 flex-1">
+                <img
+                  src={getPlayerImageUrl(detailCard.player.name, detailCard.player.season, detailCard.player.tier)}
+                  alt={detailCard.player.name}
+                  className="w-24 h-24 rounded-lg object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                  }}
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`inline-block px-3 py-1 bg-gradient-to-r ${getTierColor(detailCard.player.tier)} rounded text-white text-sm font-bold`}>
+                      {detailCard.player.tier}
+                    </div>
+                    <div className={`inline-block px-3 py-1 ${getPositionColor(detailCard.player.position)} rounded text-white text-sm font-bold`}>
+                      {detailCard.player.position}
+                    </div>
+                    {detailCard.level > 0 && (
+                      <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded text-white text-sm font-bold">
+                        +{detailCard.level}
+                      </div>
+                    )}
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                    {detailCard.player.name}
+                    {detailCard.player.season && (
+                      <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-sm font-semibold">
+                        {detailCard.player.season}
+                      </span>
+                    )}
+                  </h2>
+                  <p className="text-lg text-gray-600 dark:text-gray-400">
+                    {detailCard.player.team} • {detailCard.player.region}
+                  </p>
+                  <p className="text-3xl font-bold text-primary-600 dark:text-primary-400 mt-2">
+                    {detailCard.player.overall + calculateEnhancementBonus(detailCard.level)} OVR
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDetailCard(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">세부 스탯</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <StatBar label="CS 능력" value={detailCard.player.cs_ability || 50} color="blue" />
+                  <StatBar label="라인 압박" value={detailCard.player.lane_pressure || 50} color="red" />
+                  <StatBar label="딜량" value={detailCard.player.damage_dealing || 50} color="purple" />
+                  <StatBar label="생존력" value={detailCard.player.survivability || 50} color="green" />
+                  <StatBar label="오브젝트" value={detailCard.player.objective_control || 50} color="yellow" />
+                  <StatBar label="시야 장악" value={detailCard.player.vision_control || 50} color="indigo" />
+                  <StatBar label="판단력" value={detailCard.player.decision_making || 50} color="pink" />
+                  <StatBar label="안정성" value={detailCard.player.consistency || 50} color="teal" />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDetailCard(null)}
+                  className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors"
+                >
+                  닫기
+                </button>
+                {selectedPosition && !deckSlots.some((s) => s.card?.id === detailCard.id) && (
+                  <button
+                    onClick={() => handleCardSelect(detailCard)}
+                    className="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    이 카드 선택
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Stat Bar Component
+function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
+  const colorClasses: Record<string, string> = {
+    blue: 'bg-blue-500',
+    red: 'bg-red-500',
+    purple: 'bg-purple-500',
+    green: 'bg-green-500',
+    yellow: 'bg-yellow-500',
+    indigo: 'bg-indigo-500',
+    pink: 'bg-pink-500',
+    teal: 'bg-teal-500',
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{value}</span>
+      </div>
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div
+          className={`h-2 rounded-full ${colorClasses[color] || 'bg-gray-500'}`}
+          style={{ width: `${value}%` }}
+        ></div>
       </div>
     </div>
   );

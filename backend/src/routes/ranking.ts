@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/database';
+import { calculateTier } from '../utils/rankTier';
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ router.get('/', async (req, res) => {
       rank: index + 1,
       userId: user.id,
       username: user.username,
-      tier: user.tier,
+      tier: calculateTier(user.rating),
       rating: user.rating,
       wins: user.wins || 0,
       losses: user.losses || 0,

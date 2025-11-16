@@ -67,6 +67,10 @@ export function getTeamColor(team: string): string {
 // 티어 컬러 가져오기
 export function getTierColor(tier: string): string {
   switch (tier) {
+    case 'GR':
+      return 'from-pink-500 via-rose-500 to-red-600';
+    case 'ICON':
+      return 'from-cyan-400 via-blue-500 to-indigo-600';
     case 'LEGENDARY':
       return 'from-yellow-400 to-orange-500';
     case 'EPIC':

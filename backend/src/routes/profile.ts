@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
+import { calculateTier } from '../utils/rankTier';
 
 const router = express.Router();
 
@@ -69,7 +70,10 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     res.json({
       success: true,
       data: {
-        user,
+        user: {
+          ...user,
+          tier: calculateTier(user.rating),
+        },
         stats: {
           ...userStats,
           totalCards: cardCount[0].total,

@@ -476,30 +476,30 @@ UNION ALL SELECT id, 'Faker', 10, 10, 3 FROM vs_stages WHERE stage_number = 49
 UNION ALL SELECT id, 'Ruler', 10, 10, 4 FROM vs_stages WHERE stage_number = 49
 UNION ALL SELECT id, 'Keria', 10, 10, 5 FROM vs_stages WHERE stage_number = 49;
 
--- Stage 50: 궁극의 도전 - ICON 올스타 10강
+-- Stage 50: 궁극의 도전 - ICON 올스타 (일반 8강, 하드 10강)
 -- Using ICON tier players specifically to avoid duplicates
 INSERT INTO vs_stage_enemies (stage_id, player_name, enhancement_level, hard_enhancement_level, position_order)
-SELECT vs.id, p.name, 10, 10, 1
+SELECT vs.id, p.name, 8, 10, 1
 FROM vs_stages vs
 CROSS JOIN players p
 WHERE vs.stage_number = 50 AND p.name = 'Nuguri' AND p.tier = 'ICON'
 UNION ALL
-SELECT vs.id, p.name, 10, 10, 2
+SELECT vs.id, p.name, 8, 10, 2
 FROM vs_stages vs
 CROSS JOIN players p
 WHERE vs.stage_number = 50 AND p.name = 'Bengi' AND p.tier = 'ICON'
 UNION ALL
-SELECT vs.id, p.name, 10, 10, 3
+SELECT vs.id, p.name, 8, 10, 3
 FROM vs_stages vs
 CROSS JOIN players p
 WHERE vs.stage_number = 50 AND p.name = 'Perkz' AND p.tier = 'ICON'
 UNION ALL
-SELECT vs.id, p.name, 10, 10, 4
+SELECT vs.id, p.name, 8, 10, 4
 FROM vs_stages vs
 CROSS JOIN players p
 WHERE vs.stage_number = 50 AND p.name = 'Uzi' AND p.tier = 'ICON'
 UNION ALL
-SELECT vs.id, p.name, 10, 10, 5
+SELECT vs.id, p.name, 8, 10, 5
 FROM vs_stages vs
 CROSS JOIN players p
 WHERE vs.stage_number = 50 AND p.name = 'Mata' AND p.tier = 'ICON';

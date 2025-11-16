@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, ShoppingCart, DollarSign, Filter, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, ShoppingCart, DollarSign, Filter, X, Megaphone } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { calculateEnhancementBonus, getTierColor, getTeamColor, getPositionColor } from '../utils/cardHelpers';
+import MegaphoneShop from '../components/MegaphoneShop';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -59,7 +60,7 @@ interface UserCard {
 
 export default function Market() {
   const { user, token, updateUser } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'my-listings'>('buy');
+  const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'my-listings' | 'megaphone'>('buy');
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [myListings, setMyListings] = useState<MyListing[]>([]);
   const [myCards, setMyCards] = useState<UserCard[]>([]);
@@ -297,6 +298,17 @@ export default function Market() {
             }`}
           >
             내 매물
+          </button>
+          <button
+            onClick={() => setActiveTab('megaphone')}
+            className={`px-6 py-3 font-bold transition-colors flex items-center gap-2 ${
+              activeTab === 'megaphone'
+                ? 'text-yellow-600 dark:text-yellow-400 border-b-2 border-yellow-600 dark:border-yellow-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Megaphone size={20} />
+            확성기 상점
           </button>
         </div>
 
@@ -644,6 +656,9 @@ export default function Market() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Megaphone Tab */}
+        {activeTab === 'megaphone' && <MegaphoneShop />}
       </div>
     </div>
   );

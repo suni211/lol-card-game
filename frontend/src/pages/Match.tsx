@@ -65,12 +65,11 @@ export default function Match() {
   const [queueSize, setQueueSize] = useState(0);
   const socketRef = useRef<Socket | null>(null);
 
-  // Realtime match state
-  const [inMatch, setInMatch] = useState(false);
+  // Realtime match state - SIMPLIFIED
+  const [matchState, setMatchState] = useState<'idle' | 'lineup' | 'playing'>('idle');
   const [matchId, setMatchId] = useState<string | null>(null);
   const [opponent, setOpponent] = useState<any>(null);
   const [opponentDeck, setOpponentDeck] = useState<any>(null);
-  const [showLineup, setShowLineup] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
   const [roundTimeLeft, setRoundTimeLeft] = useState(0);
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
@@ -188,36 +187,30 @@ export default function Match() {
 
     // Realtime match events
     socket.on('matchFound', (data) => {
-      console.log('=== MATCH FOUND EVENT RECEIVED ===');
-      console.log('Match ID:', data.matchId);
-      console.log('Opponent:', data.opponent);
-      console.log('Opponent Deck:', data.opponent?.deck);
+      console.log('🎯 MATCH FOUND! Opponent:', data.opponent.username);
+      console.log('📋 Opponent Deck:', data.opponent?.deck);
 
-      // Reset all states first
-      setInMatch(false);
+      // Set all match data
+      setMatchId(data.matchId);
+      setOpponent(data.opponent);
+      setOpponentDeck(data.opponent?.deck || null);
       setMatching(false);
       setRoundHistory([]);
       setMyScore(0);
       setOpponentScore(0);
 
-      // Then set match data
-      setMatchId(data.matchId);
-      setOpponent(data.opponent);
-      setOpponentDeck(data.opponent?.deck || null);
+      // Show lineup preview
+      setMatchState('lineup');
+      console.log('✅ Match state changed to: lineup');
 
-      // Set showLineup last to ensure all other states are ready
-      console.log('>>> SETTING showLineup to TRUE <<<');
-      setShowLineup(true);
-
-      toast.success(`매치 발견! 상대: ${data.opponent.username}`, { duration: 3000 });
+      toast.success(`매치 성사! VS ${data.opponent.username}`, { duration: 3000 });
     });
 
     socket.on('roundStart', (data) => {
-      console.log('=== ROUND START ===');
-      console.log('Round:', data.round);
-      console.log('Setting showLineup to FALSE, inMatch to TRUE');
-      setShowLineup(false);
-      setInMatch(true);
+      console.log('⚔️ ROUND START! Round:', data.round);
+
+      // Start playing
+      setMatchState('playing');
       setCurrentRound(data.round);
       setRoundTimeLeft(Math.floor(data.timeLimit / 1000));
       setSelectedStrategy(null);
@@ -251,8 +244,8 @@ export default function Match() {
     });
 
     socket.on('matchComplete', async (data) => {
-      console.log('Match complete:', data);
-      setInMatch(false);
+      console.log('🏁 Match complete:', data);
+      setMatchState('idle');
       setMatchId(null);
       setMatchResult({
         won: data.won,
@@ -287,7 +280,7 @@ export default function Match() {
       console.error('Match error:', data);
       toast.error('매치 처리 오류');
       setMatching(false);
-      setInMatch(false);
+      setMatchState('idle');
     });
 
     return () => {
@@ -330,7 +323,7 @@ export default function Match() {
 
     if (confirm('정말 항복하시겠습니까?')) {
       socketRef.current.emit('forfeitMatch', { matchId });
-      setInMatch(false);
+      setMatchState('idle');
       setMatchId(null);
       toast.error('항복했습니다');
     }
@@ -374,27 +367,10 @@ export default function Match() {
     }
   };
 
-  // Debug logging for render state
-  console.log('=== RENDER STATE ===');
-  console.log('loading:', loading);
-  console.log('deck:', deck ? 'exists' : 'null');
-  console.log('isDeckComplete():', isDeckComplete());
-  console.log('showLineup:', showLineup);
-  console.log('inMatch:', inMatch);
-  console.log('matching:', matching);
-  console.log('opponentDeck:', opponentDeck ? 'exists' : 'null');
-  console.log('opponent:', opponent);
-
-  // Determine which screen will be shown
-  if (!deck || !isDeckComplete()) {
-    console.log('>>> WILL SHOW: Empty State (no deck or incomplete)');
-  } else if (showLineup) {
-    console.log('>>> WILL SHOW: Lineup Preview <<<');
-  } else if (inMatch) {
-    console.log('>>> WILL SHOW: In Match (strategy selection)');
-  } else {
-    console.log('>>> WILL SHOW: Queue/Waiting screen');
-  }
+  // Debug logging - SIMPLIFIED
+  console.log('🎮 Match State:', matchState);
+  console.log('👥 Opponent:', opponent?.username || 'none');
+  console.log('📋 Opponent Deck:', opponentDeck ? 'loaded' : 'none');
 
   if (loading) {
     return (
@@ -456,8 +432,8 @@ export default function Match() {
               </a>
             </div>
           </motion.div>
-        ) : showLineup ? (
-          /* Lineup Preview Screen */
+        ) : matchState === 'lineup' ? (
+          /* Lineup Preview Screen - SIMPLIFIED */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -571,21 +547,15 @@ export default function Match() {
 
             {/* Start Button */}
             <div className="text-center">
-              <button
-                onClick={() => {
-                  setShowLineup(false);
-                  setInMatch(true);
-                }}
-                className="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white text-xl font-bold rounded-lg shadow-lg transition-all transform hover:scale-105"
-              >
-                경기 시작
-              </button>
-              <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                10초 후 자동으로 경기가 시작됩니다
+              <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
+                ⏱️ 10초 후 자동으로 경기가 시작됩니다
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">
+                양쪽 선수의 라인업을 확인하세요!
               </p>
             </div>
           </motion.div>
-        ) : inMatch ? (
+        ) : matchState === 'playing' ? (
           /* In Match - Strategy Selection */
           <div className="space-y-6">
             {/* Match Info */}

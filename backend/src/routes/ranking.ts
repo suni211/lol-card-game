@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
         (SELECT COUNT(*) FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.user_id = u.id AND p.tier = 'LEGENDARY') as legendary_cards
       FROM users u
       LEFT JOIN user_stats s ON u.id = s.user_id
-      WHERE u.is_admin = FALSE AND u.is_active = TRUE
+      WHERE u.is_admin = FALSE AND u.is_active = TRUE AND u.username NOT LIKE 'AI_%'
       GROUP BY u.id, u.username, u.tier, u.rating
     `;
 

@@ -523,26 +523,42 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     // Deduct points
     await connection.query('UPDATE users SET points = points - ? WHERE id = ?', [cost, userId]);
 
-    let ovrDowngraded = false;
-    let ovrLost = 0;
-    let newOverall = targetCard.overall;
+    let levelDowngraded = false;
+    let levelLost = 0;
+    let newLevel = targetCard.level;
 
     // Update target card level if success
     if (isSuccess) {
       await connection.query('UPDATE user_cards SET level = level + 1 WHERE id = ?', [targetCardId]);
+      newLevel = targetCard.level + 1;
     } else {
-      // On failure, check for OVR downgrade
-      const ovrDowngradeAmount = OVR_DOWNGRADE_RATES[targetCard.level] || 0;
+      // On failure, decrease enhancement level (not overall)
+      // Level 0: no downgrade
+      // Level 1-3: 50% chance to drop 1 level
+      // Level 4-6: 70% chance to drop 1 level
+      // Level 7-9: 100% chance to drop 1 level
+      // Level 10: 100% chance to drop 1 level
 
-      if (ovrDowngradeAmount > 0) {
-        ovrDowngraded = true;
-        ovrLost = ovrDowngradeAmount;
-        newOverall = Math.max(1, targetCard.overall - ovrDowngradeAmount); // 최소 1
+      let downgradeChance = 0;
+      if (targetCard.level >= 7) {
+        downgradeChance = 100; // 100% chance
+      } else if (targetCard.level >= 4) {
+        downgradeChance = 70; // 70% chance
+      } else if (targetCard.level >= 1) {
+        downgradeChance = 50; // 50% chance
+      }
 
-        // Update player overall in database
+      const shouldDowngrade = Math.random() * 100 < downgradeChance;
+
+      if (shouldDowngrade && targetCard.level > 0) {
+        levelDowngraded = true;
+        levelLost = 1;
+        newLevel = targetCard.level - 1;
+
+        // Decrease enhancement level
         await connection.query(
-          'UPDATE players SET overall = ? WHERE id = ?',
-          [newOverall, targetCard.player_id]
+          'UPDATE user_cards SET level = ? WHERE id = ?',
+          [newLevel, targetCardId]
         );
       }
     }
@@ -553,16 +569,15 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
       success: true,
       data: {
         isSuccess,
-        newLevel: targetCard.level + (isSuccess ? 1 : 0),
+        newLevel,
+        oldLevel: targetCard.level,
         cost,
         baseRate,
         successRate,
         playerName: targetCard.player_name,
         materialCardName: materialCard.player_name,
-        ovrDowngraded,
-        ovrLost,
-        newOverall: ovrDowngraded ? newOverall : targetCard.overall,
-        ovrDowngradeAmount: OVR_DOWNGRADE_RATES[targetCard.level] || 0,
+        levelDowngraded,
+        levelLost,
       },
     });
   } catch (error: any) {

@@ -31,7 +31,6 @@ interface EnhancementPreview {
   baseRate: number;
   successRate: number;
   cost: number;
-  ovrDowngrade: number;
   isSamePlayer: boolean;
   materialTier: string;
   materialOverall: number;
@@ -146,8 +145,8 @@ export default function Enhancement() {
         if (data.isSuccess) {
           toast.success(`강화 성공! ${data.playerName} +${data.newLevel}`);
         } else {
-          if (data.ovrDowngraded) {
-            toast.error(`강화 실패... 재료 카드 소멸 + OVR -${data.ovrLost}!`);
+          if (data.levelDowngraded) {
+            toast.error(`강화 실패... 재료 카드 소멸 + 강화 레벨 -${data.levelLost} (현재: +${data.newLevel})`);
           } else {
             toast.error(`강화 실패... 재료 카드가 소멸되었습니다`);
           }
@@ -367,10 +366,12 @@ export default function Enhancement() {
                     </div>
                   )}
 
-                  {preview.ovrDowngrade > 0 && (
-                    <div className="flex items-center justify-between mb-2 text-red-600 dark:text-red-400">
-                      <span className="text-sm font-bold">⚠️ 실패 시 OVR 하락</span>
-                      <span className="font-bold">-{preview.ovrDowngrade}</span>
+                  {targetCard && targetCard.level >= 1 && (
+                    <div className="flex items-center justify-between mb-2 text-yellow-600 dark:text-yellow-400">
+                      <span className="text-sm font-bold">⚠️ 실패 시 강화 레벨 하락 가능</span>
+                      <span className="font-bold text-xs">
+                        {targetCard.level >= 7 ? '100%' : targetCard.level >= 4 ? '70%' : '50%'}
+                      </span>
                     </div>
                   )}
 
@@ -517,14 +518,14 @@ export default function Enhancement() {
                       <p className="text-red-600 dark:text-red-400 mt-2">
                         {result.materialCardName} 카드가 소멸되었습니다
                       </p>
-                      {result.ovrDowngraded && (
+                      {result.levelDowngraded && (
                         <p className="text-red-600 dark:text-red-400 font-bold mt-2">
-                          ⚠️ OVR 하락: -{result.ovrLost} (현재 OVR: {result.newOverall})
+                          ⚠️ 강화 레벨 하락: -{result.levelLost} (현재: +{result.newLevel})
                         </p>
                       )}
-                      {!result.isSuccess && result.ovrDowngradeAmount > 0 && !result.ovrDowngraded && (
+                      {!result.isSuccess && !result.levelDowngraded && (
                         <p className="text-yellow-600 dark:text-yellow-400 mt-2">
-                          OVR 하락 없음 (다행!)
+                          강화 레벨 하락 없음 (다행!)
                         </p>
                       )}
                     </div>

@@ -99,20 +99,20 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else if ((option as any).special === '17SSG') {
-      // 2017 SSG pack - Only 17SSG cards + 25 season cards + 25HW cards + ICON cards
+      // 2017 SSG pack - Only 17SSG cards + 25 season cards + 25HW cards + ICON cards (NO 25WW/25WUD)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     } else if (tier === 'GR') {
       // GR pack - GR players are LEGENDARY tier with season='GR'
       [players] = await connection.query(
-        "SELECT * FROM players WHERE season = 'GR' ORDER BY RAND() LIMIT 1"
+        "SELECT * FROM players WHERE season = 'GR' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
       );
     } else {
-      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + ICON cards
+      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + ICON cards (NO 25WW/25WUD)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }
@@ -270,17 +270,17 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
       } else if ((option as any).special === '17SSG') {
         [players] = await connection.query(
-          "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
+          "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
           [tier]
         );
       } else if (tier === 'GR') {
         // GR pack - GR players are LEGENDARY tier with season='GR'
         [players] = await connection.query(
-          "SELECT * FROM players WHERE season = 'GR' ORDER BY RAND() LIMIT 1"
+          "SELECT * FROM players WHERE season = 'GR' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
         );
       } else {
         [players] = await connection.query(
-          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
+          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
           [tier]
         );
       }

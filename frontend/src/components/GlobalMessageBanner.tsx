@@ -15,65 +15,39 @@ interface GlobalMessage {
 }
 
 export default function GlobalMessageBanner() {
-  const [messages, setMessages] = useState<GlobalMessage[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentMessage, setCurrentMessage] = useState<GlobalMessage | null>(null);
 
   useEffect(() => {
-    fetchMessages();
-
     // Connect to socket.io for real-time messages
     const socket = io(SOCKET_URL);
 
     socket.on('global_message', (newMessage: GlobalMessage) => {
-      setMessages((prev) => [newMessage, ...prev].slice(0, 50));
-      setCurrentIndex(0); // Show new message immediately
-    });
+      // Show new message immediately
+      setCurrentMessage(newMessage);
 
-    // Poll for new messages every 30 seconds as backup
-    const interval = setInterval(fetchMessages, 30000);
+      // Hide message after 5 seconds
+      setTimeout(() => {
+        setCurrentMessage(null);
+      }, 5000);
+    });
 
     return () => {
       socket.disconnect();
-      clearInterval(interval);
     };
   }, []);
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-
-    // Rotate through messages every 8 seconds
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % messages.length);
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, [messages.length]);
-
-  const fetchMessages = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/shop/megaphone/messages`);
-      if (response.data && response.data.length > 0) {
-        setMessages(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch messages:', error);
-    }
-  };
-
-  if (messages.length === 0) return null;
-
-  const currentMessage = messages[currentIndex];
+  if (!currentMessage) return null;
 
   return (
     <div className="fixed top-20 left-0 right-0 z-40 pointer-events-none overflow-hidden">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         <motion.div
           key={currentMessage.id}
           initial={{ x: '100%' }}
           animate={{ x: '-100%' }}
           exit={{ x: '-100%', opacity: 0 }}
           transition={{
-            duration: 12,
+            duration: 5,
             ease: 'linear',
           }}
           className="flex items-center gap-3 bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 text-white py-3 px-6 shadow-lg whitespace-nowrap"

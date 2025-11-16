@@ -4,15 +4,18 @@ import { Trophy, Lock, Flame, Star, Zap, Crown, Skull } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function VSMode() {
   const { token } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialMode = (searchParams.get('mode') || 'normal') as 'normal' | 'hard';
+
   const [loading, setLoading] = useState(true);
-  const [selectedMode, setSelectedMode] = useState<'normal' | 'hard'>('normal');
+  const [selectedMode, setSelectedMode] = useState<'normal' | 'hard'>(initialMode);
   const [normalCleared, setNormalCleared] = useState<number[]>([]);
   const [hardCleared, setHardCleared] = useState<number[]>([]);
   const [hardUnlocked, setHardUnlocked] = useState(false);

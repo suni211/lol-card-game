@@ -181,7 +181,7 @@ export default function VSBattle() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => navigate('/vsmode')}
+          onClick={() => navigate(`/vsmode?mode=${mode}`)}
           className="mb-6 flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -235,7 +235,7 @@ export default function VSBattle() {
                     </div>
                   )}
 
-                  <button onClick={() => navigate('/vsmode')} className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg transition-colors">
+                  <button onClick={() => navigate(`/vsmode?mode=${mode}`)} className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg transition-colors">
                     스테이지 목록으로
                   </button>
                 </div>

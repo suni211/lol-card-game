@@ -167,6 +167,15 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
       ORDER BY e.position_order ASC
     `, [stageNumber, stageNumber, stageNumber, stageNumber, stageNumber, stage.id]);
 
+    // 무조건 5명이 있어야 함
+    if (enemies.length !== 5) {
+      await connection.rollback();
+      return res.status(500).json({
+        success: false,
+        error: `스테이지 ${stageNumber}의 적 팀 구성에 오류가 있습니다. (${enemies.length}명)`
+      });
+    }
+
     // Get user deck
     const [userDeck]: any = await connection.query(`
       SELECT
@@ -289,15 +298,11 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
 
       if (isHardMode) {
         hardStagesCleared.push(stageNumber);
-        // 하드모드 클리어 시 일반모드도 자동으로 클리어 처리
-        if (!stagesCleared.includes(stageNumber)) {
-          stagesCleared.push(stageNumber);
-        }
       } else {
         stagesCleared.push(stageNumber);
 
-        // Check if all stages cleared (unlock hard mode) - 50단계 올클시 해금
-        if (stagesCleared.length === 50 && !progress.hard_mode_unlocked) {
+        // Check if all stages cleared (unlock hard mode) - 10단계 올클시 해금
+        if (stagesCleared.length === 10 && !progress.hard_mode_unlocked) {
           await connection.query(
             'UPDATE user_vs_progress SET hard_mode_unlocked = TRUE WHERE user_id = ?',
             [userId]
@@ -378,7 +383,7 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
         rewardPoints: actualRewardPoints,
         stagesCleared,
         hardStagesCleared,
-        hardModeUnlocked: progress.hard_mode_unlocked || stagesCleared.length === 50,
+        hardModeUnlocked: progress.hard_mode_unlocked || stagesCleared.length === 10,
         legendaryPackAwarded,
         awardedPlayer,
         alreadyCleared

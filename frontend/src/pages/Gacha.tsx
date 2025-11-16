@@ -399,11 +399,19 @@ export default function Gacha() {
 
         // 타이머 후 처리
         const displayDelay = player.tier === 'GR' ? 6500 : player.tier === 'ICON' ? 5500 : 3500;
-        setTimeout(() => {
+        setTimeout(async () => {
 
-          // 포인트 업데이트
-          const newPoints = user.points - option.cost + (refundPoints || 0);
-          updateUser({ points: newPoints });
+          // 포인트 업데이트 - 백엔드에서 실제 업데이트된 유저 정보 가져오기
+          try {
+            const userResponse = await axios.get(`${API_URL}/auth/me`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (userResponse.data.success) {
+              updateUser(userResponse.data.data);
+            }
+          } catch (error) {
+            console.error('Failed to update user info:', error);
+          }
 
           // 티어에 따라 다른 메시지
           if (player.tier === 'GR') {
@@ -722,7 +730,7 @@ export default function Gacha() {
                   >
                     {option.cost === 0 && dailyFreeUsed ? '내일 다시' : '1회 뽑기'}
                   </button>
-                  {option.cost > 0 && (
+                  {option.cost > 0 && !option.is19G2Light && !option.is19G2Premium && !option.is19G2Test && (
                     <button
                       onClick={() => handleDraw10(option)}
                       disabled={isDrawing || !!(user && user.points < option.cost * 10)}

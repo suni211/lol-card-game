@@ -444,24 +444,18 @@ async function endMatch(matchId: string, io: Server) {
       }
     }
 
-    // Practice vs Ranked rewards (포인트는 MMR 기반으로 조정)
+    // Practice vs Ranked rewards
     let player1PointsChange = 0;
     let player2PointsChange = 0;
 
     if (match.isPractice) {
-      player1PointsChange = player1Won ? 100 : 60;
-      player2PointsChange = player1Won ? 60 : 100;
+      // 일반전: 승리 300, 패배 100
+      player1PointsChange = player1Won ? 300 : 100;
+      player2PointsChange = player1Won ? 100 : 300;
     } else {
-      // 경쟁전: 레이팅 변화에 비례한 포인트 (승리 최소 20, 패배 최소 10)
-      const winPoints = Math.max(20, 100 + Math.abs(player1RatingChange) * 2);
-      const losePoints = Math.max(10, 50 + Math.abs(player1RatingChange));
-
-      player1PointsChange = player1Won ? winPoints : losePoints;
-
-      const winPoints2 = Math.max(20, 100 + Math.abs(player2RatingChange) * 2);
-      const losePoints2 = Math.max(10, 50 + Math.abs(player2RatingChange));
-
-      player2PointsChange = player1Won ? losePoints2 : winPoints2;
+      // 랭크전: 승리 500, 패배 300
+      player1PointsChange = player1Won ? 500 : 300;
+      player2PointsChange = player1Won ? 300 : 500;
     }
 
     // matches 테이블에 저장 (AI 매치는 player2_deck_id를 NULL로)

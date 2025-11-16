@@ -22,7 +22,8 @@
       "Bash(fi)",
       "Bash(ssh:*)",
       "Bash(node dist/server.js:*)",
-      "Bash(mysql:*)"
+      "Bash(mysql:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

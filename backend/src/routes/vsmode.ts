@@ -136,7 +136,7 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
       }
     }
 
-    // Get enemy deck for this stage
+    // Get enemy deck for this stage - using subquery to get exactly one player per position
     const [enemies]: any = await connection.query(`
       SELECT
         e.player_name,
@@ -145,10 +145,27 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
         e.position_order,
         p.*
       FROM vs_stage_enemies e
-      JOIN players p ON e.player_name = p.name
+      JOIN players p ON p.id = (
+        SELECT p2.id
+        FROM players p2
+        WHERE p2.name = e.player_name
+          AND (
+            (? <= 11 AND p2.team IN ('LCP', 'LTA'))
+            OR (? BETWEEN 12 AND 49 AND p2.tier != 'ICON' AND p2.region IN ('LPL', 'LCK', 'LEC'))
+            OR (? = 50 AND p2.tier = 'ICON')
+          )
+        ORDER BY
+          CASE
+            WHEN ? = 50 THEN (CASE WHEN p2.tier = 'ICON' THEN 1 ELSE 2 END)
+            WHEN ? <= 11 THEN (CASE WHEN p2.team IN ('LCP', 'LTA') THEN 1 ELSE 2 END)
+            ELSE (CASE WHEN p2.tier != 'ICON' THEN 1 ELSE 2 END)
+          END,
+          p2.overall DESC
+        LIMIT 1
+      )
       WHERE e.stage_id = ?
       ORDER BY e.position_order ASC
-    `, [stage.id]);
+    `, [stageNumber, stageNumber, stageNumber, stageNumber, stageNumber, stage.id]);
 
     // Get user deck
     const [userDeck]: any = await connection.query(`

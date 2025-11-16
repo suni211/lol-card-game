@@ -202,12 +202,32 @@ UNION ALL SELECT id, 'Rekkles', 1, 2, 4 FROM vs_stages WHERE stage_number = 16
 UNION ALL SELECT id, 'Hylissang', 1, 2, 5 FROM vs_stages WHERE stage_number = 16;
 
 -- Stage 17: LPL 중위팀
+-- Excluding ICON tier to prevent duplicates
 INSERT INTO vs_stage_enemies (stage_id, player_name, enhancement_level, hard_enhancement_level, position_order)
-SELECT id, 'TheShy', 1, 2, 1 FROM vs_stages WHERE stage_number = 17
-UNION ALL SELECT id, 'Karsa', 1, 2, 2 FROM vs_stages WHERE stage_number = 17
-UNION ALL SELECT id, 'Rookie', 1, 2, 3 FROM vs_stages WHERE stage_number = 17
-UNION ALL SELECT id, 'JackeyLove', 1, 2, 4 FROM vs_stages WHERE stage_number = 17
-UNION ALL SELECT id, 'Baolan', 1, 2, 5 FROM vs_stages WHERE stage_number = 17;
+SELECT vs.id, p.name, 1, 2, 1
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 17 AND p.name = 'TheShy' AND p.tier != 'ICON' AND p.region = 'LPL' LIMIT 1
+UNION ALL
+SELECT vs.id, p.name, 1, 2, 2
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 17 AND p.name = 'Karsa' AND p.region IN ('LPL', 'LCP') LIMIT 1
+UNION ALL
+SELECT vs.id, p.name, 1, 2, 3
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 17 AND p.name = 'Rookie' AND p.tier != 'ICON' AND p.region = 'LPL' LIMIT 1
+UNION ALL
+SELECT vs.id, p.name, 1, 2, 4
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 17 AND p.name = 'JackeyLove' AND p.region = 'LPL' LIMIT 1
+UNION ALL
+SELECT vs.id, p.name, 1, 2, 5
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 17 AND p.name = 'Baolan' AND p.region = 'LPL' LIMIT 1;
 
 -- Stage 18: LCK 강팀
 INSERT INTO vs_stage_enemies (stage_id, player_name, enhancement_level, hard_enhancement_level, position_order)
@@ -456,9 +476,29 @@ UNION ALL SELECT id, 'Ruler', 10, 10, 4 FROM vs_stages WHERE stage_number = 49
 UNION ALL SELECT id, 'Keria', 10, 10, 5 FROM vs_stages WHERE stage_number = 49;
 
 -- Stage 50: 궁극의 도전 - ICON 올스타 10강
+-- Using ICON tier players specifically to avoid duplicates
 INSERT INTO vs_stage_enemies (stage_id, player_name, enhancement_level, hard_enhancement_level, position_order)
-SELECT id, 'Nuguri', 10, 10, 1 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'Bengi', 10, 10, 2 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'Perkz', 10, 10, 3 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'Uzi', 10, 10, 4 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'Mata', 10, 10, 5 FROM vs_stages WHERE stage_number = 50;
+SELECT vs.id, p.name, 10, 10, 1
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 50 AND p.name = 'Nuguri' AND p.tier = 'ICON'
+UNION ALL
+SELECT vs.id, p.name, 10, 10, 2
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 50 AND p.name = 'Bengi' AND p.tier = 'ICON'
+UNION ALL
+SELECT vs.id, p.name, 10, 10, 3
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 50 AND p.name = 'Perkz' AND p.tier = 'ICON'
+UNION ALL
+SELECT vs.id, p.name, 10, 10, 4
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 50 AND p.name = 'Uzi' AND p.tier = 'ICON'
+UNION ALL
+SELECT vs.id, p.name, 10, 10, 5
+FROM vs_stages vs
+CROSS JOIN players p
+WHERE vs.stage_number = 50 AND p.name = 'Mata' AND p.tier = 'ICON';

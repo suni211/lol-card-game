@@ -47,31 +47,35 @@ INSERT INTO player_market_prices (player_id, base_price, current_price, price_fl
 SELECT
   id,
   CASE
-    WHEN tier = 'COMMON' THEN 300
-    WHEN tier = 'RARE' THEN 500
-    WHEN tier = 'EPIC' THEN 1000
+    WHEN tier = 'ICON' THEN 5000
     WHEN tier = 'LEGENDARY' THEN 2000
+    WHEN tier = 'EPIC' THEN 1000
+    WHEN tier = 'RARE' THEN 500
+    WHEN tier = 'COMMON' THEN 300
     ELSE 300
   END as base_price,
   CASE
-    WHEN tier = 'COMMON' THEN 300
-    WHEN tier = 'RARE' THEN 500
-    WHEN tier = 'EPIC' THEN 1000
+    WHEN tier = 'ICON' THEN 5000
     WHEN tier = 'LEGENDARY' THEN 2000
+    WHEN tier = 'EPIC' THEN 1000
+    WHEN tier = 'RARE' THEN 500
+    WHEN tier = 'COMMON' THEN 300
     ELSE 300
   END as current_price,
   CASE
-    WHEN tier = 'COMMON' THEN 200
-    WHEN tier = 'RARE' THEN 400
-    WHEN tier = 'EPIC' THEN 900
+    WHEN tier = 'ICON' THEN 4500
     WHEN tier = 'LEGENDARY' THEN 1900
+    WHEN tier = 'EPIC' THEN 900
+    WHEN tier = 'RARE' THEN 400
+    WHEN tier = 'COMMON' THEN 200
     ELSE 200
   END as price_floor,
   CASE
-    WHEN tier = 'COMMON' THEN 400
-    WHEN tier = 'RARE' THEN 600
-    WHEN tier = 'EPIC' THEN 1100
+    WHEN tier = 'ICON' THEN 5500
     WHEN tier = 'LEGENDARY' THEN 2100
+    WHEN tier = 'EPIC' THEN 1100
+    WHEN tier = 'RARE' THEN 600
+    WHEN tier = 'COMMON' THEN 400
     ELSE 400
   END as price_ceiling
 FROM players

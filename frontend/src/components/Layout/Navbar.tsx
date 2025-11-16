@@ -94,6 +94,7 @@ export default function Navbar() {
     { path: '/missions', label: '미션' },
     { path: '/achievements', label: '업적' },
     { path: '/trade', label: '트레이드' },
+    { path: '/coupon', label: '쿠폰' },
     { path: '/notices', label: '공지사항' },
     { path: '/suggestions', label: '건의사항' },
   ];

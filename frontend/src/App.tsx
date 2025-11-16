@@ -29,6 +29,8 @@ import Admin from './pages/Admin';
 import Market from './pages/Market';
 import VSMode from './pages/VSMode';
 import VSBattle from './pages/VSBattle';
+import Coupon from './pages/Coupon';
+import AdminCoupon from './pages/AdminCoupon';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -225,6 +227,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Market />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coupon"
+            element={
+              <ProtectedRoute>
+                <Coupon />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/coupon"
+            element={
+              <ProtectedRoute>
+                <AdminCoupon />
               </ProtectedRoute>
             }
           />

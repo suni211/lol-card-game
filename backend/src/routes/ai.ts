@@ -81,16 +81,16 @@ function calculateAIDifficulty(aiWins: number, aiLosses: number): number {
 
 // Calculate points reward based on difficulty
 function calculatePointsReward(aiPower: number, playerPower: number, won: boolean): number {
-  if (!won) return 50; // Loss gives small reward (increased from 20)
+  if (!won) return 30; // Loss gives small reward
 
   const difficultyRatio = aiPower / playerPower;
 
-  // Base reward increased
-  let reward = 100;
+  // Base reward
+  let reward = 60;
 
-  if (difficultyRatio >= 1.5) reward = 300; // Very hard AI (increased from 150)
-  else if (difficultyRatio >= 1.2) reward = 200; // Hard AI (increased from 100)
-  else if (difficultyRatio >= 0.9) reward = 150; // Normal AI (increased from 70)
+  if (difficultyRatio >= 1.5) reward = 150; // Very hard AI
+  else if (difficultyRatio >= 1.2) reward = 100; // Hard AI
+  else if (difficultyRatio >= 0.9) reward = 80; // Normal AI
 
   return reward;
 }
@@ -190,10 +190,10 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     // Calculate rewards
     let pointsReward = calculatePointsReward(aiPower, playerPower, won);
 
-    // Win streak bonus: +10P per streak level (max 100P at 10 streak)
+    // Win streak bonus: +5P per streak level (max 50P at 10 streak)
     let streakBonus = 0;
     if (won && newStreak > 0) {
-      streakBonus = newStreak * 10;
+      streakBonus = newStreak * 5;
       pointsReward += streakBonus;
     }
 

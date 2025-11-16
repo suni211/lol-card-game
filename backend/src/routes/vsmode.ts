@@ -4,6 +4,20 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// 오버롤 기반 등급 구분
+function getTierByOverall(overall: number): string {
+  if (overall >= 107) return 'LEGENDARY';
+  if (overall >= 91) return 'EPIC';
+  if (overall >= 80) return 'RARE';
+  return 'COMMON';
+}
+
+// SKT와 T1은 같은 팀으로 취급
+function normalizeTeamName(team: string): string {
+  if (team === 'SKT' || team === 'T1') return 'T1';
+  return team;
+}
+
 // Get VS Mode stages and user progress
 router.get('/stages', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
@@ -137,43 +151,88 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
     }
 
     // Get enemy deck for this stage - using subquery to get exactly one player per position
-    const [enemies]: any = await connection.query(`
-      SELECT
-        e.player_name,
-        e.enhancement_level,
-        e.hard_enhancement_level,
-        e.position_order,
-        p.*
-      FROM vs_stage_enemies e
-      JOIN players p ON p.id = (
-        SELECT p2.id
-        FROM players p2
-        WHERE p2.name = e.player_name
-          AND (
-            (? <= 11 AND p2.team IN ('LCP', 'LTA'))
-            OR (? BETWEEN 12 AND 49 AND p2.tier != 'ICON' AND p2.region IN ('LPL', 'LCK', 'LEC'))
-            OR (? = 50 AND p2.tier = 'ICON')
-          )
-        ORDER BY
-          CASE
-            WHEN ? = 50 THEN (CASE WHEN p2.tier = 'ICON' THEN 1 ELSE 2 END)
-            WHEN ? <= 11 THEN (CASE WHEN p2.team IN ('LCP', 'LTA') THEN 1 ELSE 2 END)
-            ELSE (CASE WHEN p2.tier != 'ICON' THEN 1 ELSE 2 END)
-          END,
-          p2.overall DESC
-        LIMIT 1
-      )
-      WHERE e.stage_id = ?
-      ORDER BY e.position_order ASC
-    `, [stageNumber, stageNumber, stageNumber, stageNumber, stageNumber, stage.id]);
+    const [enemyConfig]: any = await connection.query(`
+      SELECT player_name, enhancement_level, hard_enhancement_level, position_order
+      FROM vs_stage_enemies
+      WHERE stage_id = ?
+      ORDER BY position_order ASC
+    `, [stage.id]);
 
-    // 무조건 5명이 있어야 함
-    if (enemies.length !== 5) {
-      await connection.rollback();
-      return res.status(500).json({
-        success: false,
-        error: `스테이지 ${stageNumber}의 적 팀 구성에 오류가 있습니다. (${enemies.length}명)`
-      });
+    // 각 포지션별로 선수 매칭
+    const enemies: any[] = [];
+    const positions = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
+
+    for (let i = 0; i < enemyConfig.length && i < 5; i++) {
+      const config = enemyConfig[i];
+      const position = positions[i];
+
+      // 우선순위 1: 이름과 조건이 맞는 선수
+      let [player]: any = await connection.query(`
+        SELECT * FROM players
+        WHERE name = ? AND position = ?
+          AND (
+            (? <= 11 AND team IN ('LCP', 'LTA'))
+            OR (? BETWEEN 12 AND 49 AND tier != 'ICON' AND region IN ('LPL', 'LCK', 'LEC'))
+            OR (? = 50 AND tier = 'ICON')
+          )
+        ORDER BY overall DESC
+        LIMIT 1
+      `, [config.player_name, position, stageNumber, stageNumber, stageNumber]);
+
+      // 우선순위 2: 이름만 맞는 선수
+      if (player.length === 0) {
+        [player] = await connection.query(`
+          SELECT * FROM players
+          WHERE name = ? AND position = ?
+          ORDER BY overall DESC
+          LIMIT 1
+        `, [config.player_name, position]);
+      }
+
+      // 우선순위 3: 포지션만 맞는 랜덤 선수
+      if (player.length === 0) {
+        [player] = await connection.query(`
+          SELECT * FROM players
+          WHERE position = ?
+            AND (
+              (? <= 11 AND team IN ('LCP', 'LTA'))
+              OR (? BETWEEN 12 AND 49 AND tier != 'ICON' AND region IN ('LPL', 'LCK', 'LEC'))
+              OR (? = 50 AND tier = 'ICON')
+            )
+          ORDER BY RAND()
+          LIMIT 1
+        `, [position, stageNumber, stageNumber, stageNumber]);
+      }
+
+      if (player.length > 0) {
+        enemies.push({
+          ...player[0],
+          player_name: config.player_name,
+          enhancement_level: config.enhancement_level,
+          hard_enhancement_level: config.hard_enhancement_level,
+          position_order: config.position_order
+        });
+      }
+    }
+
+    // 5명이 안되면 나머지는 랜덤으로 채움
+    while (enemies.length < 5) {
+      const position = positions[enemies.length];
+      const [randomPlayer]: any = await connection.query(`
+        SELECT * FROM players
+        WHERE position = ?
+        ORDER BY RAND()
+        LIMIT 1
+      `, [position]);
+
+      if (randomPlayer.length > 0) {
+        enemies.push({
+          ...randomPlayer[0],
+          enhancement_level: 0,
+          hard_enhancement_level: 0,
+          position_order: enemies.length + 1
+        });
+      }
     }
 
     // Get user deck

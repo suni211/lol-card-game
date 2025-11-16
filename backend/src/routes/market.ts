@@ -4,6 +4,14 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// Calculate enhancement bonus
+function calculateEnhancementBonus(level: number): number {
+  if (level <= 0) return 0;
+  if (level <= 4) return level; // 1~4강: +1씩
+  if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
+  return 10 + (level - 7) * 4; // 8~10강: +4씩
+}
+
 // Get market listings
 router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -78,6 +86,7 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
 router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { playerId } = req.params;
+    const level = parseInt(req.query.level as string) || 0;
 
     // Get player price info
     const [priceInfo]: any = await pool.query(
@@ -86,7 +95,8 @@ router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) =>
         p.name,
         p.tier,
         p.team,
-        p.position
+        p.position,
+        p.overall
       FROM player_market_prices pmp
       JOIN players p ON pmp.player_id = p.id
       WHERE pmp.player_id = ?`,
@@ -96,6 +106,19 @@ router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) =>
     if (priceInfo.length === 0) {
       return res.status(404).json({ success: false, error: 'Player not found' });
     }
+
+    // Adjust price range based on enhancement level
+    const enhancementBonus = calculateEnhancementBonus(level);
+    const baseOverall = priceInfo[0].overall;
+    const enhancedOverall = baseOverall + enhancementBonus;
+    const priceMultiplier = enhancedOverall / baseOverall;
+
+    const adjustedPriceInfo = {
+      ...priceInfo[0],
+      price_floor: Math.floor(priceInfo[0].price_floor * priceMultiplier),
+      price_ceiling: Math.floor(priceInfo[0].price_ceiling * priceMultiplier),
+      current_price: Math.floor(priceInfo[0].current_price * priceMultiplier),
+    };
 
     // Get recent transactions
     const [recentTransactions]: any = await pool.query(
@@ -119,7 +142,7 @@ router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) =>
     res.json({
       success: true,
       data: {
-        priceInfo: priceInfo[0],
+        priceInfo: adjustedPriceInfo,
         recentTransactions,
         priceHistory,
       },
@@ -150,7 +173,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get card info
     const [cards]: any = await connection.query(
-      `SELECT uc.*, p.id as player_id, p.tier
+      `SELECT uc.*, p.id as player_id, p.tier, p.overall
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id = ? AND uc.user_id = ?`,
@@ -181,7 +204,14 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
       });
     }
 
-    const { price_floor, price_ceiling } = priceInfo[0];
+    // Adjust price range based on enhancement level
+    const enhancementBonus = calculateEnhancementBonus(card.level);
+    const baseOverall = card.overall;
+    const enhancedOverall = baseOverall + enhancementBonus;
+    const priceMultiplier = enhancedOverall / baseOverall;
+
+    const price_floor = Math.floor(priceInfo[0].price_floor * priceMultiplier);
+    const price_ceiling = Math.floor(priceInfo[0].price_ceiling * priceMultiplier);
 
     // Validate price range
     if (price < price_floor || price > price_ceiling) {

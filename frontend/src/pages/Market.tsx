@@ -179,7 +179,7 @@ export default function Market() {
 
   const handleSellClick = async (card: UserCard) => {
     try {
-      const response = await axios.get(`${API_URL}/market/player/${card.player.id}`, {
+      const response = await axios.get(`${API_URL}/market/player/${card.player.id}?level=${card.level}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -456,13 +456,25 @@ export default function Market() {
               >
                 <div className={`h-2 bg-gradient-to-r ${getTierColor(card.player.tier)}`} />
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    {card.player.name}
-                  </h3>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {card.player.name}
+                    </h3>
+                    {card.level > 0 && (
+                      <div className="px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded text-white text-xs font-bold">
+                        +{card.level}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className={`${getTeamColor(card.player.team)} text-white px-2 py-0.5 rounded text-xs font-bold`}>
-                      {card.player.team}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`${getTeamColor(card.player.team)} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                        {card.player.team}
+                      </span>
+                      <span className={`${getPositionColor(card.player.position)} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                        {card.player.position}
+                      </span>
+                    </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       {card.player.overall + calculateEnhancementBonus(card.level)}
                     </div>
@@ -493,9 +505,22 @@ export default function Market() {
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                         {listing.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {listing.tier} · {listing.position}
-                      </p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`${getTierColor(listing.tier)} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                          {listing.tier}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {listing.position}
+                        </span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          {listing.overall + calculateEnhancementBonus(listing.level)} OVR
+                        </span>
+                        {listing.level > 0 && (
+                          <span className="text-xs text-yellow-600 dark:text-yellow-400 font-bold">
+                            +{listing.level}강
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-6">

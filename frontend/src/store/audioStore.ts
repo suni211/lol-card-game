@@ -63,16 +63,33 @@ export const useAudioStore = create<AudioState>()(
 
         // 같은 트랙이면 재생만
         if (currentTrack === trackPath && audioElement.paused) {
-          audioElement.play().catch(err => console.error('Audio play error:', err));
+          audioElement.play().catch(err => {
+            // 파일이 없으면 조용히 무시
+            if (err.name !== 'NotSupportedError') {
+              console.warn('Audio play error:', err);
+            }
+          });
           set({ isPlaying: true });
           return;
         }
 
         // 다른 트랙이면 변경
         if (currentTrack !== trackPath) {
+          // 에러 핸들러 추가
+          audioElement.onerror = () => {
+            // 파일 로드 실패 시 조용히 무시
+            set({ isPlaying: false, currentTrack: null });
+          };
+
           audioElement.src = trackPath;
           audioElement.volume = isMuted ? 0 : volume;
-          audioElement.play().catch(err => console.error('Audio play error:', err));
+          audioElement.play().catch(err => {
+            // 파일이 없으면 조용히 무시
+            if (err.name !== 'NotSupportedError') {
+              console.warn('Audio play error:', err);
+            }
+            set({ isPlaying: false });
+          });
           set({ currentTrack: trackPath, isPlaying: true });
         }
       },

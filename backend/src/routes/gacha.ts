@@ -12,9 +12,9 @@ const GACHA_OPTIONS = {
   basic: { cost: 100, probabilities: { gr: 0.001, icon: 0.01, legendary: 0.05, epic: 0.5, rare: 10, common: 89.439 } },
   premium: { cost: 300, probabilities: { gr: 0.005, icon: 0.01, legendary: 0.2, epic: 3, rare: 18, common: 78.785 } },
   ultra: { cost: 500, probabilities: { gr: 0.01, icon: 0.01, legendary: 0.5, epic: 6, rare: 25, common: 68.48 } },
+  gr_premium: { cost: 3000, probabilities: { gr: 0.5, icon: 0.05, legendary: 2, epic: 12, rare: 35.45, common: 50 } }, // GR 확률 높은 프리미엄 팩
   worlds_winner: { cost: 2500, probabilities: { gr: 0.01, icon: 0.01, legendary: 5, epic: 25, rare: 69.98, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   ssg_2017: { cost: 6500, probabilities: { gr: 0.01, icon: 0.01, legendary: 9.5, epic: 90.48, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
-  msi_pack: { cost: 2500, probabilities: { gr: 0.01, icon: 0.01, legendary: 5, epic: 30, rare: 64.98, common: 0 }, special: 'MSI' }, // MSI cards + Rare+ only (LCK보다 우수)
   icon_test: { cost: 0, probabilities: { gr: 0, icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
   gr_test: { cost: 0, probabilities: { gr: 100, icon: 0, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only GR test pack
 };
@@ -104,16 +104,10 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
         [tier]
       );
-    } else if ((option as any).special === 'MSI') {
-      // MSI pack - Only MSI cards + 25 season cards + 25HW cards + ICON cards
-      [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (name LIKE 'MSI %' OR season = '25' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
-        [tier]
-      );
     } else {
-      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + ICON cards
+      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + ICON cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR tier = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }

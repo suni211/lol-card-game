@@ -98,6 +98,21 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
   try {
     await connection.beginTransaction();
 
+    // Get random AI user
+    const [aiUsers]: any = await connection.query(`
+      SELECT id, username, rating
+      FROM users
+      WHERE username LIKE 'AI_%'
+      ORDER BY RAND()
+      LIMIT 1
+    `);
+
+    if (aiUsers.length === 0) {
+      throw new Error('No AI users available');
+    }
+
+    const aiUser = aiUsers[0];
+
     // Get player's deck power
     const playerPower = await calculateDeckPower(player.deckId);
 
@@ -115,15 +130,15 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
     const powerRatio = aiPower / playerPower;
     const isPlayerWin = Math.random() > (powerRatio - 0.5); // Slightly favor player
 
-    const winnerId = isPlayerWin ? player.userId : null; // null for AI
+    const winnerId = isPlayerWin ? player.userId : aiUser.id;
     const player1Score = matchSimulation.finalScore.player1;
     const player2Score = Math.floor(player1Score * powerRatio);
 
-    // Create match record
+    // Create match record with AI user
     const [matchResult]: any = await connection.query(`
       INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at, match_type)
-      VALUES (?, NULL, ?, NULL, ?, ?, ?, 'COMPLETED', NOW(), 'PRACTICE')
-    `, [player.userId, player.deckId, isPlayerWin ? player.userId : null, player1Score, player2Score]);
+      VALUES (?, ?, ?, NULL, ?, ?, ?, 'COMPLETED', NOW(), 'PRACTICE')
+    `, [player.userId, aiUser.id, player.deckId, winnerId, player1Score, player2Score]);
 
     const matchId = matchResult.insertId;
 
@@ -133,7 +148,7 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
     io.to(player.socketId).emit('match_found', {
       matchId,
       opponent: {
-        username: 'AI 상대',
+        username: aiUser.username,
         deckId: null,
         power: aiPower,
       },

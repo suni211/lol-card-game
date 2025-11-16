@@ -562,7 +562,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
 });
 
 // Enhancement success rates per level (0→1, 1→2, ..., 9→10) - 초반 쉬움, 후반 극악
-const BASE_ENHANCEMENT_RATES = [90, 80, 70, 60, 50, 40, 20, 10, 5, 1];
+const BASE_ENHANCEMENT_RATES = [80, 70, 60, 50, 40, 30, 15, 8, 3, 1]; // 기본 확률 대폭 하향
 const MAX_ENHANCEMENT_LEVEL = 10;
 
 // OVR downgrade amounts on failure (based on enhancement level)
@@ -578,25 +578,24 @@ function calculateEnhancementRate(
 ): number {
   let successRate = baseRate;
 
-  // Same player bonus: +8% (기존 +15%에서 재하향)
+  // Same player bonus: +5% (추가 하향)
   if (targetCard.player_id === materialCard.player_id) {
-    successRate += 8;
+    successRate += 5;
   }
 
-  // Tier bonus/penalty (기존 10/5/3에서 5/3/1로 재하향)
-  const tierValues: any = { LEGENDARY: 5, EPIC: 3, RARE: 1, COMMON: 0 };
-  const tierBonus = tierValues[materialPlayer.tier] || 0;
-  successRate += tierBonus;
+  // Tier bonus (티어당 고정 보너스 제거, 오버롤에만 의존)
+  // LEGENDARY, EPIC, RARE, COMMON의 티어 보너스 제거
 
-  // Overall bonus: every 10 overall above 70 = +1% (기존 +3%에서 재하향)
-  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 1;
+  // Overall bonus: 오버롤에 비례 (60 이상부터 시작)
+  // 60: 0%, 70: +1%, 80: +2%, 90: +3%, 100: +4%, 110: +5%, 120: +6%
+  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 60) / 10);
   successRate += overallBonus;
 
-  // Enhancement level of material: each level = +0.5% (기존 +1%에서 재하향)
-  successRate += materialCard.level * 0.5;
+  // Enhancement level of material: each level = +0.3% (추가 하향)
+  successRate += materialCard.level * 0.3;
 
-  // Cap at 80% max, 3% min (기존 85%/3%에서 재하향)
-  return Math.min(80, Math.max(3, successRate));
+  // Cap at 70% max, 2% min (최대 확률 하향)
+  return Math.min(70, Math.max(2, successRate));
 }
 
 // Get enhancement rate (for preview before enhance)

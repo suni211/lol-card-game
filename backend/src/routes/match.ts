@@ -94,19 +94,23 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     [deckData.support_card_id]: 'SUPPORT',
   };
 
-  // Calculate enhancement bonus
-  const calculateEnhancementBonus = (level: number): number => {
+  // Calculate enhancement bonus (대폭 하향)
+  const calculateEnhancementBonus = (level: number, overall: number): number => {
+    // 오버롤에 비례한 강화 보너스
+    // 낮은 오버롤 카드는 보너스가 적고, 높은 오버롤 카드는 보너스가 많음
+    const baseBonus = overall >= 100 ? 1.0 : overall >= 90 ? 0.8 : overall >= 80 ? 0.6 : 0.5;
+
     if (level <= 4) {
-      return level; // 1~4강: +1씩
+      return Math.floor(level * baseBonus); // 1~4강: 오버롤에 비례
     } else if (level <= 7) {
-      return 4 + (level - 4) * 2; // 5~7강: +2씩
+      return Math.floor(4 * baseBonus + (level - 4) * baseBonus * 1.5); // 5~7강: 조금 더 증가
     } else {
-      return 10 + (level - 7) * 4; // 8~10강: +4씩
+      return Math.floor(4 * baseBonus + 3 * baseBonus * 1.5 + (level - 7) * baseBonus * 2); // 8~10강: 더 증가하지만 여전히 제한적
     }
   };
 
   cards.forEach((card: any) => {
-    const enhancementBonus = calculateEnhancementBonus(card.level);
+    const enhancementBonus = calculateEnhancementBonus(card.level, card.overall);
     let power = card.overall + enhancementBonus;
 
     // Wrong position penalty
@@ -173,6 +177,17 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     synergyBonus += 1;
   }
 
+  // 2019 G2 GOLDEN ROAD CLOSE: 5명 모두 19G2 선수 (+3 판단력, +3 오브젝트, +3 딜량)
+  // This is equivalent to +3 OVR for overall power calculation
+  const g2Players = ['Wunder', 'Jankos', 'Caps', 'Perkz', 'Mikyx'];
+  const hasG2Synergy = g2Players.every(name => {
+    const playerDetail = playerDetails.find((p: any) => p.name === name);
+    return playerDetail && playerDetail.season === '19G2';
+  });
+  if (hasG2Synergy) {
+    synergyBonus += 3;
+  }
+
   totalPower += synergyBonus;
 
   return totalPower;
@@ -182,7 +197,9 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
 async function calculateDeckStatPower(
   connection: any,
   deckId: number,
-  stat: 'laning' | 'teamfight' | 'macro' | 'mental'
+  stat: 'laning' | 'teamfight' | 'macro' | 'mental',
+  currentScore?: { player1: number; player2: number },
+  strategyType?: string
 ): Promise<number> {
   const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);
 
@@ -200,19 +217,73 @@ async function calculateDeckStatPower(
   if (cardIds.length === 0) return 0;
 
   const [cards]: any = await connection.query(`
-    SELECT uc.level, p.${stat} as stat_value, p.overall
+    SELECT uc.level, p.${stat} as stat_value, p.overall, p.name, p.season,
+           p.trait1, p.trait1_effect, p.trait2, p.trait2_effect, p.trait3, p.trait3_effect
     FROM user_cards uc
     JOIN players p ON uc.player_id = p.id
     WHERE uc.id IN (?)
   `, [cardIds]);
 
   let totalPower = 0;
+  let traitBonus = 0;
+
   cards.forEach((card: any) => {
     // Combine stat with overall and level
     const statContribution = (card.stat_value || 50) * 0.7; // 70% from specific stat
     const overallContribution = card.overall * 0.3; // 30% from overall
-    totalPower += statContribution + overallContribution + card.level;
+    let cardPower = statContribution + overallContribution + card.level;
+
+    // Apply trait effects for 19G2 players
+    if (card.season === '19G2') {
+      // Parse and apply trait1_effect
+      if (card.trait1_effect) {
+        try {
+          const effect = JSON.parse(card.trait1_effect);
+
+          // 무지성 돌격: +3 when leading 2-0, -5 penalty if not
+          if (effect.type === 'conditional' && currentScore) {
+            if (currentScore.player1 === 2 && currentScore.player2 === 0) {
+              traitBonus += effect.buff || 0;
+            } else {
+              traitBonus += effect.debuff || 0;
+            }
+          }
+
+          // 획기적인 운영: +1 buff, +5 macro on SPLIT strategy
+          if (effect.type === 'strategy' && strategyType) {
+            if (strategyType === effect.strategy) {
+              traitBonus += effect.buff || 0;
+              if (stat === 'macro') {
+                traitBonus += effect.macro_bonus || 0;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse trait1_effect:', e);
+        }
+      }
+
+      // Parse and apply trait2_effect
+      if (card.trait2_effect) {
+        try {
+          const effect = JSON.parse(card.trait2_effect);
+
+          // 새가슴: -3 when tied 2-2
+          if (effect.type === 'mental_debuff' && currentScore) {
+            if (currentScore.player1 === 2 && currentScore.player2 === 2) {
+              traitBonus += effect.debuff || 0;
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse trait2_effect:', e);
+        }
+      }
+    }
+
+    totalPower += cardPower;
   });
+
+  totalPower += traitBonus;
 
   return totalPower;
 }
@@ -281,9 +352,22 @@ async function simulateMatch(
       p2Strategy = p2Strategies.macro_strategy;
     }
 
-    // Calculate stat-specific power for this phase
-    const p1StatPower = await calculateDeckStatPower(connection, player1DeckId, statType);
-    const p2StatPower = await calculateDeckStatPower(connection, player2DeckId, statType);
+    // Calculate stat-specific power for this phase with current score and strategy
+    const currentScore = { player1: p1TotalScore, player2: p2TotalScore };
+    const p1StatPower = await calculateDeckStatPower(
+      connection,
+      player1DeckId,
+      statType,
+      currentScore,
+      p1Strategy
+    );
+    const p2StatPower = await calculateDeckStatPower(
+      connection,
+      player2DeckId,
+      statType,
+      { player1: p2TotalScore, player2: p1TotalScore }, // Reverse score for opponent perspective
+      p2Strategy
+    );
 
     // Calculate advantage for this game
     const advantage = calculateStrategyAdvantage(p1Strategy, p2Strategy, strategyType);

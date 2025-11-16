@@ -102,6 +102,9 @@ export interface GachaOption {
     gr?: number;
   };
   special?: boolean;
+  is19G2Light?: boolean;
+  is19G2Premium?: boolean;
+  description?: string;
 }
 
 export interface GachaResult {

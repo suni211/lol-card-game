@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Trophy, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import type { Player, GachaOption } from '../types';
 import axios from 'axios';
+import Gacha19G2Cutscene from '../components/Gacha19G2Cutscene';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -17,6 +18,30 @@ export default function Gacha() {
   const [show10Result, setShow10Result] = useState(false);
   const [dailyFreeUsed, setDailyFreeUsed] = useState(false);
   const [revealStep, setRevealStep] = useState(0); // 0: loading, 1: position, 2: season, 3: team, 4: final
+  const [show19G2Cutscene, setShow19G2Cutscene] = useState(false);
+  const [is19G2Guaranteed, setIs19G2Guaranteed] = useState(false);
+  const [pityCount, setPityCount] = useState(0);
+
+  // Load pity count on mount
+  useEffect(() => {
+    const loadPityCount = async () => {
+      if (!user || !token) return;
+
+      try {
+        const response = await axios.get(`${API_URL}/gacha19g2/pity`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data) {
+          setPityCount(response.data.pullCount || 0);
+        }
+      } catch (error) {
+        console.error('Failed to load pity count:', error);
+      }
+    };
+
+    loadPityCount();
+  }, [user, token]);
 
   const gachaOptions: GachaOption[] = [
     {
@@ -92,6 +117,36 @@ export default function Gacha() {
         gr: 0.01,
       },
       special: true,
+    },
+    {
+      cost: 500,
+      label: '19G2 라이트 팩',
+      probabilities: {
+        common: 60,
+        rare: 25,
+        epic: 10,
+        legendary: 5,
+        icon: 0,
+        gr: 0,
+      },
+      special: true,
+      is19G2Light: true,
+      description: '2019 G2 골든로드 라이트 팩 - 19G2 카드 0.02% 확률',
+    },
+    {
+      cost: 15000,
+      label: '19G2 프리미엄 팩',
+      probabilities: {
+        common: 0,
+        rare: 0,
+        epic: 70,
+        legendary: 30,
+        icon: 0,
+        gr: 0,
+      },
+      special: true,
+      is19G2Premium: true,
+      description: '2019 G2 골든로드 프리미엄 팩 - 에픽 이상 확정, 19G2 카드 0.132%, 50회 천장',
     },
     // Admin-only test packs
     ...(user?.isAdmin ? [
@@ -173,7 +228,77 @@ export default function Gacha() {
     setShowResult(false);
 
     try {
-      // 가챠 타입 결정
+      // Check if this is a 19G2 pack
+      if (option.is19G2Light || option.is19G2Premium) {
+        const endpoint = option.is19G2Light ? '/gacha19g2/light' : '/gacha19g2/premium';
+
+        const response = await axios.post(
+          `${API_URL}${endpoint}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.success) {
+          const { card, pityCount: newPityCount, nextGuaranteed } = response.data;
+
+          // Check if this is a 19G2 card
+          if (card.player.season === '19G2') {
+            // Show 19G2 cutscene
+            setIs19G2Guaranteed(card.isGuaranteed || false);
+            setShow19G2Cutscene(true);
+
+            // After cutscene completes, show the card
+            setTimeout(() => {
+              setShow19G2Cutscene(false);
+              setDrawnCard(card.player);
+              setIsDrawing(false);
+              setShowResult(true);
+
+              // Update user points
+              updateUser({ points: user.points - option.cost });
+
+              toast.success('🏆 2019 G2 카드 획득! 골든로드에 가장 가까웠던 전설!', { duration: 8000 });
+
+              if (option.is19G2Premium && newPityCount !== undefined) {
+                setPityCount(newPityCount);
+                if (nextGuaranteed && nextGuaranteed > 0) {
+                  toast(`천장까지 ${nextGuaranteed}회 남음`, { icon: 'ℹ️' });
+                }
+              }
+            }, 6000);
+          } else {
+            // Regular card from 19G2 pack
+            setDrawnCard(card.player);
+
+            // Regular reveal sequence
+            setTimeout(() => setRevealStep(1), 500);
+            setTimeout(() => setRevealStep(2), 1500);
+            setTimeout(() => setRevealStep(3), 2500);
+            setTimeout(() => {
+              setRevealStep(4);
+              setIsDrawing(false);
+              setShowResult(true);
+
+              updateUser({ points: user.points - option.cost });
+
+              if (option.is19G2Premium && newPityCount !== undefined) {
+                setPityCount(newPityCount);
+                if (nextGuaranteed && nextGuaranteed > 0) {
+                  toast(`천장까지 ${nextGuaranteed}회 남음`, { icon: 'ℹ️' });
+                }
+              }
+            }, 3500);
+          }
+        }
+
+        return;
+      }
+
+      // 가챠 타입 결정 (기존 로직)
       let gachaType = 'basic';
       if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
       else if (option.label === 'GR 테스트팩') gachaType = 'gr_test';
@@ -473,6 +598,25 @@ export default function Gacha() {
                       <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
                         17SSG 카드 + 에픽 이상 확정!
                       </p>
+                    </div>
+                  )}
+                  {option.is19G2Light && (
+                    <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 text-center">
+                        19G2 카드 0.02% 확률
+                      </p>
+                    </div>
+                  )}
+                  {option.is19G2Premium && (
+                    <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 text-center">
+                        에픽+ 확정 | 19G2 0.132% | 50회 천장
+                      </p>
+                      {pityCount > 0 && (
+                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 text-center mt-1">
+                          현재: {pityCount}회 / 천장까지: {50 - pityCount}회
+                        </p>
+                      )}
                     </div>
                   )}
                   {option.probabilities.gr && option.probabilities.gr > 0 && (
@@ -1457,6 +1601,16 @@ export default function Gacha() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 19G2 Cutscene */}
+      <AnimatePresence>
+        {show19G2Cutscene && (
+          <Gacha19G2Cutscene
+            onComplete={() => {}}
+            isGuaranteed={is19G2Guaranteed}
+          />
         )}
       </AnimatePresence>
 

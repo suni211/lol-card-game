@@ -204,6 +204,177 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Draw 10 cards at once
+router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { type } = req.body;
+    const userId = req.user!.id;
+
+    // Validate gacha type
+    if (!GACHA_OPTIONS[type as keyof typeof GACHA_OPTIONS]) {
+      return res.status(400).json({ success: false, error: 'Invalid gacha type' });
+    }
+
+    const option = GACHA_OPTIONS[type as keyof typeof GACHA_OPTIONS];
+
+    // Check admin-only packs
+    if ((option as any).adminOnly) {
+      const [users]: any = await connection.query(
+        'SELECT is_admin FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (users.length === 0 || !users[0].is_admin) {
+        await connection.rollback();
+        return res.status(403).json({ success: false, error: 'Admin access required' });
+      }
+    }
+
+    // Check user points
+    const [users]: any = await connection.query(
+      'SELECT points FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const totalCost = option.cost * 10;
+    if (users[0].points < totalCost) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: 'Insufficient points' });
+    }
+
+    const results = [];
+    let totalRefund = 0;
+
+    // Draw 10 cards
+    for (let i = 0; i < 10; i++) {
+      const tier = selectTierByProbability(option.probabilities);
+
+      // Get random player
+      let players: any;
+      if ((option as any).special === 'WORLDS') {
+        await connection.rollback();
+        return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
+      } else if ((option as any).special === '17SSG') {
+        [players] = await connection.query(
+          "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
+          [tier]
+        );
+      } else {
+        [players] = await connection.query(
+          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR tier = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
+          [tier]
+        );
+      }
+
+      if (players.length === 0) {
+        await connection.rollback();
+        return res.status(500).json({ success: false, error: 'No players available' });
+      }
+
+      const player = players[0];
+
+      // Check if duplicate
+      const [existing]: any = await connection.query(
+        'SELECT id FROM user_cards WHERE user_id = ? AND player_id = ?',
+        [userId, player.id]
+      );
+
+      const isDuplicate = existing.length > 0;
+      const refundPoints = isDuplicate ? Math.floor(option.cost * 0.5) : 0;
+      totalRefund += refundPoints;
+
+      // Add card
+      await connection.query(
+        'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
+        [userId, player.id]
+      );
+
+      // Record history
+      await connection.query(
+        'INSERT INTO gacha_history (user_id, player_id, cost, is_duplicate, refund_points) VALUES (?, ?, ?, ?, ?)',
+        [userId, player.id, option.cost, isDuplicate, refundPoints]
+      );
+
+      // Get traits
+      const [traits]: any = await connection.query(
+        'SELECT * FROM player_traits WHERE player_id = ?',
+        [player.id]
+      );
+
+      results.push({
+        player: {
+          id: player.id,
+          name: player.name,
+          team: player.team,
+          position: player.position,
+          overall: player.overall,
+          region: player.region,
+          tier: player.tier,
+          season: player.season,
+          laning: player.laning || 50,
+          teamfight: player.teamfight || 50,
+          macro: player.macro || 50,
+          mental: player.mental || 50,
+          cs_ability: player.cs_ability || 50,
+          lane_pressure: player.lane_pressure || 50,
+          damage_dealing: player.damage_dealing || 50,
+          survivability: player.survivability || 50,
+          objective_control: player.objective_control || 50,
+          vision_control: player.vision_control || 50,
+          decision_making: player.decision_making || 50,
+          consistency: player.consistency || 50,
+          traits: traits,
+        },
+        isDuplicate,
+        refundPoints,
+      });
+    }
+
+    // Update user points
+    const pointsChange = totalRefund - totalCost;
+    await connection.query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
+      [pointsChange, userId]
+    );
+
+    await connection.commit();
+
+    // Update mission progress
+    updateMissionProgress(userId, 'gacha', 10).catch(err =>
+      console.error('Mission update error:', err)
+    );
+
+    // Update achievements
+    checkAndUpdateAchievements(userId).catch(err =>
+      console.error('Achievement update error:', err)
+    );
+
+    res.json({
+      success: true,
+      data: {
+        results,
+        totalCost,
+        totalRefund,
+      },
+    });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Gacha draw-10 error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
 // Get user cards
 router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
   try {

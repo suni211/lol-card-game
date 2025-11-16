@@ -12,7 +12,9 @@ export default function Gacha() {
   const { user, token, updateUser } = useAuthStore();
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnCard, setDrawnCard] = useState<Player | null>(null);
+  const [drawnCards, setDrawnCards] = useState<Player[]>([]);
   const [showResult, setShowResult] = useState(false);
+  const [show10Result, setShow10Result] = useState(false);
   const [dailyFreeUsed, setDailyFreeUsed] = useState(false);
   const [revealStep, setRevealStep] = useState(0); // 0: loading, 1: position, 2: season, 3: team, 4: final
 
@@ -21,89 +23,113 @@ export default function Gacha() {
       cost: 0,
       label: '일일 무료',
       probabilities: {
-        common: 94.88,
+        common: 94.879,
         rare: 5,
         epic: 0.1,
         legendary: 0.01,
         icon: 0.01,
+        gr: 0.001,
       },
     },
     {
       cost: 100,
       label: '기본',
       probabilities: {
-        common: 89.44,
+        common: 89.439,
         rare: 10,
         epic: 0.5,
         legendary: 0.05,
         icon: 0.01,
+        gr: 0.001,
       },
     },
     {
       cost: 300,
       label: '고급',
       probabilities: {
-        common: 78.79,
+        common: 78.785,
         rare: 18,
         epic: 3,
         legendary: 0.2,
         icon: 0.01,
+        gr: 0.005,
       },
     },
     {
       cost: 500,
       label: '프리미엄',
       probabilities: {
-        common: 68.49,
+        common: 68.48,
         rare: 25,
         epic: 6,
         legendary: 0.5,
         icon: 0.01,
+        gr: 0.01,
       },
+    },
+    {
+      cost: 3000,
+      label: 'GR 프리미엄',
+      probabilities: {
+        common: 50,
+        rare: 35.45,
+        epic: 12,
+        legendary: 2,
+        icon: 0.05,
+        gr: 0.5,
+      },
+      special: true,
     },
     {
       cost: 6500,
-      label: '2017 SSG 월즈 우승 카드팩',
+      label: '2017 SSG 월즈 우승',
       probabilities: {
         common: 0,
         rare: 0,
-        epic: 90.49,
+        epic: 90.48,
         legendary: 9.5,
         icon: 0.01,
+        gr: 0.01,
       },
       special: true,
     },
-    {
-      cost: 2500,
-      label: 'MSI 레전드 카드팩',
-      probabilities: {
-        common: 0,
-        rare: 64.99,
-        epic: 30,
-        legendary: 5,
-        icon: 0.01,
+    // Admin-only test packs
+    ...(user?.isAdmin ? [
+      {
+        cost: 0,
+        label: 'ICON 테스트팩',
+        probabilities: {
+          common: 0,
+          rare: 0,
+          epic: 0,
+          legendary: 0,
+          icon: 100,
+          gr: 0,
+        },
+        special: true,
       },
-      special: true,
-    },
-    // Admin-only ICON test pack
-    ...(user?.isAdmin ? [{
-      cost: 0,
-      label: 'ICON 테스트팩 (관리자 전용)',
-      probabilities: {
-        common: 0,
-        rare: 0,
-        epic: 0,
-        legendary: 0,
-        icon: 100,
-      },
-      special: true,
-    }] : []),
+      {
+        cost: 0,
+        label: 'GR 테스트팩',
+        probabilities: {
+          common: 0,
+          rare: 0,
+          epic: 0,
+          legendary: 0,
+          icon: 0,
+          gr: 100,
+        },
+        special: true,
+      }
+    ] : []),
   ];
 
   const getTierColor = (tier: string) => {
     switch (tier) {
+      case 'GR':
+        return 'from-pink-500 via-rose-500 to-red-600';
       case 'ICON':
-        return 'from-red-500 via-yellow-400 to-pink-500';
+        return 'from-cyan-400 via-blue-500 to-indigo-600';
       case 'LEGENDARY':
         return 'from-yellow-400 to-orange-500';
       case 'EPIC':
@@ -117,6 +143,8 @@ export default function Gacha() {
 
   const getTierText = (tier: string) => {
     switch (tier) {
+      case 'GR':
+        return 'GR';
       case 'ICON':
         return '아이콘';
       case 'LEGENDARY':
@@ -147,13 +175,13 @@ export default function Gacha() {
     try {
       // 가챠 타입 결정
       let gachaType = 'basic';
-      if (option.label === 'ICON 테스트팩 (관리자 전용)') gachaType = 'icon_test';
+      if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
+      else if (option.label === 'GR 테스트팩') gachaType = 'gr_test';
       else if (option.cost === 0) gachaType = 'free';
       else if (option.cost === 300) gachaType = 'premium';
       else if (option.cost === 500) gachaType = 'ultra';
-      else if (option.cost === 2200) gachaType = 'lck_legend';
+      else if (option.cost === 3000) gachaType = 'gr_premium';
       else if (option.cost === 6500) gachaType = 'ssg_2017';
-      else if (option.cost === 2500 && option.label.includes('MSI')) gachaType = 'msi_pack';
 
       // 백엔드 API 호출
       const response = await axios.post(
@@ -233,6 +261,84 @@ export default function Gacha() {
         toast.error(error.response.data.error);
       } else {
         toast.error('카드 뽑기 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  const handleDraw10 = async (option: GachaOption) => {
+    if (!user) {
+      toast.error('로그인이 필요합니다!');
+      return;
+    }
+
+    const totalCost = option.cost * 10;
+    if (user.points < totalCost) {
+      toast.error('포인트가 부족합니다!');
+      return;
+    }
+
+    if (option.cost === 0) {
+      toast.error('무료 뽑기는 10연차를 사용할 수 없습니다!');
+      return;
+    }
+
+    setIsDrawing(true);
+    setShow10Result(false);
+
+    try {
+      let gachaType = 'basic';
+      if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
+      else if (option.label === 'GR 테스트팩') gachaType = 'gr_test';
+      else if (option.cost === 100) gachaType = 'basic';
+      else if (option.cost === 300) gachaType = 'premium';
+      else if (option.cost === 500) gachaType = 'ultra';
+      else if (option.cost === 3000) gachaType = 'gr_premium';
+      else if (option.cost === 6500) gachaType = 'ssg_2017';
+
+      const response = await axios.post(
+        `${API_URL}/gacha/draw-10`,
+        { type: gachaType },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const { results, totalRefund } = response.data.data;
+
+        setDrawnCards(results.map((r: any) => r.player));
+
+        setTimeout(() => {
+          setIsDrawing(false);
+          setShow10Result(true);
+
+          // 업데이트된 유저 정보 가져오기
+          axios.get(`${API_URL}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((response) => {
+            if (response.data.success) {
+              updateUser(response.data.data);
+            }
+          });
+
+          const duplicateCount = results.filter((r: any) => r.isDuplicate).length;
+          if (duplicateCount > 0) {
+            toast(`중복 ${duplicateCount}장! ${totalRefund}P 환급받았습니다.`, {
+              icon: 'ℹ️',
+            });
+          }
+        }, 2000);
+      }
+    } catch (error: any) {
+      setIsDrawing(false);
+      console.error('10연차 오류:', error);
+
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('10연차 중 오류가 발생했습니다.');
       }
     }
   };
@@ -354,9 +460,17 @@ export default function Gacha() {
                       </p>
                     </div>
                   )}
+                  {option.probabilities.gr && option.probabilities.gr > 0 && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-pink-600 dark:text-pink-400 font-bold">🌟 GR</span>
+                      <span className="font-bold text-pink-600 dark:text-pink-400">
+                        {option.probabilities.gr}%
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-red-600 dark:text-red-400 font-bold">🏆 아이콘</span>
-                    <span className="font-bold text-red-600 dark:text-red-400">
+                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">🏆 아이콘</span>
+                    <span className="font-bold text-cyan-600 dark:text-cyan-400">
                       {option.probabilities.icon}%
                     </span>
                   </div>
@@ -386,13 +500,24 @@ export default function Gacha() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleDraw(option)}
-                  disabled={isDrawing || (option.cost === 0 && dailyFreeUsed) || !!(user && user.points < option.cost)}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {option.cost === 0 && dailyFreeUsed ? '내일 다시' : '뽑기'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleDraw(option)}
+                    disabled={isDrawing || (option.cost === 0 && dailyFreeUsed) || !!(user && user.points < option.cost)}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {option.cost === 0 && dailyFreeUsed ? '내일 다시' : '1회 뽑기'}
+                  </button>
+                  {option.cost > 0 && (
+                    <button
+                      onClick={() => handleDraw10(option)}
+                      disabled={isDrawing || !!(user && user.points < option.cost * 10)}
+                      className="w-full py-2 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
+                    >
+                      10연차 ({(option.cost * 10).toLocaleString()}P)
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -1069,6 +1194,90 @@ export default function Gacha() {
                     확인
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 10연차 결과 모달 */}
+      <AnimatePresence>
+        {show10Result && drawnCards.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-8">
+                <h2 className="text-3xl font-bold text-center mb-6 text-gray-900 dark:text-white">
+                  10연차 결과
+                </h2>
+
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                  {drawnCards.map((card, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`relative bg-gradient-to-br ${getTierColor(card.tier)} rounded-lg p-3 shadow-lg`}
+                    >
+                      <div className="text-center">
+                        <div className="text-xs font-bold text-white mb-1">
+                          {getTierText(card.tier)}
+                        </div>
+                        <div className="text-sm font-bold text-white mb-1">
+                          {card.name}
+                        </div>
+                        <div className="text-xs text-white/90">
+                          {card.team}
+                        </div>
+                        <div className={`inline-block px-2 py-0.5 ${getPositionColor(card.position)} text-white text-xs font-bold rounded mt-1`}>
+                          {card.position}
+                        </div>
+                        <div className="text-lg font-bold text-white mt-1">
+                          {card.overall}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="text-center mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
+                    {['GR', 'ICON', 'LEGENDARY', 'EPIC', 'RARE', 'COMMON'].map((tier) => {
+                      const count = drawnCards.filter(c => c.tier === tier).length;
+                      if (count === 0) return null;
+                      return (
+                        <div key={tier} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                          <div className="font-bold text-gray-900 dark:text-white">
+                            {getTierText(tier)}
+                          </div>
+                          <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                            {count}장
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShow10Result(false);
+                    setDrawnCards([]);
+                  }}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all"
+                >
+                  확인
+                </button>
               </div>
             </motion.div>
           </motion.div>

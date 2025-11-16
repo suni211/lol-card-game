@@ -70,9 +70,27 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    // Initialize audio and play random lobby BGM
+    // Initialize audio
     initAudio();
-    playRandomLobbyBGM();
+
+    // Play BGM on first user interaction
+    const playOnInteraction = () => {
+      playRandomLobbyBGM();
+      // Remove listeners after first interaction
+      document.removeEventListener('click', playOnInteraction);
+      document.removeEventListener('keydown', playOnInteraction);
+      document.removeEventListener('touchstart', playOnInteraction);
+    };
+
+    document.addEventListener('click', playOnInteraction);
+    document.addEventListener('keydown', playOnInteraction);
+    document.addEventListener('touchstart', playOnInteraction);
+
+    return () => {
+      document.removeEventListener('click', playOnInteraction);
+      document.removeEventListener('keydown', playOnInteraction);
+      document.removeEventListener('touchstart', playOnInteraction);
+    };
   }, [initAudio, playRandomLobbyBGM]);
 
   return (

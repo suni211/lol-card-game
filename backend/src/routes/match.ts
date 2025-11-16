@@ -101,8 +101,20 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     'SKT': 'T1',
   };
 
+  // Calculate enhancement bonus
+  const calculateEnhancementBonus = (level: number): number => {
+    if (level <= 4) {
+      return level; // 1~4강: +1씩
+    } else if (level <= 7) {
+      return 4 + (level - 4) * 2; // 5~7강: +2씩
+    } else {
+      return 10 + (level - 7) * 4; // 8~10강: +4씩
+    }
+  };
+
   cards.forEach((card: any) => {
-    let power = card.overall + card.level;
+    const enhancementBonus = calculateEnhancementBonus(card.level);
+    let power = card.overall + enhancementBonus;
 
     // Wrong position penalty
     const cardIds = Object.keys(deckPositions);

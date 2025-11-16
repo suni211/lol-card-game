@@ -142,30 +142,30 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
   const names = playerDetails.map((p: any) => p.name);
   const seasons = playerDetails.map((p: any) => p.season);
 
-  // 17SSG의 귀환: 5명 모두 17SSG 선수 (+15 OVR)
+  // 17SSG의 귀환: 5명 모두 17SSG 선수 (+3 OVR)
   const ssgPlayers = ['17SSG CuVee', '17SSG Ambition', '17SSG Crown', '17SSG Ruler', '17SSG CoreJJ'];
   if (ssgPlayers.every(name => names.includes(name))) {
-    synergyBonus += 15;
+    synergyBonus += 3;
   }
 
-  // 25 도오페구케 우승: Zeus, Oner, Faker, Gumayusi, Keria (시즌 25) (+12 OVR)
+  // 25 도오페구케 우승: Zeus, Oner, Faker, Gumayusi, Keria (시즌 25) (+2 OVR)
   const t1ChampPlayers = ['Zeus', 'Oner', 'Faker', 'Gumayusi', 'Keria'];
   const hasT1ChampSynergy = t1ChampPlayers.every(name => {
     const playerDetail = playerDetails.find((p: any) => p.name === name);
     return playerDetail && playerDetail.season === '25';
   });
   if (hasT1ChampSynergy) {
-    synergyBonus += 12;
+    synergyBonus += 2;
   }
 
-  // 대한민국 국가대표 시너지: Zeus, Canyon/Oner, Chovy/Faker, Ruler, Keria (+10 OVR)
+  // 대한민국 국가대표 시너지: Zeus, Canyon/Oner, Chovy/Faker, Ruler, Keria (+1 OVR)
   const hasZeus = names.includes('Zeus');
   const hasJungler = names.includes('Canyon') || names.includes('Oner');
   const hasMid = names.includes('Chovy') || names.includes('Faker');
   const hasRuler = names.includes('Ruler');
   const hasKeria = names.includes('Keria');
   if (hasZeus && hasJungler && hasMid && hasRuler && hasKeria) {
-    synergyBonus += 10;
+    synergyBonus += 1;
   }
 
   totalPower += synergyBonus;

@@ -120,8 +120,8 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
   // 17SSG의 귀환
   const ssgPlayers = ['17SSG CuVee', '17SSG Ambition', '17SSG Crown', '17SSG Ruler', '17SSG CoreJJ'];
   if (ssgPlayers.every(name => names.includes(name))) {
-    synergyBonus += 15;
-    synergyDetails.push({ team: '17SSG의 귀환', count: 5, bonus: 15 });
+    synergyBonus += 3;
+    synergyDetails.push({ team: '17SSG의 귀환', count: 5, bonus: 3 });
   }
 
   // 25 도오페구케 우승
@@ -131,8 +131,8 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
     return slot && slot.card!.player.season === '25';
   });
   if (hasT1ChampSynergy) {
-    synergyBonus += 12;
-    synergyDetails.push({ team: '25 도오페구케 우승', count: 5, bonus: 12 });
+    synergyBonus += 2;
+    synergyDetails.push({ team: '25 도오페구케 우승', count: 5, bonus: 2 });
   }
 
   // 대한민국 국가대표
@@ -142,8 +142,8 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
   const hasRuler = names.includes('Ruler');
   const hasKeria = names.includes('Keria');
   if (hasZeus && hasJungler && hasMid && hasRuler && hasKeria) {
-    synergyBonus += 10;
-    synergyDetails.push({ team: '대한민국 국가대표', count: 5, bonus: 10 });
+    synergyBonus += 1;
+    synergyDetails.push({ team: '대한민국 국가대표', count: 5, bonus: 1 });
   }
 
   return { totalPower, synergyBonus, synergyDetails };

@@ -23,10 +23,10 @@ export default function GlobalMessageBanner() {
       // Show new message immediately
       setCurrentMessage(newMessage);
 
-      // Hide message after 5 seconds
+      // Hide message after 10 seconds
       setTimeout(() => {
         setCurrentMessage(null);
-      }, 5000);
+      }, 10000);
     });
 
     return () => {
@@ -45,7 +45,7 @@ export default function GlobalMessageBanner() {
           animate={{ x: '-100%' }}
           exit={{ x: '-100%', opacity: 0 }}
           transition={{
-            duration: 5,
+            duration: 10,
             ease: 'linear',
           }}
           className="flex items-center gap-3 bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 text-white py-3 px-6 shadow-lg whitespace-nowrap"

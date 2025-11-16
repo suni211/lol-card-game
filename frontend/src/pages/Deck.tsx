@@ -32,6 +32,10 @@ interface Player {
   vision_control?: number;
   decision_making?: number;
   consistency?: number;
+  // 특성
+  trait1?: string;
+  trait2?: string;
+  trait3?: string;
 }
 
 interface UserCard {
@@ -847,6 +851,30 @@ export default function Deck() {
                   <StatBar label="안정성" value={(detailCard.player.consistency || 50) + calculateEnhancementBonus(detailCard.level)} color="teal" />
                 </div>
               </div>
+
+              {/* Traits */}
+              {(detailCard.player.trait1 || detailCard.player.trait2 || detailCard.player.trait3) && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">특성</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {detailCard.player.trait1 && (
+                      <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium shadow-md">
+                        {detailCard.player.trait1}
+                      </div>
+                    )}
+                    {detailCard.player.trait2 && (
+                      <div className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-medium shadow-md">
+                        {detailCard.player.trait2}
+                      </div>
+                    )}
+                    {detailCard.player.trait3 && (
+                      <div className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg font-medium shadow-md">
+                        {detailCard.player.trait3}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-3">

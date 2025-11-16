@@ -8,6 +8,14 @@ import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// Calculate enhancement bonus (1-4강: +1/level, 5-7강: +2/level, 8-10강: +4/level)
+function calculateEnhancementBonus(level: number): number {
+  if (level === 0) return 0;
+  if (level <= 4) return level; // 1-4: +1 each
+  if (level <= 7) return 4 + (level - 4) * 2; // 5-7: +2 each (4 from 1-4, then +2 each)
+  return 4 + 6 + (level - 7) * 4; // 8-10: +4 each (4 from 1-4, 6 from 5-7, then +4 each)
+}
+
 export default function VSBattle() {
   const { stageNumber } = useParams<{ stageNumber: string }>();
   const [searchParams] = useSearchParams();
@@ -107,14 +115,14 @@ export default function VSBattle() {
 
     const userDeck = battleData.userDeck;
     const userPower =
-      (userDeck.top_overall + userDeck.top_level) +
-      (userDeck.jungle_overall + userDeck.jungle_level) +
-      (userDeck.mid_overall + userDeck.mid_level) +
-      (userDeck.adc_overall + userDeck.adc_level) +
-      (userDeck.support_overall + userDeck.support_level);
+      (userDeck.top_overall + calculateEnhancementBonus(userDeck.top_level)) +
+      (userDeck.jungle_overall + calculateEnhancementBonus(userDeck.jungle_level)) +
+      (userDeck.mid_overall + calculateEnhancementBonus(userDeck.mid_level)) +
+      (userDeck.adc_overall + calculateEnhancementBonus(userDeck.adc_level)) +
+      (userDeck.support_overall + calculateEnhancementBonus(userDeck.support_level));
 
     const enemyPower = battleData.enemies.reduce(
-      (sum: number, enemy: any) => sum + (enemy.overall + enemy.level),
+      (sum: number, enemy: any) => sum + (enemy.overall + calculateEnhancementBonus(enemy.level)),
       0
     );
 
@@ -126,7 +134,7 @@ export default function VSBattle() {
     console.log('User Power:', userPower, '(+랜덤:', userScore - userPower, ') = Total:', userScore);
     console.log('Enemy Power:', enemyPower, '(+랜덤:', enemyScore - enemyPower, ') = Total:', enemyScore);
     battleData.enemies.forEach((e: any) => {
-      console.log(`  ${e.name}: ${e.overall} + ${e.level} = ${e.overall + e.level}`);
+      console.log(`  ${e.name}: ${e.overall} + 강화${e.level}(+${calculateEnhancementBonus(e.level)}) = ${e.overall + calculateEnhancementBonus(e.level)}`);
     });
 
     try {
@@ -263,7 +271,7 @@ export default function VSBattle() {
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{deck.name}</h3>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          총 파워: {deck.top_overall + deck.top_level + deck.jungle_overall + deck.jungle_level + deck.mid_overall + deck.mid_level + deck.adc_overall + deck.adc_level + deck.support_overall + deck.support_level}
+                          총 파워: {deck.top_overall + calculateEnhancementBonus(deck.top_level) + deck.jungle_overall + calculateEnhancementBonus(deck.jungle_level) + deck.mid_overall + calculateEnhancementBonus(deck.mid_level) + deck.adc_overall + calculateEnhancementBonus(deck.adc_level) + deck.support_overall + calculateEnhancementBonus(deck.support_level)}
                         </div>
                       </div>
 

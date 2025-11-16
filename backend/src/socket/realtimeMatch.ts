@@ -142,7 +142,9 @@ function calculateDeckObjectPower(
     let totalWeight = 0;
 
     stats.forEach((statName) => {
-      const statValue = card[statName] || 50;
+      // 세부 스탯에도 강화 보너스 적용
+      const baseStat = card[statName] || 50;
+      const statValue = baseStat + levelBonus;
       const weight = positionWeights[statName] || 1.0;
       weightedStatSum += statValue * weight;
       totalWeight += weight;
@@ -240,7 +242,9 @@ async function calculateDeckStatPower(
       let totalWeight = 0;
 
       stats.forEach((statName) => {
-        const statValue = card[statName] || 50;
+        // 세부 스탯에도 강화 보너스 적용
+        const baseStat = card[statName] || 50;
+        const statValue = baseStat + levelBonus;
         const weight = positionWeights[statName] || 1.0;
         weightedStatSum += statValue * weight;
         totalWeight += weight;

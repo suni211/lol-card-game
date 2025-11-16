@@ -69,19 +69,12 @@ const MACRO_STRATEGIES = [
   { value: 'TEMPO', label: '템포', description: '빠른 라인 이동으로 압박', counters: ['OBJECTIVE'], weakTo: ['VISION'] },
 ];
 
-// Team mapping for synergy calculation
-const teamMapping: { [key: string]: string } = {
-  'T1': 'T1',
-  'GEN': 'GEN',
-  'HLE': 'HLE',
-  'KT': 'KT',
-  'DK': 'DK',
-  'DRX': 'DRX',
-  'BRO': 'BRO',
-  'NS': 'NS',
-  'KDF': 'KDF',
-  'FOX': 'FOX',
-  // Add other teams as needed
+// Normalize team name (SKT and T1 are treated as same team)
+const normalizeTeamName = (team: string): string => {
+  if (!team) return '';
+  const upperTeam = team.toUpperCase();
+  if (upperTeam === 'SKT' || upperTeam === 'T1') return 'T1';
+  return team;
 };
 
 // Calculate team synergy
@@ -94,7 +87,7 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
       const power = slot.card.player.overall + slot.card.level;
       totalPower += power;
 
-      const synergyTeam = teamMapping[slot.card.player.team] || slot.card.player.team;
+      const synergyTeam = normalizeTeamName(slot.card.player.team);
       teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
     }
   });

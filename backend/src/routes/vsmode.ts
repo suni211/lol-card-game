@@ -200,7 +200,13 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
       data: {
         stage,
         enemies: enemies.map((e: any) => ({
-          ...e,
+          name: e.name,
+          team: e.team,
+          position: e.position,
+          overall: e.overall,
+          region: e.region,
+          tier: e.tier,
+          season: e.season,
           level: isHardMode ? e.hard_enhancement_level : e.enhancement_level
         })),
         userDeck: userDeck[0],

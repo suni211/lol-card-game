@@ -8,13 +8,13 @@ const router = express.Router();
 
 // Gacha probabilities (더 어려운 확률로 조정)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { gr: 0.001, icon: 0.01, legendary: 0.01, epic: 0.1, rare: 5, common: 94.879 } },
-  basic: { cost: 100, probabilities: { gr: 0.001, icon: 0.01, legendary: 0.05, epic: 0.5, rare: 10, common: 89.439 } },
-  premium: { cost: 300, probabilities: { gr: 0.005, icon: 0.01, legendary: 0.2, epic: 3, rare: 18, common: 78.785 } },
-  ultra: { cost: 500, probabilities: { gr: 0.01, icon: 0.01, legendary: 0.5, epic: 6, rare: 25, common: 68.48 } },
-  gr_premium: { cost: 3000, probabilities: { gr: 0.5, icon: 0.05, legendary: 2, epic: 12, rare: 35.45, common: 50 } }, // GR 확률 높은 프리미엄 팩
-  worlds_winner: { cost: 2500, probabilities: { gr: 0.01, icon: 0.01, legendary: 5, epic: 25, rare: 69.98, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
-  ssg_2017: { cost: 6500, probabilities: { gr: 0.01, icon: 0.01, legendary: 9.5, epic: 90.48, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
+  free: { cost: 0, probabilities: { gr: 0.05, icon: 0.01, legendary: 0.01, epic: 0.1, rare: 5, common: 94.83 } },
+  basic: { cost: 100, probabilities: { gr: 0.1, icon: 0.01, legendary: 0.05, epic: 0.5, rare: 10, common: 89.34 } },
+  premium: { cost: 300, probabilities: { gr: 0.3, icon: 0.02, legendary: 0.2, epic: 3, rare: 18, common: 78.48 } },
+  ultra: { cost: 500, probabilities: { gr: 0.5, icon: 0.03, legendary: 0.5, epic: 6, rare: 25, common: 67.97 } },
+  gr_premium: { cost: 3000, probabilities: { gr: 5, icon: 0.1, legendary: 3, epic: 11.9, rare: 30, common: 50 } }, // GR 확률 높은 프리미엄 팩
+  worlds_winner: { cost: 2500, probabilities: { gr: 0.2, icon: 0.01, legendary: 5, epic: 25, rare: 69.79, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
+  ssg_2017: { cost: 6500, probabilities: { gr: 0.2, icon: 0.01, legendary: 9.5, epic: 90.29, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
   icon_test: { cost: 0, probabilities: { gr: 0, icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
   gr_test: { cost: 0, probabilities: { gr: 100, icon: 0, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only GR test pack
 };

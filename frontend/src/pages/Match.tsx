@@ -10,6 +10,14 @@ import { getPlayerImageUrl } from '../utils/playerImage';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
+// Calculate enhancement bonus (1-4강: +1/level, 5-7강: +2/level, 8-10강: +4/level)
+function calculateEnhancementBonus(level: number): number {
+  if (level === 0) return 0;
+  if (level <= 4) return level; // 1-4: +1 each
+  if (level <= 7) return 4 + (level - 4) * 2; // 5-7: +2 each (4 from 1-4, then +2 each)
+  return 4 + 6 + (level - 7) * 4; // 8-10: +4 each (4 from 1-4, 6 from 5-7, then +4 each)
+}
+
 interface Player {
   id: number;
   name: string;
@@ -492,7 +500,7 @@ export default function Match() {
                                     {card.player.team} · {card.player.position}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    OVR {card.player.overall + card.level}
+                                    OVR {card.player.overall + calculateEnhancementBonus(card.level)}
                                   </div>
                                 </div>
                               </>
@@ -531,7 +539,7 @@ export default function Match() {
                                     {card.team} · {pos.toUpperCase()}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    OVR {card.overall + (card.level || 0)}
+                                    OVR {card.overall + calculateEnhancementBonus(card.level || 0)}
                                   </div>
                                 </div>
                               </>

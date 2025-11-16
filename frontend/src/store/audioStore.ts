@@ -7,10 +7,12 @@ interface AudioState {
   isPlaying: boolean;
   currentTrack: string | null;
   audio: HTMLAudioElement | null;
+  lobbyTracks: string[];
 
   setVolume: (volume: number) => void;
   toggleMute: () => void;
   playBGM: (trackPath: string) => void;
+  playRandomLobbyBGM: () => void;
   stopBGM: () => void;
   initAudio: () => void;
 }
@@ -23,6 +25,7 @@ export const useAudioStore = create<AudioState>()(
       isPlaying: false,
       currentTrack: null,
       audio: null,
+      lobbyTracks: Array.from({ length: 99 }, (_, i) => `/bgm/lobby${i + 1}.ogg`),
 
       initAudio: () => {
         const audio = new Audio();
@@ -80,6 +83,13 @@ export const useAudioStore = create<AudioState>()(
           audio.pause();
           set({ isPlaying: false });
         }
+      },
+
+      playRandomLobbyBGM: () => {
+        const { lobbyTracks } = get();
+        const randomIndex = Math.floor(Math.random() * lobbyTracks.length);
+        const randomTrack = lobbyTracks[randomIndex];
+        get().playBGM(randomTrack);
       },
     }),
     {

@@ -58,7 +58,7 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { theme } = useThemeStore();
-  const { playBGM, initAudio } = useAudioStore();
+  const { playRandomLobbyBGM, initAudio } = useAudioStore();
 
   useEffect(() => {
     // Apply theme on mount
@@ -70,10 +70,10 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    // Initialize audio and play lobby BGM
+    // Initialize audio and play random lobby BGM
     initAudio();
-    playBGM('/bgm/lobby.ogg');
-  }, [initAudio, playBGM]);
+    playRandomLobbyBGM();
+  }, [initAudio, playRandomLobbyBGM]);
 
   return (
     <Router>

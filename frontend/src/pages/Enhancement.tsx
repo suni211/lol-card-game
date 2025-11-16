@@ -31,17 +31,22 @@ interface EnhancementPreview {
   baseRate: number;
   successRate: number;
   cost: number;
-  isSamePlayer: boolean;
-  materialTier: string;
-  materialOverall: number;
-  materialLevel: number;
+  ovrDowngrade: number;
+  materialCards: Array<{
+    id: number;
+    isSamePlayer: boolean;
+    tier: string;
+    overall: number;
+    level: number;
+    name: string;
+  }>;
 }
 
 export default function Enhancement() {
   const { user, token, updateUser } = useAuthStore();
   const [cards, setCards] = useState<Card[]>([]);
   const [targetCard, setTargetCard] = useState<Card | null>(null);
-  const [materialCard, setMaterialCard] = useState<Card | null>(null);
+  const [materialCards, setMaterialCards] = useState<Card[]>([]);
   const [preview, setPreview] = useState<EnhancementPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
@@ -55,12 +60,12 @@ export default function Enhancement() {
   }, [user, token]);
 
   useEffect(() => {
-    if (targetCard && materialCard) {
+    if (targetCard && materialCards.length > 0) {
       fetchPreview();
     } else {
       setPreview(null);
     }
-  }, [targetCard, materialCard]);
+  }, [targetCard, materialCards]);
 
   const fetchCards = async () => {
     try {
@@ -88,12 +93,15 @@ export default function Enhancement() {
   };
 
   const fetchPreview = async () => {
-    if (!targetCard || !materialCard) return;
+    if (!targetCard || materialCards.length === 0) return;
 
     try {
       const response = await axios.post(
         `${API_URL}/gacha/enhance/preview`,
-        { targetCardId: targetCard.id, materialCardId: materialCard.id },
+        {
+          targetCardId: targetCard.id,
+          materialCardIds: materialCards.map(c => c.id)
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -107,7 +115,7 @@ export default function Enhancement() {
   };
 
   const handleEnhance = async () => {
-    if (!targetCard || !materialCard || !preview) {
+    if (!targetCard || materialCards.length === 0 || !preview) {
       toast.error('강화할 카드와 재료 카드를 선택하세요');
       return;
     }
@@ -122,7 +130,10 @@ export default function Enhancement() {
     try {
       const response = await axios.post(
         `${API_URL}/gacha/enhance`,
-        { targetCardId: targetCard.id, materialCardId: materialCard.id },
+        {
+          targetCardId: targetCard.id,
+          materialCardIds: materialCards.map(c => c.id)
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -139,7 +150,7 @@ export default function Enhancement() {
         // Refresh cards
         await fetchCards();
         setTargetCard(null);
-        setMaterialCard(null);
+        setMaterialCards([]);
         setPreview(null);
 
         if (data.isSuccess) {
@@ -148,7 +159,7 @@ export default function Enhancement() {
           if (data.levelDowngraded) {
             toast.error(`강화 실패... 재료 카드 소멸 + 강화 레벨 -${data.levelLost} (현재: +${data.newLevel})`);
           } else {
-            toast.error(`강화 실패... 재료 카드가 소멸되었습니다`);
+            toast.error(`강화 실패... 재료 카드 ${materialCards.length}개가 소멸되었습니다`);
           }
         }
       }
@@ -269,17 +280,16 @@ export default function Enhancement() {
                 강화 안내 (초반 쉬움, 후반 극악)
               </h3>
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
-                <li>• 아무 카드나 재료로 사용 가능합니다</li>
-                <li className="text-green-600 dark:text-green-400 font-bold">• 기본 성공률: +0강 90%, +1강 80%, +2강 70%, +3강 60%, +4강 50%</li>
-                <li className="text-orange-600 dark:text-orange-400">• 후반 성공률: +5강 40%, +6강 20%, +7강 10%, +8강 5%, +9강 1%</li>
-                <li>• 같은 선수 카드 사용 시: 성공률 +8%</li>
-                <li>• 재료 등급별 보너스: 레전드 +5%, 에픽 +3%, 레어 +1%</li>
-                <li>• 재료 오버롤 70 이상: 10마다 +1% (예: 80 = +1%, 90 = +2%)</li>
-                <li>• 재료 강화도: 1강당 +0.5% (예: +5강 재료 = +2.5%)</li>
+                <li className="text-purple-600 dark:text-purple-400 font-bold">• 재료 카드를 최대 3개까지 사용 가능! (보너스 합산)</li>
+                <li className="text-green-600 dark:text-green-400 font-bold">• 기본 성공률: +0강 80%, +1강 70%, +2강 60%, +3강 50%, +4강 40%</li>
+                <li className="text-orange-600 dark:text-orange-400">• 후반 성공률: +5강 30%, +6강 15%, +7강 8%, +8강 3%, +9강 1%</li>
+                <li>• 같은 선수 카드 사용 시: 각 재료당 +5%</li>
+                <li>• 재료 오버롤 60+: 10마다 +1% (60=0%, 70=+1%, 80=+2%, 90=+3%, 100=+4%)</li>
+                <li>• 재료 강화도: 1강당 +0.3% (예: +5강 재료 = +1.5%)</li>
                 <li>• 강화 비용: (현재 강화도 + 1) × 100P</li>
-                <li className="text-red-600 dark:text-red-400 font-bold">⚠️ 실패 시 재료 카드 소멸 + 강화 레벨 하락 위험!</li>
+                <li className="text-red-600 dark:text-red-400 font-bold">⚠️ 실패 시 모든 재료 카드 소멸 + 강화 레벨 하락 위험!</li>
                 <li className="text-red-600 dark:text-red-400">• 레벨 하락: 1-3강 50% 확률로 -1, 4-6강 70% 확률로 -1, 7-10강 100% 확률로 -1</li>
-                <li>• 최대 강화: +10강 (최대 성공률 80%)</li>
+                <li>• 최대 강화: +10강 (최대 성공률 70%)</li>
               </ul>
             </div>
           </div>
@@ -309,20 +319,32 @@ export default function Enhancement() {
           {/* Material Card Selection */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              2. 재료 카드 선택
+              2. 재료 카드 선택 (최대 3개)
             </h2>
-            {materialCard ? (
-              <CardDisplay
-                card={materialCard}
-                onClick={() => setMaterialCard(null)}
-                selected={true}
-                label="재료 (소멸됨)"
-              />
-            ) : (
-              <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
-                <p className="text-gray-500 dark:text-gray-400">아래에서 카드를 선택하세요</p>
-              </div>
-            )}
+            <div className="space-y-3">
+              {materialCards.length > 0 ? (
+                <>
+                  {materialCards.map((card, index) => (
+                    <CardDisplay
+                      key={card.id}
+                      card={card}
+                      onClick={() => setMaterialCards(materialCards.filter((_, i) => i !== index))}
+                      selected={true}
+                      label={`재료 ${index + 1} (소멸됨)`}
+                    />
+                  ))}
+                  {materialCards.length < 3 && (
+                    <div className="text-center py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">추가 재료 선택 ({materialCards.length}/3)</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
+                  <p className="text-gray-500 dark:text-gray-400">아래에서 카드를 선택하세요</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Preview & Enhance */}
@@ -338,33 +360,32 @@ export default function Enhancement() {
                     <span className="font-bold text-gray-900 dark:text-white">{preview.baseRate}%</span>
                   </div>
 
-                  {preview.isSamePlayer && (
-                    <div className="flex items-center justify-between mb-2 text-green-600 dark:text-green-400">
-                      <span className="text-sm">같은 선수 보너스</span>
-                      <span className="font-bold">+8%</span>
-                    </div>
-                  )}
+                  {preview.materialCards && preview.materialCards.map((mat: any, idx: number) => (
+                    <div key={idx} className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">재료 {idx + 1}: {mat.name}</div>
 
-                  <div className="flex items-center justify-between mb-2 text-purple-600 dark:text-purple-400">
-                    <span className="text-sm">재료 등급 ({getTierText(preview.materialTier)})</span>
-                    <span className="font-bold">
-                      +{preview.materialTier === 'LEGENDARY' ? 5 : preview.materialTier === 'EPIC' ? 3 : preview.materialTier === 'RARE' ? 1 : 0}%
-                    </span>
-                  </div>
+                      {mat.isSamePlayer && (
+                        <div className="flex items-center justify-between text-green-600 dark:text-green-400">
+                          <span className="text-xs">같은 선수</span>
+                          <span className="font-bold text-xs">+5%</span>
+                        </div>
+                      )}
 
-                  {preview.materialOverall >= 70 && (
-                    <div className="flex items-center justify-between mb-2 text-blue-600 dark:text-blue-400">
-                      <span className="text-sm">재료 오버롤 ({preview.materialOverall})</span>
-                      <span className="font-bold">+{Math.floor((preview.materialOverall - 70) / 10) * 1}%</span>
-                    </div>
-                  )}
+                      {mat.overall >= 60 && (
+                        <div className="flex items-center justify-between text-blue-600 dark:text-blue-400">
+                          <span className="text-xs">오버롤 ({mat.overall})</span>
+                          <span className="font-bold text-xs">+{Math.floor(Math.max(0, mat.overall - 60) / 10)}%</span>
+                        </div>
+                      )}
 
-                  {preview.materialLevel > 0 && (
-                    <div className="flex items-center justify-between mb-2 text-orange-600 dark:text-orange-400">
-                      <span className="text-sm">재료 강화도 (+{preview.materialLevel})</span>
-                      <span className="font-bold">+{preview.materialLevel * 0.5}%</span>
+                      {mat.level > 0 && (
+                        <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
+                          <span className="text-xs">강화도 (+{mat.level})</span>
+                          <span className="font-bold text-xs">+{(mat.level * 0.3).toFixed(1)}%</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
 
                   {targetCard && targetCard.level >= 1 && (
                     <div className="flex items-center justify-between mb-2 text-yellow-600 dark:text-yellow-400">
@@ -441,24 +462,23 @@ export default function Enhancement() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {cards.map((card) => {
                 const isTarget = targetCard?.id === card.id;
-                const isMaterial = materialCard?.id === card.id;
-                const isDisabled = (targetCard && card.id === targetCard.id && materialCard) ||
-                                   (materialCard && card.id === materialCard.id && targetCard) ||
-                                   (targetCard && !materialCard && card.level >= 10);
+                const isMaterial = materialCards.some(m => m.id === card.id);
+                const isDisabled = (targetCard && card.id === targetCard.id) ||
+                                   (targetCard && card.level >= 10 && !isTarget);
 
                 return (
                   <CardDisplay
                     key={card.id}
                     card={card}
                     onClick={() => {
-                      if (!targetCard) {
-                        setTargetCard(card);
-                      } else if (!materialCard && card.id !== targetCard.id) {
-                        setMaterialCard(card);
-                      } else if (isTarget) {
+                      if (isTarget) {
                         setTargetCard(null);
                       } else if (isMaterial) {
-                        setMaterialCard(null);
+                        setMaterialCards(materialCards.filter(m => m.id !== card.id));
+                      } else if (!targetCard) {
+                        setTargetCard(card);
+                      } else if (targetCard && materialCards.length < 3 && card.id !== targetCard.id) {
+                        setMaterialCards([...materialCards, card]);
                       }
                     }}
                     selected={isTarget || isMaterial}

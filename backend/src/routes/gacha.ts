@@ -568,33 +568,35 @@ const MAX_ENHANCEMENT_LEVEL = 10;
 // OVR downgrade amounts on failure (based on enhancement level)
 const OVR_DOWNGRADE_RATES = [0, 0, 0, 0, 0, 1, 2, 3, 5, 7]; // 0→1 ~ 4→5 실패 시 OVR 하락 없음, 이후 1~7 하락
 
-// Calculate success rate based on material card quality (FIFA 4 style)
+// Calculate success rate based on material cards quality (up to 3 materials)
 function calculateEnhancementRate(
   baseRate: number,
   targetCard: any,
-  materialCard: any,
+  materialCards: any[],
   targetPlayer: any,
-  materialPlayer: any
+  materialPlayers: any[]
 ): number {
   let successRate = baseRate;
 
-  // Same player bonus: +5% (추가 하향)
-  if (targetCard.player_id === materialCard.player_id) {
-    successRate += 5;
-  }
+  // Process each material card
+  materialCards.forEach((materialCard, index) => {
+    const materialPlayer = materialPlayers[index];
 
-  // Tier bonus (티어당 고정 보너스 제거, 오버롤에만 의존)
-  // LEGENDARY, EPIC, RARE, COMMON의 티어 보너스 제거
+    // Same player bonus: +5% per same player material
+    if (targetCard.player_id === materialCard.player_id) {
+      successRate += 5;
+    }
 
-  // Overall bonus: 오버롤에 비례 (60 이상부터 시작)
-  // 60: 0%, 70: +1%, 80: +2%, 90: +3%, 100: +4%, 110: +5%, 120: +6%
-  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 60) / 10);
-  successRate += overallBonus;
+    // Overall bonus: 오버롤에 비례 (60 이상부터 시작)
+    // 60: 0%, 70: +1%, 80: +2%, 90: +3%, 100: +4%, 110: +5%, 120: +6%
+    const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 60) / 10);
+    successRate += overallBonus;
 
-  // Enhancement level of material: each level = +0.3% (추가 하향)
-  successRate += materialCard.level * 0.3;
+    // Enhancement level of material: each level = +0.3%
+    successRate += materialCard.level * 0.3;
+  });
 
-  // Cap at 70% max, 2% min (최대 확률 하향)
+  // Cap at 70% max, 2% min
   return Math.min(70, Math.max(2, successRate));
 }
 
@@ -602,36 +604,46 @@ function calculateEnhancementRate(
 router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
-    const { targetCardId, materialCardId } = req.body;
+    const { targetCardId, materialCardIds } = req.body;
 
-    if (!targetCardId || !materialCardId) {
-      return res.status(400).json({ success: false, error: 'Target card and material card are required' });
+    if (!targetCardId || !materialCardIds || !Array.isArray(materialCardIds)) {
+      return res.status(400).json({ success: false, error: 'Target card and material cards array are required' });
     }
 
-    // Get both cards with player info
+    if (materialCardIds.length === 0 || materialCardIds.length > 3) {
+      return res.status(400).json({ success: false, error: 'Must provide 1-3 material cards' });
+    }
+
+    // Get all cards with player info
+    const allCardIds = [targetCardId, ...materialCardIds];
     const [cards]: any = await pool.query(
-      'SELECT uc.*, p.name as player_name, p.tier, p.overall FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.id IN (?, ?) AND uc.user_id = ?',
-      [targetCardId, materialCardId, userId]
+      'SELECT uc.*, p.name as player_name, p.tier, p.overall FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.id IN (?) AND uc.user_id = ?',
+      [allCardIds, userId]
     );
 
-    if (cards.length !== 2) {
-      return res.status(404).json({ success: false, error: 'One or both cards not found' });
+    if (cards.length !== allCardIds.length) {
+      return res.status(404).json({ success: false, error: 'One or more cards not found' });
     }
 
     const targetCard = cards.find((c: any) => c.id === targetCardId);
-    const materialCard = cards.find((c: any) => c.id === materialCardId);
+    const materialCards = materialCardIds.map((id: number) => cards.find((c: any) => c.id === id));
+
+    if (!targetCard || materialCards.some((c: any) => !c)) {
+      return res.status(404).json({ success: false, error: 'Cards not found' });
+    }
 
     if (targetCard.level >= MAX_ENHANCEMENT_LEVEL) {
       return res.status(400).json({ success: false, error: 'Card is already at maximum enhancement level' });
     }
 
     const baseRate = BASE_ENHANCEMENT_RATES[targetCard.level];
+    const materialPlayers = materialCards.map((c: any) => ({ tier: c.tier, overall: c.overall }));
     const successRate = calculateEnhancementRate(
       baseRate,
       targetCard,
-      materialCard,
+      materialCards,
       { tier: targetCard.tier, overall: targetCard.overall },
-      { tier: materialCard.tier, overall: materialCard.overall }
+      materialPlayers
     );
 
     const cost = (targetCard.level + 1) * 100;
@@ -644,10 +656,14 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
         successRate,
         cost,
         ovrDowngrade,
-        isSamePlayer: targetCard.player_id === materialCard.player_id,
-        materialTier: materialCard.tier,
-        materialOverall: materialCard.overall,
-        materialLevel: materialCard.level,
+        materialCards: materialCards.map((c: any) => ({
+          id: c.id,
+          isSamePlayer: targetCard.player_id === c.player_id,
+          tier: c.tier,
+          overall: c.overall,
+          level: c.level,
+          name: c.player_name,
+        })),
       },
     });
   } catch (error: any) {
@@ -664,32 +680,43 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     await connection.beginTransaction();
 
     const userId = req.user!.id;
-    const { targetCardId, materialCardId } = req.body;
+    const { targetCardId, materialCardIds } = req.body;
 
     // Validate input
-    if (!targetCardId || !materialCardId) {
+    if (!targetCardId || !materialCardIds || !Array.isArray(materialCardIds)) {
       await connection.rollback();
-      return res.status(400).json({ success: false, error: 'Target card and material card are required' });
+      return res.status(400).json({ success: false, error: 'Target card and material cards array are required' });
     }
 
-    if (targetCardId === materialCardId) {
+    if (materialCardIds.length === 0 || materialCardIds.length > 3) {
       await connection.rollback();
-      return res.status(400).json({ success: false, error: 'Cannot use the same card as both target and material' });
+      return res.status(400).json({ success: false, error: 'Must provide 1-3 material cards' });
     }
 
-    // Get both cards with player info
+    if (materialCardIds.includes(targetCardId)) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: 'Cannot use target card as material' });
+    }
+
+    // Get all cards with player info
+    const allCardIds = [targetCardId, ...materialCardIds];
     const [cards]: any = await connection.query(
-      'SELECT uc.*, p.name as player_name, p.tier, p.overall FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.id IN (?, ?) AND uc.user_id = ?',
-      [targetCardId, materialCardId, userId]
+      'SELECT uc.*, p.name as player_name, p.tier, p.overall FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.id IN (?) AND uc.user_id = ?',
+      [allCardIds, userId]
     );
 
-    if (cards.length !== 2) {
+    if (cards.length !== allCardIds.length) {
       await connection.rollback();
-      return res.status(404).json({ success: false, error: 'One or both cards not found' });
+      return res.status(404).json({ success: false, error: 'One or more cards not found' });
     }
 
     const targetCard = cards.find((c: any) => c.id === targetCardId);
-    const materialCard = cards.find((c: any) => c.id === materialCardId);
+    const materialCards = materialCardIds.map((id: number) => cards.find((c: any) => c.id === id));
+
+    if (!targetCard || materialCards.some((c: any) => !c)) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: 'Cards not found' });
+    }
 
     // Check max level
     if (targetCard.level >= MAX_ENHANCEMENT_LEVEL) {
@@ -716,21 +743,22 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'Insufficient points' });
     }
 
-    // Calculate success rate with material card quality
+    // Calculate success rate with material cards quality
     const baseRate = BASE_ENHANCEMENT_RATES[targetCard.level];
+    const materialPlayers = materialCards.map((c: any) => ({ tier: c.tier, overall: c.overall }));
     const successRate = calculateEnhancementRate(
       baseRate,
       targetCard,
-      materialCard,
+      materialCards,
       { tier: targetCard.tier, overall: targetCard.overall },
-      { tier: materialCard.tier, overall: materialCard.overall }
+      materialPlayers
     );
 
     const random = Math.random() * 100;
     const isSuccess = random < successRate;
 
-    // Delete material card (consumed regardless of success/failure)
-    await connection.query('DELETE FROM user_cards WHERE id = ?', [materialCardId]);
+    // Delete all material cards (consumed regardless of success/failure)
+    await connection.query('DELETE FROM user_cards WHERE id IN (?)', [materialCardIds]);
 
     // Deduct points
     await connection.query('UPDATE users SET points = points - ? WHERE id = ?', [cost, userId]);
@@ -744,20 +772,14 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
       await connection.query('UPDATE user_cards SET level = level + 1 WHERE id = ?', [targetCardId]);
       newLevel = targetCard.level + 1;
     } else {
-      // On failure, decrease enhancement level (not overall)
-      // Level 0: no downgrade
-      // Level 1-3: 50% chance to drop 1 level
-      // Level 4-6: 70% chance to drop 1 level
-      // Level 7-9: 100% chance to drop 1 level
-      // Level 10: 100% chance to drop 1 level
-
+      // On failure, decrease enhancement level
       let downgradeChance = 0;
       if (targetCard.level >= 7) {
-        downgradeChance = 100; // 100% chance
+        downgradeChance = 100;
       } else if (targetCard.level >= 4) {
-        downgradeChance = 70; // 70% chance
+        downgradeChance = 70;
       } else if (targetCard.level >= 1) {
-        downgradeChance = 50; // 50% chance
+        downgradeChance = 50;
       }
 
       const shouldDowngrade = Math.random() * 100 < downgradeChance;
@@ -767,7 +789,6 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         levelLost = 1;
         newLevel = targetCard.level - 1;
 
-        // Decrease enhancement level
         await connection.query(
           'UPDATE user_cards SET level = ? WHERE id = ?',
           [newLevel, targetCardId]
@@ -787,7 +808,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         baseRate,
         successRate,
         playerName: targetCard.player_name,
-        materialCardName: materialCard.player_name,
+        materialCardNames: materialCards.map((c: any) => c.player_name),
         levelDowngraded,
         levelLost,
       },

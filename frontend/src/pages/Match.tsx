@@ -112,7 +112,7 @@ export default function Match() {
 
   const calculateCardOVR = (card: UserCard | null, expectedPosition: string): number => {
     if (!card) return 0;
-    const baseStat = card.player.overall;
+    const baseStat = card.player.overall + calculateEnhancementBonus(card.level);
     const positionMatch = card.player.position === expectedPosition;
     return positionMatch ? baseStat : baseStat - 10;
   };

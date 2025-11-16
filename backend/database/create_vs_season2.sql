@@ -455,10 +455,10 @@ UNION ALL SELECT id, 'Faker', 10, 10, 3 FROM vs_stages WHERE stage_number = 49
 UNION ALL SELECT id, 'Ruler', 10, 10, 4 FROM vs_stages WHERE stage_number = 49
 UNION ALL SELECT id, 'Keria', 10, 10, 5 FROM vs_stages WHERE stage_number = 49;
 
--- Stage 50: 궁극의 도전 - ICON 10강
+-- Stage 50: 궁극의 도전 - ICON 올스타 10강
 INSERT INTO vs_stage_enemies (stage_id, player_name, enhancement_level, hard_enhancement_level, position_order)
-SELECT id, 'ICON Faker', 10, 10, 1 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'ICON Faker', 10, 10, 2 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'ICON Faker', 10, 10, 3 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'ICON Faker', 10, 10, 4 FROM vs_stages WHERE stage_number = 50
-UNION ALL SELECT id, 'ICON Faker', 10, 10, 5 FROM vs_stages WHERE stage_number = 50;
+SELECT id, 'ICON Nuguri', 10, 10, 1 FROM vs_stages WHERE stage_number = 50
+UNION ALL SELECT id, 'ICON Bengi', 10, 10, 2 FROM vs_stages WHERE stage_number = 50
+UNION ALL SELECT id, 'ICON Perkz', 10, 10, 3 FROM vs_stages WHERE stage_number = 50
+UNION ALL SELECT id, 'ICON Uzi', 10, 10, 4 FROM vs_stages WHERE stage_number = 50
+UNION ALL SELECT id, 'ICON Mata', 10, 10, 5 FROM vs_stages WHERE stage_number = 50;

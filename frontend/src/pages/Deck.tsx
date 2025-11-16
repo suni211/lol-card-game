@@ -105,8 +105,8 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
   Object.entries(teams).forEach(([team, count]) => {
     let bonus = 0;
     if (count === 3) bonus = 1;
-    if (count === 4) bonus = 3;
-    if (count === 5) bonus = 5;
+    if (count === 4) bonus = 2;
+    if (count === 5) bonus = 3;
 
     if (bonus > 0) {
       synergyBonus += bonus;

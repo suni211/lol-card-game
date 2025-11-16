@@ -122,12 +122,12 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
   });
 
-  // Team synergy: same team 3 players = +1 OVR, 4 players = +3 OVR, 5 players = +5 OVR
+  // Team synergy: same team 3 players = +1 OVR, 4 players = +2 OVR, 5 players = +3 OVR
   let synergyBonus = 0;
   Object.values(teams).forEach((count: any) => {
     if (count === 3) synergyBonus += 1;
-    if (count === 4) synergyBonus += 3;
-    if (count === 5) synergyBonus += 5;
+    if (count === 4) synergyBonus += 2;
+    if (count === 5) synergyBonus += 3;
   });
 
   // Special synergies

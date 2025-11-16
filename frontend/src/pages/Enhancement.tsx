@@ -272,14 +272,14 @@ export default function Enhancement() {
                 <li>• 아무 카드나 재료로 사용 가능합니다</li>
                 <li className="text-green-600 dark:text-green-400 font-bold">• 기본 성공률: +0강 90%, +1강 80%, +2강 70%, +3강 60%, +4강 50%</li>
                 <li className="text-orange-600 dark:text-orange-400">• 후반 성공률: +5강 40%, +6강 20%, +7강 10%, +8강 5%, +9강 1%</li>
-                <li>• 같은 선수 카드 사용 시: 성공률 +15%</li>
-                <li>• 재료 등급별 보너스: 레전드 +10%, 에픽 +5%, 레어 +3%</li>
-                <li>• 재료 오버롤 70 이상: 10마다 +3% (예: 80 = +3%, 90 = +6%)</li>
-                <li>• 재료 강화도: 1강당 +1% (예: +5강 재료 = +5%)</li>
+                <li>• 같은 선수 카드 사용 시: 성공률 +8%</li>
+                <li>• 재료 등급별 보너스: 레전드 +5%, 에픽 +3%, 레어 +1%</li>
+                <li>• 재료 오버롤 70 이상: 10마다 +1% (예: 80 = +1%, 90 = +2%)</li>
+                <li>• 재료 강화도: 1강당 +0.5% (예: +5강 재료 = +2.5%)</li>
                 <li>• 강화 비용: (현재 강화도 + 1) × 100P</li>
-                <li className="text-red-600 dark:text-red-400 font-bold">⚠️ 실패 시 재료 카드 소멸 + OVR 하락 위험!</li>
-                <li className="text-red-600 dark:text-red-400">• OVR 하락: +5강 -1, +6강 -2, +7강 -3, +8강 -5, +9강 -7</li>
-                <li>• 최대 강화: +10강 (최대 성공률 85%)</li>
+                <li className="text-red-600 dark:text-red-400 font-bold">⚠️ 실패 시 재료 카드 소멸 + 강화 레벨 하락 위험!</li>
+                <li className="text-red-600 dark:text-red-400">• 레벨 하락: 1-3강 50% 확률로 -1, 4-6강 70% 확률로 -1, 7-10강 100% 확률로 -1</li>
+                <li>• 최대 강화: +10강 (최대 성공률 80%)</li>
               </ul>
             </div>
           </div>
@@ -341,28 +341,28 @@ export default function Enhancement() {
                   {preview.isSamePlayer && (
                     <div className="flex items-center justify-between mb-2 text-green-600 dark:text-green-400">
                       <span className="text-sm">같은 선수 보너스</span>
-                      <span className="font-bold">+15%</span>
+                      <span className="font-bold">+8%</span>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between mb-2 text-purple-600 dark:text-purple-400">
                     <span className="text-sm">재료 등급 ({getTierText(preview.materialTier)})</span>
                     <span className="font-bold">
-                      +{preview.materialTier === 'LEGENDARY' ? 10 : preview.materialTier === 'EPIC' ? 5 : preview.materialTier === 'RARE' ? 3 : 0}%
+                      +{preview.materialTier === 'LEGENDARY' ? 5 : preview.materialTier === 'EPIC' ? 3 : preview.materialTier === 'RARE' ? 1 : 0}%
                     </span>
                   </div>
 
                   {preview.materialOverall >= 70 && (
                     <div className="flex items-center justify-between mb-2 text-blue-600 dark:text-blue-400">
                       <span className="text-sm">재료 오버롤 ({preview.materialOverall})</span>
-                      <span className="font-bold">+{Math.floor((preview.materialOverall - 70) / 10) * 3}%</span>
+                      <span className="font-bold">+{Math.floor((preview.materialOverall - 70) / 10) * 1}%</span>
                     </div>
                   )}
 
                   {preview.materialLevel > 0 && (
                     <div className="flex items-center justify-between mb-2 text-orange-600 dark:text-orange-400">
                       <span className="text-sm">재료 강화도 (+{preview.materialLevel})</span>
-                      <span className="font-bold">+{preview.materialLevel * 1}%</span>
+                      <span className="font-bold">+{preview.materialLevel * 0.5}%</span>
                     </div>
                   )}
 

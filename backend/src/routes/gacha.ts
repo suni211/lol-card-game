@@ -107,7 +107,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
     } else {
       // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + ICON cards
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR tier = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }
@@ -270,7 +270,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         );
       } else {
         [players] = await connection.query(
-          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR tier = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
+          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') ORDER BY RAND() LIMIT 1",
           [tier]
         );
       }
@@ -568,25 +568,25 @@ function calculateEnhancementRate(
 ): number {
   let successRate = baseRate;
 
-  // Same player bonus: +15% (기존 +30%에서 하향)
+  // Same player bonus: +8% (기존 +15%에서 재하향)
   if (targetCard.player_id === materialCard.player_id) {
-    successRate += 15;
+    successRate += 8;
   }
 
-  // Tier bonus/penalty (기존 20/10/5에서 10/5/3으로 하향)
-  const tierValues: any = { LEGENDARY: 10, EPIC: 5, RARE: 3, COMMON: 0 };
+  // Tier bonus/penalty (기존 10/5/3에서 5/3/1로 재하향)
+  const tierValues: any = { LEGENDARY: 5, EPIC: 3, RARE: 1, COMMON: 0 };
   const tierBonus = tierValues[materialPlayer.tier] || 0;
   successRate += tierBonus;
 
-  // Overall bonus: every 10 overall above 70 = +3% (기존 +5%에서 하향)
-  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 3;
+  // Overall bonus: every 10 overall above 70 = +1% (기존 +3%에서 재하향)
+  const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 70) / 10) * 1;
   successRate += overallBonus;
 
-  // Enhancement level of material: each level = +1% (기존 +2%에서 하향)
-  successRate += materialCard.level * 1;
+  // Enhancement level of material: each level = +0.5% (기존 +1%에서 재하향)
+  successRate += materialCard.level * 0.5;
 
-  // Cap at 85% max, 3% min (기존 95%/5%에서 하향)
-  return Math.min(85, Math.max(3, successRate));
+  // Cap at 80% max, 3% min (기존 85%/3%에서 재하향)
+  return Math.min(80, Math.max(3, successRate));
 }
 
 // Get enhancement rate (for preview before enhance)

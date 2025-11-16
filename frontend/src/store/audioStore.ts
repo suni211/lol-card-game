@@ -63,29 +63,39 @@ export const useAudioStore = create<AudioState>()(
 
         // 같은 트랙이면 재생만
         if (currentTrack === trackPath && audioElement.paused) {
-          audioElement.play().catch(() => {
-            // 모든 에러 조용히 무시 (NotAllowedError, NotSupportedError 등)
+          audioElement.play().catch((err) => {
+            console.log('BGM play failed (same track):', err.name);
             set({ isPlaying: false });
           });
-          set({ isPlaying: true });
           return;
         }
 
         // 다른 트랙이면 변경
         if (currentTrack !== trackPath) {
-          // 에러 핸들러 추가
-          audioElement.onerror = () => {
-            // 파일 로드 실패 시 조용히 무시
+          console.log('Loading BGM:', trackPath);
+
+          // 에러 핸들러
+          audioElement.onerror = (e) => {
+            console.error('BGM load error:', trackPath, e);
             set({ isPlaying: false, currentTrack: null });
+          };
+
+          // 로드 성공 핸들러
+          audioElement.onloadeddata = () => {
+            console.log('BGM loaded successfully:', trackPath);
           };
 
           audioElement.src = trackPath;
           audioElement.volume = isMuted ? 0 : volume;
-          audioElement.play().catch(() => {
-            // 모든 에러 조용히 무시 (NotAllowedError, NotSupportedError 등)
+          audioElement.load(); // 명시적으로 로드
+
+          audioElement.play().then(() => {
+            console.log('BGM playing:', trackPath);
+            set({ currentTrack: trackPath, isPlaying: true });
+          }).catch((err) => {
+            console.log('BGM play failed:', err.name, trackPath);
             set({ isPlaying: false });
           });
-          set({ currentTrack: trackPath, isPlaying: true });
         }
       },
 

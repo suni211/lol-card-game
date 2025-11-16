@@ -4,6 +4,23 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// Admin check middleware
+const adminMiddleware = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const [users]: any = await pool.query('SELECT isAdmin FROM users WHERE id = ?', [userId]);
+
+    if (!users[0] || !users[0].isAdmin) {
+      return res.status(403).json({ error: '관리자 권한이 필요합니다' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin check error:', error);
+    res.status(500).json({ error: '권한 확인 중 오류가 발생했습니다' });
+  }
+};
+
 // 19G2 Light Pack (500P) - 일반 등급 포함, 19G2 카드 0.02% 확률
 router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
@@ -210,6 +227,56 @@ router.get('/pity', authMiddleware, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Get pity error:', error);
     res.status(500).json({ error: '천장 정보 조회 중 오류가 발생했습니다' });
+  }
+});
+
+// 19G2 Test Pack (Admin Only) - 100% 19G2 guaranteed
+router.post('/test', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+
+    // Get random 19G2 player
+    const [g2Players]: any = await connection.query(
+      'SELECT * FROM players WHERE season = ? ORDER BY RAND() LIMIT 1',
+      ['19G2']
+    );
+
+    if (g2Players.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: '19G2 카드를 찾을 수 없습니다' });
+    }
+
+    const player = g2Players[0];
+
+    // Add card to user
+    const [result]: any = await connection.query(
+      'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
+      [userId, player.id]
+    );
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      card: {
+        id: result.insertId,
+        player,
+        level: 0,
+        is19G2: true,
+        isGuaranteed: true,
+      },
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('19G2 Test Pack error:', error);
+    res.status(500).json({ error: '가챠 구매 중 오류가 발생했습니다' });
+  } finally {
+    connection.release();
   }
 });
 

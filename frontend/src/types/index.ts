@@ -104,6 +104,7 @@ export interface GachaOption {
   special?: boolean;
   is19G2Light?: boolean;
   is19G2Premium?: boolean;
+  is19G2Test?: boolean;
   description?: string;
 }
 

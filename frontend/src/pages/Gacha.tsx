@@ -175,6 +175,21 @@ export default function Gacha() {
           gr: 100,
         },
         special: true,
+      },
+      {
+        cost: 0,
+        label: '19G2 테스트팩',
+        probabilities: {
+          common: 0,
+          rare: 0,
+          epic: 0,
+          legendary: 0,
+          icon: 0,
+          gr: 0,
+        },
+        special: true,
+        is19G2Test: true,
+        description: '19G2 카드 100% 확정 (관리자 전용)',
       }
     ] : []),
   ];
@@ -229,8 +244,12 @@ export default function Gacha() {
 
     try {
       // Check if this is a 19G2 pack
-      if (option.is19G2Light || option.is19G2Premium) {
-        const endpoint = option.is19G2Light ? '/gacha19g2/light' : '/gacha19g2/premium';
+      if (option.is19G2Light || option.is19G2Premium || option.is19G2Test) {
+        const endpoint = option.is19G2Test
+          ? '/gacha19g2/test'
+          : option.is19G2Light
+          ? '/gacha19g2/light'
+          : '/gacha19g2/premium';
 
         const response = await axios.post(
           `${API_URL}${endpoint}`,
@@ -617,6 +636,13 @@ export default function Gacha() {
                           현재: {pityCount}회 / 천장까지: {50 - pityCount}회
                         </p>
                       )}
+                    </div>
+                  )}
+                  {option.is19G2Test && (
+                    <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-red-800 dark:text-red-300 text-center">
+                        19G2 카드 100% 확정 (관리자 전용)
+                      </p>
                     </div>
                   )}
                   {option.probabilities.gr && option.probabilities.gr > 0 && (

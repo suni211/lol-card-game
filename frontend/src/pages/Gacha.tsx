@@ -1120,104 +1120,120 @@ export default function Gacha() {
                 ) : null
               )}
 
-              {/* Step 5: GR - Player Name + Mini Faceoff */}
+              {/* Step 5: GR - Player Image FIFA Style */}
               {revealStep === 5 && drawnCard.tier === 'GR' && (
                 <motion.div
                   key="gr-player-faceoff"
-                  className="relative w-full h-screen flex items-center justify-center"
+                  className="relative w-full h-screen flex items-center justify-center overflow-hidden"
                 >
-                  {/* 검은 배경 + 핑크 그라데이션 */}
+                  {/* 검은 배경 */}
+                  <div className="absolute inset-0 bg-black" />
+
+                  {/* 핑크 방사형 그라데이션 배경 */}
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-b from-black via-pink-900/30 to-black"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    className="absolute inset-0"
+                    style={{
+                      background: 'radial-gradient(circle at center, rgba(236, 72, 153, 0.3) 0%, rgba(0, 0, 0, 0.8) 50%, black 100%)',
+                    }}
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 0.8, 0.5],
+                    }}
+                    transition={{ duration: 3, repeat: Infinity }}
                   />
 
-                  {/* 핑크빛 입자들이 위로 올라감 */}
-                  {[...Array(60)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-1 h-1 bg-pink-400 rounded-full"
+                  {/* 선수 이미지 - FIFA 스타일로 크게 */}
+                  <motion.div
+                    className="relative z-10"
+                    initial={{ opacity: 0, scale: 0.5, y: 100 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
+                  >
+                    <img
+                      src={`/players/${drawnCard.name.toLowerCase().replace('gr ', '')}_${drawnCard.season || '25'}_gr.png`}
+                      alt={drawnCard.name}
+                      className="w-96 h-96 object-contain drop-shadow-2xl"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                      }}
                       style={{
-                        left: `${Math.random() * 100}%`,
-                        bottom: '0%',
-                      }}
-                      animate={{
-                        y: [-100, -window.innerHeight],
-                        opacity: [0, 1, 1, 0],
-                        scale: [0, 1.5, 1.5, 0],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        delay: Math.random() * 2,
-                        ease: 'linear',
+                        filter: 'drop-shadow(0 0 50px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 100px rgba(236, 72, 153, 0.5))',
                       }}
                     />
-                  ))}
+                  </motion.div>
 
-                  {/* 선수 이름 + 미니 페이스온 */}
+                  {/* 선수 이름 하단 */}
                   <motion.div
-                    className="relative z-10 text-center"
-                    initial={{ opacity: 0, scale: 0.5, rotateX: -90 }}
-                    animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
+                    className="absolute bottom-32 left-0 right-0 text-center z-20"
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
                   >
                     <motion.div
-                      className="text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-pink-200 via-rose-400 to-red-600 mb-6"
+                      className="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-400 to-red-500 mb-4"
                       style={{
-                        textShadow: '0 0 80px rgba(236, 72, 153, 0.8)',
-                        WebkitTextStroke: '2px rgba(236, 72, 153, 0.3)',
+                        textShadow: '0 0 60px rgba(236, 72, 153, 1)',
+                        WebkitTextStroke: '2px rgba(236, 72, 153, 0.5)',
                       }}
                       animate={{
-                        scale: [1, 1.05, 1],
+                        textShadow: [
+                          '0 0 60px rgba(236, 72, 153, 1)',
+                          '0 0 80px rgba(236, 72, 153, 1)',
+                          '0 0 60px rgba(236, 72, 153, 1)',
+                        ],
                       }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
                     >
                       {drawnCard.name}
                     </motion.div>
 
                     <motion.div
-                      className="flex items-center justify-center gap-4 text-pink-200 text-xl mb-8"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
+                      className="text-pink-200 text-2xl font-bold mb-2"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.7 }}
                     >
-                      <span className="font-bold">{drawnCard.team}</span>
-                      <span>•</span>
-                      <span className="font-bold">{drawnCard.position}</span>
-                      <span>•</span>
-                      <span className="font-bold">{drawnCard.season}</span>
+                      {drawnCard.team} • {drawnCard.position} • {drawnCard.season}
                     </motion.div>
 
-                    {/* 미니 페이스온 */}
                     <motion.div
-                      className="inline-block bg-gradient-to-br from-pink-500/20 to-red-600/20 backdrop-blur-sm rounded-xl px-8 py-4 border-2 border-pink-400/50"
+                      className="inline-block bg-gradient-to-r from-pink-500 via-rose-500 to-red-600 text-white px-8 py-3 rounded-full text-lg font-black tracking-wider"
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.8 }}
+                      transition={{ delay: 0.9 }}
                     >
-                      <div className="text-pink-100 text-sm mb-2 font-semibold tracking-wider">ROOKIE SEASON</div>
-                      <div className="text-pink-200 text-3xl font-black">{drawnCard.name}의 전설적인 신인 시절</div>
+                      GOLDEN ROOKIE
                     </motion.div>
                   </motion.div>
 
-                  {/* 방사형 빛 효과 */}
+                  {/* 빛나는 링 효과 */}
                   <motion.div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: 'radial-gradient(circle at center, rgba(236, 72, 153, 0.15) 0%, transparent 70%)',
-                    }}
-                    animate={{
-                      opacity: [0.3, 0.6, 0.3],
-                      scale: [1, 1.1, 1],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute w-[800px] h-[800px] rounded-full border-4 border-pink-400/30"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
                   />
+
+                  {/* 반짝이는 입자들 */}
+                  {[...Array(30)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-2 h-2 bg-pink-400 rounded-full"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                      }}
+                      animate={{
+                        opacity: [0, 1, 0],
+                        scale: [0, 2, 0],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        delay: Math.random() * 2,
+                      }}
+                    />
+                  ))}
                 </motion.div>
               )}
 

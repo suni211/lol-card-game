@@ -199,8 +199,21 @@ export default function Gacha() {
 
         setDrawnCard(player);
 
+        // GR 카드는 최고급 컷신
+        if (player.tier === 'GR') {
+          setTimeout(() => setRevealStep(1), 500);   // GOLDEN ROOKIE 텍스트
+          setTimeout(() => setRevealStep(2), 2000);  // 시즌
+          setTimeout(() => setRevealStep(3), 3000);  // 포지션
+          setTimeout(() => setRevealStep(4), 4000);  // 팀
+          setTimeout(() => setRevealStep(5), 5000);  // 선수 이름 + 미니페이스온
+          setTimeout(() => {
+            setRevealStep(6);  // Final card
+            setIsDrawing(false);
+            setShowResult(true);
+          }, 6500);
+        }
         // ICON 카드는 완전히 다른 컷신
-        if (player.tier === 'ICON') {
+        else if (player.tier === 'ICON') {
           setTimeout(() => setRevealStep(1), 500);   // 암전 + 균열 효과
           setTimeout(() => setRevealStep(2), 2000);  // ICON 텍스트
           setTimeout(() => setRevealStep(3), 3500);  // 선수 이름
@@ -222,7 +235,7 @@ export default function Gacha() {
         }
 
         // 타이머 후 처리
-        const displayDelay = player.tier === 'ICON' ? 5500 : 3500;
+        const displayDelay = player.tier === 'GR' ? 6500 : player.tier === 'ICON' ? 5500 : 3500;
         setTimeout(() => {
 
           // 포인트 업데이트
@@ -230,7 +243,9 @@ export default function Gacha() {
           updateUser({ points: newPoints });
 
           // 티어에 따라 다른 메시지
-          if (player.tier === 'ICON') {
+          if (player.tier === 'GR') {
+            toast.success('👑 GREATEST ROOKIE 획득! 역대급 신인!', { duration: 10000 });
+          } else if (player.tier === 'ICON') {
             toast.success('🏆 ICON 카드 획득! 전설의 선수!', { duration: 8000 });
           } else if (player.tier === 'LEGENDARY') {
             toast.success('🎉 레전드 카드 획득!', { duration: 5000 });
@@ -683,9 +698,84 @@ export default function Gacha() {
                 </motion.div>
               )}
 
-              {/* Step 1: ICON - 암전 + 균열 효과 OR 일반 - Position */}
+              {/* Step 1: GR - GOLDEN ROOKIE 텍스트 OR ICON - 암전 + 균열 효과 OR 일반 - Position */}
               {revealStep === 1 && (
-                drawnCard.tier === 'ICON' ? (
+                drawnCard.tier === 'GR' ? (
+                  <motion.div
+                    key="gr-text"
+                    initial={{ opacity: 0, scale: 0.3 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative w-full h-screen flex items-center justify-center"
+                  >
+                    {/* 검은 배경 */}
+                    <div className="absolute inset-0 bg-black" />
+
+                    {/* 황금빛 원형 파동 효과 */}
+                    {[...Array(5)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute w-96 h-96 rounded-full border-4 border-pink-400"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{
+                          scale: [0, 2 + i * 0.3],
+                          opacity: [0.8, 0],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          delay: i * 0.2,
+                          repeat: Infinity,
+                          repeatDelay: 0.5,
+                        }}
+                        style={{
+                          boxShadow: '0 0 60px 20px rgba(236, 72, 153, 0.6)'
+                        }}
+                      />
+                    ))}
+
+                    {/* GOLDEN ROOKIE 텍스트 */}
+                    <motion.div
+                      className="relative z-10 text-center"
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.8 }}
+                    >
+                      <motion.div
+                        className="text-8xl font-black bg-gradient-to-r from-pink-300 via-rose-400 to-red-500 bg-clip-text text-transparent"
+                        animate={{
+                          textShadow: [
+                            '0 0 30px rgba(236, 72, 153, 0.8)',
+                            '0 0 50px rgba(236, 72, 153, 1)',
+                            '0 0 30px rgba(236, 72, 153, 0.8)',
+                          ]
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        GOLDEN
+                      </motion.div>
+                      <motion.div
+                        className="text-8xl font-black bg-gradient-to-r from-pink-300 via-rose-400 to-red-500 bg-clip-text text-transparent mt-4"
+                        animate={{
+                          textShadow: [
+                            '0 0 30px rgba(236, 72, 153, 0.8)',
+                            '0 0 50px rgba(236, 72, 153, 1)',
+                            '0 0 30px rgba(236, 72, 153, 0.8)',
+                          ]
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
+                      >
+                        ROOKIE
+                      </motion.div>
+                      <motion.div
+                        className="text-2xl text-pink-200 mt-6 font-bold tracking-widest"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                      >
+                        전설의 신인 시절
+                      </motion.div>
+                    </motion.div>
+                  </motion.div>
+                ) : drawnCard.tier === 'ICON' ? (
                   <motion.div
                     key="icon-crack"
                     initial={{ opacity: 0 }}
@@ -762,9 +852,25 @@ export default function Gacha() {
                 )
               )}
 
-              {/* Step 2: ICON - "ICON" 텍스트 OR 일반 - Season */}
+              {/* Step 2: GR - Season OR ICON - "ICON" 텍스트 OR 일반 - Season */}
               {revealStep === 2 && (
-                drawnCard.tier === 'ICON' ? (
+                drawnCard.tier === 'GR' ? (
+                  <motion.div
+                    key="gr-season"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400 rounded-2xl blur-3xl opacity-75 animate-pulse"></div>
+                    <div className="relative inline-block bg-gradient-to-br from-pink-500 via-rose-500 to-red-600 rounded-2xl px-16 py-10 shadow-2xl">
+                      <div className="text-white text-7xl font-bold mb-3">
+                        {drawnCard.season || '2025'}
+                      </div>
+                      <div className="text-pink-100 text-2xl font-semibold">시즌</div>
+                    </div>
+                  </motion.div>
+                ) : drawnCard.tier === 'ICON' ? (
                   <motion.div
                     key="icon-text"
                     initial={{ opacity: 0, scale: 0.3 }}
@@ -865,9 +971,25 @@ export default function Gacha() {
                 )
               )}
 
-              {/* Step 3: ICON - 선수 이름 OR 일반 - Team */}
+              {/* Step 3: GR - Position OR ICON - 선수 이름 OR 일반 - Team */}
               {revealStep === 3 && (
-                drawnCard.tier === 'ICON' ? (
+                drawnCard.tier === 'GR' ? (
+                  <motion.div
+                    key="gr-position"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400 rounded-2xl blur-3xl opacity-75 animate-pulse"></div>
+                    <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-16 py-10 shadow-2xl border-4 border-pink-300`}>
+                      <div className="text-white text-7xl font-bold mb-3">
+                        {drawnCard.position}
+                      </div>
+                      <div className="text-white/90 text-2xl font-semibold">포지션</div>
+                    </div>
+                  </motion.div>
+                ) : drawnCard.tier === 'ICON' ? (
                   <motion.div
                     key="icon-player-name"
                     className="relative w-full h-screen flex items-center justify-center"
@@ -977,8 +1099,130 @@ export default function Gacha() {
                 )
               )}
 
-              {/* Step 4: Final Card Reveal (will transition to showResult) */}
+              {/* Step 4: GR - Team OR ICON/일반 - Final Card */}
               {revealStep === 4 && (
+                drawnCard.tier === 'GR' ? (
+                  <motion.div
+                    key="gr-team"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400 rounded-2xl blur-3xl opacity-75 animate-pulse"></div>
+                    <div className="relative bg-gradient-to-br from-pink-500 via-rose-500 to-red-600 rounded-2xl px-16 py-10 shadow-2xl inline-block border-4 border-pink-300">
+                      <div className="text-white text-7xl font-bold mb-3">
+                        {drawnCard.team}
+                      </div>
+                      <div className="text-pink-100 text-2xl font-semibold">소속팀</div>
+                    </div>
+                  </motion.div>
+                ) : null
+              )}
+
+              {/* Step 5: GR - Player Name + Mini Faceoff */}
+              {revealStep === 5 && drawnCard.tier === 'GR' && (
+                <motion.div
+                  key="gr-player-faceoff"
+                  className="relative w-full h-screen flex items-center justify-center"
+                >
+                  {/* 검은 배경 + 핑크 그라데이션 */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-b from-black via-pink-900/30 to-black"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  />
+
+                  {/* 핑크빛 입자들이 위로 올라감 */}
+                  {[...Array(60)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1 h-1 bg-pink-400 rounded-full"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        bottom: '0%',
+                      }}
+                      animate={{
+                        y: [-100, -window.innerHeight],
+                        opacity: [0, 1, 1, 0],
+                        scale: [0, 1.5, 1.5, 0],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        delay: Math.random() * 2,
+                        ease: 'linear',
+                      }}
+                    />
+                  ))}
+
+                  {/* 선수 이름 + 미니 페이스온 */}
+                  <motion.div
+                    className="relative z-10 text-center"
+                    initial={{ opacity: 0, scale: 0.5, rotateX: -90 }}
+                    animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                  >
+                    <motion.div
+                      className="text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-pink-200 via-rose-400 to-red-600 mb-6"
+                      style={{
+                        textShadow: '0 0 80px rgba(236, 72, 153, 0.8)',
+                        WebkitTextStroke: '2px rgba(236, 72, 153, 0.3)',
+                      }}
+                      animate={{
+                        scale: [1, 1.05, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    >
+                      {drawnCard.name}
+                    </motion.div>
+
+                    <motion.div
+                      className="flex items-center justify-center gap-4 text-pink-200 text-xl mb-8"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <span className="font-bold">{drawnCard.team}</span>
+                      <span>•</span>
+                      <span className="font-bold">{drawnCard.position}</span>
+                      <span>•</span>
+                      <span className="font-bold">{drawnCard.season}</span>
+                    </motion.div>
+
+                    {/* 미니 페이스온 */}
+                    <motion.div
+                      className="inline-block bg-gradient-to-br from-pink-500/20 to-red-600/20 backdrop-blur-sm rounded-xl px-8 py-4 border-2 border-pink-400/50"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.8 }}
+                    >
+                      <div className="text-pink-100 text-sm mb-2 font-semibold tracking-wider">ROOKIE SEASON</div>
+                      <div className="text-pink-200 text-3xl font-black">{drawnCard.name}의 전설적인 신인 시절</div>
+                    </motion.div>
+                  </motion.div>
+
+                  {/* 방사형 빛 효과 */}
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'radial-gradient(circle at center, rgba(236, 72, 153, 0.15) 0%, transparent 70%)',
+                    }}
+                    animate={{
+                      opacity: [0.3, 0.6, 0.3],
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </motion.div>
+              )}
+
+              {/* Step 4/6: Final Card Reveal (will transition to showResult) */}
+              {((revealStep === 4 && drawnCard.tier !== 'GR') || (revealStep === 6 && drawnCard.tier === 'GR')) && (
                 <motion.div
                   key="final"
                   initial={{ opacity: 0, scale: 0.5, rotateY: -180 }}

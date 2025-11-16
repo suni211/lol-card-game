@@ -119,7 +119,11 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
 
     for (const position of positions) {
       const [randomPlayers]: any = await connection.query(`
-        SELECT id, name, team, position, overall, tier, season, laning, teamfight, macro, mental
+        SELECT
+          id, name, team, position, overall, tier, season,
+          laning, teamfight, macro, mental,
+          cs_ability, lane_pressure, damage_dealing, survivability,
+          objective_control, vision_control, decision_making, consistency
         FROM players
         WHERE position = ?
         ORDER BY RAND()
@@ -135,10 +139,20 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
           season: p.season || '25',
           overall: p.overall,
           level: 0, // AI doesn't have card levels
+          // 기존 4개 스탯
           laning: p.laning || 50,
           teamfight: p.teamfight || 50,
           macro: p.macro || 50,
           mental: p.mental || 50,
+          // 새로운 8개 세부 스탯
+          cs_ability: p.cs_ability || 50,
+          lane_pressure: p.lane_pressure || 50,
+          damage_dealing: p.damage_dealing || 50,
+          survivability: p.survivability || 50,
+          objective_control: p.objective_control || 50,
+          vision_control: p.vision_control || 50,
+          decision_making: p.decision_making || 50,
+          consistency: p.consistency || 50,
         };
       }
     }

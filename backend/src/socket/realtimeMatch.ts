@@ -11,11 +11,65 @@ const STRATEGY_COUNTERS: Record<Strategy, { beats: Strategy; losesTo: Strategy }
   DEFENSIVE: { beats: 'AGGRESSIVE', losesTo: 'TEAMFIGHT' },
 };
 
-// 전략별 사용 스탯
-const STRATEGY_STATS: Record<Strategy, 'laning' | 'teamfight' | 'macro'> = {
-  AGGRESSIVE: 'laning',
-  TEAMFIGHT: 'teamfight',
-  DEFENSIVE: 'macro',
+// 전략별 사용 스탯 (8개 세부 스탯 기반)
+const STRATEGY_STATS: Record<Strategy, string[]> = {
+  AGGRESSIVE: ['cs_ability', 'lane_pressure', 'damage_dealing'],
+  TEAMFIGHT: ['damage_dealing', 'survivability', 'decision_making'],
+  DEFENSIVE: ['objective_control', 'vision_control', 'consistency'],
+};
+
+// 포지션별 스탯 가중치 (실제 경기처럼 포지션 특성 반영)
+const POSITION_WEIGHTS: Record<string, Record<string, number>> = {
+  TOP: {
+    cs_ability: 1.0,
+    lane_pressure: 1.0,
+    damage_dealing: 1.0,
+    survivability: 1.0,
+    objective_control: 1.0,
+    vision_control: 1.0,
+    decision_making: 1.0,
+    consistency: 1.0,
+  },
+  JUNGLE: {
+    cs_ability: 0.3,
+    lane_pressure: 0.2,
+    damage_dealing: 0.8,
+    survivability: 1.2,
+    objective_control: 1.5,
+    vision_control: 1.3,
+    decision_making: 1.2,
+    consistency: 1.0,
+  },
+  MID: {
+    cs_ability: 1.0,
+    lane_pressure: 1.0,
+    damage_dealing: 1.0,
+    survivability: 1.0,
+    objective_control: 1.0,
+    vision_control: 1.0,
+    decision_making: 1.0,
+    consistency: 1.0,
+  },
+  ADC: {
+    cs_ability: 1.0,
+    lane_pressure: 1.0,
+    damage_dealing: 1.0,
+    survivability: 1.0,
+    objective_control: 1.0,
+    vision_control: 1.0,
+    decision_making: 1.0,
+    consistency: 1.0,
+  },
+  SUPPORT: {
+    cs_ability: 0.1,
+    lane_pressure: 0.3,
+    damage_dealing: 0.5,
+    survivability: 1.0,
+    objective_control: 0.9,
+    vision_control: 1.5,
+    decision_making: 1.3,
+    consistency: 1.3,
+  },
 };
 
 interface ActiveMatch {
@@ -52,7 +106,7 @@ const ROUND_TIME_LIMIT = 10000; // 10 seconds
 // Calculate power from deck object directly (for AI decks)
 function calculateDeckObjectPower(
   deckObj: any,
-  stat: 'laning' | 'teamfight' | 'macro'
+  stats: string[]
 ): number {
   const positions = ['top', 'jungle', 'mid', 'adc', 'support'];
   const teamMapping: any = {
@@ -80,10 +134,24 @@ function calculateDeckObjectPower(
       levelBonus = 10 + (level - 7) * 4; // 8~10강: +4씩
     }
 
-    // Overall 50%, stat 40%
-    const statValue = card[stat] || 50;
-    const cardPower = (card.overall + levelBonus) * 0.5 + statValue * 0.4;
+    // 포지션별 가중치 적용한 스탯 평균 계산
+    const position = pos.toUpperCase();
+    const positionWeights = POSITION_WEIGHTS[position] || POSITION_WEIGHTS.MID;
 
+    let weightedStatSum = 0;
+    let totalWeight = 0;
+
+    stats.forEach((statName) => {
+      const statValue = card[statName] || 50;
+      const weight = positionWeights[statName] || 1.0;
+      weightedStatSum += statValue * weight;
+      totalWeight += weight;
+    });
+
+    const avgStat = totalWeight > 0 ? weightedStatSum / totalWeight : 50;
+
+    // Overall 50%, weighted stat 40%
+    const cardPower = (card.overall + levelBonus) * 0.5 + avgStat * 0.4;
     totalPower += cardPower;
 
     // Track teams for synergy
@@ -105,7 +173,7 @@ function calculateDeckObjectPower(
 // 덱의 특정 스탯 파워 계산 (시너지 및 특성 포함)
 async function calculateDeckStatPower(
   deckId: number,
-  stat: 'laning' | 'teamfight' | 'macro'
+  stats: string[]
 ): Promise<number> {
   const connection = await pool.getConnection();
 
@@ -124,8 +192,21 @@ async function calculateDeckStatPower(
 
     if (cardIds.length === 0) return 0;
 
+    // 8개 세부 스탯 모두 조회
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.${stat} as stat_value, p.team, p.position
+      SELECT
+        uc.level,
+        p.overall,
+        p.team,
+        p.position,
+        p.cs_ability,
+        p.lane_pressure,
+        p.damage_dealing,
+        p.survivability,
+        p.objective_control,
+        p.vision_control,
+        p.decision_making,
+        p.consistency
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)
@@ -152,8 +233,23 @@ async function calculateDeckStatPower(
         levelBonus = 10 + (card.level - 7) * 4; // 8~10강: +4씩 (10 + 4,8,12)
       }
 
-      // Overall 50% (기본 오버롤 + 강화 보너스), 스탯 40%
-      const statContribution = (card.stat_value || 50) * 0.4;
+      // 포지션별 가중치 적용한 스탯 평균 계산
+      const positionWeights = POSITION_WEIGHTS[card.position] || POSITION_WEIGHTS.MID;
+
+      let weightedStatSum = 0;
+      let totalWeight = 0;
+
+      stats.forEach((statName) => {
+        const statValue = card[statName] || 50;
+        const weight = positionWeights[statName] || 1.0;
+        weightedStatSum += statValue * weight;
+        totalWeight += weight;
+      });
+
+      const avgStat = totalWeight > 0 ? weightedStatSum / totalWeight : 50;
+
+      // Overall 50% (기본 오버롤 + 강화 보너스), weighted stat 40%
+      const statContribution = avgStat * 0.4;
       const overallContribution = (card.overall + levelBonus) * 0.5;
       totalPower += statContribution + overallContribution;
 
@@ -172,7 +268,8 @@ async function calculateDeckStatPower(
 
     totalPower += synergyBonus;
 
-    // 특성 보너스 (해당 스탯에 맞는 특성이 있으면 추가 보너스)
+    // 특성 보너스 (세부 스탯 관련 특성에 따라 추가 보너스)
+    // TODO: 나중에 8개 세부 스탯에 맞는 특성으로 확장 가능
     const [traits]: any = await connection.query(`
       SELECT pt.name, pt.effect
       FROM player_traits pt
@@ -180,19 +277,10 @@ async function calculateDeckStatPower(
       WHERE uc.id IN (?)
     `, [cardIds]);
 
-    const traitStatMap: any = {
-      '라인전 장인': 'laning',
-      '한타 장인': 'teamfight',
-      '운영 장인': 'macro',
-      '라인전 킹': 'laning',
-      '한타의 신': 'teamfight',
-      '운영 천재': 'macro',
-    };
-
+    // 간단한 특성 매핑 (기본 보너스)
     traits.forEach((trait: any) => {
-      if (traitStatMap[trait.name] === stat) {
-        totalPower += 50; // 특성 매칭시 +50
-      }
+      // 모든 특성에 기본 보너스 제공
+      totalPower += 30;
     });
 
     return totalPower;

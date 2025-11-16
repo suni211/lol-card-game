@@ -289,11 +289,15 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
 
       if (isHardMode) {
         hardStagesCleared.push(stageNumber);
+        // 하드모드 클리어 시 일반모드도 자동으로 클리어 처리
+        if (!stagesCleared.includes(stageNumber)) {
+          stagesCleared.push(stageNumber);
+        }
       } else {
         stagesCleared.push(stageNumber);
 
-        // Check if all stages cleared (unlock hard mode)
-        if (stagesCleared.length === 10 && !progress.hard_mode_unlocked) {
+        // Check if all stages cleared (unlock hard mode) - 50단계 올클시 해금
+        if (stagesCleared.length === 50 && !progress.hard_mode_unlocked) {
           await connection.query(
             'UPDATE user_vs_progress SET hard_mode_unlocked = TRUE WHERE user_id = ?',
             [userId]
@@ -327,40 +331,40 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
       );
     }
 
-    // Check if stage 10 hard mode cleared (give legendary pack)
+    // Check if stage 50 hard mode cleared (give ICON pack)
     let legendaryPackAwarded = false;
     let awardedPlayer = null;
 
-    if (isHardMode && stageNumber === 10 && !alreadyCleared) {
-      // Award legendary pack - give a random legendary player
-      const [legendaryPlayers]: any = await connection.query(
-        "SELECT * FROM players WHERE tier = 'LEGENDARY' AND (season = '25' OR season = 'RE' OR season = '25HW') ORDER BY RAND() LIMIT 1"
+    if (isHardMode && stageNumber === 50 && !alreadyCleared) {
+      // Award ICON pack - give a random ICON player
+      const [iconPlayers]: any = await connection.query(
+        "SELECT * FROM players WHERE tier = 'ICON' ORDER BY RAND() LIMIT 1"
       );
 
-      if (legendaryPlayers.length > 0) {
-        const legendaryPlayer = legendaryPlayers[0];
+      if (iconPlayers.length > 0) {
+        const iconPlayer = iconPlayers[0];
 
-        // Add legendary card to user
+        // Add ICON card to user
         await connection.query(
           'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
-          [userId, legendaryPlayer.id]
+          [userId, iconPlayer.id]
         );
 
         // Record in gacha history
         await connection.query(
           'INSERT INTO gacha_history (user_id, player_id, cost, is_duplicate, refund_points) VALUES (?, ?, 0, FALSE, 0)',
-          [userId, legendaryPlayer.id]
+          [userId, iconPlayer.id]
         );
 
         legendaryPackAwarded = true;
         awardedPlayer = {
-          id: legendaryPlayer.id,
-          name: legendaryPlayer.name,
-          team: legendaryPlayer.team,
-          position: legendaryPlayer.position,
-          overall: legendaryPlayer.overall,
-          tier: legendaryPlayer.tier,
-          season: legendaryPlayer.season
+          id: iconPlayer.id,
+          name: iconPlayer.name,
+          team: iconPlayer.team,
+          position: iconPlayer.position,
+          overall: iconPlayer.overall,
+          tier: iconPlayer.tier,
+          season: iconPlayer.season
         };
       }
     }
@@ -374,7 +378,7 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
         rewardPoints: actualRewardPoints,
         stagesCleared,
         hardStagesCleared,
-        hardModeUnlocked: progress.hard_mode_unlocked || stagesCleared.length === 10,
+        hardModeUnlocked: progress.hard_mode_unlocked || stagesCleared.length === 50,
         legendaryPackAwarded,
         awardedPlayer,
         alreadyCleared

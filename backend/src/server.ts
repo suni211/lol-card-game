@@ -24,7 +24,7 @@ import adminRoutes from './routes/admin';
 import marketRoutes from './routes/market';
 import vsmodeRoutes from './routes/vsmode';
 import couponRoutes from './routes/coupon';
-import shopRoutes from './routes/shop';
+import shopRoutes, { setSocketIOForShop } from './routes/shop';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -112,6 +112,9 @@ setupMatchmaking(io);
 
 // Setup socket.io for notices
 setSocketIO(io);
+
+// Setup socket.io for shop
+setSocketIOForShop(io);
 
 // Track unique online users by IP address instead of socket ID
 const connectedIPs = new Map<string, Set<string>>(); // IP -> Set of socket IDs

@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Megaphone } from 'lucide-react';
 import axios from 'axios';
+import io from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 interface GlobalMessage {
   id: number;
@@ -19,9 +21,21 @@ export default function GlobalMessageBanner() {
   useEffect(() => {
     fetchMessages();
 
-    // Poll for new messages every 10 seconds
-    const interval = setInterval(fetchMessages, 10000);
-    return () => clearInterval(interval);
+    // Connect to socket.io for real-time messages
+    const socket = io(SOCKET_URL);
+
+    socket.on('global_message', (newMessage: GlobalMessage) => {
+      setMessages((prev) => [newMessage, ...prev].slice(0, 50));
+      setCurrentIndex(0); // Show new message immediately
+    });
+
+    // Poll for new messages every 30 seconds as backup
+    const interval = setInterval(fetchMessages, 30000);
+
+    return () => {
+      socket.disconnect();
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {

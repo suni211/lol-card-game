@@ -1,8 +1,14 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { Server } from 'socket.io';
 
 const router = express.Router();
+let io: Server;
+
+export const setSocketIOForShop = (socketIO: Server) => {
+  io = socketIO;
+};
 
 // 확성기 구매
 router.post('/megaphone/purchase', authMiddleware, async (req: AuthRequest, res) => {
@@ -142,7 +148,7 @@ router.post('/megaphone/broadcast', authMiddleware, async (req: AuthRequest, res
 
     // 메시지 저장 (30분 동안 유지)
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-    await connection.query(
+    const [result]: any = await connection.query(
       'INSERT INTO global_messages (user_id, username, message, expires_at) VALUES (?, ?, ?, ?)',
       [userId, users[0].username, message.trim(), expiresAt]
     );
@@ -154,6 +160,18 @@ router.post('/megaphone/broadcast', authMiddleware, async (req: AuthRequest, res
     );
 
     await connection.commit();
+
+    // 모든 유저에게 실시간 전송
+    const messageData = {
+      id: result.insertId,
+      username: users[0].username,
+      message: message.trim(),
+      created_at: new Date().toISOString(),
+    };
+
+    if (io) {
+      io.emit('global_message', messageData);
+    }
 
     res.json({
       success: true,

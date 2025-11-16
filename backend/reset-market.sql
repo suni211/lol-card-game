@@ -14,9 +14,16 @@ DELETE FROM player_market_prices;
 -- RARE: (overall * 25) ~ (overall * 40)
 -- COMMON: (overall * 10) ~ (overall * 20)
 
-INSERT INTO player_market_prices (player_id, current_price, price_floor, price_ceiling)
+INSERT INTO player_market_prices (player_id, base_price, current_price, price_floor, price_ceiling)
 SELECT
   id,
+  CASE tier
+    WHEN 'ICON' THEN overall * 250
+    WHEN 'LEGENDARY' THEN overall * 125
+    WHEN 'EPIC' THEN overall * 62
+    WHEN 'RARE' THEN overall * 32
+    WHEN 'COMMON' THEN overall * 15
+  END AS base_price,
   CASE tier
     WHEN 'ICON' THEN overall * 250
     WHEN 'LEGENDARY' THEN overall * 125

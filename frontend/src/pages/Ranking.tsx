@@ -71,11 +71,38 @@ export default function Ranking() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [activeTab, setActiveTab] = useState<'players' | 'decks' | 'cards'>('players');
+  const [topDecks, setTopDecks] = useState<any[]>([]);
+  const [popularCards, setPopularCards] = useState<any[]>([]);
   const { token } = useAuthStore();
 
   useEffect(() => {
     fetchRankings();
+    fetchTopDecks();
+    fetchPopularCards();
   }, []);
+
+  const fetchTopDecks = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/ranking/top-decks?limit=20`);
+      if (response.data.success) {
+        setTopDecks(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch top decks:', error);
+    }
+  };
+
+  const fetchPopularCards = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/ranking/popular-cards?limit=30`);
+      if (response.data.success) {
+        setPopularCards(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch popular cards:', error);
+    }
+  };
 
   const fetchRankings = async () => {
     try {
@@ -165,7 +192,7 @@ export default function Ranking() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
           <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mb-4">
             <Trophy className="w-12 h-12 text-white" />
@@ -178,7 +205,41 @@ export default function Ranking() {
           </p>
         </motion.div>
 
-        {rankings.length === 0 ? (
+        {/* Tabs */}
+        <div className="flex justify-center mb-8 space-x-2">
+          <button
+            onClick={() => setActiveTab('players')}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'players'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            플레이어 랭킹
+          </button>
+          <button
+            onClick={() => setActiveTab('decks')}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'decks'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            인기 덱
+          </button>
+          <button
+            onClick={() => setActiveTab('cards')}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'cards'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            인기 카드
+          </button>
+        </div>
+
+        {activeTab === 'players' && rankings.length === 0 ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -199,7 +260,7 @@ export default function Ranking() {
               경기 시작하기
             </a>
           </motion.div>
-        ) : (
+        ) : activeTab === 'players' ? (
           /* Rankings List */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -305,7 +366,7 @@ export default function Ranking() {
               </table>
             </div>
           </motion.div>
-        )}
+        ) : null}
 
         {/* User Profile Modal */}
         <AnimatePresence>
@@ -473,6 +534,96 @@ export default function Ranking() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Top Decks Tab */}
+        {activeTab === 'decks' && (
+          <div className="grid grid-cols-1 gap-6">
+            {topDecks.map((deck) => (
+              <motion.div
+                key={deck.deckId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-4">
+                    {getRankIcon(deck.rank)}
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">{deck.username}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {deck.deckName} • {deck.rating} RP
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`px-4 py-2 rounded-lg bg-gradient-to-r ${getTierColor(deck.tier)}`}>
+                    <span className="text-white font-bold">{deck.tier}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-5 gap-3">
+                  {Object.entries(deck.cards).map(([position, card]: [string, any]) => (
+                    <div key={position} className={`bg-gradient-to-br ${getCardTierColor(card.tier)} p-0.5 rounded-lg`}>
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                          {position}
+                        </div>
+                        <div className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                          {card.name}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">{card.team}</div>
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">{card.overall}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Popular Cards Tab */}
+        {activeTab === 'cards' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {popularCards.map((card, index) => (
+              <motion.div
+                key={card.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                className={`bg-gradient-to-br ${getCardTierColor(card.tier)} p-0.5 rounded-xl`}
+              >
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`inline-block px-2 py-1 bg-gradient-to-r ${getCardTierColor(card.tier)} rounded text-white text-xs font-bold`}>
+                      {card.tier}
+                    </span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">#{index + 1}</span>
+                  </div>
+
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-1 truncate">
+                    {card.name}
+                  </h3>
+
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                    {card.team} • {card.position}
+                  </p>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">OVR</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{card.overall}</span>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">사용률</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">{card.usage_count}명</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

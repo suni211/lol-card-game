@@ -1150,7 +1150,7 @@ export default function Gacha() {
                     transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
                   >
                     <img
-                      src={`/players/${drawnCard.name.toLowerCase().replace('gr ', '')}_${drawnCard.season || '25'}_gr.png`}
+                      src={`/players/${drawnCard.name.replace('GR ', '')}_gr.png`}
                       alt={drawnCard.name}
                       className="w-96 h-96 object-contain drop-shadow-2xl"
                       onError={(e) => {

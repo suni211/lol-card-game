@@ -139,14 +139,14 @@ export default function Gacha() {
       probabilities: {
         common: 0,
         rare: 0,
-        epic: 70,
+        epic: 69.975,
         legendary: 30,
-        icon: 0,
+        icon: 0.025,
         gr: 0,
       },
       special: true,
       is19G2Premium: true,
-      description: '2019 G2 골든로드 프리미엄 팩 - 에픽 이상 확정, 19G2 카드 0.132%, 50회 천장',
+      description: '2019 G2 골든로드 프리미엄 팩 - 에픽 이상 확정, 아이콘 0.025%, 19G2 카드 0.132%, 50회 천장',
     },
     // Admin-only test packs
     ...(user?.isAdmin ? [
@@ -271,14 +271,23 @@ export default function Gacha() {
             setShow19G2Cutscene(true);
 
             // After cutscene completes, show the card
-            setTimeout(() => {
+            setTimeout(async () => {
               setShow19G2Cutscene(false);
               setDrawnCard(card.player);
               setIsDrawing(false);
               setShowResult(true);
 
-              // Update user points
-              updateUser({ points: user.points - option.cost });
+              // Fetch updated user info from backend
+              try {
+                const userResponse = await axios.get(`${API_URL}/auth/me`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (userResponse.data.success) {
+                  updateUser(userResponse.data.data);
+                }
+              } catch (error) {
+                console.error('Failed to update user info:', error);
+              }
 
               toast.success('🏆 2019 G2 카드 획득! 골든로드에 가장 가까웠던 전설!', { duration: 8000 });
 
@@ -297,12 +306,22 @@ export default function Gacha() {
             setTimeout(() => setRevealStep(1), 500);
             setTimeout(() => setRevealStep(2), 1500);
             setTimeout(() => setRevealStep(3), 2500);
-            setTimeout(() => {
+            setTimeout(async () => {
               setRevealStep(4);
               setIsDrawing(false);
               setShowResult(true);
 
-              updateUser({ points: user.points - option.cost });
+              // Fetch updated user info from backend
+              try {
+                const userResponse = await axios.get(`${API_URL}/auth/me`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (userResponse.data.success) {
+                  updateUser(userResponse.data.data);
+                }
+              } catch (error) {
+                console.error('Failed to update user info:', error);
+              }
 
               if (option.is19G2Premium && newPityCount !== undefined) {
                 setPityCount(newPityCount);

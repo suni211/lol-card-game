@@ -156,17 +156,32 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
       // Reset pity counter
       pullCount = 0;
     } else {
-      // 에픽 이상 확정
+      // 에픽 이상 확정 + 아이콘 0.025%
       const tierRoll = Math.random();
       let tier;
-      if (tierRoll < 0.7) tier = 'EPIC';
-      else tier = 'LEGENDARY';
+      if (tierRoll < 0.00025) {
+        tier = 'ICON';
+      } else if (tierRoll < 0.69975) {
+        tier = 'EPIC';
+      } else {
+        tier = 'LEGENDARY';
+      }
 
       const [players]: any = await connection.query(
-        'SELECT * FROM players WHERE tier = ? AND season != ? AND tier != ? ORDER BY RAND() LIMIT 1',
-        [tier, '19G2', 'ICON']
+        'SELECT * FROM players WHERE tier = ? AND season != ? ORDER BY RAND() LIMIT 1',
+        [tier, '19G2']
       );
-      player = players[0];
+
+      if (players.length === 0) {
+        // Fallback to EPIC if no players found
+        const [fallbackPlayers]: any = await connection.query(
+          'SELECT * FROM players WHERE tier = ? AND season != ? ORDER BY RAND() LIMIT 1',
+          ['EPIC', '19G2']
+        );
+        player = fallbackPlayers[0];
+      } else {
+        player = players[0];
+      }
     }
 
     // Update pity counter

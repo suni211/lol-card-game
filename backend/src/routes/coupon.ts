@@ -63,6 +63,13 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'Coupon code already exists' });
     }
 
+    // Format expires_at for MySQL (YYYY-MM-DD HH:MM:SS)
+    let formattedExpiresAt = null;
+    if (expiresAt) {
+      const date = new Date(expiresAt);
+      formattedExpiresAt = date.toISOString().slice(0, 19).replace('T', ' ');
+    }
+
     // Create coupon
     await connection.query(
       `INSERT INTO coupons
@@ -78,7 +85,7 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
         rewardPackCount || 1,
         maxUses || 1,
         maxUsers || null,
-        expiresAt || null,
+        formattedExpiresAt,
         userId,
         description || null,
       ]

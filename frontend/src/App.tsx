@@ -2,9 +2,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useEffect } from 'react';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
+import { useAudioStore } from './store/audioStore';
 
 // Layout
 import Layout from './components/Layout/Layout';
+import { AudioControls } from './components/AudioControls';
 
 // Pages
 import Home from './pages/Home';
@@ -56,6 +58,7 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { theme } = useThemeStore();
+  const { playBGM, initAudio } = useAudioStore();
 
   useEffect(() => {
     // Apply theme on mount
@@ -66,8 +69,15 @@ function App() {
     }
   }, [theme]);
 
+  useEffect(() => {
+    // Initialize audio and play lobby BGM
+    initAudio();
+    playBGM('/bgm/lobby.ogg');
+  }, [initAudio, playBGM]);
+
   return (
     <Router>
+      <AudioControls />
       <Routes>
         <Route element={<Layout />}>
           {/* Public Routes */}

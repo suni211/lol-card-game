@@ -812,14 +812,14 @@ export default function Deck() {
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">세부 스탯</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <StatBar label="CS 능력" value={detailCard.player.cs_ability || 50} color="blue" />
-                  <StatBar label="라인 압박" value={detailCard.player.lane_pressure || 50} color="red" />
-                  <StatBar label="딜량" value={detailCard.player.damage_dealing || 50} color="purple" />
-                  <StatBar label="생존력" value={detailCard.player.survivability || 50} color="green" />
-                  <StatBar label="오브젝트" value={detailCard.player.objective_control || 50} color="yellow" />
-                  <StatBar label="시야 장악" value={detailCard.player.vision_control || 50} color="indigo" />
-                  <StatBar label="판단력" value={detailCard.player.decision_making || 50} color="pink" />
-                  <StatBar label="안정성" value={detailCard.player.consistency || 50} color="teal" />
+                  <StatBar label="CS 능력" value={(detailCard.player.cs_ability || 50) + calculateEnhancementBonus(detailCard.level)} color="blue" />
+                  <StatBar label="라인 압박" value={(detailCard.player.lane_pressure || 50) + calculateEnhancementBonus(detailCard.level)} color="red" />
+                  <StatBar label="딜량" value={(detailCard.player.damage_dealing || 50) + calculateEnhancementBonus(detailCard.level)} color="purple" />
+                  <StatBar label="생존력" value={(detailCard.player.survivability || 50) + calculateEnhancementBonus(detailCard.level)} color="green" />
+                  <StatBar label="오브젝트" value={(detailCard.player.objective_control || 50) + calculateEnhancementBonus(detailCard.level)} color="yellow" />
+                  <StatBar label="시야 장악" value={(detailCard.player.vision_control || 50) + calculateEnhancementBonus(detailCard.level)} color="indigo" />
+                  <StatBar label="판단력" value={(detailCard.player.decision_making || 50) + calculateEnhancementBonus(detailCard.level)} color="pink" />
+                  <StatBar label="안정성" value={(detailCard.player.consistency || 50) + calculateEnhancementBonus(detailCard.level)} color="teal" />
                 </div>
               </div>
 

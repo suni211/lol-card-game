@@ -325,30 +325,51 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
       [userId, listing.listing_price, listingId]
     );
 
-    // Update player market price (weighted average of recent trades)
+    // Update player market price based on actual trades
     const [recentTrades]: any = await connection.query(
-      `SELECT sold_price FROM market_transactions
+      `SELECT sold_price, sold_at FROM market_transactions
       WHERE player_id = ? AND status = 'SOLD'
       ORDER BY sold_at DESC
       LIMIT 10`,
       [listing.player_id]
     );
 
-    if (recentTrades.length > 0) {
-      const avgPrice = Math.round(
-        recentTrades.reduce((sum: number, t: any) => sum + t.sold_price, 0) / recentTrades.length
-      );
+    let priceUpdateInfo: any = null;
 
-      // Get price limits
+    if (recentTrades.length > 0) {
+      // 최근 거래가 가중 평균 (최신 거래에 더 높은 가중치)
+      let weightedSum = 0;
+      let weightSum = 0;
+      recentTrades.forEach((trade: any, index: number) => {
+        const weight = 10 - index; // 최신 거래일수록 높은 가중치 (10, 9, 8, ...)
+        weightedSum += trade.sold_price * weight;
+        weightSum += weight;
+      });
+      const weightedAvgPrice = Math.round(weightedSum / weightSum);
+
+      // Get current price and limits
       const [priceInfo]: any = await connection.query(
-        'SELECT price_floor, price_ceiling FROM player_market_prices WHERE player_id = ?',
+        'SELECT current_price, price_floor, price_ceiling FROM player_market_prices WHERE player_id = ?',
         [listing.player_id]
       );
 
-      const newPrice = Math.min(
-        priceInfo[0].price_ceiling,
-        Math.max(priceInfo[0].price_floor, avgPrice)
-      );
+      const currentPrice = priceInfo[0].current_price;
+      const priceFloor = priceInfo[0].price_floor;
+      const priceCeiling = priceInfo[0].price_ceiling;
+
+      // 가격 변동폭 제한 (한 번에 ±20% 이상 변동 불가)
+      const maxIncrease = Math.round(currentPrice * 1.2);
+      const maxDecrease = Math.round(currentPrice * 0.8);
+
+      let newPrice = Math.min(maxIncrease, Math.max(maxDecrease, weightedAvgPrice));
+
+      // 상한가/하한가 적용
+      newPrice = Math.min(priceCeiling, Math.max(priceFloor, newPrice));
+
+      // 가격 변동률 계산
+      const priceChange = ((newPrice - currentPrice) / currentPrice * 100).toFixed(2);
+      const isUpperLimit = newPrice >= priceCeiling;
+      const isLowerLimit = newPrice <= priceFloor;
 
       await connection.query(
         `UPDATE player_market_prices
@@ -357,11 +378,21 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
         [newPrice, listing.listing_price, listing.player_id]
       );
 
-      // Record price history
+      // Record price history with metadata
       await connection.query(
         'INSERT INTO price_history (player_id, price, transaction_id) VALUES (?, ?, ?)',
         [listing.player_id, newPrice, listingId]
       );
+
+      console.log(`Price updated for player ${listing.player_id}: ${currentPrice} -> ${newPrice} (${priceChange}%)${isUpperLimit ? ' [상한가]' : isLowerLimit ? ' [하한가]' : ''}`);
+
+      priceUpdateInfo = {
+        oldPrice: currentPrice,
+        newPrice: newPrice,
+        change: priceChange,
+        isUpperLimit: isUpperLimit,
+        isLowerLimit: isLowerLimit,
+      };
     }
 
     await connection.commit();
@@ -371,6 +402,7 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
       message: `${listing.player_name} 카드를 구매했습니다!`,
       data: {
         price: listing.listing_price,
+        priceUpdate: priceUpdateInfo,
       },
     });
   } catch (error: any) {

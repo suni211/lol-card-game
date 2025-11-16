@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { Gift, Ticket, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 interface Redemption {
   id: number;
   code: string;
@@ -26,7 +28,7 @@ export default function Coupon() {
 
   const fetchRedemptions = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/coupon/my-redemptions', {
+      const response = await fetch(`${API_URL}/coupon/my-redemptions`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -50,7 +52,7 @@ export default function Coupon() {
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/coupon/redeem', {
+      const response = await fetch(`${API_URL}/coupon/redeem`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

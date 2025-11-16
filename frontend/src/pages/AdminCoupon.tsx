@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { Plus, Trash2, Users, Clock, CheckCircle, XCircle } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 interface Coupon {
   id: number;
   code: string;
@@ -47,7 +49,7 @@ export default function AdminCoupon() {
 
   const fetchCoupons = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/coupon/admin/list', {
+      const response = await fetch(`${API_URL}/coupon/admin/list`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -85,7 +87,7 @@ export default function AdminCoupon() {
         body.expiresAt = new Date(createForm.expiresAt).toISOString();
       }
 
-      const response = await fetch('http://localhost:5000/api/coupon/create', {
+      const response = await fetch(`${API_URL}/coupon/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +127,7 @@ export default function AdminCoupon() {
     if (!confirm('이 쿠폰을 비활성화하시겠습니까?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/coupon/admin/deactivate/${couponId}`, {
+      const response = await fetch(`${API_URL}/coupon/admin/deactivate/${couponId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

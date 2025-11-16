@@ -123,13 +123,22 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
 
     if (cardIds.length > 0) {
       const [userCards]: any = await connection.query(
-        'SELECT id FROM user_cards WHERE id IN (?) AND user_id = ?',
+        'SELECT id, player_id FROM user_cards WHERE id IN (?) AND user_id = ?',
         [cardIds, userId]
       );
 
       if (userCards.length !== cardIds.length) {
         await connection.rollback();
-        return res.status(400).json({ success: false, error: 'Some cards do not belong to you' });
+        return res.status(400).json({ success: false, error: '일부 카드가 소유하지 않은 카드입니다.' });
+      }
+
+      // Check for duplicate players (same player in multiple positions)
+      const playerIds = userCards.map((card: any) => card.player_id);
+      const uniquePlayerIds = new Set(playerIds);
+
+      if (playerIds.length !== uniquePlayerIds.size) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, error: '같은 선수를 여러 포지션에 배치할 수 없습니다.' });
       }
     }
 

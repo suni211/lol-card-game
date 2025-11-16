@@ -25,7 +25,7 @@ export const useAudioStore = create<AudioState>()(
       isPlaying: false,
       currentTrack: null,
       audio: null,
-      lobbyTracks: Array.from({ length: 99 }, (_, i) => `/bgm/lobby${i + 1}.ogg`),
+      lobbyTracks: ['/bgm/lobby1.ogg', '/bgm/lobby2.ogg', '/bgm/lobby3.ogg'],
 
       initAudio: () => {
         const audio = new Audio();

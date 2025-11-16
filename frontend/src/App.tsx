@@ -74,33 +74,20 @@ function App() {
     // Initialize audio
     initAudio();
 
-    let hasPlayed = false;
-
     // Play BGM on first user interaction
     const playOnInteraction = () => {
-      if (!hasPlayed) {
-        hasPlayed = true;
-        playRandomLobbyBGM();
-        // Remove listeners after first interaction
-        document.removeEventListener('click', playOnInteraction);
-        document.removeEventListener('keydown', playOnInteraction);
-        document.removeEventListener('touchstart', playOnInteraction);
-      }
+      playRandomLobbyBGM();
     };
 
     // Try to play immediately (will fail on some browsers but worth trying)
     playRandomLobbyBGM();
 
-    // Also add event listeners as fallback
+    // Add event listeners with once option (auto-remove after first trigger)
     document.addEventListener('click', playOnInteraction, { once: true });
     document.addEventListener('keydown', playOnInteraction, { once: true });
     document.addEventListener('touchstart', playOnInteraction, { once: true });
 
-    return () => {
-      document.removeEventListener('click', playOnInteraction);
-      document.removeEventListener('keydown', playOnInteraction);
-      document.removeEventListener('touchstart', playOnInteraction);
-    };
+    // No cleanup needed - once: true handles it
   }, [initAudio, playRandomLobbyBGM]);
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Lock, Flame, Star, Zap } from 'lucide-react';
+import { Trophy, Lock, Flame, Star, Zap, Crown, Skull } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -73,6 +73,19 @@ export default function VSMode() {
     return c.includes(num);
   };
 
+  // 난이도별 스테이지 정보
+  const getDifficultyInfo = (num: number) => {
+    if (num <= 11) return { label: '쉬움', color: 'from-green-500 to-emerald-500', icon: Star, pts: 300 };
+    if (num <= 22) return { label: '보통', color: 'from-blue-500 to-cyan-500', icon: Zap, pts: 1000 };
+    if (num <= 33) return { label: '어려움', color: 'from-orange-500 to-red-500', icon: Flame, pts: 2500 };
+    if (num <= 49) return { label: '지옥', color: 'from-purple-600 to-pink-600', icon: Skull, pts: 10000 };
+    return { label: '최종보스', color: 'from-yellow-500 to-amber-600', icon: Crown, pts: 30000 };
+  };
+
+  const isBoss = (num: number) => {
+    return num === 11 || num === 22 || num === 33 || num === 49 || num === 50;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
@@ -81,114 +94,176 @@ export default function VSMode() {
     );
   }
 
-  // 스테이지 정의 (25시즌 DB 기준)
-  // 강화: 1~4강 각 +1씩, 5~7강 각 +2씩, 8~10강 각 +4씩
-  const stage1 = { num: 1, name: '1단계 - 조합', boss: false, pts: 100, enemies: ['DuDu (68)', 'Pyosik (70)', 'BuLLDoG (71)', 'Berserker (74)', 'Life (73)'], enemiesHard: ['DuDu (70)', 'Pyosik (72)', 'BuLLDoG (73)', 'Berserker (76)', 'Life (75)'] };
-  const stage2 = { num: 2, name: '2단계', boss: false, pts: 200, enemies: ['Rich (73)', 'Sponge (71)', 'kyeahoo (70)', 'Teddy (79)', 'Andil (81)'], enemiesHard: ['Rich (76)', 'Sponge (74)', 'kyeahoo (73)', 'Teddy (80)', 'Andil (83)'] };
-  const stage3 = { num: 3, name: '3단계 - 중간보스', boss: true, pts: 1000, enemies: ['Morgan (83)', 'Croco (76)', 'Clozer (91)', 'Hype (75)', 'Pollu (74)'], enemiesHard: ['Morgan (86)', 'Croco (79)', 'Clozer (91)', 'Hype (78)', 'Pollu (77)'] };
-  const stage4 = { num: 4, name: '4단계', boss: false, pts: 500, enemies: ['Kingen (88)', 'GIDEON (80)', 'Calix (83)', 'Jiwoo (82)', 'Lehends (84)'], enemiesHard: ['Kingen (91)', 'GIDEON (83)', 'Calix (86)', 'Jiwoo (85)', 'Lehends (87)'] };
-  const stage5 = { num: 5, name: '5단계', boss: false, pts: 3000, enemies: ['Siwoo (83)', 'Lucid (86)', 'ShowMaker (88)', 'Aiming (83)', 'BeryL (85)'], enemiesHard: ['Siwoo (85)', 'Lucid (88)', 'ShowMaker (91)', 'Aiming (86)', 'BeryL (90)'] };
-  const stage6 = { num: 6, name: '6단계 - 중간보스', boss: true, pts: 5000, enemies: ['Clear (80)', 'raptor (81)', 'VicLa (85)', 'Diable (94)', 'Kellin (86)'], enemiesHard: ['Clear (88)', 'raptor (89)', 'VicLa (93)', 'Diable (102)', 'Kellin (94)'] };
-  const stage7 = { num: 7, name: '7단계 - 중간보스', boss: true, pts: 10000, enemies: ['PerfecT (88)', 'Cuzz (88)', 'Bdd (96)', 'deokdam (87)', 'Peter (90)'], enemiesHard: ['PerfecT (96)', 'Cuzz (96)', 'Bdd (104)', 'deokdam (95)', 'Peter (98)'] };
-  const stage8 = { num: 8, name: '8단계', boss: false, pts: 5000, enemies: ['Zeus (99)', 'Peanut (91)', 'Zeka (89)', 'Viper (97)', 'Delight (86)'], enemiesHard: ['Zeus (107)', 'Peanut (99)', 'Zeka (94)', 'Viper (102)', 'Delight (91)'] };
-  const stage9 = { num: 9, name: '9단계', boss: false, pts: 10000, enemies: ['Doran (97)', 'Oner (101)', 'Faker (106)', 'Gumayusi (103)', 'Keria (101)'], enemiesHard: ['Doran (103)', 'Oner (107)', 'Faker (112)', 'Gumayusi (109)', 'Keria (107)'] };
-  const stage10 = { num: 10, name: '10단계 - 최종보스', boss: true, pts: 50000, enemies: ['Kiin (106)', 'Canyon (102)', 'Chovy (107)', 'Ruler (109)', 'Duro (102)'], enemiesHard: ['Kiin (114)', 'Canyon (110)', 'Chovy (115)', 'Ruler (117)', 'Duro (110)'] };
-
-  const allStages = [stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8, stage9, stage10];
+  const clearedNormal = normalCleared.length;
+  const clearedHard = hardCleared.length;
+  const totalStages = 50;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-orange-500 to-red-500 rounded-full mb-4">
-            <Flame className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">VS 모드</h1>
-          <div className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold mb-4">
-            시즌 1
-          </div>
-          <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">10단계의 도전을 클리어하고 레전드 확정팩을 획득하세요!</p>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 mb-4">
+            VS 모드 시즌 2
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 text-lg mb-6">
+            50개의 스테이지를 클리어하고 최고의 보상을 획득하세요!
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-400">일반 모드</div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{normalCleared.length} / 10</div>
+          {/* Stats */}
+          <div className="flex flex-wrap justify-center gap-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl px-6 py-3 shadow-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400">총 획득 포인트</div>
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {points.toLocaleString()}P
+              </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-400">하드 모드</div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{hardCleared.length} / 10</div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl px-6 py-3 shadow-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400">일반 클리어</div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {clearedNormal}/{totalStages}
+              </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-400">획득 포인트</div>
-              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{points.toLocaleString()}P</div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl px-6 py-3 shadow-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400">하드 클리어</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {clearedHard}/{totalStages}
+              </div>
             </div>
+          </div>
+
+          {/* Mode Toggle */}
+          <div className="inline-flex bg-white dark:bg-gray-800 rounded-xl p-2 shadow-lg">
+            <button
+              onClick={() => setSelectedMode('normal')}
+              className={`px-6 py-2 rounded-lg font-bold transition-all ${
+                selectedMode === 'normal'
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              일반 모드
+            </button>
+            <button
+              onClick={() => setSelectedMode('hard')}
+              disabled={!hardUnlocked}
+              className={`px-6 py-2 rounded-lg font-bold transition-all ${
+                selectedMode === 'hard'
+                  ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white'
+                  : hardUnlocked
+                  ? 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  : 'text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              하드 모드 {!hardUnlocked && '🔒'}
+            </button>
           </div>
         </motion.div>
 
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex bg-white dark:bg-gray-800 rounded-lg p-1 shadow-lg">
-            <button onClick={() => setSelectedMode('normal')} className={`px-6 py-2 rounded-md font-bold transition-colors ${selectedMode === 'normal' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400'}`}>일반 모드</button>
-            <button onClick={() => setSelectedMode('hard')} className={`px-6 py-2 rounded-md font-bold transition-colors relative ${selectedMode === 'hard' ? 'bg-red-600 text-white' : 'text-gray-600 dark:text-gray-400'}`} disabled={!hardUnlocked}>
-              하드 모드
-              {!hardUnlocked && <Lock className="w-4 h-4 absolute -top-1 -right-1" />}
-            </button>
+        {/* Difficulty Legend */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg p-3 text-white text-center">
+            <div className="font-bold">1-11단계</div>
+            <div className="text-sm">쉬움 (300P)</div>
+          </div>
+          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg p-3 text-white text-center">
+            <div className="font-bold">12-22단계</div>
+            <div className="text-sm">보통 (1000P)</div>
+          </div>
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg p-3 text-white text-center">
+            <div className="font-bold">23-33단계</div>
+            <div className="text-sm">어려움 (2500P)</div>
+          </div>
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg p-3 text-white text-center">
+            <div className="font-bold">34-49단계</div>
+            <div className="text-sm">지옥 (10000P)</div>
+          </div>
+          <div className="bg-gradient-to-r from-yellow-500 to-amber-600 rounded-lg p-3 text-white text-center">
+            <div className="font-bold">50단계</div>
+            <div className="text-sm">최종보스 (30000P)</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {allStages.map((s) => {
-            const u = unlocked(s.num);
-            const c = cleared(s.num);
-            const r = selectedMode === 'hard' ? s.pts * 3 : s.pts;
-            const e = selectedMode === 'hard' ? s.enemiesHard : s.enemies;
+        {/* Stages Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
+          {Array.from({ length: totalStages }, (_, i) => i + 1).map((num) => {
+            const isUnlocked = unlocked(num);
+            const isCleared = cleared(num);
+            const boss = isBoss(num);
+            const diff = getDifficultyInfo(num);
+            const Icon = diff.icon;
 
             return (
-              <motion.div key={s.num} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: s.num * 0.05 }} className={`relative ${u ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`} onClick={() => u && clickStage(s.num)}>
-                <div className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 transition-all hover:scale-105 ${s.boss ? 'border-red-500 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20' : c ? 'border-green-500' : u ? 'border-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
-                  <div className="text-center mb-4">
-                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full font-bold text-xl ${s.boss ? 'bg-gradient-to-br from-red-500 to-orange-500 text-white' : c ? 'bg-green-500 text-white' : u ? 'bg-blue-500 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'}`}>
-                      {c ? '✓' : s.num}
-                    </div>
+              <motion.button
+                key={num}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: num * 0.01 }}
+                onClick={() => isUnlocked && clickStage(num)}
+                disabled={!isUnlocked}
+                className={`relative aspect-square rounded-xl font-bold text-lg transition-all ${
+                  isCleared
+                    ? `bg-gradient-to-br ${diff.color} text-white shadow-lg hover:scale-105`
+                    : isUnlocked
+                    ? 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:scale-105 shadow-md border-2 border-gray-300 dark:border-gray-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {/* Boss Badge */}
+                {boss && (
+                  <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1 shadow-lg">
+                    <Crown className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center mb-3">
-                    {s.name}
-                    {s.boss && <Star className="w-5 h-5 inline ml-2 text-red-500" />}
-                  </h3>
-                  <div className="space-y-1 mb-4">
-                    {e.map((enemy, i) => (
-                      <div key={i} className="text-xs text-gray-700 dark:text-gray-300">
-                        {enemy}
-                      </div>
-                    ))}
+                )}
+
+                {/* Cleared Badge */}
+                {isCleared && (
+                  <div className="absolute -top-2 -left-2 bg-green-500 rounded-full p-1 shadow-lg">
+                    <Trophy className="w-4 h-4 text-white" />
                   </div>
-                  <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-lg p-2 text-center">
-                    <div className="flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mr-1" />
-                      <span className="text-sm font-bold text-yellow-700 dark:text-yellow-300">{r.toLocaleString()}P</span>
-                    </div>
-                  </div>
-                  {!u && (
-                    <div className="absolute inset-0 bg-gray-900/50 rounded-xl flex items-center justify-center">
-                      <Lock className="w-12 h-12 text-white" />
-                    </div>
+                )}
+
+                {/* Stage Number */}
+                <div className="flex flex-col items-center justify-center h-full">
+                  {isUnlocked ? (
+                    <>
+                      {isCleared && <Icon className="w-5 h-5 mb-1" />}
+                      <div>{num}</div>
+                      {boss && <div className="text-xs mt-1">BOSS</div>}
+                    </>
+                  ) : (
+                    <Lock className="w-6 h-6" />
                   )}
                 </div>
-              </motion.div>
+
+                {/* Points Badge */}
+                {isUnlocked && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
+                    {diff.pts.toLocaleString()}P
+                  </div>
+                )}
+              </motion.button>
             );
           })}
         </div>
 
-        {selectedMode === 'hard' && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-12 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl p-8 text-center shadow-2xl">
-            <Zap className="w-16 h-16 text-white mx-auto mb-4" />
-            <h2 className="text-3xl font-black text-white mb-2">최종 보상</h2>
-            <p className="text-xl text-white/90 mb-4">하드 모드 10단계 클리어 시</p>
-            <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-lg px-6 py-3">
-              <Star className="w-8 h-8 text-yellow-300 mr-2" />
-              <span className="text-2xl font-black text-white">레전드 확정팩</span>
-            </div>
-          </motion.div>
-        )}
+        {/* Total Points Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white text-center"
+        >
+          <h3 className="text-2xl font-bold mb-2">전체 클리어 보상</h3>
+          <div className="text-5xl font-black mb-2">383,300P</div>
+          <p className="text-purple-200">
+            50개의 모든 스테이지를 클리어하면 획득할 수 있는 총 포인트
+          </p>
+        </motion.div>
       </div>
     </div>
   );

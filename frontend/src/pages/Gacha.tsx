@@ -645,7 +645,7 @@ export default function Gacha() {
                       </p>
                     </div>
                   )}
-                  {option.probabilities.gr && option.probabilities.gr > 0 && (
+                  {(option.probabilities.gr ?? 0) > 0 && (
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-pink-600 dark:text-pink-400 font-bold">🌟 GR</span>
                       <span className="font-bold text-pink-600 dark:text-pink-400">
@@ -653,36 +653,46 @@ export default function Gacha() {
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">🏆 아이콘</span>
-                    <span className="font-bold text-cyan-600 dark:text-cyan-400">
-                      {option.probabilities.icon}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-yellow-600 dark:text-yellow-400">레전드</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {option.probabilities.legendary}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-purple-600 dark:text-purple-400">에픽</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {option.probabilities.epic}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-blue-600 dark:text-blue-400">레어</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {option.probabilities.rare}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">일반</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {option.probabilities.common}%
-                    </span>
-                  </div>
+                  {(option.probabilities.icon ?? 0) > 0 && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-cyan-600 dark:text-cyan-400 font-bold">🏆 아이콘</span>
+                      <span className="font-bold text-cyan-600 dark:text-cyan-400">
+                        {option.probabilities.icon}%
+                      </span>
+                    </div>
+                  )}
+                  {(option.probabilities.legendary ?? 0) > 0 && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-yellow-600 dark:text-yellow-400">레전드</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {option.probabilities.legendary}%
+                      </span>
+                    </div>
+                  )}
+                  {(option.probabilities.epic ?? 0) > 0 && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-purple-600 dark:text-purple-400">에픽</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {option.probabilities.epic}%
+                      </span>
+                    </div>
+                  )}
+                  {(option.probabilities.rare ?? 0) > 0 && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-blue-600 dark:text-blue-400">레어</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {option.probabilities.rare}%
+                      </span>
+                    </div>
+                  )}
+                  {(option.probabilities.common ?? 0) > 0 && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">일반</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {option.probabilities.common}%
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

@@ -410,18 +410,7 @@ export default function Match() {
           </p>
         </motion.div>
 
-        {(() => {
-          if (!deck || !isDeckComplete()) {
-            console.log('🖥️ RENDERING: Empty State (No deck)');
-          } else if (matchState === 'lineup') {
-            console.log('🖥️ RENDERING: Lineup Preview');
-          } else if (matchState === 'playing') {
-            console.log('🖥️ RENDERING: In Match (Playing)');
-          } else {
-            console.log('🖥️ RENDERING: Queue Screen (Idle)');
-          }
-        })()}
-
+        {/* Check if deck is incomplete first */}
         {!deck || !isDeckComplete() ? (
           /* Empty State - Need Deck */
           <motion.div
@@ -452,128 +441,114 @@ export default function Match() {
             </div>
           </motion.div>
         ) : matchState === 'lineup' ? (
-          /* Lineup Preview Screen - SIMPLIFIED */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            {/* Header */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-4 border-yellow-500">
-              <div className="text-center mb-4">
-                <div className="inline-block px-4 py-2 bg-yellow-500 text-white font-bold rounded-lg mb-2">
-                  라인업 확인 중
+          /* 🔥 LINEUP PREVIEW - THIS SHOULD SHOW! */
+          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
+            <div className="max-w-6xl w-full p-8">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="space-y-6"
+              >
+                {/* BIG YELLOW HEADER */}
+                <div className="bg-yellow-500 rounded-xl shadow-2xl p-8 border-4 border-yellow-300">
+                  <h1 className="text-6xl font-bold text-center text-black mb-4">
+                    ⚔️ 라인업 확인 ⚔️
+                  </h1>
+                  <h2 className="text-4xl font-bold text-center text-black mb-2">
+                    VS {opponent?.username || '???'}
+                  </h2>
+                  <p className="text-center text-black text-2xl font-bold">
+                    ⏱️ 10초 후 자동 시작
+                  </p>
                 </div>
-              </div>
-              <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">
-                VS {opponent?.username}
-              </h2>
-              <p className="text-center text-gray-600 dark:text-gray-400">
-                상대 라인업을 확인하세요 (10초 후 자동 시작)
-              </p>
-            </div>
 
-            {/* Lineups */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* My Deck */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-blue-500">
-                <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 text-center">
-                  내 라인업
-                </h3>
-                <div className="space-y-3">
-                  {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
-                    const card = deck[pos as keyof Deck] as UserCard | null;
-                    return (
-                      <div key={pos} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        {card && (
-                          <>
-                            <img
-                              src={getPlayerImageUrl(card.player.name, card.player.season || '25', card.player.tier)}
-                              alt={card.player.name}
-                              className="w-16 h-16 rounded-lg object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/players/placeholder.png';
-                              }}
-                            />
-                            <div className="flex-1">
-                              <div className="text-sm font-bold text-gray-900 dark:text-white">
-                                {card.player.name}
+                {/* Lineups */}
+                <div className="grid grid-cols-2 gap-6">
+                  {/* My Deck */}
+                  <div className="bg-blue-600 rounded-xl shadow-2xl p-6 border-4 border-blue-400">
+                    <h3 className="text-3xl font-bold text-white mb-4 text-center">
+                      내 라인업
+                    </h3>
+                    <div className="space-y-3">
+                      {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
+                        const card = deck?.[pos as keyof Deck] as UserCard | null;
+                        return (
+                          <div key={pos} className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                            {card && (
+                              <>
+                                <img
+                                  src={getPlayerImageUrl(card.player.name, card.player.season || '25', card.player.tier)}
+                                  alt={card.player.name}
+                                  className="w-16 h-16 rounded-lg object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                                  }}
+                                />
+                                <div className="flex-1">
+                                  <div className="text-lg font-bold text-gray-900">
+                                    {card.player.name}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {card.player.team} · {card.player.position}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    OVR {card.player.overall + card.level}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Opponent Deck */}
+                  <div className="bg-red-600 rounded-xl shadow-2xl p-6 border-4 border-red-400">
+                    <h3 className="text-3xl font-bold text-white mb-4 text-center">
+                      상대 라인업
+                    </h3>
+                    <div className="space-y-3">
+                      {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
+                        const card = opponentDeck?.[pos];
+                        return (
+                          <div key={pos} className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                            {card ? (
+                              <>
+                                <img
+                                  src={getPlayerImageUrl(card.name, card.season || '25', card.tier)}
+                                  alt={card.name}
+                                  className="w-16 h-16 rounded-lg object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                                  }}
+                                />
+                                <div className="flex-1">
+                                  <div className="text-lg font-bold text-gray-900">
+                                    {card.name}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {card.team} · {pos.toUpperCase()}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    OVR {card.overall + (card.level || 0)}
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-gray-400">
+                                {pos.toUpperCase()} 정보 없음
                               </div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {card.player.team} · {card.player.position}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-500">
-                                OVR {card.player.overall + card.level}
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Opponent Deck */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-red-500">
-                <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4 text-center">
-                  상대 라인업
-                </h3>
-                {!opponentDeck ? (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    상대 덱 정보를 불러오는 중...
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {['top', 'jungle', 'mid', 'adc', 'support'].map((pos) => {
-                      const card = opponentDeck?.[pos];
-                      return (
-                        <div key={pos} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          {card ? (
-                            <>
-                              <img
-                                src={getPlayerImageUrl(card.name, card.season || '25', card.tier)}
-                                alt={card.name}
-                                className="w-16 h-16 rounded-lg object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/players/placeholder.png';
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className="text-sm font-bold text-gray-900 dark:text-white">
-                                  {card.name}
-                                </div>
-                                <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  {card.team} · {pos.toUpperCase()}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-500">
-                                  OVR {card.overall + (card.level || 0)}
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-sm text-gray-400">
-                              {pos.toUpperCase()} 정보 없음
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              </motion.div>
             </div>
-
-            {/* Start Button */}
-            <div className="text-center">
-              <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
-                ⏱️ 10초 후 자동으로 경기가 시작됩니다
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-500">
-                양쪽 선수의 라인업을 확인하세요!
-              </p>
-            </div>
-          </motion.div>
+          </div>
         ) : matchState === 'playing' ? (
           /* In Match - Strategy Selection */
           <div className="space-y-6">
@@ -747,7 +722,7 @@ export default function Match() {
               className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
             >
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                내 덱: {deck.name}
+                내 덱: {deck!.name}
               </h2>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
@@ -775,7 +750,7 @@ export default function Match() {
                     <span className="text-sm font-medium text-green-900 dark:text-green-300">전략</span>
                   </div>
                   <p className="text-sm font-bold text-green-900 dark:text-green-100">
-                    {deck.laningStrategy}
+                    {deck!.laningStrategy}
                   </p>
                 </div>
               </div>
@@ -783,11 +758,11 @@ export default function Match() {
               {/* Roster Preview */}
               <div className="grid grid-cols-5 gap-2">
                 {[
-                  { card: deck.top, position: 'TOP', label: '탑' },
-                  { card: deck.jungle, position: 'JUNGLE', label: '정글' },
-                  { card: deck.mid, position: 'MID', label: '미드' },
-                  { card: deck.adc, position: 'ADC', label: '원딜' },
-                  { card: deck.support, position: 'SUPPORT', label: '서폿' },
+                  { card: deck!.top, position: 'TOP', label: '탑' },
+                  { card: deck!.jungle, position: 'JUNGLE', label: '정글' },
+                  { card: deck!.mid, position: 'MID', label: '미드' },
+                  { card: deck!.adc, position: 'ADC', label: '원딜' },
+                  { card: deck!.support, position: 'SUPPORT', label: '서폿' },
                 ].map(({ card, position, label }) => (
                   <div key={position} className="text-center">
                     <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-lg p-2 mb-1">

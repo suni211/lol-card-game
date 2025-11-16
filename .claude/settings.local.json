@@ -23,7 +23,8 @@
       "Bash(ssh:*)",
       "Bash(node dist/server.js:*)",
       "Bash(mysql:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

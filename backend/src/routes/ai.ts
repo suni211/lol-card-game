@@ -3,6 +3,7 @@ import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
+import { normalizeTeamName } from '../utils/teamUtils';
 
 const router = express.Router();
 
@@ -38,20 +39,12 @@ async function calculateDeckPower(deckId: number): Promise<number> {
     let totalPower = 0;
     const teams: any = {};
 
-    // Team synergy mapping: old teams treated as current teams
-    const teamMapping: any = {
-      'NJS': 'BRO',
-      'AZF': 'CJ',
-      'MVP': 'GEN',
-      'SKT': 'T1',
-    };
-
     cards.forEach((card: any) => {
       let power = card.overall + card.level;
       totalPower += power;
 
-      // Map old team names to current teams for synergy calculation
-      const synergyTeam = teamMapping[card.team] || card.team;
+      // Normalize team names (SKT and T1 are same team, etc.)
+      const synergyTeam = normalizeTeamName(card.team);
       teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
     });
 

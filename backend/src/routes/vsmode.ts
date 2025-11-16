@@ -1,22 +1,9 @@
 import express, { Response } from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { normalizeTeamName, isSameTeam, getTierByOverall } from '../utils/teamUtils';
 
 const router = express.Router();
-
-// 오버롤 기반 등급 구분
-function getTierByOverall(overall: number): string {
-  if (overall >= 107) return 'LEGENDARY';
-  if (overall >= 91) return 'EPIC';
-  if (overall >= 80) return 'RARE';
-  return 'COMMON';
-}
-
-// SKT와 T1은 같은 팀으로 취급
-function normalizeTeamName(team: string): string {
-  if (team === 'SKT' || team === 'T1') return 'T1';
-  return team;
-}
 
 // Get VS Mode stages and user progress
 router.get('/stages', authMiddleware, async (req: AuthRequest, res: Response) => {

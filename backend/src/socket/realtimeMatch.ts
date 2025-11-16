@@ -1,3 +1,4 @@
+import { normalizeTeamName } from '../utils/teamUtils';
 import { Server, Socket } from 'socket.io';
 import pool from '../config/database';
 
@@ -157,7 +158,7 @@ function calculateDeckObjectPower(
     totalPower += cardPower;
 
     // Track teams for synergy
-    const normalizedTeam = teamMapping[card.team] || card.team;
+    const normalizedTeam = normalizeTeamName(card.team);
     teams[normalizedTeam] = (teams[normalizedTeam] || 0) + 1;
   });
 
@@ -258,7 +259,7 @@ async function calculateDeckStatPower(
       totalPower += statContribution + overallContribution;
 
       // 팀 시너지 카운팅
-      const synergyTeam = teamMapping[card.team] || card.team;
+      const synergyTeam = normalizeTeamName(card.team);
       teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
     });
 

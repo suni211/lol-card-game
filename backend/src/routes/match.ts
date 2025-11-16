@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { normalizeTeamName } from '../utils/teamUtils';
 
 const router = express.Router();
 
@@ -93,14 +94,6 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     [deckData.support_card_id]: 'SUPPORT',
   };
 
-  // Team synergy mapping: old teams treated as current teams
-  const teamMapping: any = {
-    'NJS': 'BRO',
-    'AZF': 'CJ',
-    'MVP': 'GEN',
-    'SKT': 'T1',
-  };
-
   // Calculate enhancement bonus
   const calculateEnhancementBonus = (level: number): number => {
     if (level <= 4) {
@@ -129,8 +122,8 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
 
     totalPower += power;
 
-    // Count teams for synergy (map old teams to current teams)
-    const synergyTeam = teamMapping[card.team] || card.team;
+    // Normalize team names for synergy calculation (SKT and T1 are same team)
+    const synergyTeam = normalizeTeamName(card.team);
     teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
   });
 

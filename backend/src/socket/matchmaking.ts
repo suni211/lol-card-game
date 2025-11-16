@@ -1,3 +1,4 @@
+import { normalizeTeamName } from '../utils/teamUtils';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database';
@@ -72,7 +73,7 @@ async function calculateDeckPower(deckId: number): Promise<number> {
       totalPower += power;
 
       // Map old team names to current teams for synergy calculation
-      const synergyTeam = teamMapping[card.team] || card.team;
+      const synergyTeam = normalizeTeamName(card.team);
       teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
     });
 

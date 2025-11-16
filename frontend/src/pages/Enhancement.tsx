@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Sparkles, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Zap, Sparkles, AlertCircle, TrendingUp, TrendingDown, Lock, Unlock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
@@ -12,6 +12,7 @@ interface Card {
   userId: number;
   playerId: number;
   level: number;
+  isLocked?: boolean;
   createdAt: string;
   player: {
     id: number;
@@ -89,6 +90,27 @@ export default function Enhancement() {
       toast.error('카드 목록을 불러오는데 실패했습니다');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleLock = async (cardId: number, currentLockStatus: boolean) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/gacha/card/lock/${cardId}`,
+        { isLocked: !currentLockStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Update local cards state
+        setCards(cards.map(c =>
+          c.id === cardId ? { ...c, isLocked: !currentLockStatus } : c
+        ));
+        toast.success(!currentLockStatus ? '카드가 잠겼습니다' : '카드 잠금이 해제되었습니다');
+      }
+    } catch (error: any) {
+      console.error('Lock toggle error:', error);
+      toast.error('잠금 상태 변경에 실패했습니다');
     }
   };
 
@@ -208,6 +230,8 @@ export default function Enhancement() {
             ? 'ring-4 ring-orange-500 shadow-2xl'
             : disabled
             ? 'opacity-30 cursor-not-allowed'
+            : card.isLocked
+            ? 'opacity-60'
             : 'hover:shadow-xl'
         }`}
       >
@@ -216,6 +240,16 @@ export default function Enhancement() {
             {label}
           </div>
         )}
+        {/* Lock/Unlock Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleLock(card.id, card.isLocked || false);
+          }}
+          className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-black/90 text-white rounded z-10 transition-all"
+        >
+          {card.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+        </button>
         <div className={`bg-gradient-to-br ${getTierColor(card.player.tier)} p-0.5`}>
           <div className="bg-white dark:bg-gray-800 p-4">
             <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(card.player.tier)} rounded text-white text-xs font-bold mb-2`}>
@@ -471,6 +505,12 @@ export default function Enhancement() {
                     key={card.id}
                     card={card}
                     onClick={() => {
+                      // Cannot use locked card as material
+                      if (card.isLocked && !isTarget && !isMaterial && targetCard) {
+                        toast.error('잠긴 카드는 재료로 사용할 수 없습니다');
+                        return;
+                      }
+
                       if (isTarget) {
                         setTargetCard(null);
                       } else if (isMaterial) {

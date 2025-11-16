@@ -632,6 +632,12 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
       return res.status(404).json({ success: false, error: 'Cards not found' });
     }
 
+    // Check if any material card is locked
+    const lockedMaterial = materialCards.find((c: any) => c.is_locked);
+    if (lockedMaterial) {
+      return res.status(400).json({ success: false, error: 'Cannot use locked card as material' });
+    }
+
     if (targetCard.level >= MAX_ENHANCEMENT_LEVEL) {
       return res.status(400).json({ success: false, error: 'Card is already at maximum enhancement level' });
     }
@@ -716,6 +722,13 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     if (!targetCard || materialCards.some((c: any) => !c)) {
       await connection.rollback();
       return res.status(404).json({ success: false, error: 'Cards not found' });
+    }
+
+    // Check if any material card is locked
+    const lockedMaterial = materialCards.find((c: any) => c.is_locked);
+    if (lockedMaterial) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: 'Cannot use locked card as material' });
     }
 
     // Check max level
@@ -822,6 +835,36 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Lock/Unlock card
+router.post('/card/lock/:cardId', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const cardId = parseInt(req.params.cardId);
+    const { isLocked } = req.body;
+
+    // Verify card ownership
+    const [cards]: any = await pool.query(
+      'SELECT id FROM user_cards WHERE id = ? AND user_id = ?',
+      [cardId, userId]
+    );
+
+    if (cards.length === 0) {
+      return res.status(404).json({ success: false, error: 'Card not found' });
+    }
+
+    // Update lock status
+    await pool.query(
+      'UPDATE user_cards SET is_locked = ? WHERE id = ?',
+      [isLocked, cardId]
+    );
+
+    res.json({ success: true, data: { cardId, isLocked } });
+  } catch (error: any) {
+    console.error('Lock card error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 // Dismantle card
 router.delete('/dismantle/:cardId', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
@@ -844,6 +887,12 @@ router.delete('/dismantle/:cardId', authMiddleware, async (req: AuthRequest, res
     }
 
     const card = cards[0];
+
+    // Check if card is locked
+    if (card.is_locked) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: 'Cannot dismantle locked card' });
+    }
 
     // Calculate refund based on tier
     const refundMap: any = {

@@ -104,6 +104,11 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
         [tier]
       );
+    } else if (tier === 'GR') {
+      // GR pack - GR players are LEGENDARY tier with season='GR'
+      [players] = await connection.query(
+        "SELECT * FROM players WHERE season = 'GR' ORDER BY RAND() LIMIT 1"
+      );
     } else {
       // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + ICON cards
       [players] = await connection.query(
@@ -267,6 +272,11 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         [players] = await connection.query(
           "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') ORDER BY RAND() LIMIT 1",
           [tier]
+        );
+      } else if (tier === 'GR') {
+        // GR pack - GR players are LEGENDARY tier with season='GR'
+        [players] = await connection.query(
+          "SELECT * FROM players WHERE season = 'GR' ORDER BY RAND() LIMIT 1"
         );
       } else {
         [players] = await connection.query(

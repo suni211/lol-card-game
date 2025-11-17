@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
 import { Star, Trophy, Users, Target, Zap, TrendingUp } from 'lucide-react';
 
@@ -9,6 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface Coach {
   id: number;
+  coach_id?: number;
   name: string;
   star_rating: number;
   buff_type: 'OVERALL' | 'POSITION' | 'TEAM' | 'STRATEGY';
@@ -42,7 +43,7 @@ const buffTypeNames = {
 };
 
 export default function Coach() {
-  const { token } = useAuth();
+  const { token } = useAuthStore();
   const [myCoaches, setMyCoaches] = useState<Coach[]>([]);
   const [allCoaches, setAllCoaches] = useState<Coach[]>([]);
   const [activeCoach, setActiveCoach] = useState<Coach | null>(null);

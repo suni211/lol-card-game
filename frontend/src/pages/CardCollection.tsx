@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
 import {
   Book,
@@ -61,7 +61,7 @@ const tierColors: { [key: string]: string } = {
 };
 
 export default function CardCollection() {
-  const { token } = useAuth();
+  const { token } = useAuthStore();
   const [cards, setCards] = useState<Player[]>([]);
   const [stats, setStats] = useState<CollectionStats>({ collected_count: 0, total_count: 0 });
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -72,7 +72,7 @@ export default function CardCollection() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState('');
   const [filterSeason, setFilterSeason] = useState('');
-  const [filterTeam, setFilterTeam] = useState('');
+  const [filterTeam] = useState('');
   const [filterPosition, setFilterPosition] = useState('');
   const [showOnlyCollected, setShowOnlyCollected] = useState(false);
 

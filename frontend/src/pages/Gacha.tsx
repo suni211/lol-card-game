@@ -358,7 +358,7 @@ export default function Gacha() {
       );
 
       if (response.data.success) {
-        const { player, isDuplicate, refundPoints } = response.data.data;
+        const { player, isDuplicate, refundPoints, coach } = response.data.data;
 
         setDrawnCard(player);
 
@@ -432,8 +432,8 @@ export default function Gacha() {
           }
 
           // 코치 획득 메시지
-          if (data.coach) {
-            toast.success(`🎓 코치 획득! ${data.coach.name} (${data.coach.star_rating}성) - ${data.coach.description}`, {
+          if (coach) {
+            toast.success(`🎓 코치 획득! ${coach.name} (${coach.star_rating}성) - ${coach.description}`, {
               duration: 7000,
             });
           }

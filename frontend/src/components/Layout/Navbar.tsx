@@ -91,6 +91,7 @@ export default function Navbar() {
     },
     { path: '/market', label: '이적시장' },
     { path: '/ranking', label: '랭킹' },
+    { path: '/strategy-stats', label: '전략 통계' },
     { path: '/missions', label: '미션' },
     { path: '/achievements', label: '업적' },
     {

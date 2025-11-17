@@ -27,6 +27,7 @@ import couponRoutes from './routes/coupon';
 import shopRoutes, { setSocketIOForShop } from './routes/shop';
 import gacha19g2Routes from './routes/gacha19g2';
 import eventRoutes from './routes/event';
+import strategyStatsRoutes from './routes/strategyStats';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -93,6 +94,7 @@ app.use('/api/coupon', couponRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/gacha19g2', gacha19g2Routes);
 app.use('/api/event', eventRoutes);
+app.use('/api/strategy-stats', strategyStatsRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

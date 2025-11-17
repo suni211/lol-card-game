@@ -37,6 +37,7 @@ import AdminCoupon from './pages/AdminCoupon';
 import Event from './pages/Event';
 import EventMilestones from './pages/EventMilestones';
 import EventRewards from './pages/EventRewards';
+import StrategyStats from './pages/StrategyStats';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -296,6 +297,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EventRewards />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/strategy-stats"
+            element={
+              <ProtectedRoute>
+                <StrategyStats />
               </ProtectedRoute>
             }
           />

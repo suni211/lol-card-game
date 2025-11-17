@@ -110,9 +110,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         "SELECT * FROM players WHERE season = 'GR' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
       );
     } else {
-      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + ICON cards (NO 25WW/25WUD)
+      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + T1 tribute cards + ICON cards (NO 25WW/25WUD)
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR season = 'T1' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }
@@ -280,7 +280,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         );
       } else {
         [players] = await connection.query(
-          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR season = 'T1' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
           [tier]
         );
       }

@@ -6,21 +6,24 @@ USE lol_card_game;
 -- Disable foreign key checks temporarily
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Delete all user-related data
-DELETE FROM user_collected_cards;
-DELETE FROM user_collection_progress;
-DELETE FROM user_coaches;
-DELETE FROM user_gacha_pity;
-DELETE FROM gacha_history;
-DELETE FROM user_cards;
-DELETE FROM user_decks;
-DELETE FROM decks;
-DELETE FROM user_achievements;
-DELETE FROM user_missions;
-DELETE FROM ai_battle_history;
-DELETE FROM matchmaking_queue;
-DELETE FROM user_stats;
-DELETE FROM users;
+-- Delete all user-related data (only if tables exist)
+DELETE FROM user_collected_cards WHERE 1=1;
+DELETE FROM user_collection_progress WHERE 1=1;
+DELETE FROM user_coaches WHERE 1=1;
+DELETE FROM user_gacha_pity WHERE 1=1;
+DELETE FROM gacha_history WHERE 1=1;
+DELETE FROM user_cards WHERE 1=1;
+DELETE FROM decks WHERE 1=1;
+DELETE FROM user_achievements WHERE 1=1;
+DELETE FROM user_missions WHERE 1=1;
+DELETE FROM ai_battle_history WHERE 1=1;
+DELETE FROM matchmaking_queue WHERE 1=1;
+DELETE FROM user_stats WHERE 1=1;
+DELETE FROM guild_members WHERE 1=1;
+DELETE FROM referrals WHERE 1=1;
+DELETE FROM user_level_rewards WHERE 1=1;
+DELETE FROM coupon_usage WHERE 1=1;
+DELETE FROM users WHERE 1=1;
 
 -- Re-enable foreign key checks
 SET FOREIGN_KEY_CHECKS = 1;

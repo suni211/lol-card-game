@@ -10,6 +10,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DELETE FROM user_cards;
 DELETE FROM gacha_history;
 DELETE FROM decks;
+DELETE FROM user_achievements;
 DELETE FROM users;
 
 -- Re-enable foreign key checks
@@ -20,6 +21,7 @@ SELECT 'Users deleted:' as status, COUNT(*) as count FROM users;
 SELECT 'User cards deleted:' as status, COUNT(*) as count FROM user_cards;
 SELECT 'Gacha history deleted:' as status, COUNT(*) as count FROM gacha_history;
 SELECT 'Decks deleted:' as status, COUNT(*) as count FROM decks;
+SELECT 'Achievements deleted:' as status, COUNT(*) as count FROM user_achievements;
 
 -- Optional: Create new admin account
 -- Uncomment if you want to create a fresh admin account after reset

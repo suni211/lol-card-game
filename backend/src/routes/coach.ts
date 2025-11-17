@@ -32,7 +32,9 @@ router.get('/my-coaches', authMiddleware, async (req: AuthRequest, res) => {
         c.buff_value,
         c.buff_target,
         c.description,
-        c.image_url
+        c.image_url,
+        COALESCE(uc.current_buff_value, c.buff_value) as current_buff_value,
+        COALESCE(uc.enhancement_level, 0) as enhancement_level
       FROM user_coaches uc
       JOIN coaches c ON uc.coach_id = c.id
       WHERE uc.user_id = ?
@@ -161,6 +163,8 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
     const userCoachId = parseInt(req.params.coachId);
     const { materialCoachIds } = req.body; // 재료로 사용할 코치들
 
+    const MAX_ENHANCEMENT_LEVEL = 10;
+
     if (!materialCoachIds || !Array.isArray(materialCoachIds) || materialCoachIds.length === 0) {
       await connection.rollback();
       return res.status(400).json({
@@ -171,7 +175,9 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
 
     // 대상 코치 확인
     const [targetCoaches]: any = await connection.query(
-      `SELECT uc.*, c.name, c.star_rating, c.buff_type, c.buff_value, c.buff_target
+      `SELECT uc.*, c.name, c.star_rating, c.buff_type, c.buff_value, c.buff_target,
+              COALESCE(uc.current_buff_value, c.buff_value) as current_buff,
+              COALESCE(uc.enhancement_level, 0) as enhancement_level
        FROM user_coaches uc
        JOIN coaches c ON uc.coach_id = c.id
        WHERE uc.id = ? AND uc.user_id = ?`,
@@ -187,6 +193,15 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
     }
 
     const targetCoach = targetCoaches[0];
+
+    // 최대 강화 레벨 체크
+    if (targetCoach.enhancement_level >= MAX_ENHANCEMENT_LEVEL) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: `코치가 이미 최대 강화 레벨입니다. (${MAX_ENHANCEMENT_LEVEL})`,
+      });
+    }
 
     // 재료 코치들 확인
     const [materialCoaches]: any = await connection.query(
@@ -215,16 +230,17 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
       });
     }
 
-    // 강화 레벨 계산 (재료 코치의 별 수만큼 버프 값 증가)
+    // 강화 레벨 및 버프 값 증가 계산
     const buffIncrease = materialCoaches.reduce((sum: number, c: any) => sum + c.star_rating, 0);
+    const newEnhancementLevel = Math.min(targetCoach.enhancement_level + materialCoaches.length, MAX_ENHANCEMENT_LEVEL);
+    const newBuffValue = targetCoach.current_buff + buffIncrease;
 
-    // 대상 코치의 버프 값 증가
+    // 대상 코치의 강화 레벨 및 버프 값 업데이트
     await connection.query(
-      `UPDATE coaches c
-       JOIN user_coaches uc ON c.id = uc.coach_id
-       SET c.buff_value = c.buff_value + ?
-       WHERE uc.id = ?`,
-      [buffIncrease, userCoachId]
+      `UPDATE user_coaches
+       SET enhancement_level = ?, current_buff_value = ?
+       WHERE id = ?`,
+      [newEnhancementLevel, newBuffValue, userCoachId]
     );
 
     // 재료 코치들 삭제
@@ -237,10 +253,14 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
 
     res.json({
       success: true,
-      message: `코치가 강화되었습니다! 버프 +${buffIncrease}`,
+      message: `코치가 강화되었습니다! 레벨 +${newEnhancementLevel - targetCoach.enhancement_level}, 버프 +${buffIncrease}`,
       data: {
         buffIncrease,
-        newBuffValue: targetCoach.buff_value + buffIncrease,
+        oldBuffValue: targetCoach.current_buff,
+        newBuffValue,
+        oldEnhancementLevel: targetCoach.enhancement_level,
+        newEnhancementLevel,
+        maxLevel: MAX_ENHANCEMENT_LEVEL,
       },
     });
   } catch (error: any) {

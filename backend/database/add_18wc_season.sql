@@ -38,11 +38,11 @@ INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
 
 -- Team Liquid
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC Impact', 'TL', 'TOP', 85, 'NA', 'EPIC', '18WC'),
-('18WC Xmithie', 'TL', 'JUNGLE', 83, 'NA', 'EPIC', '18WC'),
-('18WC Pobelter', 'TL', 'MID', 80, 'NA', 'RARE', '18WC'),
-('18WC Doublelift', 'TL', 'ADC', 88, 'NA', 'EPIC', '18WC'),
-('18WC Olleh', 'TL', 'SUPPORT', 81, 'NA', 'EPIC', '18WC');
+('18WC Impact', 'TL', 'TOP', 85, 'LCS', 'EPIC', '18WC'),
+('18WC Xmithie', 'TL', 'JUNGLE', 83, 'LCS', 'EPIC', '18WC'),
+('18WC Pobelter', 'TL', 'MID', 80, 'LCS', 'RARE', '18WC'),
+('18WC Doublelift', 'TL', 'ADC', 88, 'LCS', 'EPIC', '18WC'),
+('18WC Olleh', 'TL', 'SUPPORT', 81, 'LCS', 'EPIC', '18WC');
 
 -- MAD TEAM
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
@@ -54,11 +54,11 @@ INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
 
 -- 100 Thieves
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC Ssumday', '100T', 'TOP', 83, 'NA', 'EPIC', '18WC'),
-('18WC AnDa', '100T', 'JUNGLE', 80, 'NA', 'RARE', '18WC'),
-('18WC Ryu', '100T', 'MID', 78, 'NA', 'RARE', '18WC'),
-('18WC Cody Sun', '100T', 'ADC', 70, 'NA', 'COMMON', '18WC'),
-('18WC aphromoo', '100T', 'SUPPORT', 72, 'NA', 'RARE', '18WC');
+('18WC Ssumday', '100T', 'TOP', 83, 'LCS', 'EPIC', '18WC'),
+('18WC AnDa', '100T', 'JUNGLE', 80, 'LCS', 'RARE', '18WC'),
+('18WC Ryu', '100T', 'MID', 78, 'LCS', 'RARE', '18WC'),
+('18WC Cody Sun', '100T', 'ADC', 70, 'LCS', 'COMMON', '18WC'),
+('18WC aphromoo', '100T', 'SUPPORT', 72, 'LCS', 'RARE', '18WC');
 
 -- G-Rex
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
@@ -113,11 +113,11 @@ INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
 
 -- Cloud9
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC Licorice', 'C9', 'TOP', 95, 'NA', 'LEGENDARY', '18WC'),
-('18WC Blaber', 'C9', 'JUNGLE', 93, 'NA', 'LEGENDARY', '18WC'),
-('18WC Jensen', 'C9', 'MID', 94, 'NA', 'LEGENDARY', '18WC'),
-('18WC Sneaky', 'C9', 'ADC', 95, 'NA', 'LEGENDARY', '18WC'),
-('18WC Zeyzal', 'C9', 'SUPPORT', 92, 'NA', 'EPIC', '18WC');
+('18WC Licorice', 'C9', 'TOP', 95, 'LCS', 'LEGENDARY', '18WC'),
+('18WC Blaber', 'C9', 'JUNGLE', 93, 'LCS', 'LEGENDARY', '18WC'),
+('18WC Jensen', 'C9', 'MID', 94, 'LCS', 'LEGENDARY', '18WC'),
+('18WC Sneaky', 'C9', 'ADC', 95, 'LCS', 'LEGENDARY', '18WC'),
+('18WC Zeyzal', 'C9', 'SUPPORT', 92, 'LCS', 'EPIC', '18WC');
 
 -- Fnatic (2018 Finalists)
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
@@ -138,27 +138,27 @@ INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
 
 -- SuperMassive
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC fabFabulous', 'SPM', 'TOP', 68, 'LCP', 'COMMON', '18WC'),
-('18WC Stomaged', 'SPM', 'JUNGLE', 70, 'LCP', 'COMMON', '18WC'),
-('18WC GBM', 'SPM', 'MID', 72, 'LCP', 'RARE', '18WC'),
-('18WC Zeitnot', 'SPM', 'ADC', 66, 'LCP', 'COMMON', '18WC'),
-('18WC SnowFlower', 'SPM', 'SUPPORT', 65, 'LCP', 'COMMON', '18WC');
+('18WC fabFabulous', 'SPM', 'TOP', 68, 'LEC', 'COMMON', '18WC'),
+('18WC Stomaged', 'SPM', 'JUNGLE', 70, 'LEC', 'COMMON', '18WC'),
+('18WC GBM', 'SPM', 'MID', 72, 'LEC', 'RARE', '18WC'),
+('18WC Zeitnot', 'SPM', 'ADC', 66, 'LEC', 'COMMON', '18WC'),
+('18WC SnowFlower', 'SPM', 'SUPPORT', 65, 'LEC', 'COMMON', '18WC');
 
 -- Gambit Esports
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC PvPStejos', 'GMB', 'TOP', 63, 'LCP', 'COMMON', '18WC'),
-('18WC Diamondprox', 'GMB', 'JUNGLE', 60, 'LCP', 'COMMON', '18WC'),
-('18WC Kira', 'GMB', 'MID', 63, 'LCP', 'COMMON', '18WC'),
-('18WC Lodik', 'GMB', 'ADC', 65, 'LCP', 'COMMON', '18WC'),
-('18WC Edward', 'GMB', 'SUPPORT', 65, 'LCP', 'COMMON', '18WC');
+('18WC PvPStejos', 'GMB', 'TOP', 63, 'LCK', 'COMMON', '18WC'),
+('18WC Diamondprox', 'GMB', 'JUNGLE', 60, 'LCK', 'COMMON', '18WC'),
+('18WC Kira', 'GMB', 'MID', 63, 'LCK', 'COMMON', '18WC'),
+('18WC Lodik', 'GMB', 'ADC', 65, 'LCK', 'COMMON', '18WC'),
+('18WC Edward', 'GMB', 'SUPPORT', 65, 'LCK', 'COMMON', '18WC');
 
 -- KaBuM! e-Sports
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC zantins', 'KBM', 'TOP', 63, 'LCP', 'COMMON', '18WC'),
-('18WC Ranger', 'KBM', 'JUNGLE', 64, 'LCP', 'COMMON', '18WC'),
-('18WC dyNquedo', 'KBM', 'MID', 64, 'LCP', 'COMMON', '18WC'),
-('18WC Titan', 'KBM', 'ADC', 70, 'LCP', 'COMMON', '18WC'),
-('18WC Riyev', 'KBM', 'SUPPORT', 61, 'LCP', 'COMMON', '18WC');
+('18WC zantins', 'KBM', 'TOP', 63, 'CBLOL', 'COMMON', '18WC'),
+('18WC Ranger', 'KBM', 'JUNGLE', 64, 'CBLOL', 'COMMON', '18WC'),
+('18WC dyNquedo', 'KBM', 'MID', 64, 'CBLOL', 'COMMON', '18WC'),
+('18WC Titan', 'KBM', 'ADC', 70, 'CBLOL', 'COMMON', '18WC'),
+('18WC Riyev', 'KBM', 'SUPPORT', 61, 'CBLOL', 'COMMON', '18WC');
 
 -- Infinity eSports
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES

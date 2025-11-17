@@ -167,8 +167,8 @@ export default function StrategyStats() {
             <tbody>
               {data.map((item, index) => {
                 const balanceItem = balanceData.find((b) => b.strategy_name === item.strategy);
-                const modifier = balanceItem?.balance_modifier || 1.0;
-                const winRate = balanceItem?.win_rate || 0;
+                const modifier = Number(balanceItem?.balance_modifier) || 1.0;
+                const winRate = Number(balanceItem?.win_rate) || 0;
 
                 return (
                   <tr
@@ -180,10 +180,10 @@ export default function StrategyStats() {
                     </td>
                     <td className="py-3 px-2 sm:px-3 text-right">
                       <span className="text-gray-900 dark:text-white font-semibold">
-                        {item.usage_percentage.toFixed(1)}%
+                        {(Number(item.usage_percentage) || 0).toFixed(1)}%
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
-                        ({item.usage_count})
+                        ({item.usage_count || 0})
                       </span>
                     </td>
                     <td className="py-3 px-2 sm:px-3 text-right">
@@ -196,7 +196,7 @@ export default function StrategyStats() {
                             : 'text-gray-600 dark:text-gray-400'
                         }`}
                       >
-                        {winRate.toFixed(1)}%
+                        {(Number(winRate) || 0).toFixed(1)}%
                       </span>
                     </td>
                     <td className="py-3 px-2 sm:px-3 text-center">

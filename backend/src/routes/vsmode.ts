@@ -228,23 +228,23 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
       SELECT
         d.*,
         p1.id as top_player_id, p1.name as top_name, p1.overall as top_overall, p1.position as top_position,
-        p1.tier as top_tier, p1.team as top_team, p1.region as top_region,
+        p1.team as top_team, p1.region as top_region, p1.season as top_season,
         uc1.level as top_level,
 
         p2.id as jungle_player_id, p2.name as jungle_name, p2.overall as jungle_overall, p2.position as jungle_position,
-        p2.tier as jungle_tier, p2.team as jungle_team, p2.region as jungle_region,
+        p2.team as jungle_team, p2.region as jungle_region, p2.season as jungle_season,
         uc2.level as jungle_level,
 
         p3.id as mid_player_id, p3.name as mid_name, p3.overall as mid_overall, p3.position as mid_position,
-        p3.tier as mid_tier, p3.team as mid_team, p3.region as mid_region,
+        p3.team as mid_team, p3.region as mid_region, p3.season as mid_season,
         uc3.level as mid_level,
 
         p4.id as adc_player_id, p4.name as adc_name, p4.overall as adc_overall, p4.position as adc_position,
-        p4.tier as adc_tier, p4.team as adc_team, p4.region as adc_region,
+        p4.team as adc_team, p4.region as adc_region, p4.season as adc_season,
         uc4.level as adc_level,
 
         p5.id as support_player_id, p5.name as support_name, p5.overall as support_overall, p5.position as support_position,
-        p5.tier as support_tier, p5.team as support_team, p5.region as support_region,
+        p5.team as support_team, p5.region as support_region, p5.season as support_season,
         uc5.level as support_level
       FROM decks d
       LEFT JOIN user_cards uc1 ON d.top_card_id = uc1.id

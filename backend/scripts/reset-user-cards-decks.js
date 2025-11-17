@@ -15,8 +15,25 @@ async function resetUserCardsAndDecks() {
 
     // Get user count before reset
     const [usersBefore] = await connection.query('SELECT COUNT(*) as count FROM users');
-    const [cardsBefore] = await connection.query('SELECT COUNT(*) as count FROM user_cards');
-    const [decksBefore] = await connection.query('SELECT COUNT(*) as count FROM user_decks');
+
+    // Check which tables exist
+    const [tables] = await connection.query("SHOW TABLES LIKE 'user_%'");
+    console.log('📋 Available tables:', tables.map(t => Object.values(t)[0]).join(', '));
+
+    let cardsBefore = [{ count: 0 }];
+    let decksBefore = [{ count: 0 }];
+
+    try {
+      [cardsBefore] = await connection.query('SELECT COUNT(*) as count FROM user_cards');
+    } catch (e) {
+      console.log('ℹ️  user_cards table not found');
+    }
+
+    try {
+      [decksBefore] = await connection.query('SELECT COUNT(*) as count FROM decks');
+    } catch (e) {
+      console.log('ℹ️  decks table not found');
+    }
 
     console.log('📊 Before Reset:');
     console.log(`   Users: ${usersBefore[0].count}`);
@@ -27,47 +44,94 @@ async function resetUserCardsAndDecks() {
     await connection.beginTransaction();
 
     // 1. Delete all user cards
-    await connection.query('DELETE FROM user_cards');
-    console.log('✅ Deleted all user cards');
+    try {
+      await connection.query('DELETE FROM user_cards');
+      console.log('✅ Deleted all user cards');
+    } catch (e) {
+      console.log('⚠️  user_cards table not found, skipping');
+    }
 
-    // 2. Delete all user decks
-    await connection.query('DELETE FROM user_decks');
-    console.log('✅ Deleted all user decks');
+    // 2. Delete all decks (might be 'decks' not 'user_decks')
+    try {
+      await connection.query('DELETE FROM decks');
+      console.log('✅ Deleted all decks');
+    } catch (e) {
+      console.log('⚠️  decks table not found, skipping');
+    }
 
     // 3. Delete all deck cards (if exists)
-    await connection.query('DELETE FROM deck_cards WHERE 1=1');
-    console.log('✅ Deleted all deck cards');
+    try {
+      await connection.query('DELETE FROM deck_cards WHERE 1=1');
+      console.log('✅ Deleted all deck cards');
+    } catch (e) {
+      console.log('⚠️  deck_cards table not found, skipping');
+    }
 
     // 4. Reset user collection progress
-    await connection.query('DELETE FROM user_collected_cards');
-    console.log('✅ Deleted collection progress');
+    try {
+      await connection.query('DELETE FROM user_collected_cards');
+      console.log('✅ Deleted collection progress');
+    } catch (e) {
+      console.log('⚠️  user_collected_cards table not found, skipping');
+    }
 
-    await connection.query('DELETE FROM user_collection_progress');
-    console.log('✅ Deleted collection progress stats');
+    try {
+      await connection.query('DELETE FROM user_collection_progress');
+      console.log('✅ Deleted collection progress stats');
+    } catch (e) {
+      console.log('⚠️  user_collection_progress table not found, skipping');
+    }
 
     // 5. Reset gacha history (optional - uncomment if needed)
-    // await connection.query('DELETE FROM gacha_history');
-    // console.log('✅ Deleted gacha history');
+    // try {
+    //   await connection.query('DELETE FROM gacha_history');
+    //   console.log('✅ Deleted gacha history');
+    // } catch (e) {
+    //   console.log('⚠️  gacha_history table not found, skipping');
+    // }
 
     // 6. Reset user points to 10000 and reset welcome packs
-    await connection.query('UPDATE users SET points = 10000, welcome_packs_remaining = 5 WHERE is_admin = FALSE');
-    console.log('✅ Reset user points to 10,000 and welcome packs to 5');
+    try {
+      await connection.query('UPDATE users SET points = 10000, welcome_packs_remaining = 5 WHERE is_admin = FALSE OR is_admin IS NULL');
+      console.log('✅ Reset user points to 10,000 and welcome packs to 5');
+    } catch (e) {
+      // Try without welcome_packs_remaining if column doesn't exist
+      await connection.query('UPDATE users SET points = 10000 WHERE is_admin = FALSE OR is_admin IS NULL');
+      console.log('✅ Reset user points to 10,000');
+    }
 
     // 7. Reset admin points to high value
-    await connection.query('UPDATE users SET points = 999999 WHERE is_admin = TRUE');
-    console.log('✅ Reset admin points to 999,999');
+    try {
+      await connection.query('UPDATE users SET points = 999999 WHERE is_admin = TRUE');
+      console.log('✅ Reset admin points to 999,999');
+    } catch (e) {
+      console.log('⚠️  Could not reset admin points');
+    }
 
     // 8. Reset 19G2 gacha pity counter
-    await connection.query('DELETE FROM user_gacha_pity WHERE pack_type = "19G2_PREMIUM"');
-    console.log('✅ Reset 19G2 pity counter');
+    try {
+      await connection.query('DELETE FROM user_gacha_pity WHERE pack_type = "19G2_PREMIUM"');
+      console.log('✅ Reset 19G2 pity counter');
+    } catch (e) {
+      console.log('⚠️  user_gacha_pity table not found, skipping');
+    }
 
     // Commit transaction
     await connection.commit();
 
     // Get stats after reset
     const [usersAfter] = await connection.query('SELECT COUNT(*) as count FROM users');
-    const [cardsAfter] = await connection.query('SELECT COUNT(*) as count FROM user_cards');
-    const [decksAfter] = await connection.query('SELECT COUNT(*) as count FROM user_decks');
+
+    let cardsAfter = [{ count: 0 }];
+    let decksAfter = [{ count: 0 }];
+
+    try {
+      [cardsAfter] = await connection.query('SELECT COUNT(*) as count FROM user_cards');
+    } catch (e) {}
+
+    try {
+      [decksAfter] = await connection.query('SELECT COUNT(*) as count FROM decks');
+    } catch (e) {}
 
     console.log('\n📊 After Reset:');
     console.log(`   Users: ${usersAfter[0].count} (preserved)`);

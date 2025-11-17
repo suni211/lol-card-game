@@ -108,13 +108,29 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       else if (tier === 'ICON') {
         // ICON tier: special handling - query directly by name pattern
         [players] = await connection.query(
-          "SELECT * FROM players WHERE name LIKE 'ICON%' AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
+          `SELECT *,
+           CASE
+             WHEN name LIKE 'ICON%' THEN 'ICON'
+             WHEN overall <= 80 THEN 'COMMON'
+             WHEN overall <= 90 THEN 'RARE'
+             WHEN overall <= 100 THEN 'EPIC'
+             ELSE 'LEGENDARY'
+           END as tier
+           FROM players WHERE name LIKE 'ICON%' AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1`
         );
       }
 
       if (tier !== 'ICON') {
         [players] = await connection.query(
-          "SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE 'ICON%' ORDER BY RAND() LIMIT 1",
+          `SELECT *,
+           CASE
+             WHEN name LIKE 'ICON%' THEN 'ICON'
+             WHEN overall <= 80 THEN 'COMMON'
+             WHEN overall <= 90 THEN 'RARE'
+             WHEN overall <= 100 THEN 'EPIC'
+             ELSE 'LEGENDARY'
+           END as tier
+           FROM players WHERE overall >= ? AND overall <= ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE 'ICON%' ORDER BY RAND() LIMIT 1`,
           [minOverall, maxOverall]
         );
       }
@@ -215,7 +231,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
           position: player.position,
           overall: player.overall,
           region: player.region,
-          tier: player.name?.startsWith('ICON') ? 'ICON' : (player.overall <= 80 ? 'COMMON' : player.overall <= 90 ? 'RARE' : player.overall <= 100 ? 'EPIC' : 'LEGENDARY'),
+          tier: player.tier, // Use tier calculated in SQL
           season: player.season,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,
@@ -315,13 +331,29 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         else if (tier === 'ICON') {
           // ICON tier: special handling - query directly by name pattern
           [players] = await connection.query(
-            "SELECT * FROM players WHERE name LIKE 'ICON%' AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
+            `SELECT *,
+             CASE
+               WHEN name LIKE 'ICON%' THEN 'ICON'
+               WHEN overall <= 80 THEN 'COMMON'
+               WHEN overall <= 90 THEN 'RARE'
+               WHEN overall <= 100 THEN 'EPIC'
+               ELSE 'LEGENDARY'
+             END as tier
+             FROM players WHERE name LIKE 'ICON%' AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1`
           );
         }
 
         if (tier !== 'ICON') {
           [players] = await connection.query(
-            "SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE 'ICON%' ORDER BY RAND() LIMIT 1",
+            `SELECT *,
+             CASE
+               WHEN name LIKE 'ICON%' THEN 'ICON'
+               WHEN overall <= 80 THEN 'COMMON'
+               WHEN overall <= 90 THEN 'RARE'
+               WHEN overall <= 100 THEN 'EPIC'
+               ELSE 'LEGENDARY'
+             END as tier
+             FROM players WHERE overall >= ? AND overall <= ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE 'ICON%' ORDER BY RAND() LIMIT 1`,
             [minOverall, maxOverall]
           );
         }
@@ -378,7 +410,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           position: player.position,
           overall: player.overall,
           region: player.region,
-          tier: player.name?.startsWith('ICON') ? 'ICON' : (player.overall <= 80 ? 'COMMON' : player.overall <= 90 ? 'RARE' : player.overall <= 100 ? 'EPIC' : 'LEGENDARY'),
+          tier: player.tier, // Use tier calculated in SQL
           season: player.season,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,

@@ -76,7 +76,7 @@ const InfiniteChallenge: React.FC = () => {
   };
 
   const calculateReward = (stage: number): number => {
-    return stage * 10 + stage * stage * 2;
+    return stage * 50 + stage * stage * 10;
   };
 
   if (loading) {

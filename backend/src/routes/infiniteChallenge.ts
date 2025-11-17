@@ -8,10 +8,10 @@ const router = express.Router();
 
 /**
  * Calculate reward based on stage
- * Formula: stage * 10 + (stage * stage * 2)
+ * Formula: stage * 50 + (stage * stage * 10)
  */
 function calculateStageReward(stage: number): number {
-  return stage * 10 + stage * stage * 2;
+  return stage * 50 + stage * stage * 10;
 }
 
 /**
@@ -173,10 +173,7 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
     }
 
     const currentStage = progress[0].current_stage;
-
-    // Calculate cumulative rewards: total from stage 1 to current stage
-    const cumulativeReward = calculateTotalRewards(currentStage);
-    const stageReward = calculateStageReward(currentStage);
+    const reward = calculateStageReward(currentStage);
 
     if (isVictory) {
       // Victory - advance to next stage
@@ -187,16 +184,16 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         `UPDATE infinite_challenge_progress
          SET current_stage = ?,
              highest_stage = ?,
-             total_rewards = ?,
+             total_rewards = total_rewards + ?,
              last_played_at = NOW()
          WHERE user_id = ?`,
-        [newStage, newHighest, cumulativeReward, userId]
+        [newStage, newHighest, reward, userId]
       );
 
-      // Award cumulative points (all rewards from stage 1 to current stage)
+      // Award points for this stage only
       await connection.query(
         'UPDATE users SET points = points + ? WHERE id = ?',
-        [cumulativeReward, userId]
+        [reward, userId]
       );
 
       // Get updated user data
@@ -210,7 +207,7 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         `INSERT INTO infinite_challenge_matches
          (user_id, stage, ai_difficulty, user_score, ai_score, is_victory, total_damage, rewards_earned)
          VALUES (?, ?, ?, ?, ?, TRUE, ?, ?)`,
-        [userId, currentStage, calculateAIDifficulty(currentStage), userScore, aiScore, totalDamage || 0, cumulativeReward]
+        [userId, currentStage, calculateAIDifficulty(currentStage), userScore, aiScore, totalDamage || 0, reward]
       );
 
       // Update leaderboard
@@ -224,8 +221,8 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
          VALUES (?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
          highest_stage = GREATEST(highest_stage, ?),
-         total_rewards = ?`,
-        [weekStartStr, userId, newStage, cumulativeReward, newStage, cumulativeReward]
+         total_rewards = total_rewards + ?`,
+        [weekStartStr, userId, newStage, reward, newStage, reward]
       );
 
       await connection.commit();
@@ -239,11 +236,11 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         success: true,
         data: {
           currentStage: newStage,
-          reward: cumulativeReward,
-          nextReward: calculateTotalRewards(newStage),
+          reward,
+          nextReward: calculateStageReward(newStage),
           aiDifficulty: calculateAIDifficulty(newStage),
         },
-        message: `스테이지 ${currentStage} 클리어! 총 누적 ${cumulativeReward.toLocaleString()}P 획득!`,
+        message: `스테이지 ${currentStage} 클리어! ${reward.toLocaleString()}P 획득!`,
       });
     } else {
       // Defeat - end run

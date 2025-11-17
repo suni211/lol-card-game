@@ -184,6 +184,13 @@ export default function Enhancement() {
             toast.error(`강화 실패... 재료 카드 ${materialCards.length}개가 소멸되었습니다`);
           }
         }
+
+        // 코치 획득 메시지
+        if (data.coach) {
+          toast.success(`🎓 코치 획득! ${data.coach.name} (${data.coach.star_rating}성) - ${data.coach.description}`, {
+            duration: 7000,
+          });
+        }
       }
     } catch (error: any) {
       console.error('Enhancement error:', error);

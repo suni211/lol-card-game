@@ -358,7 +358,7 @@ export default function Gacha() {
       );
 
       if (response.data.success) {
-        const { player, isDuplicate, refundPoints, coach } = response.data.data;
+        const { player, isDuplicate, refundPoints } = response.data.data;
 
         setDrawnCard(player);
 
@@ -428,13 +428,6 @@ export default function Gacha() {
           if (isDuplicate) {
             toast(`중복 카드! ${refundPoints}P 환급받았습니다.`, {
               icon: 'ℹ️',
-            });
-          }
-
-          // 코치 획득 메시지
-          if (coach) {
-            toast.success(`🎓 코치 획득! ${coach.name} (${coach.star_rating}성) - ${coach.description}`, {
-              duration: 7000,
             });
           }
 
@@ -522,14 +515,6 @@ export default function Gacha() {
               icon: 'ℹ️',
             });
           }
-
-          // 코치 획득 메시지
-          const coachesObtained = results.filter((r: any) => r.coach).map((r: any) => r.coach);
-          coachesObtained.forEach((coach: any) => {
-            toast.success(`🎓 코치 획득! ${coach.name} (${coach.star_rating}성) - ${coach.description}`, {
-              duration: 7000,
-            });
-          });
         }, 2000);
       }
     } catch (error: any) {

@@ -150,4 +150,106 @@ router.post('/deactivate', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Enhance coach (코치 강화)
+router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+    const userCoachId = parseInt(req.params.coachId);
+    const { materialCoachIds } = req.body; // 재료로 사용할 코치들
+
+    if (!materialCoachIds || !Array.isArray(materialCoachIds) || materialCoachIds.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '재료 코치를 선택해주세요.',
+      });
+    }
+
+    // 대상 코치 확인
+    const [targetCoaches]: any = await connection.query(
+      `SELECT uc.*, c.name, c.star_rating, c.buff_type, c.buff_value, c.buff_target
+       FROM user_coaches uc
+       JOIN coaches c ON uc.coach_id = c.id
+       WHERE uc.id = ? AND uc.user_id = ?`,
+      [userCoachId, userId]
+    );
+
+    if (targetCoaches.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        error: '코치를 찾을 수 없습니다.',
+      });
+    }
+
+    const targetCoach = targetCoaches[0];
+
+    // 재료 코치들 확인
+    const [materialCoaches]: any = await connection.query(
+      `SELECT uc.*, c.star_rating
+       FROM user_coaches uc
+       JOIN coaches c ON uc.coach_id = c.id
+       WHERE uc.id IN (?) AND uc.user_id = ?`,
+      [materialCoachIds, userId]
+    );
+
+    if (materialCoaches.length !== materialCoachIds.length) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        error: '일부 재료 코치를 찾을 수 없습니다.',
+      });
+    }
+
+    // 활성화된 코치는 재료로 사용 불가
+    const activeMaterial = materialCoaches.find((c: any) => c.is_active);
+    if (activeMaterial) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '활성화된 코치는 재료로 사용할 수 없습니다.',
+      });
+    }
+
+    // 강화 레벨 계산 (재료 코치의 별 수만큼 버프 값 증가)
+    const buffIncrease = materialCoaches.reduce((sum: number, c: any) => sum + c.star_rating, 0);
+
+    // 대상 코치의 버프 값 증가
+    await connection.query(
+      `UPDATE coaches c
+       JOIN user_coaches uc ON c.id = uc.coach_id
+       SET c.buff_value = c.buff_value + ?
+       WHERE uc.id = ?`,
+      [buffIncrease, userCoachId]
+    );
+
+    // 재료 코치들 삭제
+    await connection.query(
+      'DELETE FROM user_coaches WHERE id IN (?)',
+      [materialCoachIds]
+    );
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: `코치가 강화되었습니다! 버프 +${buffIncrease}`,
+      data: {
+        buffIncrease,
+        newBuffValue: targetCoach.buff_value + buffIncrease,
+      },
+    });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Coach enhance error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
 export default router;

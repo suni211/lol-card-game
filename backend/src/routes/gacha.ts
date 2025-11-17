@@ -134,49 +134,6 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
     const isDuplicate = existing.length > 0;
     const refundPoints = isDuplicate ? Math.floor(option.cost * 0.5) : 0;
 
-    // Coach drop system: 15% chance to get a coach instead when duplicate
-    let coachDropped = null;
-    if (isDuplicate && Math.random() < 0.15) {
-      // Get random coach based on card tier
-      let starRating = 1;
-      if (tier === 'ICON' || tier === 'GR') {
-        starRating = 5;
-      } else if (tier === 'LEGENDARY') {
-        starRating = Math.random() < 0.5 ? 4 : 5;
-      } else if (tier === 'EPIC') {
-        starRating = Math.random() < 0.5 ? 3 : 4;
-      } else if (tier === 'RARE') {
-        starRating = Math.random() < 0.5 ? 2 : 3;
-      } else {
-        starRating = Math.random() < 0.5 ? 1 : 2;
-      }
-
-      const [coaches]: any = await connection.query(
-        'SELECT * FROM coaches WHERE star_rating = ? ORDER BY RAND() LIMIT 1',
-        [starRating]
-      );
-
-      if (coaches.length > 0) {
-        const coach = coaches[0];
-
-        // Check if user already has this coach
-        const [hasCoach]: any = await connection.query(
-          'SELECT id FROM user_coaches WHERE user_id = ? AND coach_id = ?',
-          [userId, coach.id]
-        );
-
-        // Only give coach if user doesn't have it yet
-        if (hasCoach.length === 0) {
-          await connection.query(
-            'INSERT INTO user_coaches (user_id, coach_id) VALUES (?, ?)',
-            [userId, coach.id]
-          );
-
-          coachDropped = coach;
-        }
-      }
-    }
-
     // Add card to user (even if duplicate)
     await connection.query(
       'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
@@ -274,7 +231,6 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         },
         isDuplicate,
         refundPoints,
-        coach: coachDropped,
       },
     });
   } catch (error: any) {
@@ -379,49 +335,6 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
       const refundPoints = isDuplicate ? Math.floor(option.cost * 0.5) : 0;
       totalRefund += refundPoints;
 
-      // Coach drop system: 15% chance to get a coach when duplicate
-      let coachDropped = null;
-      if (isDuplicate && Math.random() < 0.15) {
-        // Get random coach based on card tier
-        let starRating = 1;
-        if (tier === 'ICON' || tier === 'GR') {
-          starRating = 5;
-        } else if (tier === 'LEGENDARY') {
-          starRating = Math.random() < 0.5 ? 4 : 5;
-        } else if (tier === 'EPIC') {
-          starRating = Math.random() < 0.5 ? 3 : 4;
-        } else if (tier === 'RARE') {
-          starRating = Math.random() < 0.5 ? 2 : 3;
-        } else {
-          starRating = Math.random() < 0.5 ? 1 : 2;
-        }
-
-        const [coaches]: any = await connection.query(
-          'SELECT * FROM coaches WHERE star_rating = ? ORDER BY RAND() LIMIT 1',
-          [starRating]
-        );
-
-        if (coaches.length > 0) {
-          const coach = coaches[0];
-
-          // Check if user already has this coach
-          const [hasCoach]: any = await connection.query(
-            'SELECT id FROM user_coaches WHERE user_id = ? AND coach_id = ?',
-            [userId, coach.id]
-          );
-
-          // Only give coach if user doesn't have it yet
-          if (hasCoach.length === 0) {
-            await connection.query(
-              'INSERT INTO user_coaches (user_id, coach_id) VALUES (?, ?)',
-              [userId, coach.id]
-            );
-
-            coachDropped = coach;
-          }
-        }
-      }
-
       // Add card
       await connection.query(
         'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
@@ -474,7 +387,6 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         },
         isDuplicate,
         refundPoints,
-        coach: coachDropped,
       });
     }
 
@@ -926,6 +838,54 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     // Delete all material cards (consumed regardless of success/failure)
     await connection.query('DELETE FROM user_cards WHERE id IN (?)', [materialCardIds]);
 
+    // Coach drop system: 20% chance to get a coach when using material cards
+    let coachDropped = null;
+    if (Math.random() < 0.20) {
+      // Get coach tier based on material cards
+      const maxTier = materialCards.reduce((max: string, card: any) => {
+        const tierRank: any = { ICON: 6, GR: 5, LEGENDARY: 4, EPIC: 3, RARE: 2, COMMON: 1 };
+        return tierRank[card.tier] > tierRank[max] ? card.tier : max;
+      }, 'COMMON');
+
+      let starRating = 1;
+      if (maxTier === 'ICON' || maxTier === 'GR') {
+        starRating = 5;
+      } else if (maxTier === 'LEGENDARY') {
+        starRating = Math.random() < 0.5 ? 4 : 5;
+      } else if (maxTier === 'EPIC') {
+        starRating = Math.random() < 0.5 ? 3 : 4;
+      } else if (maxTier === 'RARE') {
+        starRating = Math.random() < 0.5 ? 2 : 3;
+      } else {
+        starRating = Math.random() < 0.5 ? 1 : 2;
+      }
+
+      const [coaches]: any = await connection.query(
+        'SELECT * FROM coaches WHERE star_rating = ? ORDER BY RAND() LIMIT 1',
+        [starRating]
+      );
+
+      if (coaches.length > 0) {
+        const coach = coaches[0];
+
+        // Check if user already has this coach
+        const [hasCoach]: any = await connection.query(
+          'SELECT id FROM user_coaches WHERE user_id = ? AND coach_id = ?',
+          [userId, coach.id]
+        );
+
+        // Only give coach if user doesn't have it yet
+        if (hasCoach.length === 0) {
+          await connection.query(
+            'INSERT INTO user_coaches (user_id, coach_id) VALUES (?, ?)',
+            [userId, coach.id]
+          );
+
+          coachDropped = coach;
+        }
+      }
+    }
+
     // Deduct points
     await connection.query('UPDATE users SET points = points - ? WHERE id = ?', [cost, userId]);
 
@@ -977,6 +937,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         materialCardNames: materialCards.map((c: any) => c.player_name),
         levelDowngraded,
         levelLost,
+        coach: coachDropped,
       },
     });
   } catch (error: any) {

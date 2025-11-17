@@ -256,10 +256,14 @@ router.get('/search-players', authMiddleware, async (req: AuthRequest, res) => {
         region,
         tier,
         season,
-        laning,
-        teamfight,
-        macro,
-        mental
+        cs_ability,
+        lane_pressure,
+        damage_dealing,
+        survivability,
+        objective_control,
+        vision_control,
+        decision_making,
+        consistency
       FROM players
       WHERE name LIKE ?
       ORDER BY overall DESC
@@ -347,14 +351,22 @@ router.post('/compare-players', authMiddleware, async (req: AuthRequest, res) =>
         level,
         baseOverall,
         enhancedOverall,
-        baseLaning: player.laning || 50,
-        enhancedLaning: Math.round((player.laning || 50) * statMultiplier),
-        baseTeamfight: player.teamfight || 50,
-        enhancedTeamfight: Math.round((player.teamfight || 50) * statMultiplier),
-        baseMacro: player.macro || 50,
-        enhancedMacro: Math.round((player.macro || 50) * statMultiplier),
-        baseMental: player.mental || 50,
-        enhancedMental: Math.round((player.mental || 50) * statMultiplier),
+        baseCsAbility: player.cs_ability || 50,
+        enhancedCsAbility: Math.round((player.cs_ability || 50) * statMultiplier),
+        baseLanePressure: player.lane_pressure || 50,
+        enhancedLanePressure: Math.round((player.lane_pressure || 50) * statMultiplier),
+        baseDamageDealing: player.damage_dealing || 50,
+        enhancedDamageDealing: Math.round((player.damage_dealing || 50) * statMultiplier),
+        baseSurvivability: player.survivability || 50,
+        enhancedSurvivability: Math.round((player.survivability || 50) * statMultiplier),
+        baseObjectiveControl: player.objective_control || 50,
+        enhancedObjectiveControl: Math.round((player.objective_control || 50) * statMultiplier),
+        baseVisionControl: player.vision_control || 50,
+        enhancedVisionControl: Math.round((player.vision_control || 50) * statMultiplier),
+        baseDecisionMaking: player.decision_making || 50,
+        enhancedDecisionMaking: Math.round((player.decision_making || 50) * statMultiplier),
+        baseConsistency: player.consistency || 50,
+        enhancedConsistency: Math.round((player.consistency || 50) * statMultiplier),
       };
     };
 
@@ -363,10 +375,14 @@ router.post('/compare-players', authMiddleware, async (req: AuthRequest, res) =>
       player2: calculateEnhancedStats(player2, level2),
       differences: {
         overall: (player1.overall + level1) - (player2.overall + level2),
-        laning: Math.round(((player1.laning || 50) * (1 + level1 * 0.01)) - ((player2.laning || 50) * (1 + level2 * 0.01))),
-        teamfight: Math.round(((player1.teamfight || 50) * (1 + level1 * 0.01)) - ((player2.teamfight || 50) * (1 + level2 * 0.01))),
-        macro: Math.round(((player1.macro || 50) * (1 + level1 * 0.01)) - ((player2.macro || 50) * (1 + level2 * 0.01))),
-        mental: Math.round(((player1.mental || 50) * (1 + level1 * 0.01)) - ((player2.mental || 50) * (1 + level2 * 0.01))),
+        csAbility: Math.round(((player1.cs_ability || 50) * (1 + level1 * 0.01)) - ((player2.cs_ability || 50) * (1 + level2 * 0.01))),
+        lanePressure: Math.round(((player1.lane_pressure || 50) * (1 + level1 * 0.01)) - ((player2.lane_pressure || 50) * (1 + level2 * 0.01))),
+        damageDealing: Math.round(((player1.damage_dealing || 50) * (1 + level1 * 0.01)) - ((player2.damage_dealing || 50) * (1 + level2 * 0.01))),
+        survivability: Math.round(((player1.survivability || 50) * (1 + level1 * 0.01)) - ((player2.survivability || 50) * (1 + level2 * 0.01))),
+        objectiveControl: Math.round(((player1.objective_control || 50) * (1 + level1 * 0.01)) - ((player2.objective_control || 50) * (1 + level2 * 0.01))),
+        visionControl: Math.round(((player1.vision_control || 50) * (1 + level1 * 0.01)) - ((player2.vision_control || 50) * (1 + level2 * 0.01))),
+        decisionMaking: Math.round(((player1.decision_making || 50) * (1 + level1 * 0.01)) - ((player2.decision_making || 50) * (1 + level2 * 0.01))),
+        consistency: Math.round(((player1.consistency || 50) * (1 + level1 * 0.01)) - ((player2.consistency || 50) * (1 + level2 * 0.01))),
       }
     };
 

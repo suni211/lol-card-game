@@ -30,10 +30,14 @@ interface Player {
   region: string;
   tier: string;
   season: string;
-  laning: number;
-  teamfight: number;
-  macro: number;
-  mental: number;
+  cs_ability: number;
+  lane_pressure: number;
+  damage_dealing: number;
+  survivability: number;
+  objective_control: number;
+  vision_control: number;
+  decision_making: number;
+  consistency: number;
 }
 
 interface PlayerComparison {
@@ -41,10 +45,14 @@ interface PlayerComparison {
   player2: any;
   differences: {
     overall: number;
-    laning: number;
-    teamfight: number;
-    macro: number;
-    mental: number;
+    csAbility: number;
+    lanePressure: number;
+    damageDealing: number;
+    survivability: number;
+    objectiveControl: number;
+    visionControl: number;
+    decisionMaking: number;
+    consistency: number;
   };
 }
 
@@ -564,29 +572,32 @@ export default function StrategyStats() {
                     </div>
 
                     {/* Stat Comparisons */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {['laning', 'teamfight', 'macro', 'mental'].map((stat) => {
-                        const statLabels: Record<string, string> = {
-                          laning: '라인전',
-                          teamfight: '한타',
-                          macro: '운영',
-                          mental: '멘탈'
-                        };
-                        const p1Value = comparison.player1[`enhanced${stat.charAt(0).toUpperCase() + stat.slice(1)}`];
-                        const p2Value = comparison.player2[`enhanced${stat.charAt(0).toUpperCase() + stat.slice(1)}`];
-                        const diff = comparison.differences[stat as keyof typeof comparison.differences];
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { key: 'csAbility', label: 'CS 능력' },
+                        { key: 'lanePressure', label: '라인 압박' },
+                        { key: 'damageDealing', label: '딜량' },
+                        { key: 'survivability', label: '생존력' },
+                        { key: 'objectiveControl', label: '오브젝트 장악' },
+                        { key: 'visionControl', label: '시야 장악' },
+                        { key: 'decisionMaking', label: '판단력' },
+                        { key: 'consistency', label: '안정성' }
+                      ].map((stat) => {
+                        const p1Value = comparison.player1[`enhanced${stat.key.charAt(0).toUpperCase() + stat.key.slice(1)}`];
+                        const p2Value = comparison.player2[`enhanced${stat.key.charAt(0).toUpperCase() + stat.key.slice(1)}`];
+                        const diff = comparison.differences[stat.key as keyof typeof comparison.differences];
 
                         return (
-                          <div key={stat} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
-                              {statLabels[stat]}
+                          <div key={stat.key} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                            <div className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
+                              {stat.label}
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-center">
-                              <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{p1Value}</div>
-                              <div className={`text-sm font-bold ${diff > 0 ? 'text-blue-600 dark:text-blue-400' : diff < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                              <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">{p1Value}</div>
+                              <div className={`text-xs sm:text-sm font-bold ${diff > 0 ? 'text-blue-600 dark:text-blue-400' : diff < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                                 {diff > 0 ? '+' : ''}{diff}
                               </div>
-                              <div className="text-lg font-bold text-red-600 dark:text-red-400">{p2Value}</div>
+                              <div className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">{p2Value}</div>
                             </div>
                           </div>
                         );

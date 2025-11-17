@@ -26,7 +26,7 @@ SELECT 'Achievements deleted:' as status, COUNT(*) as count FROM user_achievemen
 -- Optional: Create new admin account
 -- Uncomment if you want to create a fresh admin account after reset
 -- INSERT INTO users (username, password, points, tier, rating, is_admin, level, exp, welcome_packs_remaining)
--- VALUES ('admin', '$2b$10$YourHashedPasswordHere', 1000000, 'BRONZE', 1000, 1, 1, 0, 5);
+-- VALUES ('admin', '$2b$10$YourHashedPasswordHere', 0, 'BRONZE', 1000, 1, 1, 0, 5);
 
 -- Note: All new users created after this reset will automatically get 5 welcome packs
 -- via the registration system (auth.ts sets welcome_packs_remaining = 5)

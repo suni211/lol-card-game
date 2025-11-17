@@ -134,7 +134,7 @@ router.post('/google', async (req, res) => {
 
       const [result]: any = await pool.query(
         `INSERT INTO users (username, email, password, points, tier, rating, registration_ip, referral_code, welcome_packs_remaining)
-         VALUES (?, ?, ?, 10000, "IRON", 1000, ?, ?, 5)`,
+         VALUES (?, ?, ?, 0, "IRON", 1000, ?, ?, 5)`,
         [username, email, randomPassword, clientIp, newReferralCode]
       );
 

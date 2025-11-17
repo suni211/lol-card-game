@@ -58,10 +58,25 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       }
     }
 
-    // Check if free draw was used today
+    // Check if free draw was used today (exclude welcome packs from check)
     if (type === 'free') {
+      // Check user exists first
+      const [userCheck]: any = await connection.query(
+        'SELECT id FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (userCheck.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
       const [lastFree]: any = await connection.query(
-        'SELECT created_at FROM gacha_history WHERE user_id = ? AND cost = 0 AND DATE(created_at) = CURDATE()',
+        `SELECT created_at FROM gacha_history
+         WHERE user_id = ?
+         AND cost = 0
+         AND DATE(created_at) = CURDATE()
+         AND player_id NOT IN (SELECT id FROM players WHERE season IN ('25WW', '25WUD', '19G2'))`,
         [userId]
       );
 

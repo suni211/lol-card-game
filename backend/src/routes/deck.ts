@@ -315,10 +315,16 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
       // Create new deck
       const [result]: any = await connection.query(`
         INSERT INTO decks (user_id, deck_slot, name, top_card_id, jungle_card_id, mid_card_id, adc_card_id, support_card_id, laning_strategy, teamfight_strategy, macro_strategy, is_active, is_default)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?)
       `, [userId, finalDeckSlot, name || `덱 ${finalDeckSlot}`, topCardId, jungleCardId, midCardId, adcCardId, supportCardId, finalLaningStrategy, finalTeamfightStrategy, finalMacroStrategy, finalDeckSlot === 1]);
       deckId = result.insertId;
     }
+
+    // 이 슬롯의 덱을 활성화하고 다른 슬롯은 비활성화
+    await connection.query(
+      'UPDATE decks SET is_active = (deck_slot = ?) WHERE user_id = ?',
+      [finalDeckSlot, userId]
+    );
 
     await connection.commit();
 

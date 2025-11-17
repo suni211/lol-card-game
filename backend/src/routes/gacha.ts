@@ -7,27 +7,24 @@ import { emitPointUpdate } from '../server';
 
 const router = express.Router();
 
-// Gacha probabilities (더 어려운 확률로 조정)
+// Gacha probabilities (GR 확률 제거, 가격 조정)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { gr: 0.05, icon: 0.001, legendary: 0.019, epic: 0.1, rare: 5, common: 94.83 } },
-  basic: { cost: 100, probabilities: { gr: 0.1, icon: 0.001, legendary: 0.059, epic: 0.5, rare: 10, common: 89.34 } },
-  premium: { cost: 300, probabilities: { gr: 0.3, icon: 0.005, legendary: 0.215, epic: 3, rare: 18, common: 78.48 } },
-  ultra: { cost: 500, probabilities: { gr: 0.5, icon: 0.01, legendary: 0.51, epic: 6, rare: 25, common: 67.98 } },
-  gr_premium: { cost: 3000, probabilities: { gr: 5, icon: 0.02, legendary: 3.08, epic: 11.9, rare: 30, common: 50 } }, // GR 확률 높은 프리미엄 팩
-  worlds_winner: { cost: 2500, probabilities: { gr: 0.2, icon: 0.001, legendary: 5.009, epic: 25, rare: 69.79, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
-  ssg_2017: { cost: 6500, probabilities: { gr: 0.2, icon: 0.001, legendary: 9.509, epic: 90.29, rare: 0, common: 0 }, special: '17SSG' }, // 2017 SSG Worlds, Epic+ only
-  icon_test: { cost: 0, probabilities: { gr: 0, icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
-  gr_test: { cost: 0, probabilities: { gr: 100, icon: 0, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only GR test pack
+  free: { cost: 0, probabilities: { icon: 0.001, legendary: 0.019, epic: 0.1, rare: 5, common: 94.88 } },
+  basic: { cost: 500, probabilities: { icon: 0.001, legendary: 0.059, epic: 0.5, rare: 10, common: 89.44 } },
+  premium: { cost: 1000, probabilities: { icon: 0.005, legendary: 0.215, epic: 3, rare: 18, common: 78.78 } },
+  ultra: { cost: 1500, probabilities: { icon: 0.01, legendary: 0.51, epic: 6, rare: 25, common: 68.48 } },
+  mega: { cost: 2000, probabilities: { icon: 0.02, legendary: 1.0, epic: 10, rare: 30, common: 58.98 } },
+  worlds_winner: { cost: 2500, probabilities: { icon: 0.001, legendary: 5.009, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
+  icon_test: { cost: 0, probabilities: { icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
 };
 
 function selectTierByProbability(probabilities: any): string {
   const random = Math.random() * 100;
 
-  if (random < probabilities.gr) return 'GR';
-  if (random < probabilities.gr + probabilities.icon) return 'ICON';
-  if (random < probabilities.gr + probabilities.icon + probabilities.legendary) return 'LEGENDARY';
-  if (random < probabilities.gr + probabilities.icon + probabilities.legendary + probabilities.epic) return 'EPIC';
-  if (random < probabilities.gr + probabilities.icon + probabilities.legendary + probabilities.epic + probabilities.rare) return 'RARE';
+  if (random < probabilities.icon) return 'ICON';
+  if (random < probabilities.icon + probabilities.legendary) return 'LEGENDARY';
+  if (random < probabilities.icon + probabilities.legendary + probabilities.epic) return 'EPIC';
+  if (random < probabilities.icon + probabilities.legendary + probabilities.epic + probabilities.rare) return 'RARE';
   return 'COMMON';
 }
 
@@ -99,21 +96,12 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       // WORLDS pack is now CLOSED - no more 25WW/25WUD cards available
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
-    } else if ((option as any).special === '17SSG') {
-      // 2017 SSG pack - Only 17SSG cards + 25 season cards + 25HW cards + ICON cards (NO 25WW/25WUD)
-      [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
-        [tier]
-      );
-    } else if (tier === 'GR') {
-      // GR pack - GR players are LEGENDARY tier with season='GR'
-      [players] = await connection.query(
-        "SELECT * FROM players WHERE season = 'GR' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
-      );
     } else {
-      // Regular packs - 25 season cards + RE (LCK Legend) cards + 25HW (Hard Walker) cards + 25MSI cards + GR cards + T1 tribute cards + ICON cards (NO 25WW/25WUD)
+      // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
+      // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON
+      // Excludes: 17SSG, 25WW, 25WUD
       [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR season = 'T1' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+        "SELECT * FROM players WHERE tier = ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
         [tier]
       );
     }
@@ -301,19 +289,12 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
       if ((option as any).special === 'WORLDS') {
         await connection.rollback();
         return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
-      } else if ((option as any).special === '17SSG') {
-        [players] = await connection.query(
-          "SELECT * FROM players WHERE tier = ? AND (name LIKE '17SSG%' OR season = '25' OR season = '25HW' OR season = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
-          [tier]
-        );
-      } else if (tier === 'GR') {
-        // GR pack - GR players are LEGENDARY tier with season='GR'
-        [players] = await connection.query(
-          "SELECT * FROM players WHERE season = 'GR' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
-        );
       } else {
+        // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
+        // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON
+        // Excludes: 17SSG, 25WW, 25WUD
         [players] = await connection.query(
-          "SELECT * FROM players WHERE tier = ? AND (season = '25' OR season = 'RE' OR season = '25HW' OR season = '25MSI' OR season = 'GR' OR season = 'T1' OR tier = 'ICON') AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
+          "SELECT * FROM players WHERE tier = ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
           [tier]
         );
       }

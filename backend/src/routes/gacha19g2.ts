@@ -60,7 +60,7 @@ router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
       );
       player = g2Players[0];
     } else {
-      // 일반 가챠 로직 (기존 시스템, NO 25WW/25WUD)
+      // 일반 가챠 로직 (기존 시스템, NO 25WW/25WUD, NO 18WC, NO 17SSG)
       const tierRoll = Math.random();
       let tier;
       if (tierRoll < 0.6) tier = 'COMMON';
@@ -69,8 +69,8 @@ router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
       else tier = 'LEGENDARY';
 
       const [players]: any = await connection.query(
-        'SELECT * FROM players WHERE tier = ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
-        [tier, '19G2', '25WW%', '25WUD%']
+        'SELECT * FROM players WHERE tier = ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+        [tier, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
       );
       player = players[0];
     }
@@ -168,15 +168,15 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
       }
 
       const [players]: any = await connection.query(
-        'SELECT * FROM players WHERE tier = ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
-        [tier, '19G2', '25WW%', '25WUD%']
+        'SELECT * FROM players WHERE tier = ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+        [tier, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
       );
 
       if (players.length === 0) {
         // Fallback to EPIC if no players found
         const [fallbackPlayers]: any = await connection.query(
-          'SELECT * FROM players WHERE tier = ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
-          ['EPIC', '19G2', '25WW%', '25WUD%']
+          'SELECT * FROM players WHERE tier = ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+          ['EPIC', '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
         );
         player = fallbackPlayers[0];
       } else {

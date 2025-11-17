@@ -48,75 +48,61 @@ export default function Gacha() {
       cost: 0,
       label: '일일 무료',
       probabilities: {
-        common: 94.83,
+        common: 94.88,
         rare: 5,
         epic: 0.1,
         legendary: 0.019,
         icon: 0.001,
-        gr: 0.05,
-      },
-    },
-    {
-      cost: 100,
-      label: '기본',
-      probabilities: {
-        common: 89.34,
-        rare: 10,
-        epic: 0.5,
-        legendary: 0.059,
-        icon: 0.001,
-        gr: 0.1,
-      },
-    },
-    {
-      cost: 300,
-      label: '고급',
-      probabilities: {
-        common: 78.48,
-        rare: 18,
-        epic: 3,
-        legendary: 0.215,
-        icon: 0.005,
-        gr: 0.3,
+        gr: 0,
       },
     },
     {
       cost: 500,
+      label: '기본',
+      probabilities: {
+        common: 89.44,
+        rare: 10,
+        epic: 0.5,
+        legendary: 0.059,
+        icon: 0.001,
+        gr: 0,
+      },
+    },
+    {
+      cost: 1000,
+      label: '고급',
+      probabilities: {
+        common: 78.78,
+        rare: 18,
+        epic: 3,
+        legendary: 0.215,
+        icon: 0.005,
+        gr: 0,
+      },
+    },
+    {
+      cost: 1500,
       label: '프리미엄',
       probabilities: {
-        common: 67.98,
+        common: 68.48,
         rare: 25,
         epic: 6,
         legendary: 0.51,
         icon: 0.01,
-        gr: 0.5,
+        gr: 0,
       },
     },
     {
-      cost: 3000,
-      label: 'GR 프리미엄',
+      cost: 2000,
+      label: '울트라',
       probabilities: {
-        common: 50,
+        common: 58.98,
         rare: 30,
-        epic: 11.9,
-        legendary: 3.08,
+        epic: 10,
+        legendary: 1.0,
         icon: 0.02,
-        gr: 5,
+        gr: 0,
       },
-      special: true,
-    },
-    {
-      cost: 6500,
-      label: '2017 SSG 월즈 우승',
-      probabilities: {
-        common: 0,
-        rare: 0,
-        epic: 90.48,
-        legendary: 9.5,
-        icon: 0.01,
-        gr: 0.01,
-      },
-      special: true,
     },
     {
       cost: 500,
@@ -336,15 +322,14 @@ export default function Gacha() {
         return;
       }
 
-      // 가챠 타입 결정 (기존 로직)
+      // 가챠 타입 결정 (업데이트된 가격)
       let gachaType = 'basic';
       if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
-      else if (option.label === 'GR 테스트팩') gachaType = 'gr_test';
       else if (option.cost === 0) gachaType = 'free';
-      else if (option.cost === 300) gachaType = 'premium';
-      else if (option.cost === 500) gachaType = 'ultra';
-      else if (option.cost === 3000) gachaType = 'gr_premium';
-      else if (option.cost === 6500) gachaType = 'ssg_2017';
+      else if (option.cost === 500) gachaType = 'basic';
+      else if (option.cost === 1000) gachaType = 'premium';
+      else if (option.cost === 1500) gachaType = 'ultra';
+      else if (option.cost === 2000) gachaType = 'mega';
 
       // 백엔드 API 호출
       const response = await axios.post(
@@ -474,12 +459,10 @@ export default function Gacha() {
     try {
       let gachaType = 'basic';
       if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
-      else if (option.label === 'GR 테스트팩') gachaType = 'gr_test';
-      else if (option.cost === 100) gachaType = 'basic';
-      else if (option.cost === 300) gachaType = 'premium';
-      else if (option.cost === 500) gachaType = 'ultra';
-      else if (option.cost === 3000) gachaType = 'gr_premium';
-      else if (option.cost === 6500) gachaType = 'ssg_2017';
+      else if (option.cost === 500) gachaType = 'basic';
+      else if (option.cost === 1000) gachaType = 'premium';
+      else if (option.cost === 1500) gachaType = 'ultra';
+      else if (option.cost === 2000) gachaType = 'mega';
 
       const response = await axios.post(
         `${API_URL}/gacha/draw-10`,

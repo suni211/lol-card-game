@@ -110,6 +110,18 @@ router.post('/google', async (req, res) => {
 
     const user = users[0];
 
+    // Get guild info if user is in a guild
+    let guildInfo = null;
+    if (user.guild_id) {
+      const [guilds]: any = await pool.query(
+        'SELECT id, name, tag FROM guilds WHERE id = ?',
+        [user.guild_id]
+      );
+      if (guilds.length > 0) {
+        guildInfo = guilds[0];
+      }
+    }
+
     const userData = {
       id: user.id,
       username: user.username,
@@ -122,6 +134,9 @@ router.post('/google', async (req, res) => {
       level: user.level || 1,
       exp: user.exp || 0,
       total_exp: user.total_exp || 0,
+      guild_id: user.guild_id || null,
+      guild_tag: guildInfo?.tag || null,
+      guild_name: guildInfo?.name || null,
     };
 
     res.json({

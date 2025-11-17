@@ -92,6 +92,7 @@ export default function Navbar() {
     { path: '/market', label: '이적시장' },
     { path: '/ranking', label: '랭킹' },
     { path: '/strategy-stats', label: '전략 통계' },
+    { path: '/guild', label: '길드' },
     { path: '/missions', label: '미션' },
     { path: '/achievements', label: '업적' },
     {
@@ -247,6 +248,11 @@ export default function Navbar() {
                 >
                   <User className="w-4 h-4" />
                   <span className="hidden lg:inline text-sm font-medium">
+                    {user.guild_tag && (
+                      <span className="text-purple-600 dark:text-purple-400 font-bold mr-1">
+                        [{user.guild_tag}]
+                      </span>
+                    )}
                     {user.username}
                   </span>
                 </Link>

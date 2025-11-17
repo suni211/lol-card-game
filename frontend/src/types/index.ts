@@ -47,6 +47,9 @@ export interface User {
   level?: number;
   exp?: number;
   total_exp?: number;
+  guild_id?: number;
+  guild_tag?: string;
+  guild_name?: string;
 }
 
 export type UserTier = 'IRON' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'MASTER' | 'CHALLENGER';
@@ -239,4 +242,48 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+// Guild Types
+export interface Guild {
+  id: number;
+  name: string;
+  tag: string;
+  description: string;
+  leader_id: number;
+  leader_name: string;
+  points: number;
+  level: number;
+  max_members: number;
+  member_count: number;
+  created_at: string;
+  myRole?: 'LEADER' | 'OFFICER' | 'MEMBER';
+  myContribution?: number;
+  members?: GuildMember[];
+}
+
+export interface GuildMember {
+  id: number;
+  username: string;
+  tier: UserTier;
+  level?: number;
+  wins: number;
+  losses: number;
+  role: 'LEADER' | 'OFFICER' | 'MEMBER';
+  contribution: number;
+  joined_at: string;
+}
+
+export interface GuildMission {
+  weekly_mission_id: number;
+  mission_id: number;
+  title: string;
+  description: string;
+  requirement: number;
+  current_progress: number;
+  mission_type: 'WIN' | 'MATCH' | 'PERFECT' | 'COMEBACK' | 'STREAK' | 'AI' | 'VS' | 'TOTAL_DAMAGE' | 'COLLECT';
+  reward_points: number;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  is_completed: boolean;
+  completed_at?: string;
 }

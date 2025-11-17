@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Users, Search, X } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -21,6 +21,33 @@ interface StrategyBalance {
   win_rate: number;
 }
 
+interface Player {
+  id: number;
+  name: string;
+  team: string;
+  position: string;
+  overall: number;
+  region: string;
+  tier: string;
+  season: string;
+  laning: number;
+  teamfight: number;
+  macro: number;
+  mental: number;
+}
+
+interface PlayerComparison {
+  player1: any;
+  player2: any;
+  differences: {
+    overall: number;
+    laning: number;
+    teamfight: number;
+    macro: number;
+    mental: number;
+  };
+}
+
 export default function StrategyStats() {
   const { token, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -29,6 +56,19 @@ export default function StrategyStats() {
   const [teamfight, setTeamfight] = useState<StrategyUsage[]>([]);
   const [macro, setMacro] = useState<StrategyUsage[]>([]);
   const [balance, setBalance] = useState<StrategyBalance[]>([]);
+
+  // Player comparison states
+  const [showComparison, setShowComparison] = useState(false);
+  const [searchQuery1, setSearchQuery1] = useState('');
+  const [searchQuery2, setSearchQuery2] = useState('');
+  const [searchResults1, setSearchResults1] = useState<Player[]>([]);
+  const [searchResults2, setSearchResults2] = useState<Player[]>([]);
+  const [selectedPlayer1, setSelectedPlayer1] = useState<Player | null>(null);
+  const [selectedPlayer2, setSelectedPlayer2] = useState<Player | null>(null);
+  const [player1Level, setPlayer1Level] = useState(0);
+  const [player2Level, setPlayer2Level] = useState(0);
+  const [comparison, setComparison] = useState<PlayerComparison | null>(null);
+  const [comparing, setComparing] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -88,6 +128,60 @@ export default function StrategyStats() {
       toast.error(error.response?.data?.error || '자동 밸런싱 실패');
     } finally {
       setBalancing(false);
+    }
+  };
+
+  const searchPlayers = async (query: string, playerNumber: 1 | 2) => {
+    if (query.length < 2) {
+      if (playerNumber === 1) setSearchResults1([]);
+      else setSearchResults2([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_URL}/strategy-stats/search-players`, {
+        params: { query },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        if (playerNumber === 1) setSearchResults1(response.data.data);
+        else setSearchResults2(response.data.data);
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+    }
+  };
+
+  const comparePlayers = async () => {
+    if (!selectedPlayer1 || !selectedPlayer2) {
+      toast.error('두 선수를 모두 선택해주세요');
+      return;
+    }
+
+    setComparing(true);
+    try {
+      const response = await axios.post(
+        `${API_URL}/strategy-stats/compare-players`,
+        {
+          player1Id: selectedPlayer1.id,
+          player2Id: selectedPlayer2.id,
+          player1Level,
+          player2Level,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        setComparison(response.data.data);
+      }
+    } catch (error: any) {
+      console.error('Compare error:', error);
+      toast.error(error.response?.data?.error || '비교 실패');
+    } finally {
+      setComparing(false);
     }
   };
 
@@ -248,23 +342,299 @@ export default function StrategyStats() {
           </p>
         </motion.div>
 
-        {/* Auto Balance Button */}
-        {user?.isAdmin && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 sm:mb-8 text-center"
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-center items-center gap-3"
+        >
+          <button
+            onClick={() => setShowComparison(!showComparison)}
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 text-sm sm:text-base"
           >
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>선수 비교</span>
+          </button>
+
+          {user?.isAdmin && (
             <button
               onClick={handleAutoBalance}
               disabled={balancing}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2 mx-auto text-sm sm:text-base"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2 text-sm sm:text-base"
             >
               <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${balancing ? 'animate-spin' : ''}`} />
               <span>{balancing ? '밸런싱 중...' : '자동 밸런싱 실행'}</span>
             </button>
-          </motion.div>
-        )}
+          )}
+        </motion.div>
+
+        {/* Player Comparison Modal */}
+        <AnimatePresence>
+          {showComparison && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6 sm:mb-8"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">선수 비교</h2>
+                  <button
+                    onClick={() => setShowComparison(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                  {/* Player 1 Selection */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">선수 1</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery1}
+                        onChange={(e) => {
+                          setSearchQuery1(e.target.value);
+                          searchPlayers(e.target.value, 1);
+                        }}
+                        placeholder="선수 이름 검색..."
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                      />
+                      <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+                    </div>
+
+                    {searchResults1.length > 0 && (
+                      <div className="max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+                        {searchResults1.map((player) => (
+                          <button
+                            key={player.id}
+                            onClick={() => {
+                              setSelectedPlayer1(player);
+                              setSearchQuery1(player.name);
+                              setSearchResults1([]);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-gray-900 dark:text-white">{player.name}</span>
+                              <span className="text-sm text-gray-600 dark:text-gray-400">{player.team}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {player.position} • OVR {player.overall} • {player.tier}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedPlayer1 && (
+                      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <div className="font-bold text-gray-900 dark:text-white mb-2">{selectedPlayer1.name}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {selectedPlayer1.team} • {selectedPlayer1.position} • OVR {selectedPlayer1.overall}
+                        </div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          강화 레벨: {player1Level}
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="10"
+                          value={player1Level}
+                          onChange={(e) => setPlayer1Level(Number(e.target.value))}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Player 2 Selection */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">선수 2</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery2}
+                        onChange={(e) => {
+                          setSearchQuery2(e.target.value);
+                          searchPlayers(e.target.value, 2);
+                        }}
+                        placeholder="선수 이름 검색..."
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                      />
+                      <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+                    </div>
+
+                    {searchResults2.length > 0 && (
+                      <div className="max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+                        {searchResults2.map((player) => (
+                          <button
+                            key={player.id}
+                            onClick={() => {
+                              setSelectedPlayer2(player);
+                              setSearchQuery2(player.name);
+                              setSearchResults2([]);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-gray-900 dark:text-white">{player.name}</span>
+                              <span className="text-sm text-gray-600 dark:text-gray-400">{player.team}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {player.position} • OVR {player.overall} • {player.tier}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedPlayer2 && (
+                      <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700">
+                        <div className="font-bold text-gray-900 dark:text-white mb-2">{selectedPlayer2.name}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {selectedPlayer2.team} • {selectedPlayer2.position} • OVR {selectedPlayer2.overall}
+                        </div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          강화 레벨: {player2Level}
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="10"
+                          value={player2Level}
+                          onChange={(e) => setPlayer2Level(Number(e.target.value))}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={comparePlayers}
+                  disabled={!selectedPlayer1 || !selectedPlayer2 || comparing}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {comparing ? '비교 중...' : '비교하기'}
+                </button>
+
+                {/* Comparison Result */}
+                {comparison && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 space-y-4"
+                  >
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center">비교 결과</h3>
+
+                    {/* Overall Comparison */}
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {comparison.player1.enhancedOverall}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            기본 {comparison.player1.baseOverall} + {comparison.player1.level}강
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-center">
+                          <div className="text-lg font-bold text-gray-900 dark:text-white">
+                            종합 능력치
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                            {comparison.player2.enhancedOverall}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            기본 {comparison.player2.baseOverall} + {comparison.player2.level}강
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-center mt-2">
+                        <span className={`font-bold ${comparison.differences.overall > 0 ? 'text-blue-600 dark:text-blue-400' : comparison.differences.overall < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                          차이: {comparison.differences.overall > 0 ? '+' : ''}{comparison.differences.overall}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stat Comparisons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {['laning', 'teamfight', 'macro', 'mental'].map((stat) => {
+                        const statLabels: Record<string, string> = {
+                          laning: '라인전',
+                          teamfight: '한타',
+                          macro: '운영',
+                          mental: '멘탈'
+                        };
+                        const p1Value = comparison.player1[`enhanced${stat.charAt(0).toUpperCase() + stat.slice(1)}`];
+                        const p2Value = comparison.player2[`enhanced${stat.charAt(0).toUpperCase() + stat.slice(1)}`];
+                        const diff = comparison.differences[stat as keyof typeof comparison.differences];
+
+                        return (
+                          <div key={stat} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
+                              {statLabels[stat]}
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{p1Value}</div>
+                              <div className={`text-sm font-bold ${diff > 0 ? 'text-blue-600 dark:text-blue-400' : diff < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                                {diff > 0 ? '+' : ''}{diff}
+                              </div>
+                              <div className="text-lg font-bold text-red-600 dark:text-red-400">{p2Value}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Traits */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <h4 className="font-bold text-gray-900 dark:text-white mb-3">{comparison.player1.name} 특성</h4>
+                        {comparison.player1.traits && comparison.player1.traits.length > 0 ? (
+                          <div className="space-y-2">
+                            {comparison.player1.traits.map((trait: any, idx: number) => (
+                              <div key={idx} className="text-sm">
+                                <div className="font-semibold text-gray-900 dark:text-white">{trait.name}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">{trait.description}</div>
+                                <div className="text-xs text-blue-600 dark:text-blue-400">{trait.effect}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">특성 없음</div>
+                        )}
+                      </div>
+
+                      <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700">
+                        <h4 className="font-bold text-gray-900 dark:text-white mb-3">{comparison.player2.name} 특성</h4>
+                        {comparison.player2.traits && comparison.player2.traits.length > 0 ? (
+                          <div className="space-y-2">
+                            {comparison.player2.traits.map((trait: any, idx: number) => (
+                              <div key={idx} className="text-sm">
+                                <div className="font-semibold text-gray-900 dark:text-white">{trait.name}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">{trait.description}</div>
+                                <div className="text-xs text-red-600 dark:text-red-400">{trait.effect}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">특성 없음</div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Strategy Tables */}
         <div className="space-y-6 sm:space-y-8">

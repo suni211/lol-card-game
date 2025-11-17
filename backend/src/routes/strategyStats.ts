@@ -237,4 +237,144 @@ router.get('/balance-history', authMiddleware, async (req: AuthRequest, res) => 
   }
 });
 
+// 선수 검색 (이름으로)
+router.get('/search-players', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query || typeof query !== 'string' || query.length < 2) {
+      return res.status(400).json({ success: false, error: '최소 2글자 이상 입력하세요' });
+    }
+
+    const [players]: any = await pool.query(`
+      SELECT
+        id,
+        name,
+        team,
+        position,
+        overall,
+        region,
+        tier,
+        season,
+        laning,
+        teamfight,
+        macro,
+        mental
+      FROM players
+      WHERE name LIKE ?
+      ORDER BY overall DESC
+      LIMIT 20
+    `, [`%${query}%`]);
+
+    res.json({ success: true, data: players });
+  } catch (error: any) {
+    console.error('Search players error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// 선수 비교
+router.post('/compare-players', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { player1Id, player2Id, player1Level, player2Level } = req.body;
+
+    if (!player1Id || !player2Id) {
+      return res.status(400).json({ success: false, error: 'Player IDs required' });
+    }
+
+    const level1 = player1Level || 0;
+    const level2 = player2Level || 0;
+
+    // Get player 1 data with traits
+    const [player1Data]: any = await pool.query(`
+      SELECT
+        p.*,
+        GROUP_CONCAT(
+          CONCAT(pt.name, '|||', pt.description, '|||', pt.effect)
+          SEPARATOR ':::'
+        ) as traits_data
+      FROM players p
+      LEFT JOIN player_traits pt ON p.id = pt.player_id
+      WHERE p.id = ?
+      GROUP BY p.id
+    `, [player1Id]);
+
+    // Get player 2 data with traits
+    const [player2Data]: any = await pool.query(`
+      SELECT
+        p.*,
+        GROUP_CONCAT(
+          CONCAT(pt.name, '|||', pt.description, '|||', pt.effect)
+          SEPARATOR ':::'
+        ) as traits_data
+      FROM players p
+      LEFT JOIN player_traits pt ON p.id = pt.player_id
+      WHERE p.id = ?
+      GROUP BY p.id
+    `, [player2Id]);
+
+    if (player1Data.length === 0 || player2Data.length === 0) {
+      return res.status(404).json({ success: false, error: 'Player not found' });
+    }
+
+    const player1 = player1Data[0];
+    const player2 = player2Data[0];
+
+    // Parse traits
+    const parseTraits = (traitsData: string | null) => {
+      if (!traitsData) return [];
+      return traitsData.split(':::').map((trait: string) => {
+        const [name, description, effect] = trait.split('|||');
+        return { name, description, effect };
+      });
+    };
+
+    player1.traits = parseTraits(player1.traits_data);
+    player2.traits = parseTraits(player2.traits_data);
+    delete player1.traits_data;
+    delete player2.traits_data;
+
+    // Calculate enhanced stats
+    const calculateEnhancedStats = (player: any, level: number) => {
+      const baseOverall = player.overall;
+      const enhancedOverall = baseOverall + level;
+
+      // Each stat increases proportionally with level
+      const statMultiplier = 1 + (level * 0.01); // 1% per level
+
+      return {
+        ...player,
+        level,
+        baseOverall,
+        enhancedOverall,
+        baseLaning: player.laning || 50,
+        enhancedLaning: Math.round((player.laning || 50) * statMultiplier),
+        baseTeamfight: player.teamfight || 50,
+        enhancedTeamfight: Math.round((player.teamfight || 50) * statMultiplier),
+        baseMacro: player.macro || 50,
+        enhancedMacro: Math.round((player.macro || 50) * statMultiplier),
+        baseMental: player.mental || 50,
+        enhancedMental: Math.round((player.mental || 50) * statMultiplier),
+      };
+    };
+
+    const comparison = {
+      player1: calculateEnhancedStats(player1, level1),
+      player2: calculateEnhancedStats(player2, level2),
+      differences: {
+        overall: (player1.overall + level1) - (player2.overall + level2),
+        laning: Math.round(((player1.laning || 50) * (1 + level1 * 0.01)) - ((player2.laning || 50) * (1 + level2 * 0.01))),
+        teamfight: Math.round(((player1.teamfight || 50) * (1 + level1 * 0.01)) - ((player2.teamfight || 50) * (1 + level2 * 0.01))),
+        macro: Math.round(((player1.macro || 50) * (1 + level1 * 0.01)) - ((player2.macro || 50) * (1 + level2 * 0.01))),
+        mental: Math.round(((player1.mental || 50) * (1 + level1 * 0.01)) - ((player2.mental || 50) * (1 + level2 * 0.01))),
+      }
+    };
+
+    res.json({ success: true, data: comparison });
+  } catch (error: any) {
+    console.error('Compare players error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 export default router;

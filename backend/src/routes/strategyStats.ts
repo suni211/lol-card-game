@@ -254,7 +254,13 @@ router.get('/search-players', authMiddleware, async (req: AuthRequest, res) => {
         position,
         overall,
         region,
-        tier,
+        CASE
+          WHEN name LIKE 'ICON%' THEN 'ICON'
+          WHEN overall <= 80 THEN 'COMMON'
+          WHEN overall <= 90 THEN 'RARE'
+          WHEN overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         season,
         cs_ability,
         lane_pressure,

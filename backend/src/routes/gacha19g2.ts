@@ -68,8 +68,8 @@ router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
       );
       player = g2Players[0];
     } else {
-      // 일반 가챠 로직 (기존 시스템, NO 25WW/25WUD, NO 18WC, NO 17SSG)
-      // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
+      // 일반 가챠 로직 (기존 시스템, NO 25WW/25WUD, NO 18WC, NO 17SSG, NO ICON)
+      // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY (NO ICON in this pack)
       const tierRoll = Math.random();
       let tier;
       let minOverall = 1, maxOverall = 80;
@@ -87,16 +87,24 @@ router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
         minOverall = 101; maxOverall = 999;
       }
 
+      // Exclude ICON cards completely from this pack - use subquery to filter by tier
       const [players]: any = await connection.query(
-        `SELECT *,
-         CASE
-           WHEN name LIKE 'ICON%' THEN 'ICON'
-           WHEN overall <= 80 THEN 'COMMON'
-           WHEN overall <= 90 THEN 'RARE'
-           WHEN overall <= 100 THEN 'EPIC'
-           ELSE 'LEGENDARY'
-         END as tier
-         FROM players WHERE overall >= ? AND overall <= ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1`,
+        `SELECT * FROM (
+           SELECT *,
+           CASE
+             WHEN name LIKE 'ICON%' THEN 'ICON'
+             WHEN overall <= 80 THEN 'COMMON'
+             WHEN overall <= 90 THEN 'RARE'
+             WHEN overall <= 100 THEN 'EPIC'
+             ELSE 'LEGENDARY'
+           END as tier
+           FROM players
+           WHERE overall >= ? AND overall <= ?
+           AND season != ? AND season != ? AND season != ?
+           AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ?
+         ) AS p
+         WHERE p.tier != 'ICON'
+         ORDER BY RAND() LIMIT 1`,
         [minOverall, maxOverall, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%', 'ICON%']
       );
       player = players[0];
@@ -197,6 +205,7 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
       let tier;
       let minOverall = 91, maxOverall = 100;
       if (tierRoll < 0.00001) {
+        // 아이콘: 0.001% (0.00001)
         tier = 'ICON';
         // ICON tier: special handling
         const [players]: any = await connection.query(
@@ -212,10 +221,12 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
           ['19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
         );
         player = players[0];
-      } else if (tierRoll < 0.69989) {
+      } else if (tierRoll < 0.00001 + 0.70) {
+        // 에픽: 70% (0.00001 + 0.70 = 0.70001)
         tier = 'EPIC';
         minOverall = 91; maxOverall = 100;
       } else {
+        // 레전더리: 30% (0.70001~1)
         tier = 'LEGENDARY';
         minOverall = 101; maxOverall = 999;
       }

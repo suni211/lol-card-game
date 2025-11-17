@@ -110,7 +110,7 @@ export default function CoachEnhancement() {
       );
 
       if (response.data.success) {
-        const { buffIncrease, newBuffValue, newEnhancementLevel } = response.data.data;
+        const { buffIncrease, newEnhancementLevel } = response.data.data;
         toast.success(
           `코치 강화 성공!\n강화 레벨: ${newEnhancementLevel}\n버프 증가: +${buffIncrease}`
         );

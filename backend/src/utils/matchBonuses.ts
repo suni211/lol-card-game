@@ -1,13 +1,14 @@
 import pool from '../config/database';
 
 /**
- * 매치 보너스 체크 및 지급
+ * 매치 보너스 체크 및 지급 (with deadlock retry)
  * @param userId - 유저 ID
  * @param matchId - 매치 ID (optional)
  * @param player1Score - 플레이어1 스코어
  * @param player2Score - 플레이어2 스코어
  * @param isPlayer1 - 현재 유저가 플레이어1인지
  * @param wonMatch - 승리 여부
+ * @param retryCount - 재시도 횟수
  */
 export async function checkAndAwardMatchBonuses(
   userId: number,
@@ -15,7 +16,8 @@ export async function checkAndAwardMatchBonuses(
   player1Score: number,
   player2Score: number,
   isPlayer1: boolean,
-  wonMatch: boolean
+  wonMatch: boolean,
+  retryCount: number = 0
 ): Promise<{ bonuses: any[]; totalBonus: number }> {
   const connection = await pool.getConnection();
   const bonuses: any[] = [];
@@ -147,8 +149,18 @@ export async function checkAndAwardMatchBonuses(
     await connection.commit();
 
     return { bonuses, totalBonus };
-  } catch (error) {
+  } catch (error: any) {
     await connection.rollback();
+
+    // Retry on deadlock
+    if (error.code === 'ER_LOCK_DEADLOCK' && retryCount < 3) {
+      connection.release();
+      console.log(`Match bonus deadlock detected, retrying... (attempt ${retryCount + 1}/3)`);
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retryCount)));
+      return checkAndAwardMatchBonuses(userId, matchId, player1Score, player2Score, isPlayer1, wonMatch, retryCount + 1);
+    }
+
     console.error('Match bonus error:', error);
     throw error;
   } finally {

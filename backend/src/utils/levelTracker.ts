@@ -1,14 +1,16 @@
 import pool from '../config/database';
 
 /**
- * Add experience points to a user and handle level-ups
+ * Add experience points to a user and handle level-ups (with deadlock retry)
  * @param userId - The user's ID
  * @param expGained - Amount of experience to add
+ * @param retryCount - Internal retry counter
  * @returns Object with level-up information
  */
 export async function addExperience(
   userId: number,
-  expGained: number
+  expGained: number,
+  retryCount: number = 0
 ): Promise<{
   leveledUp: boolean;
   oldLevel: number;
@@ -20,11 +22,12 @@ export async function addExperience(
   const connection = await pool.getConnection();
 
   try {
+    // Use FOR UPDATE to lock the row
     await connection.beginTransaction();
 
-    // Get current user level and exp
+    // Get current user level and exp with row lock
     const [userRows]: any = await connection.query(
-      'SELECT level, exp, total_exp FROM users WHERE id = ?',
+      'SELECT level, exp, total_exp FROM users WHERE id = ? FOR UPDATE',
       [userId]
     );
 
@@ -123,8 +126,18 @@ export async function addExperience(
       currentExp: updatedUser[0]?.exp || 0,
       nextLevelExp: nextLevelExp,
     };
-  } catch (error) {
+  } catch (error: any) {
     await connection.rollback();
+
+    // Retry on deadlock
+    if (error.code === 'ER_LOCK_DEADLOCK' && retryCount < 3) {
+      connection.release();
+      console.log(`Deadlock detected, retrying... (attempt ${retryCount + 1}/3)`);
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retryCount)));
+      return addExperience(userId, expGained, retryCount + 1);
+    }
+
     throw error;
   } finally {
     connection.release();

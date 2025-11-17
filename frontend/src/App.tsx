@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { io } from 'socket.io-client';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { useAudioStore } from './store/audioStore';
@@ -63,9 +64,12 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
 function App() {
   const { theme } = useThemeStore();
   const { playRandomLobbyBGM, initAudio } = useAudioStore();
+  const { token, isAuthenticated, updateUser } = useAuthStore();
 
   useEffect(() => {
     // Apply theme on mount
@@ -75,6 +79,34 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  // Real-time point updates via Socket.IO
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnection: true,
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected to socket for point updates');
+      socket.emit('authenticate', { token });
+    });
+
+    socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
+      console.log('Received points update:', data);
+      updateUser({
+        points: data.points,
+        level: data.level,
+        exp: data.exp,
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, token, updateUser]);
 
   useEffect(() => {
     // Initialize audio

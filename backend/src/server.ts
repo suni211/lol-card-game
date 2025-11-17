@@ -133,6 +133,9 @@ setSocketIOForShop(io);
 // Track unique online users by IP address instead of socket ID
 const connectedIPs = new Map<string, Set<string>>(); // IP -> Set of socket IDs
 
+// Track authenticated users by userId -> socketId
+const authenticatedUsers = new Map<number, string>(); // userId -> socketId
+
 // Chat message history (in-memory, limited to 100 messages)
 const chatHistory: any[] = [];
 const MAX_CHAT_HISTORY = 100;
@@ -166,6 +169,10 @@ io.on('connection', (socket) => {
     try {
       const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
       const decoded: any = jwt.verify(data.token, jwtSecret);
+
+      // Track authenticated user
+      authenticatedUsers.set(decoded.id, socket.id);
+      console.log(`User ${decoded.id} authenticated on socket ${socket.id}`);
 
       // Setup realtime match event handlers for this authenticated user
       setupRealtimeMatch(io, socket, decoded);
@@ -205,6 +212,15 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const clientIP = getClientIP(socket);
 
+    // Remove from authenticated users
+    for (const [userId, socketId] of authenticatedUsers.entries()) {
+      if (socketId === socket.id) {
+        authenticatedUsers.delete(userId);
+        console.log(`User ${userId} disconnected`);
+        break;
+      }
+    }
+
     // Remove socket from IP's socket set
     if (connectedIPs.has(clientIP)) {
       connectedIPs.get(clientIP)!.delete(socket.id);
@@ -235,5 +251,18 @@ httpServer.listen(PORT, () => {
   `);
 });
 
+// Helper function to emit point updates to a specific user
+function emitPointUpdate(userId: number, newPoints: number, newLevel?: number, newExp?: number) {
+  const socketId = authenticatedUsers.get(userId);
+  if (socketId) {
+    io.to(socketId).emit('pointsUpdate', {
+      points: newPoints,
+      level: newLevel,
+      exp: newExp,
+    });
+    console.log(`Sent points update to user ${userId}: ${newPoints}P`);
+  }
+}
+
 export default app;
-export { io };
+export { io, emitPointUpdate };

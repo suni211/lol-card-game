@@ -3,6 +3,7 @@ import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
+import { emitPointUpdate } from '../server';
 
 const router = express.Router();
 
@@ -146,6 +147,12 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       [pointsChange, userId]
     );
 
+    // Get updated points
+    const [updatedUser]: any = await connection.query(
+      'SELECT points, level, exp FROM users WHERE id = ?',
+      [userId]
+    );
+
     // Record gacha history
     await connection.query(
       'INSERT INTO gacha_history (user_id, player_id, cost, is_duplicate, refund_points) VALUES (?, ?, ?, ?, ?)',
@@ -153,6 +160,11 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
     );
 
     await connection.commit();
+
+    // Emit real-time point update
+    if (updatedUser.length > 0) {
+      emitPointUpdate(userId, updatedUser[0].points, updatedUser[0].level, updatedUser[0].exp);
+    }
 
     // Update mission progress
     updateMissionProgress(userId, 'gacha', 1).catch(err =>
@@ -356,7 +368,18 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
       [pointsChange, userId]
     );
 
+    // Get updated points
+    const [updatedUser]: any = await connection.query(
+      'SELECT points, level, exp FROM users WHERE id = ?',
+      [userId]
+    );
+
     await connection.commit();
+
+    // Emit real-time point update
+    if (updatedUser.length > 0) {
+      emitPointUpdate(userId, updatedUser[0].points, updatedUser[0].level, updatedUser[0].exp);
+    }
 
     // Update mission progress
     updateMissionProgress(userId, 'gacha', 10).catch(err =>

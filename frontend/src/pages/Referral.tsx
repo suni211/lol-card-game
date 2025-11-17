@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
-import { ReferralInfo } from '../types';
+import type { ReferralInfo } from '../types';
 import { Gift, Users, TrendingUp, Copy, Check } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Referral: React.FC = () => {
-  const { user, token } = useAuthStore();
+  const { token } = useAuthStore();
   const [referralInfo, setReferralInfo] = useState<ReferralInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);

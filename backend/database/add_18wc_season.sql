@@ -146,11 +146,11 @@ INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
 
 -- Gambit Esports
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC PvPStejos', 'GMB', 'TOP', 63, 'LCK', 'COMMON', '18WC'),
-('18WC Diamondprox', 'GMB', 'JUNGLE', 60, 'LCK', 'COMMON', '18WC'),
-('18WC Kira', 'GMB', 'MID', 63, 'LCK', 'COMMON', '18WC'),
-('18WC Lodik', 'GMB', 'ADC', 65, 'LCK', 'COMMON', '18WC'),
-('18WC Edward', 'GMB', 'SUPPORT', 65, 'LCK', 'COMMON', '18WC');
+('18WC PvPStejos', 'GMB', 'TOP', 63, 'LCL', 'COMMON', '18WC'),
+('18WC Diamondprox', 'GMB', 'JUNGLE', 60, 'LCL', 'COMMON', '18WC'),
+('18WC Kira', 'GMB', 'MID', 63, 'LCL', 'COMMON', '18WC'),
+('18WC Lodik', 'GMB', 'ADC', 65, 'LCL', 'COMMON', '18WC'),
+('18WC Edward', 'GMB', 'SUPPORT', 65, 'LCL', 'COMMON', '18WC');
 
 -- KaBuM! e-Sports
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES

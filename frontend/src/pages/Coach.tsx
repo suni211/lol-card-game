@@ -3,7 +3,8 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
-import { Star, Trophy, Users, Target, Zap, TrendingUp } from 'lucide-react';
+import { Star, Trophy, Users, Target, Zap, TrendingUp, ArrowUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -14,6 +15,8 @@ interface Coach {
   star_rating: number;
   buff_type: 'OVERALL' | 'POSITION' | 'TEAM' | 'STRATEGY';
   buff_value: number;
+  current_buff_value?: number;
+  enhancement_level?: number;
   buff_target: string | null;
   description: string;
   image_url: string | null;
@@ -44,6 +47,7 @@ const buffTypeNames = {
 
 export default function Coach() {
   const { token } = useAuthStore();
+  const navigate = useNavigate();
   const [myCoaches, setMyCoaches] = useState<Coach[]>([]);
   const [allCoaches, setAllCoaches] = useState<Coach[]>([]);
   const [activeCoach, setActiveCoach] = useState<Coach | null>(null);
@@ -123,6 +127,9 @@ export default function Coach() {
     const Icon = buffTypeIcons[coach.buff_type];
     const colorClass = buffTypeColors[coach.buff_type];
     const isActive = activeCoach?.coach_id === coach.id || activeCoach?.id === coach.id;
+    const enhancementLevel = coach.enhancement_level || 0;
+    const currentBuffValue = coach.current_buff_value || coach.buff_value;
+    const maxLevel = 10;
 
     return (
       <motion.div
@@ -143,6 +150,16 @@ export default function Coach() {
             ))}
           </div>
 
+          {/* Enhancement Level Badge */}
+          {owned && enhancementLevel > 0 && (
+            <div className="mb-2">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full text-white font-bold text-sm">
+                <ArrowUp className="w-4 h-4" />
+                강화 +{enhancementLevel}
+              </span>
+            </div>
+          )}
+
           {/* Name */}
           <h3 className="text-2xl font-bold text-white mb-2">{coach.name}</h3>
 
@@ -159,14 +176,29 @@ export default function Coach() {
           <div className="bg-white/10 rounded-lg p-3 mb-4">
             <div className="flex items-center justify-between">
               <span className="text-white/80">버프 효과</span>
-              <span className="text-xl font-bold text-white">
-                +{coach.buff_value}
-                {coach.buff_type === 'STRATEGY' ? '%' : ''}
-              </span>
+              <div className="flex items-center gap-2">
+                {owned && currentBuffValue > coach.buff_value && (
+                  <span className="text-sm text-gray-400 line-through">+{coach.buff_value}</span>
+                )}
+                <span className={`text-xl font-bold ${owned && currentBuffValue > coach.buff_value ? 'text-green-400' : 'text-white'}`}>
+                  +{currentBuffValue}
+                  {coach.buff_type === 'STRATEGY' ? '%' : ''}
+                </span>
+              </div>
             </div>
             {coach.buff_target && (
               <div className="mt-2 text-sm text-white/60">
                 대상: {coach.buff_target}
+              </div>
+            )}
+            {owned && enhancementLevel < maxLevel && (
+              <div className="mt-2 text-xs text-blue-400">
+                {maxLevel - enhancementLevel}레벨 더 강화 가능
+              </div>
+            )}
+            {owned && enhancementLevel >= maxLevel && (
+              <div className="mt-2 text-xs text-yellow-400 font-bold">
+                최대 강화 달성!
               </div>
             )}
           </div>
@@ -189,6 +221,15 @@ export default function Coach() {
                 >
                   <Zap className="w-5 h-5" />
                   활성화
+                </button>
+              )}
+              {enhancementLevel < maxLevel && (
+                <button
+                  onClick={() => navigate('/coach-enhancement')}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-lg hover:from-blue-600 hover:to-purple-600 transition flex items-center justify-center gap-2"
+                >
+                  <ArrowUp className="w-5 h-5" />
+                  코치 강화
                 </button>
               )}
             </div>
@@ -230,7 +271,7 @@ export default function Coach() {
           코치 관리
         </h1>
         <p className="text-white/60 mb-6">
-          코치를 활성화하면 팀이 더욱 강력해집니다. 중복 카드를 뽑으면 코치를 획득할 수 있습니다.
+          코치를 활성화하면 팀이 더욱 강력해집니다. 카드 합성 시 확률적으로 코치를 획득할 수 있습니다.
         </p>
 
         {/* Active Coach Display */}
@@ -288,7 +329,7 @@ export default function Coach() {
             ) : (
               <div className="col-span-full text-center py-16">
                 <p className="text-white/60 text-lg">보유한 코치가 없습니다.</p>
-                <p className="text-white/40 mt-2">중복 카드를 뽑으면 코치를 획득할 수 있습니다!</p>
+                <p className="text-white/40 mt-2">카드 합성 시 확률적으로 코치를 획득할 수 있습니다!</p>
               </div>
             )
           ) : (

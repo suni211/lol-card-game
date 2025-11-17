@@ -45,6 +45,7 @@ import ClanWar from './pages/ClanWar';
 import InfiniteChallenge from './pages/InfiniteChallenge';
 import InfiniteChallengeBattle from './pages/InfiniteChallengeBattle';
 import Coach from './pages/Coach';
+import CoachEnhancement from './pages/CoachEnhancement';
 import CardCollection from './pages/CardCollection';
 
 // Protected Route Component
@@ -392,6 +393,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Coach />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coach-enhancement"
+            element={
+              <ProtectedRoute>
+                <CoachEnhancement />
               </ProtectedRoute>
             }
           />

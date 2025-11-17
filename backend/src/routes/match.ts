@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { normalizeTeamName } from '../utils/teamUtils';
+import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
 
 const router = express.Router();
 
@@ -59,8 +60,8 @@ function calculateStrategyAdvantage(
   return 1.0; // No advantage
 }
 
-// Calculate deck power
-async function calculateDeckPower(connection: any, deckId: number): Promise<number> {
+// Calculate deck power (with coach buffs)
+async function calculateDeckPower(connection: any, deckId: number, userId?: number): Promise<number> {
   const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);
 
   if (deck.length === 0) return 0;
@@ -84,6 +85,7 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
   `, [cardIds]);
 
   let totalPower = 0;
+  let coachBonus = 0;
   const teams: any = {};
   const positions = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
   const deckPositions: any = {
@@ -109,6 +111,12 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     }
   };
 
+  // Apply coach buffs if userId is provided
+  if (userId) {
+    const { coachBonus: calculatedCoachBonus } = await calculateDeckPowerWithCoachBuffs(userId, cards);
+    coachBonus = calculatedCoachBonus;
+  }
+
   cards.forEach((card: any) => {
     const enhancementBonus = calculateEnhancementBonus(card.level, card.overall);
     let power = card.overall + enhancementBonus;
@@ -130,6 +138,8 @@ async function calculateDeckPower(connection: any, deckId: number): Promise<numb
     const synergyTeam = normalizeTeamName(card.team);
     teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
   });
+
+  totalPower += coachBonus;
 
   // Team synergy: same team 3 players = +1 OVR, 4 players = +2 OVR, 5 players = +3 OVR
   let synergyBonus = 0;
@@ -292,7 +302,9 @@ async function calculateDeckStatPower(
 async function simulateMatch(
   connection: any,
   player1DeckId: number,
-  player2DeckId: number
+  player2DeckId: number,
+  player1UserId?: number,
+  player2UserId?: number
 ): Promise<{
   phases: any[];
   finalScore: { player1: number; player2: number };
@@ -311,9 +323,9 @@ async function simulateMatch(
   const p1Strategies = deck1[0];
   const p2Strategies = deck2[0];
 
-  // Calculate base powers
-  const p1Power = await calculateDeckPower(connection, player1DeckId);
-  const p2Power = await calculateDeckPower(connection, player2DeckId);
+  // Calculate base powers (with coach buffs)
+  const p1Power = await calculateDeckPower(connection, player1DeckId, player1UserId);
+  const p2Power = await calculateDeckPower(connection, player2DeckId, player2UserId);
 
   const phases: any[] = [];
   let p1TotalScore = 0;
@@ -467,8 +479,8 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
       opponentDeckId = opponent.deck_id;
     }
 
-    // Simulate match with detailed phases
-    const matchSimulation = await simulateMatch(connection, userDeckId, opponentDeckId);
+    // Simulate match with detailed phases (with coach buffs)
+    const matchSimulation = await simulateMatch(connection, userDeckId, opponentDeckId, userId, opponent.id);
 
     const winnerId = matchSimulation.winnerId === 1 ? userId : opponent.id;
     const player1Score = matchSimulation.finalScore.player1;

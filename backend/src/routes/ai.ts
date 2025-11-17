@@ -6,14 +6,15 @@ import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { normalizeTeamName } from '../utils/teamUtils';
 import { updateEventProgress } from '../utils/eventTracker';
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
+import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
 
 const router = express.Router();
 
 const AI_BATTLE_LIMIT = 100; // Max AI battles per 30 minutes
 const AI_BATTLE_WINDOW = 30 * 60 * 1000; // 30 minutes in milliseconds
 
-// Calculate deck power (same as matchmaking)
-async function calculateDeckPower(deckId: number): Promise<number> {
+// Calculate deck power (same as matchmaking) - with coach buffs
+async function calculateDeckPower(deckId: number, userId?: number): Promise<number> {
   const connection = await pool.getConnection();
 
   try {
@@ -41,11 +42,19 @@ async function calculateDeckPower(deckId: number): Promise<number> {
     let totalPower = 0;
     const teams: any = {};
 
-    cards.forEach((card: any) => {
-      let power = card.overall + card.level;
-      totalPower += power;
+    // Apply coach buffs if userId is provided
+    if (userId) {
+      const { totalPower: powerWithCoach } = await calculateDeckPowerWithCoachBuffs(userId, cards);
+      totalPower = powerWithCoach;
+    } else {
+      cards.forEach((card: any) => {
+        let power = card.overall + card.level;
+        totalPower += power;
+      });
+    }
 
-      // Normalize team names (SKT and T1 are same team, etc.)
+    // Calculate team synergy
+    cards.forEach((card: any) => {
       const synergyTeam = normalizeTeamName(card.team);
       teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
     });
@@ -141,8 +150,8 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     const aiWins = stats.length > 0 ? (stats[0].ai_wins || 0) : 0;
     const aiLosses = stats.length > 0 ? (stats[0].ai_losses || 0) : 0;
 
-    // Calculate powers
-    const playerPower = await calculateDeckPower(deckId);
+    // Calculate powers (with coach buffs)
+    const playerPower = await calculateDeckPower(deckId, userId);
     const aiBasePower = calculateAIDifficulty(aiWins, aiLosses);
 
     // Add randomness to AI (±10%)
@@ -388,8 +397,8 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
     let currentStreak = stats.length > 0 ? (stats[0].current_streak || 0) : 0;
     let longestWinStreak = stats.length > 0 ? (stats[0].longest_win_streak || 0) : 0;
 
-    // Calculate player power once
-    const playerPower = await calculateDeckPower(deckId);
+    // Calculate player power once (with coach buffs)
+    const playerPower = await calculateDeckPower(deckId, userId);
 
     const results = [];
     let totalPointsEarned = 0;

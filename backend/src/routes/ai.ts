@@ -472,6 +472,11 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
       console.error('Mission update error:', err)
     );
 
+    // Update event progress for all battles
+    updateEventProgress(userId, 'AI_MATCH', count).catch(err =>
+      console.error('Event update error:', err)
+    );
+
     // Add experience for all battles
     const totalExp = results.reduce((sum, result) => {
       const expForBattle = calculateExpReward('AI', result.won);

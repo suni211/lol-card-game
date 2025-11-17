@@ -43,6 +43,7 @@ import Guild from './pages/Guild';
 import Referral from './pages/Referral';
 import ClanWar from './pages/ClanWar';
 import InfiniteChallenge from './pages/InfiniteChallenge';
+import InfiniteChallengeBattle from './pages/InfiniteChallengeBattle';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -373,6 +374,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <InfiniteChallenge />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/infinite-challenge/battle"
+            element={
+              <ProtectedRoute>
+                <InfiniteChallengeBattle />
               </ProtectedRoute>
             }
           />

@@ -60,8 +60,8 @@ const InfiniteChallenge: React.FC = () => {
       setProgress(response.data.data);
       toast.success('무한 도전 시작!');
 
-      // Navigate to AI battle with infinite challenge mode
-      navigate('/ai-battle', { state: { infiniteMode: true, stage: 1 } });
+      // Navigate to infinite challenge battle
+      navigate('/infinite-challenge/battle');
     } catch (error: any) {
       console.error('Start challenge error:', error);
       toast.error('시작 실패');
@@ -71,10 +71,8 @@ const InfiniteChallenge: React.FC = () => {
   const continueChallenge = () => {
     if (!progress) return;
 
-    // Navigate to AI battle with current stage
-    navigate('/ai-battle', {
-      state: { infiniteMode: true, stage: progress.current_stage },
-    });
+    // Navigate to infinite challenge battle
+    navigate('/infinite-challenge/battle');
   };
 
   const calculateReward = (stage: number): number => {

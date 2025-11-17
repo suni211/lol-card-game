@@ -100,10 +100,24 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
       // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON
       // Excludes: 17SSG, 25WW, 25WUD
-      [players] = await connection.query(
-        "SELECT * FROM players WHERE tier = ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
-        [tier]
-      );
+      // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
+      let minOverall = 1, maxOverall = 80;
+      if (tier === 'RARE') { minOverall = 81; maxOverall = 90; }
+      else if (tier === 'EPIC') { minOverall = 91; maxOverall = 100; }
+      else if (tier === 'LEGENDARY') { minOverall = 101; maxOverall = 999; }
+      else if (tier === 'ICON') {
+        // ICON tier: special handling - query directly by name pattern
+        [players] = await connection.query(
+          "SELECT * FROM players WHERE name LIKE 'ICON%' AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
+        );
+      }
+
+      if (tier !== 'ICON') {
+        [players] = await connection.query(
+          "SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE 'ICON%' ORDER BY RAND() LIMIT 1",
+          [minOverall, maxOverall]
+        );
+      }
     }
 
     if (players.length === 0) {
@@ -201,7 +215,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
           position: player.position,
           overall: player.overall,
           region: player.region,
-          tier: player.tier,
+          tier: player.name?.startsWith('ICON') ? 'ICON' : (player.overall <= 80 ? 'COMMON' : player.overall <= 90 ? 'RARE' : player.overall <= 100 ? 'EPIC' : 'LEGENDARY'),
           season: player.season,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,
@@ -293,10 +307,24 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
         // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON
         // Excludes: 17SSG, 25WW, 25WUD
-        [players] = await connection.query(
-          "SELECT * FROM players WHERE tier = ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1",
-          [tier]
-        );
+        // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
+        let minOverall = 1, maxOverall = 80;
+        if (tier === 'RARE') { minOverall = 81; maxOverall = 90; }
+        else if (tier === 'EPIC') { minOverall = 91; maxOverall = 100; }
+        else if (tier === 'LEGENDARY') { minOverall = 101; maxOverall = 999; }
+        else if (tier === 'ICON') {
+          // ICON tier: special handling - query directly by name pattern
+          [players] = await connection.query(
+            "SELECT * FROM players WHERE name LIKE 'ICON%' AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1"
+          );
+        }
+
+        if (tier !== 'ICON') {
+          [players] = await connection.query(
+            "SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != '17SSG' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' AND name NOT LIKE 'ICON%' ORDER BY RAND() LIMIT 1",
+            [minOverall, maxOverall]
+          );
+        }
       }
 
       if (players.length === 0) {
@@ -350,7 +378,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           position: player.position,
           overall: player.overall,
           region: player.region,
-          tier: player.tier,
+          tier: player.name?.startsWith('ICON') ? 'ICON' : (player.overall <= 80 ? 'COMMON' : player.overall <= 90 ? 'RARE' : player.overall <= 100 ? 'EPIC' : 'LEGENDARY'),
           season: player.season,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,
@@ -449,7 +477,13 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         p.position,
         p.overall,
         p.region,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         p.season,
         p.image_url,
         p.laning,
@@ -547,7 +581,13 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
         p.position,
         p.overall,
         p.region,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         p.season,
         p.image_url,
         p.laning,
@@ -663,7 +703,18 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     // Get all cards with player info
     const allCardIds = [targetCardId, ...materialCardIds];
     const [cards]: any = await pool.query(
-      'SELECT uc.*, p.name as player_name, p.tier, p.overall FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.id IN (?) AND uc.user_id = ?',
+      `SELECT uc.*, p.name as player_name,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
+        p.overall
+      FROM user_cards uc
+      JOIN players p ON uc.player_id = p.id
+      WHERE uc.id IN (?) AND uc.user_id = ?`,
       [allCardIds, userId]
     );
 
@@ -753,7 +804,18 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     // Get all cards with player info
     const allCardIds = [targetCardId, ...materialCardIds];
     const [cards]: any = await connection.query(
-      'SELECT uc.*, p.name as player_name, p.tier, p.overall FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.id IN (?) AND uc.user_id = ?',
+      `SELECT uc.*, p.name as player_name,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
+        p.overall
+      FROM user_cards uc
+      JOIN players p ON uc.player_id = p.id
+      WHERE uc.id IN (?) AND uc.user_id = ?`,
       [allCardIds, userId]
     );
 
@@ -972,7 +1034,17 @@ router.delete('/dismantle/:cardId', authMiddleware, async (req: AuthRequest, res
 
     // Get card
     const [cards]: any = await connection.query(
-      'SELECT uc.*, p.tier FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.id = ? AND uc.user_id = ?',
+      `SELECT uc.*,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier
+      FROM user_cards uc
+      JOIN players p ON uc.player_id = p.id
+      WHERE uc.id = ? AND uc.user_id = ?`,
       [cardId, userId]
     );
 

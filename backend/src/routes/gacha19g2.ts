@@ -61,16 +61,27 @@ router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
       player = g2Players[0];
     } else {
       // 일반 가챠 로직 (기존 시스템, NO 25WW/25WUD, NO 18WC, NO 17SSG)
+      // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
       const tierRoll = Math.random();
       let tier;
-      if (tierRoll < 0.6) tier = 'COMMON';
-      else if (tierRoll < 0.85) tier = 'RARE';
-      else if (tierRoll < 0.97) tier = 'EPIC';
-      else tier = 'LEGENDARY';
+      let minOverall = 1, maxOverall = 80;
+      if (tierRoll < 0.6) {
+        tier = 'COMMON';
+        minOverall = 1; maxOverall = 80;
+      } else if (tierRoll < 0.85) {
+        tier = 'RARE';
+        minOverall = 81; maxOverall = 90;
+      } else if (tierRoll < 0.97) {
+        tier = 'EPIC';
+        minOverall = 91; maxOverall = 100;
+      } else {
+        tier = 'LEGENDARY';
+        minOverall = 101; maxOverall = 999;
+      }
 
       const [players]: any = await connection.query(
-        'SELECT * FROM players WHERE tier = ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
-        [tier, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
+        'SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+        [minOverall, maxOverall, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%', 'ICON%']
       );
       player = players[0];
     }
@@ -157,30 +168,42 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
       pullCount = 0;
     } else {
       // 에픽 이상 확정 + 아이콘 0.025%
+      // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
       const tierRoll = Math.random();
       let tier;
+      let minOverall = 91, maxOverall = 100;
       if (tierRoll < 0.00025) {
         tier = 'ICON';
+        // ICON tier: special handling
+        const [players]: any = await connection.query(
+          "SELECT * FROM players WHERE name LIKE 'ICON%' AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1",
+          ['19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
+        );
+        player = players[0];
       } else if (tierRoll < 0.69975) {
         tier = 'EPIC';
+        minOverall = 91; maxOverall = 100;
       } else {
         tier = 'LEGENDARY';
+        minOverall = 101; maxOverall = 999;
       }
 
-      const [players]: any = await connection.query(
-        'SELECT * FROM players WHERE tier = ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
-        [tier, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
-      );
-
-      if (players.length === 0) {
-        // Fallback to EPIC if no players found
-        const [fallbackPlayers]: any = await connection.query(
-          'SELECT * FROM players WHERE tier = ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
-          ['EPIC', '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
+      if (tier !== 'ICON') {
+        const [players]: any = await connection.query(
+          'SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+          [minOverall, maxOverall, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%', 'ICON%']
         );
-        player = fallbackPlayers[0];
-      } else {
-        player = players[0];
+
+        if (players.length === 0) {
+          // Fallback to EPIC if no players found
+          const [fallbackPlayers]: any = await connection.query(
+            'SELECT * FROM players WHERE overall >= 91 AND overall <= 100 AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+            ['19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%', 'ICON%']
+          );
+          player = fallbackPlayers[0];
+        } else {
+          player = players[0];
+        }
       }
     }
 

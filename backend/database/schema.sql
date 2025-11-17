@@ -24,20 +24,21 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Players 테이블 (프로 선수 정보)
+-- Note: tier is calculated dynamically based on overall rating:
+-- 1-80: COMMON, 81-90: RARE, 91-100: EPIC, 101+: LEGENDARY, ICON prefix: ICON
 CREATE TABLE players (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL,
     team VARCHAR(50) NOT NULL,
     position ENUM('TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT') NOT NULL,
-    overall INT NOT NULL CHECK (overall >= 50 AND overall <= 100),
+    overall INT NOT NULL CHECK (overall >= 50 AND overall <= 120),
     region ENUM('LCK', 'LTA', 'LPL', 'LEC', 'LCP') NOT NULL,
-    tier ENUM('COMMON', 'RARE', 'EPIC', 'LEGENDARY') NOT NULL,
     image_url VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_name (name),
     INDEX idx_team (team),
     INDEX idx_position (position),
-    INDEX idx_tier (tier)
+    INDEX idx_overall (overall)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Player Traits 테이블

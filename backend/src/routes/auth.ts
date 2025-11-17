@@ -148,7 +148,7 @@ router.post('/google', async (req, res) => {
 
       // Create referral relationship if referral code was used
       if (referrerId) {
-        const signupBonus = 500;
+        const signupBonus = 5000;
 
         await pool.query(
           `INSERT INTO referrals (referrer_id, referred_id, referrer_ip, referred_ip, signup_bonus_points)

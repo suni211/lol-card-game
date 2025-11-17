@@ -152,7 +152,7 @@ const Referral: React.FC = () => {
             <Gift className="w-6 h-6 text-purple-500" />
             <h3 className="text-lg font-semibold">가입 보너스</h3>
           </div>
-          <p className="text-3xl font-bold text-purple-600">500P</p>
+          <p className="text-3xl font-bold text-purple-600">5,000P</p>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             양측 모두 획득
           </p>
@@ -292,7 +292,7 @@ const Referral: React.FC = () => {
         <ol className="space-y-2 text-gray-700 dark:text-gray-300">
           <li>1. 위의 추천 코드를 복사하여 친구에게 전달하세요.</li>
           <li>2. 친구가 회원가입 시 추천 코드를 입력합니다.</li>
-          <li>3. 가입 즉시 양측 모두 500P를 받습니다!</li>
+          <li>3. 가입 즉시 양측 모두 5,000P를 받습니다!</li>
           <li>4. 친구가 게임을 플레이할 때마다 추가 보너스를 받습니다.</li>
           <li className="text-red-600 dark:text-red-400 font-semibold">
             ⚠ 주의: 동일한 IP에서는 추천 코드를 사용할 수 없습니다.

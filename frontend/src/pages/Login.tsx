@@ -249,7 +249,7 @@ export default function Login() {
                   className="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  추천 코드 입력 시 가입과 동시에 500P 지급!
+                  추천 코드 입력 시 가입과 동시에 5,000P 지급!
                 </p>
               </motion.div>
             )}

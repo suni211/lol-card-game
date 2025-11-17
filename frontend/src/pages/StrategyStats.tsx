@@ -41,19 +41,23 @@ export default function StrategyStats() {
     }
 
     try {
+      console.log('Fetching strategy stats from:', `${API_URL}/strategy-stats/usage`);
       const response = await axios.get(`${API_URL}/strategy-stats/usage`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log('Response:', response.data);
+
       if (response.data.success) {
-        setLaning(response.data.data.laning);
-        setTeamfight(response.data.data.teamfight);
-        setMacro(response.data.data.macro);
-        setBalance(response.data.data.balance);
+        setLaning(response.data.data.laning || []);
+        setTeamfight(response.data.data.teamfight || []);
+        setMacro(response.data.data.macro || []);
+        setBalance(response.data.data.balance || []);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch strategy stats:', error);
-      toast.error('통계 불러오기 실패');
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.error || '통계 불러오기 실패');
     } finally {
       setLoading(false);
     }

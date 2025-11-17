@@ -7,14 +7,16 @@ const router = express.Router();
 // 전략 사용 통계 조회
 router.get('/usage', authMiddleware, async (req: AuthRequest, res) => {
   try {
+    console.log('Fetching strategy usage stats...');
+
     // 현재 활성 덱들의 전략 사용 통계
     const [laningStats]: any = await pool.query(`
       SELECT
         laning_strategy as strategy,
         COUNT(*) as usage_count,
-        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM decks WHERE is_active = TRUE), 2) as usage_percentage
+        ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM decks WHERE is_active = TRUE), 0), 2) as usage_percentage
       FROM decks
-      WHERE is_active = TRUE
+      WHERE is_active = TRUE AND laning_strategy IS NOT NULL
       GROUP BY laning_strategy
       ORDER BY usage_count DESC
     `);
@@ -23,9 +25,9 @@ router.get('/usage', authMiddleware, async (req: AuthRequest, res) => {
       SELECT
         teamfight_strategy as strategy,
         COUNT(*) as usage_count,
-        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM decks WHERE is_active = TRUE), 2) as usage_percentage
+        ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM decks WHERE is_active = TRUE), 0), 2) as usage_percentage
       FROM decks
-      WHERE is_active = TRUE
+      WHERE is_active = TRUE AND teamfight_strategy IS NOT NULL
       GROUP BY teamfight_strategy
       ORDER BY usage_count DESC
     `);
@@ -34,12 +36,16 @@ router.get('/usage', authMiddleware, async (req: AuthRequest, res) => {
       SELECT
         macro_strategy as strategy,
         COUNT(*) as usage_count,
-        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM decks WHERE is_active = TRUE), 2) as usage_percentage
+        ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM decks WHERE is_active = TRUE), 0), 2) as usage_percentage
       FROM decks
-      WHERE is_active = TRUE
+      WHERE is_active = TRUE AND macro_strategy IS NOT NULL
       GROUP BY macro_strategy
       ORDER BY usage_count DESC
     `);
+
+    console.log('Laning stats:', laningStats.length);
+    console.log('Teamfight stats:', teamfightStats.length);
+    console.log('Macro stats:', macroStats.length);
 
     // 전략별 밸런스 수치 조회
     const [balanceData]: any = await pool.query(`
@@ -48,18 +54,21 @@ router.get('/usage', authMiddleware, async (req: AuthRequest, res) => {
       ORDER BY strategy_type, strategy_name
     `);
 
+    console.log('Balance data:', balanceData.length);
+
     res.json({
       success: true,
       data: {
-        laning: laningStats,
-        teamfight: teamfightStats,
-        macro: macroStats,
-        balance: balanceData,
+        laning: laningStats || [],
+        teamfight: teamfightStats || [],
+        macro: macroStats || [],
+        balance: balanceData || [],
       },
     });
   } catch (error: any) {
     console.error('Get strategy usage error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 });
 

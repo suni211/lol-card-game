@@ -48,7 +48,6 @@ export default function GuildPage() {
   const [showGuildList, setShowGuildList] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState<Guild | null>(null);
 
   // 길드 생성 폼
   const [createForm, setCreateForm] = useState({
@@ -184,7 +183,6 @@ export default function GuildPage() {
       if (response.data.success) {
         alert(response.data.message);
         setShowGuildList(false);
-        setSelectedGuild(null);
         fetchMyGuild();
       }
     } catch (error: any) {
@@ -743,10 +741,7 @@ export default function GuildPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-              onClick={() => {
-                setShowGuildList(false);
-                setSelectedGuild(null);
-              }}
+              onClick={() => setShowGuildList(false)}
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -823,10 +818,7 @@ export default function GuildPage() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setShowGuildList(false);
-                      setSelectedGuild(null);
-                    }}
+                    onClick={() => setShowGuildList(false)}
                     className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition-colors"
                   >
                     닫기

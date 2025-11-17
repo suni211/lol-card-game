@@ -281,9 +281,10 @@ router.get('/leaderboard', authMiddleware, async (req: AuthRequest, res) => {
         u.username,
         u.tier,
         u.level,
-        u.guild_tag
+        g.tag as guild_tag
       FROM infinite_challenge_leaderboard icl
       JOIN users u ON icl.user_id = u.id
+      LEFT JOIN guilds g ON u.guild_id = g.id
       WHERE icl.week_start = ?
       ORDER BY icl.highest_stage DESC, icl.total_rewards DESC
       LIMIT 100`,

@@ -272,39 +272,6 @@ export default function StrategyStats() {
           {renderStrategyTable('한타 전략', teamfight, 'TEAMFIGHT')}
           {renderStrategyTable('운영 전략', macro, 'MACRO')}
         </div>
-
-        {/* Legend */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700"
-        >
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">범례</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-green-500" />
-              <span className="text-gray-700 dark:text-gray-300">
-                버프됨 (&gt;102%)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Minus className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700 dark:text-gray-300">
-                밸런스 (98-102%)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrendingDown className="w-4 h-4 text-red-500" />
-              <span className="text-gray-700 dark:text-gray-300">
-                너프됨 (&lt;98%)
-              </span>
-            </div>
-          </div>
-          <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-            * 사용률이 평균보다 20% 이상 높고 승률이 55% 이상이면 자동으로 너프됩니다.
-            <br />* 사용률이 평균보다 50% 이상 낮고 승률이 45% 이하면 자동으로 버프됩니다.
-          </p>
-        </motion.div>
       </div>
     </div>
   );

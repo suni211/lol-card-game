@@ -330,7 +330,7 @@ router.post('/join/:id', authMiddleware, async (req: AuthRequest, res) => {
       });
     }
 
-    // 이미 가입 신청이 있는지 확인
+    // 이미 PENDING 상태의 가입 신청이 있는지 확인
     const [existingRequests]: any = await connection.query(
       'SELECT id FROM guild_join_requests WHERE guild_id = ? AND user_id = ? AND status = ?',
       [guildId, userId, 'PENDING']
@@ -343,6 +343,12 @@ router.post('/join/:id', authMiddleware, async (req: AuthRequest, res) => {
         error: '이미 가입 신청이 대기 중입니다.',
       });
     }
+
+    // 이전에 거절/승인된 요청이 있다면 삭제 (재신청 가능하도록)
+    await connection.query(
+      'DELETE FROM guild_join_requests WHERE guild_id = ? AND user_id = ? AND status IN (?, ?)',
+      [guildId, userId, 'ACCEPTED', 'REJECTED']
+    );
 
     // 자동 가입 설정 확인
     if (guild.auto_accept) {

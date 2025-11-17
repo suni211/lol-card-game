@@ -55,7 +55,15 @@ router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
     if (is19G2) {
       // 19G2 선수 중 랜덤
       const [g2Players]: any = await connection.query(
-        'SELECT * FROM players WHERE season = ? ORDER BY RAND() LIMIT 1',
+        `SELECT *,
+         CASE
+           WHEN name LIKE 'ICON%' THEN 'ICON'
+           WHEN overall <= 80 THEN 'COMMON'
+           WHEN overall <= 90 THEN 'RARE'
+           WHEN overall <= 100 THEN 'EPIC'
+           ELSE 'LEGENDARY'
+         END as tier
+         FROM players WHERE season = ? ORDER BY RAND() LIMIT 1`,
         ['19G2']
       );
       player = g2Players[0];
@@ -80,7 +88,15 @@ router.post('/light', authMiddleware, async (req: AuthRequest, res) => {
       }
 
       const [players]: any = await connection.query(
-        'SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+        `SELECT *,
+         CASE
+           WHEN name LIKE 'ICON%' THEN 'ICON'
+           WHEN overall <= 80 THEN 'COMMON'
+           WHEN overall <= 90 THEN 'RARE'
+           WHEN overall <= 100 THEN 'EPIC'
+           ELSE 'LEGENDARY'
+         END as tier
+         FROM players WHERE overall >= ? AND overall <= ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1`,
         [minOverall, maxOverall, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%', 'ICON%']
       );
       player = players[0];
@@ -159,7 +175,15 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
     if (is19G2) {
       // 19G2 선수 중 랜덤
       const [g2Players]: any = await connection.query(
-        'SELECT * FROM players WHERE season = ? ORDER BY RAND() LIMIT 1',
+        `SELECT *,
+         CASE
+           WHEN name LIKE 'ICON%' THEN 'ICON'
+           WHEN overall <= 80 THEN 'COMMON'
+           WHEN overall <= 90 THEN 'RARE'
+           WHEN overall <= 100 THEN 'EPIC'
+           ELSE 'LEGENDARY'
+         END as tier
+         FROM players WHERE season = ? ORDER BY RAND() LIMIT 1`,
         ['19G2']
       );
       player = g2Players[0];
@@ -176,7 +200,15 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
         tier = 'ICON';
         // ICON tier: special handling
         const [players]: any = await connection.query(
-          "SELECT * FROM players WHERE name LIKE 'ICON%' AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1",
+          `SELECT *,
+           CASE
+             WHEN name LIKE 'ICON%' THEN 'ICON'
+             WHEN overall <= 80 THEN 'COMMON'
+             WHEN overall <= 90 THEN 'RARE'
+             WHEN overall <= 100 THEN 'EPIC'
+             ELSE 'LEGENDARY'
+           END as tier
+           FROM players WHERE name LIKE 'ICON%' AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1`,
           ['19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
         );
         player = players[0];
@@ -190,14 +222,30 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
 
       if (tier !== 'ICON') {
         const [players]: any = await connection.query(
-          'SELECT * FROM players WHERE overall >= ? AND overall <= ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+          `SELECT *,
+           CASE
+             WHEN name LIKE 'ICON%' THEN 'ICON'
+             WHEN overall <= 80 THEN 'COMMON'
+             WHEN overall <= 90 THEN 'RARE'
+             WHEN overall <= 100 THEN 'EPIC'
+             ELSE 'LEGENDARY'
+           END as tier
+           FROM players WHERE overall >= ? AND overall <= ? AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1`,
           [minOverall, maxOverall, '19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%', 'ICON%']
         );
 
         if (players.length === 0) {
           // Fallback to EPIC if no players found
           const [fallbackPlayers]: any = await connection.query(
-            'SELECT * FROM players WHERE overall >= 91 AND overall <= 100 AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1',
+            `SELECT *,
+             CASE
+               WHEN name LIKE 'ICON%' THEN 'ICON'
+               WHEN overall <= 80 THEN 'COMMON'
+               WHEN overall <= 90 THEN 'RARE'
+               WHEN overall <= 100 THEN 'EPIC'
+               ELSE 'LEGENDARY'
+             END as tier
+             FROM players WHERE overall >= 91 AND overall <= 100 AND season != ? AND season != ? AND season != ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ? ORDER BY RAND() LIMIT 1`,
             ['19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%', 'ICON%']
           );
           player = fallbackPlayers[0];

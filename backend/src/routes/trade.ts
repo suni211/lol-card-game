@@ -94,7 +94,13 @@ router.get('/received', authMiddleware, async (req: AuthRequest, res) => {
         p1.position as sender_player_position,
         p1.overall as sender_player_overall,
         p1.region as sender_player_region,
-        p1.tier as sender_player_tier,
+        CASE
+          WHEN p1.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p1.overall <= 80 THEN 'COMMON'
+          WHEN p1.overall <= 90 THEN 'RARE'
+          WHEN p1.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as sender_player_tier,
         uc1.level as sender_card_level,
         p2.id as receiver_player_id,
         p2.name as receiver_player_name,
@@ -102,7 +108,13 @@ router.get('/received', authMiddleware, async (req: AuthRequest, res) => {
         p2.position as receiver_player_position,
         p2.overall as receiver_player_overall,
         p2.region as receiver_player_region,
-        p2.tier as receiver_player_tier,
+        CASE
+          WHEN p2.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p2.overall <= 80 THEN 'COMMON'
+          WHEN p2.overall <= 90 THEN 'RARE'
+          WHEN p2.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as receiver_player_tier,
         uc2.level as receiver_card_level
       FROM trades t
       JOIN users u ON t.sender_id = u.id
@@ -143,7 +155,13 @@ router.get('/sent', authMiddleware, async (req: AuthRequest, res) => {
         p1.position as sender_player_position,
         p1.overall as sender_player_overall,
         p1.region as sender_player_region,
-        p1.tier as sender_player_tier,
+        CASE
+          WHEN p1.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p1.overall <= 80 THEN 'COMMON'
+          WHEN p1.overall <= 90 THEN 'RARE'
+          WHEN p1.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as sender_player_tier,
         uc1.level as sender_card_level,
         p2.id as receiver_player_id,
         p2.name as receiver_player_name,
@@ -151,7 +169,13 @@ router.get('/sent', authMiddleware, async (req: AuthRequest, res) => {
         p2.position as receiver_player_position,
         p2.overall as receiver_player_overall,
         p2.region as receiver_player_region,
-        p2.tier as receiver_player_tier,
+        CASE
+          WHEN p2.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p2.overall <= 80 THEN 'COMMON'
+          WHEN p2.overall <= 90 THEN 'RARE'
+          WHEN p2.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as receiver_player_tier,
         uc2.level as receiver_card_level
       FROM trades t
       JOIN users u ON t.receiver_id = u.id
@@ -192,13 +216,25 @@ router.get('/history', authMiddleware, async (req: AuthRequest, res) => {
         p1.team as sender_player_team,
         p1.position as sender_player_position,
         p1.overall as sender_player_overall,
-        p1.tier as sender_player_tier,
+        CASE
+          WHEN p1.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p1.overall <= 80 THEN 'COMMON'
+          WHEN p1.overall <= 90 THEN 'RARE'
+          WHEN p1.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as sender_player_tier,
         p2.id as receiver_player_id,
         p2.name as receiver_player_name,
         p2.team as receiver_player_team,
         p2.position as receiver_player_position,
         p2.overall as receiver_player_overall,
-        p2.tier as receiver_player_tier
+        CASE
+          WHEN p2.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p2.overall <= 80 THEN 'COMMON'
+          WHEN p2.overall <= 90 THEN 'RARE'
+          WHEN p2.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as receiver_player_tier
       FROM trades t
       JOIN users u1 ON t.sender_id = u1.id
       JOIN users u2 ON t.receiver_id = u2.id

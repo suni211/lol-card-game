@@ -143,6 +143,17 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
     synergyDetails.push({ team: '대한민국 국가대표', count: 5, bonus: 1 });
   }
 
+  // 2019 G2 GOLDEN ROAD CLOSE
+  const g2Players = ['Wunder', 'Jankos', 'Caps', 'Perkz', 'Mikyx'];
+  const hasG2Synergy = g2Players.every(name => {
+    const slot = slots.find(s => s.card && s.card.player.name === name);
+    return slot && slot.card!.player.season === '19G2';
+  });
+  if (hasG2Synergy) {
+    synergyBonus += 3;
+    synergyDetails.push({ team: '19G2 GOLDEN ROAD CLOSE', count: 5, bonus: 3 });
+  }
+
   return { totalPower, synergyBonus, synergyDetails };
 };
 

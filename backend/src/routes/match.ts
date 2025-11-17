@@ -293,6 +293,26 @@ async function calculateDeckStatPower(
     totalPower += cardPower;
   });
 
+  // 2019 G2 GOLDEN ROAD CLOSE 시너지: 5명 모두 19G2 선수
+  // +3 판단력(mental), +3 오브젝트(macro), +3 딜량(teamfight)
+  const g2Players = ['Wunder', 'Jankos', 'Caps', 'Perkz', 'Mikyx'];
+  const names = cards.map((c: any) => c.name);
+  const hasG2Synergy = g2Players.every(name => {
+    const card = cards.find((c: any) => c.name === name);
+    return card && card.season === '19G2';
+  });
+
+  if (hasG2Synergy) {
+    // 각 스탯별로 +3 보너스 적용
+    if (stat === 'mental') {
+      traitBonus += 3; // 판단력 +3
+    } else if (stat === 'macro') {
+      traitBonus += 3; // 오브젝트 +3
+    } else if (stat === 'teamfight') {
+      traitBonus += 3; // 딜량(한타) +3
+    }
+  }
+
   totalPower += traitBonus;
 
   return totalPower;

@@ -113,7 +113,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else {
       // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
-      // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON
+      // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON, 19G2
       // Excludes: 17SSG, 25WW, 25WUD
       // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
       let minOverall = 1, maxOverall = 80;
@@ -336,7 +336,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
       } else {
         // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
-        // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON
+        // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON, 19G2
         // Excludes: 17SSG, 25WW, 25WUD
         // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
         let minOverall = 1, maxOverall = 80;

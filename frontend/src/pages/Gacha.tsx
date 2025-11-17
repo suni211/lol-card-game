@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Trophy, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import type { Player, GachaOption } from '../types';
 import axios from 'axios';
-import Gacha19G2Cutscene from '../components/Gacha19G2Cutscene';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -17,31 +16,7 @@ export default function Gacha() {
   const [showResult, setShowResult] = useState(false);
   const [show10Result, setShow10Result] = useState(false);
   const [dailyFreeUsed, setDailyFreeUsed] = useState(false);
-  const [revealStep, setRevealStep] = useState(0); // 0: loading, 1: position, 2: season, 3: team, 4: final
-  const [show19G2Cutscene, setShow19G2Cutscene] = useState(false);
-  const [is19G2Guaranteed, setIs19G2Guaranteed] = useState(false);
-  const [pityCount, setPityCount] = useState(0);
-
-  // Load pity count on mount
-  useEffect(() => {
-    const loadPityCount = async () => {
-      if (!user || !token) return;
-
-      try {
-        const response = await axios.get(`${API_URL}/gacha19g2/pity`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.data) {
-          setPityCount(response.data.pullCount || 0);
-        }
-      } catch (error) {
-        console.error('Failed to load pity count:', error);
-      }
-    };
-
-    loadPityCount();
-  }, [user, token]);
+  const [revealStep, setRevealStep] = useState(0); // 0: loading, 1: region, 2: position, 3: season, 4: overall, 5: name+face, 6: final
 
   const gachaOptions: GachaOption[] = [
     {
@@ -104,36 +79,6 @@ export default function Gacha() {
         gr: 0,
       },
     },
-    {
-      cost: 500,
-      label: '19G2 라이트 팩',
-      probabilities: {
-        common: 60,
-        rare: 25,
-        epic: 10,
-        legendary: 5,
-        icon: 0,
-        gr: 0,
-      },
-      special: true,
-      is19G2Light: true,
-      description: '2019 G2 골든로드 라이트 팩 - 19G2 카드 0.02% 확률',
-    },
-    {
-      cost: 15000,
-      label: '19G2 프리미엄 팩',
-      probabilities: {
-        common: 0,
-        rare: 0,
-        epic: 69.975,
-        legendary: 30,
-        icon: 0.025,
-        gr: 0,
-      },
-      special: true,
-      is19G2Premium: true,
-      description: '2019 G2 골든로드 프리미엄 팩 - 에픽 이상 확정, 아이콘 0.001%, 19G2 카드 0.132%, 50회 천장',
-    },
     // Admin-only test packs
     ...(user?.isAdmin ? [
       {
@@ -161,21 +106,6 @@ export default function Gacha() {
           gr: 100,
         },
         special: true,
-      },
-      {
-        cost: 0,
-        label: '19G2 테스트팩',
-        probabilities: {
-          common: 0,
-          rare: 0,
-          epic: 0,
-          legendary: 0,
-          icon: 0,
-          gr: 0,
-        },
-        special: true,
-        is19G2Test: true,
-        description: '19G2 카드 100% 확정 (관리자 전용)',
       }
     ] : []),
   ];
@@ -229,99 +159,6 @@ export default function Gacha() {
     setShowResult(false);
 
     try {
-      // Check if this is a 19G2 pack
-      if (option.is19G2Light || option.is19G2Premium || option.is19G2Test) {
-        const endpoint = option.is19G2Test
-          ? '/gacha19g2/test'
-          : option.is19G2Light
-          ? '/gacha19g2/light'
-          : '/gacha19g2/premium';
-
-        const response = await axios.post(
-          `${API_URL}${endpoint}`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.data.success) {
-          const { card, pityCount: newPityCount, nextGuaranteed } = response.data;
-
-          // Check if this is a 19G2 card
-          if (card.player.season === '19G2') {
-            // Show 19G2 cutscene
-            setIs19G2Guaranteed(card.isGuaranteed || false);
-            setShow19G2Cutscene(true);
-
-            // After cutscene completes, show the card
-            setTimeout(async () => {
-              setShow19G2Cutscene(false);
-              setDrawnCard(card.player);
-              setIsDrawing(false);
-              setShowResult(true);
-
-              // Fetch updated user info from backend
-              try {
-                const userResponse = await axios.get(`${API_URL}/auth/me`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                if (userResponse.data.success) {
-                  updateUser(userResponse.data.data);
-                }
-              } catch (error) {
-                console.error('Failed to update user info:', error);
-              }
-
-              toast.success('🏆 2019 G2 카드 획득! 골든로드에 가장 가까웠던 전설!', { duration: 8000 });
-
-              if (option.is19G2Premium && newPityCount !== undefined) {
-                setPityCount(newPityCount);
-                if (nextGuaranteed && nextGuaranteed > 0) {
-                  toast(`천장까지 ${nextGuaranteed}회 남음`, { icon: 'ℹ️' });
-                }
-              }
-            }, 6000);
-          } else {
-            // Regular card from 19G2 pack
-            setDrawnCard(card.player);
-
-            // Regular reveal sequence
-            setTimeout(() => setRevealStep(1), 500);
-            setTimeout(() => setRevealStep(2), 1500);
-            setTimeout(() => setRevealStep(3), 2500);
-            setTimeout(async () => {
-              setRevealStep(4);
-              setIsDrawing(false);
-              setShowResult(true);
-
-              // Fetch updated user info from backend
-              try {
-                const userResponse = await axios.get(`${API_URL}/auth/me`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                if (userResponse.data.success) {
-                  updateUser(userResponse.data.data);
-                }
-              } catch (error) {
-                console.error('Failed to update user info:', error);
-              }
-
-              if (option.is19G2Premium && newPityCount !== undefined) {
-                setPityCount(newPityCount);
-                if (nextGuaranteed && nextGuaranteed > 0) {
-                  toast(`천장까지 ${nextGuaranteed}회 남음`, { icon: 'ℹ️' });
-                }
-              }
-            }, 3500);
-          }
-        }
-
-        return;
-      }
-
       // 가챠 타입 결정 (업데이트된 가격)
       let gachaType = 'basic';
       if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
@@ -347,43 +184,37 @@ export default function Gacha() {
 
         setDrawnCard(player);
 
-        // GR 카드는 최고급 컷신
-        if (player.tier === 'GR') {
-          setTimeout(() => setRevealStep(1), 500);   // GOLDEN ROOKIE 텍스트
-          setTimeout(() => setRevealStep(2), 2000);  // 시즌
-          setTimeout(() => setRevealStep(3), 3000);  // 포지션
-          setTimeout(() => setRevealStep(4), 4000);  // 팀
-          setTimeout(() => setRevealStep(5), 5000);  // 선수 이름 + 미니페이스온
+        // ICON 카드는 특수 컷신
+        if (player.tier === 'ICON') {
+          setTimeout(() => setRevealStep(1), 500);   // 암전 + 균열 효과
+          setTimeout(() => setRevealStep(2), 1500);  // ICON 텍스트
+          setTimeout(() => setRevealStep(3), 2500);  // Region (1초)
+          setTimeout(() => setRevealStep(4), 3500);  // Position (1초)
+          setTimeout(() => setRevealStep(5), 4500);  // Season (1초)
+          setTimeout(() => setRevealStep(6), 5500);  // Overall (1초)
+          setTimeout(() => setRevealStep(7), 7500);  // Name + Face (2초 후)
+          setTimeout(() => {
+            setRevealStep(8);  // Final card
+            setIsDrawing(false);
+            setShowResult(true);
+          }, 8500);
+        } else {
+          // 통일된 컷신 (GR, LEGENDARY, EPIC, RARE, COMMON 모두 동일)
+          // Region -> Position -> Season -> Overall -> Name+Face
+          setTimeout(() => setRevealStep(1), 500);   // Region (1초)
+          setTimeout(() => setRevealStep(2), 1500);  // Position (1초)
+          setTimeout(() => setRevealStep(3), 2500);  // Season (1초)
+          setTimeout(() => setRevealStep(4), 3500);  // Overall (1초)
+          setTimeout(() => setRevealStep(5), 5500);  // Name + Face (2초 후)
           setTimeout(() => {
             setRevealStep(6);  // Final card
             setIsDrawing(false);
             setShowResult(true);
           }, 6500);
         }
-        // ICON 카드는 완전히 다른 컷신
-        else if (player.tier === 'ICON') {
-          setTimeout(() => setRevealStep(1), 500);   // 암전 + 균열 효과
-          setTimeout(() => setRevealStep(2), 2000);  // ICON 텍스트
-          setTimeout(() => setRevealStep(3), 3500);  // 선수 이름
-          setTimeout(() => {
-            setRevealStep(4);  // Final card
-            setIsDrawing(false);
-            setShowResult(true);
-          }, 5500);
-        } else {
-          // 일반 카드 reveal sequence: position -> season -> team -> final
-          setTimeout(() => setRevealStep(1), 500);   // Position
-          setTimeout(() => setRevealStep(2), 1500);  // Season
-          setTimeout(() => setRevealStep(3), 2500);  // Team
-          setTimeout(() => {
-            setRevealStep(4);  // Final card
-            setIsDrawing(false);
-            setShowResult(true);
-          }, 3500);
-        }
 
         // 타이머 후 처리
-        const displayDelay = player.tier === 'GR' ? 6500 : player.tier === 'ICON' ? 5500 : 3500;
+        const displayDelay = player.tier === 'ICON' ? 8500 : 6500;
         setTimeout(async () => {
 
           // 포인트 업데이트 - 백엔드에서 실제 업데이트된 유저 정보 가져오기
@@ -400,7 +231,7 @@ export default function Gacha() {
 
           // 티어에 따라 다른 메시지
           if (player.tier === 'GR') {
-            toast.success('👑 GREATEST ROOKIE 획득! 역대급 신인!', { duration: 10000 });
+            toast.success('👑 GR 카드 획득! 역대급 신인!', { duration: 5000 });
           } else if (player.tier === 'ICON') {
             toast.success('🏆 ICON 카드 획득! 전설의 선수!', { duration: 8000 });
           } else if (player.tier === 'LEGENDARY') {
@@ -713,7 +544,7 @@ export default function Gacha() {
                   >
                     {option.cost === 0 && dailyFreeUsed ? '내일 다시' : '1회 뽑기'}
                   </button>
-                  {option.cost > 0 && !option.is19G2Light && !option.is19G2Premium && !option.is19G2Test && (
+                  {option.cost > 0 && (
                     <button
                       onClick={() => handleDraw10(option)}
                       disabled={isDrawing || !!(user && user.points < option.cost * 10)}
@@ -888,84 +719,9 @@ export default function Gacha() {
                 </motion.div>
               )}
 
-              {/* Step 1: GR - GOLDEN ROOKIE 텍스트 OR ICON - 암전 + 균열 효과 OR 일반 - Position */}
+              {/* Step 1: ICON - 암전 + 균열 효과 OR 통일 - Region */}
               {revealStep === 1 && (
-                drawnCard.tier === 'GR' ? (
-                  <motion.div
-                    key="gr-text"
-                    initial={{ opacity: 0, scale: 0.3 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="relative w-full h-screen flex items-center justify-center"
-                  >
-                    {/* 검은 배경 */}
-                    <div className="absolute inset-0 bg-black" />
-
-                    {/* 황금빛 원형 파동 효과 */}
-                    {[...Array(5)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="absolute w-96 h-96 rounded-full border-4 border-pink-400"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{
-                          scale: [0, 2 + i * 0.3],
-                          opacity: [0.8, 0],
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          delay: i * 0.2,
-                          repeat: Infinity,
-                          repeatDelay: 0.5,
-                        }}
-                        style={{
-                          boxShadow: '0 0 60px 20px rgba(236, 72, 153, 0.6)'
-                        }}
-                      />
-                    ))}
-
-                    {/* GOLDEN ROOKIE 텍스트 */}
-                    <motion.div
-                      className="relative z-10 text-center"
-                      initial={{ opacity: 0, y: 50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3, duration: 0.8 }}
-                    >
-                      <motion.div
-                        className="text-8xl font-black bg-gradient-to-r from-pink-300 via-rose-400 to-red-500 bg-clip-text text-transparent"
-                        animate={{
-                          textShadow: [
-                            '0 0 30px rgba(236, 72, 153, 0.8)',
-                            '0 0 50px rgba(236, 72, 153, 1)',
-                            '0 0 30px rgba(236, 72, 153, 0.8)',
-                          ]
-                        }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                      >
-                        GOLDEN
-                      </motion.div>
-                      <motion.div
-                        className="text-8xl font-black bg-gradient-to-r from-pink-300 via-rose-400 to-red-500 bg-clip-text text-transparent mt-4"
-                        animate={{
-                          textShadow: [
-                            '0 0 30px rgba(236, 72, 153, 0.8)',
-                            '0 0 50px rgba(236, 72, 153, 1)',
-                            '0 0 30px rgba(236, 72, 153, 0.8)',
-                          ]
-                        }}
-                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
-                      >
-                        ROOKIE
-                      </motion.div>
-                      <motion.div
-                        className="text-2xl text-pink-200 mt-6 font-bold tracking-widest"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8 }}
-                      >
-                        전설의 신인 시절
-                      </motion.div>
-                    </motion.div>
-                  </motion.div>
-                ) : drawnCard.tier === 'ICON' ? (
+                drawnCard.tier === 'ICON' ? (
                   <motion.div
                     key="icon-crack"
                     initial={{ opacity: 0 }}
@@ -1019,48 +775,34 @@ export default function Gacha() {
                   </motion.div>
                 ) : (
                   <motion.div
-                    key="position"
+                    key="region"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="text-center relative"
                   >
-                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'GR') && (
                       <div className={`absolute inset-0 bg-gradient-to-r ${
-                        drawnCard.tier === 'LEGENDARY'
+                        drawnCard.tier === 'GR'
+                          ? 'from-pink-400 via-rose-500 to-pink-400'
+                          : drawnCard.tier === 'LEGENDARY'
                           ? 'from-yellow-400 via-orange-500 to-yellow-400'
                           : 'from-purple-400 via-pink-500 to-purple-400'
                       } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
                     )}
-                    <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-12 py-8 shadow-2xl`}>
+                    <div className="relative inline-block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl px-12 py-8 shadow-2xl">
                       <div className="text-white text-6xl font-bold mb-2">
-                        {drawnCard.position}
+                        {drawnCard.region}
                       </div>
-                      <div className="text-white/80 text-xl">포지션</div>
+                      <div className="text-white/80 text-xl">지역</div>
                     </div>
                   </motion.div>
                 )
               )}
 
-              {/* Step 2: GR - Season OR ICON - "ICON" 텍스트 OR 일반 - Season */}
+              {/* Step 2: ICON - "ICON" 텍스트 OR 통일 - Position */}
               {revealStep === 2 && (
-                drawnCard.tier === 'GR' ? (
-                  <motion.div
-                    key="gr-season"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="text-center relative"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400 rounded-2xl blur-3xl opacity-75 animate-pulse"></div>
-                    <div className="relative inline-block bg-gradient-to-br from-pink-500 via-rose-500 to-red-600 rounded-2xl px-16 py-10 shadow-2xl">
-                      <div className="text-white text-7xl font-bold mb-3">
-                        {drawnCard.season || '2025'}
-                      </div>
-                      <div className="text-pink-100 text-2xl font-semibold">시즌</div>
-                    </div>
-                  </motion.div>
-                ) : drawnCard.tier === 'ICON' ? (
+                drawnCard.tier === 'ICON' ? (
                   <motion.div
                     key="icon-text"
                     initial={{ opacity: 0, scale: 0.3 }}
@@ -1138,15 +880,62 @@ export default function Gacha() {
                   </motion.div>
                 ) : (
                   <motion.div
+                    key="position"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative"
+                  >
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'GR') && (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${
+                        drawnCard.tier === 'GR'
+                          ? 'from-pink-400 via-rose-500 to-pink-400'
+                          : drawnCard.tier === 'LEGENDARY'
+                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                          : 'from-purple-400 via-pink-500 to-purple-400'
+                      } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
+                    )}
+                    <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-12 py-8 shadow-2xl`}>
+                      <div className="text-white text-6xl font-bold mb-2">
+                        {drawnCard.position}
+                      </div>
+                      <div className="text-white/80 text-xl">포지션</div>
+                    </div>
+                  </motion.div>
+                )
+              )}
+
+              {/* Step 3: ICON - Region OR 통일 - Season */}
+              {revealStep === 3 && (
+                drawnCard.tier === 'ICON' ? (
+                  <motion.div
+                    key="icon-region"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative w-full h-screen flex items-center justify-center"
+                  >
+                    <div className="absolute inset-0 bg-black" />
+                    <div className="relative inline-block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl px-16 py-10 shadow-2xl border-4 border-yellow-400">
+                      <div className="text-white text-7xl font-bold mb-3">
+                        {drawnCard.region}
+                      </div>
+                      <div className="text-yellow-200 text-2xl font-semibold">지역</div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
                     key="season"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="text-center relative"
                   >
-                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'GR') && (
                       <div className={`absolute inset-0 bg-gradient-to-r ${
-                        drawnCard.tier === 'LEGENDARY'
+                        drawnCard.tier === 'GR'
+                          ? 'from-pink-400 via-rose-500 to-pink-400'
+                          : drawnCard.tier === 'LEGENDARY'
                           ? 'from-yellow-400 via-orange-500 to-yellow-400'
                           : 'from-purple-400 via-pink-500 to-purple-400'
                       } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
@@ -1161,157 +950,106 @@ export default function Gacha() {
                 )
               )}
 
-              {/* Step 3: GR - Position OR ICON - 선수 이름 OR 일반 - Team */}
-              {revealStep === 3 && (
-                drawnCard.tier === 'GR' ? (
+              {/* Step 4: ICON - Position OR 통일 - Overall */}
+              {revealStep === 4 && (
+                drawnCard.tier === 'ICON' ? (
                   <motion.div
-                    key="gr-position"
+                    key="icon-position"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="text-center relative"
+                    className="text-center relative w-full h-screen flex items-center justify-center"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400 rounded-2xl blur-3xl opacity-75 animate-pulse"></div>
-                    <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-16 py-10 shadow-2xl border-4 border-pink-300`}>
+                    <div className="absolute inset-0 bg-black" />
+                    <div className={`relative inline-block ${getPositionColor(drawnCard.position)} rounded-2xl px-16 py-10 shadow-2xl border-4 border-yellow-400`}>
                       <div className="text-white text-7xl font-bold mb-3">
                         {drawnCard.position}
                       </div>
-                      <div className="text-white/90 text-2xl font-semibold">포지션</div>
+                      <div className="text-yellow-200 text-2xl font-semibold">포지션</div>
                     </div>
-                  </motion.div>
-                ) : drawnCard.tier === 'ICON' ? (
-                  <motion.div
-                    key="icon-player-name"
-                    className="relative w-full h-screen flex items-center justify-center"
-                  >
-                    {/* 검은 배경 + 골드 그라데이션 */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-b from-black via-yellow-900/20 to-black"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    />
-
-                    {/* 황금빛 입자들이 위로 올라감 */}
-                    {[...Array(50)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="absolute w-1 h-1 bg-yellow-400 rounded-full"
-                        style={{
-                          left: `${Math.random() * 100}%`,
-                          bottom: '0%',
-                        }}
-                        animate={{
-                          y: [-100, -window.innerHeight],
-                          opacity: [0, 1, 1, 0],
-                          scale: [0, 1, 1, 0],
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          delay: Math.random() * 2,
-                          ease: 'linear',
-                        }}
-                      />
-                    ))}
-
-                    {/* 선수 이름 */}
-                    <motion.div
-                      className="relative z-10 text-center"
-                      initial={{ opacity: 0, scale: 0.5, rotateX: -90 }}
-                      animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-                      transition={{ duration: 1, ease: 'easeOut' }}
-                    >
-                      <motion.div
-                        className="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 mb-6"
-                        style={{
-                          textShadow: '0 0 80px rgba(251, 191, 36, 0.8)',
-                          WebkitTextStroke: '2px rgba(251, 191, 36, 0.3)',
-                        }}
-                        animate={{
-                          scale: [1, 1.05, 1],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                        }}
-                      >
-                        {drawnCard.name}
-                      </motion.div>
-
-                      <motion.div
-                        className="flex items-center justify-center gap-4 text-yellow-200 text-xl"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                      >
-                        <span className="font-bold">{drawnCard.team}</span>
-                        <span>•</span>
-                        <span className="font-bold">{drawnCard.position}</span>
-                      </motion.div>
-                    </motion.div>
-
-                    {/* 방사형 빛 효과 */}
-                    <motion.div
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        background: 'radial-gradient(circle at center, rgba(251, 191, 36, 0.1) 0%, transparent 70%)',
-                      }}
-                      animate={{
-                        opacity: [0.3, 0.6, 0.3],
-                        scale: [1, 1.1, 1],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
                   </motion.div>
                 ) : (
                   <motion.div
-                    key="team"
+                    key="overall"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="text-center relative"
                   >
-                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'GR') && (
                       <div className={`absolute inset-0 bg-gradient-to-r ${
-                        drawnCard.tier === 'LEGENDARY'
+                        drawnCard.tier === 'GR'
+                          ? 'from-pink-400 via-rose-500 to-pink-400'
+                          : drawnCard.tier === 'LEGENDARY'
                           ? 'from-yellow-400 via-orange-500 to-yellow-400'
                           : 'from-purple-400 via-pink-500 to-purple-400'
                       } rounded-2xl blur-3xl opacity-60 animate-pulse`}></div>
                     )}
-                    <div className="relative bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
-                      <div className="text-white text-6xl font-bold mb-2">
-                        {drawnCard.team}
+                    <div className="relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl px-12 py-8 shadow-2xl inline-block">
+                      <div className="text-white text-8xl font-bold mb-2">
+                        {drawnCard.overall}
                       </div>
-                      <div className="text-white/80 text-xl">소속팀</div>
+                      <div className="text-white/80 text-2xl">Overall</div>
                     </div>
                   </motion.div>
                 )
               )}
 
-              {/* Step 4: GR - Team OR ICON/일반 - Final Card */}
-              {revealStep === 4 && (
-                drawnCard.tier === 'GR' ? (
+              {/* Step 5: ICON - Season OR 통일 - Name+Face */}
+              {revealStep === 5 && (
+                drawnCard.tier === 'ICON' ? (
                   <motion.div
-                    key="gr-team"
+                    key="icon-season"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="text-center relative"
+                    className="text-center relative w-full h-screen flex items-center justify-center"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400 rounded-2xl blur-3xl opacity-75 animate-pulse"></div>
-                    <div className="relative bg-gradient-to-br from-pink-500 via-rose-500 to-red-600 rounded-2xl px-16 py-10 shadow-2xl inline-block border-4 border-pink-300">
+                    <div className="absolute inset-0 bg-black" />
+                    <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl px-16 py-10 shadow-2xl inline-block border-4 border-yellow-400">
                       <div className="text-white text-7xl font-bold mb-3">
-                        {drawnCard.team}
+                        {drawnCard.season || '2025'}
                       </div>
-                      <div className="text-pink-100 text-2xl font-semibold">소속팀</div>
+                      <div className="text-yellow-200 text-2xl font-semibold">시즌</div>
                     </div>
                   </motion.div>
-                ) : null
+                ) : (
+                  <motion.div
+                    key="name-face"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    className="text-center relative"
+                  >
+                    {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'GR') && (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${
+                        drawnCard.tier === 'GR'
+                          ? 'from-pink-400 via-rose-500 to-pink-400'
+                          : drawnCard.tier === 'LEGENDARY'
+                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                          : 'from-purple-400 via-pink-500 to-purple-400'
+                      } rounded-3xl blur-3xl opacity-75 animate-pulse`}></div>
+                    )}
+                    <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl px-12 py-8 shadow-2xl inline-block">
+                      <div className="text-white text-5xl font-bold mb-4">
+                        {drawnCard.name}
+                      </div>
+                      <div className="text-gray-300 text-2xl mb-4">{drawnCard.team} • {drawnCard.position}</div>
+                      <img
+                        src={`/players/${drawnCard.name}.png`}
+                        alt={drawnCard.name}
+                        className="w-48 h-48 object-contain mx-auto"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                )
               )}
 
-              {/* Step 5: GR - Player Image FIFA Style */}
-              {revealStep === 5 && drawnCard.tier === 'GR' && (
+              {/* Old GR Step 5 (removing) */}
+              {false && drawnCard.tier === 'GR' && (
                 <motion.div
                   key="gr-player-faceoff"
                   className="relative w-full h-screen flex items-center justify-center overflow-hidden"
@@ -1427,8 +1165,25 @@ export default function Gacha() {
                 </motion.div>
               )}
 
-              {/* Step 4/6: Final Card Reveal (will transition to showResult) */}
-              {((revealStep === 4 && drawnCard.tier !== 'GR') || (revealStep === 6 && drawnCard.tier === 'GR')) && (
+              {/* Step 6: ICON - Overall OR 통일 - Final Card */}
+              {revealStep === 6 && (
+                drawnCard.tier === 'ICON' ? (
+                  <motion.div
+                    key="icon-overall"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="text-center relative w-full h-screen flex items-center justify-center"
+                  >
+                    <div className="absolute inset-0 bg-black" />
+                    <div className="relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl px-16 py-10 shadow-2xl inline-block border-4 border-yellow-400">
+                      <div className="text-white text-9xl font-bold mb-3">
+                        {drawnCard.overall}
+                      </div>
+                      <div className="text-yellow-200 text-3xl font-semibold">Overall</div>
+                    </div>
+                  </motion.div>
+                ) : (
                 <motion.div
                   key="final"
                   initial={{ opacity: 0, scale: 0.5, rotateY: -180 }}
@@ -1451,14 +1206,76 @@ export default function Gacha() {
                       />
                     </>
                   )}
-                  {/* Epic and Legendary effects */}
-                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY') && (
+                  {/* Epic, Legendary, GR effects */}
+                  {(drawnCard.tier === 'EPIC' || drawnCard.tier === 'LEGENDARY' || drawnCard.tier === 'GR') && (
                     <div className={`absolute inset-0 bg-gradient-to-r ${
-                      drawnCard.tier === 'LEGENDARY'
-                        ? 'from-yellow-400 via-orange-500 to-yellow-400'
-                        : 'from-purple-400 via-pink-500 to-purple-400'
+                        drawnCard.tier === 'GR'
+                          ? 'from-pink-400 via-rose-500 to-pink-400'
+                          : drawnCard.tier === 'LEGENDARY'
+                          ? 'from-yellow-400 via-orange-500 to-yellow-400'
+                          : 'from-purple-400 via-pink-500 to-purple-400'
                     } rounded-2xl blur-3xl opacity-75 animate-pulse`}></div>
                   )}
+
+                  <div className={`relative w-48 h-64 bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl shadow-2xl p-1`}>
+                    <div className="w-full h-full bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                      <div className="text-center">
+                        <div className={`text-5xl font-bold bg-gradient-to-r ${getTierColor(drawnCard.tier)} bg-clip-text text-transparent`}>
+                          {drawnCard.name}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+                )
+              )}
+
+              {/* Step 7: ICON - Name+Face */}
+              {revealStep === 7 && drawnCard.tier === 'ICON' && (
+                <motion.div
+                  key="icon-name-face"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  className="text-center relative w-full h-screen flex items-center justify-center"
+                >
+                  <div className="absolute inset-0 bg-black" />
+                  <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl px-12 py-8 shadow-2xl inline-block border-4 border-yellow-400">
+                    <div className="text-white text-6xl font-bold mb-4">
+                      {drawnCard.name}
+                    </div>
+                    <div className="text-yellow-200 text-3xl mb-4">{drawnCard.team} • {drawnCard.position}</div>
+                    <img
+                      src={`/players/${drawnCard.name}.png`}
+                      alt={drawnCard.name}
+                      className="w-64 h-64 object-contain mx-auto"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 8: ICON - Final Card */}
+              {revealStep === 8 && drawnCard.tier === 'ICON' && (
+                <motion.div
+                  key="icon-final"
+                  initial={{ opacity: 0, scale: 0.5, rotateY: -180 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  transition={{ type: 'spring', damping: 15 }}
+                  className="relative"
+                >
+                  {/* Multiple layered glows for ICON */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-400 to-pink-500 rounded-2xl blur-3xl opacity-90 animate-pulse"></div>
+                  <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 rounded-2xl blur-2xl opacity-60"></div>
+                  {/* Screen flash effect */}
+                  <motion.div
+                    className="fixed inset-0 bg-white pointer-events-none"
+                    initial={{ opacity: 0.8 }}
+                    animate={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                  />
 
                   <div className={`relative w-48 h-64 bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl shadow-2xl p-1`}>
                     <div className="w-full h-full bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center">
@@ -1647,16 +1464,6 @@ export default function Gacha() {
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 19G2 Cutscene */}
-      <AnimatePresence>
-        {show19G2Cutscene && (
-          <Gacha19G2Cutscene
-            onComplete={() => {}}
-            isGuaranteed={is19G2Guaranteed}
-          />
         )}
       </AnimatePresence>
 

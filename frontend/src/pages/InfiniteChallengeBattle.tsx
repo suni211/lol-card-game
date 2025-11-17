@@ -162,6 +162,13 @@ export default function InfiniteChallengeBattle() {
     startBattle();
   }, []);
 
+  // Auto-submit result when battle phase reaches 'result'
+  useEffect(() => {
+    if (battlePhase.phase === 'result' && result && !submitting) {
+      submitResult();
+    }
+  }, [battlePhase.phase]);
+
   // Loading phase
   if (battlePhase.phase === 'loading' || !result) {
     return (

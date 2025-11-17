@@ -35,6 +35,7 @@ import referralRoutes from './routes/referral';
 import clanWarRoutes from './routes/clanWar';
 import infiniteChallengeRoutes from './routes/infiniteChallenge';
 import collectionRoutes from './routes/collection';
+import coachRoutes from './routes/coach';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -109,6 +110,7 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/clan-war', clanWarRoutes);
 app.use('/api/infinite-challenge', infiniteChallengeRoutes);
 app.use('/api/collection', collectionRoutes);
+app.use('/api/coach', coachRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

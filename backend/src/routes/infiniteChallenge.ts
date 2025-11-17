@@ -8,10 +8,10 @@ const router = express.Router();
 
 /**
  * Calculate reward based on stage
- * Formula: stage * 50 + (stage * stage * 10)
+ * Formula: stage * 5 + (stage * stage * 1)
  */
 function calculateStageReward(stage: number): number {
-  return stage * 50 + stage * stage * 10;
+  return stage * 5 + stage * stage * 1;
 }
 
 /**

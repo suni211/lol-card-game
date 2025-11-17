@@ -154,11 +154,11 @@ INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
 
 -- KaBuM! e-Sports
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
-('18WC zantins', 'KBM', 'TOP', 63, 'CBLOL', 'COMMON', '18WC'),
-('18WC Ranger', 'KBM', 'JUNGLE', 64, 'CBLOL', 'COMMON', '18WC'),
-('18WC dyNquedo', 'KBM', 'MID', 64, 'CBLOL', 'COMMON', '18WC'),
-('18WC Titan', 'KBM', 'ADC', 70, 'CBLOL', 'COMMON', '18WC'),
-('18WC Riyev', 'KBM', 'SUPPORT', 61, 'CBLOL', 'COMMON', '18WC');
+('18WC zantins', 'KBM', 'TOP', 63, 'LTA', 'COMMON', '18WC'),
+('18WC Ranger', 'KBM', 'JUNGLE', 64, 'LTA', 'COMMON', '18WC'),
+('18WC dyNquedo', 'KBM', 'MID', 64, 'LTA', 'COMMON', '18WC'),
+('18WC Titan', 'KBM', 'ADC', 70, 'LTA', 'COMMON', '18WC'),
+('18WC Riyev', 'KBM', 'SUPPORT', 61, 'LTA', 'COMMON', '18WC');
 
 -- Infinity eSports
 INSERT INTO players (name, team, position, overall, region, tier, season) VALUES

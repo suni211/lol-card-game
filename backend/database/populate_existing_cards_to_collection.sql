@@ -13,13 +13,11 @@ ON DUPLICATE KEY UPDATE
   total_obtained = VALUES(total_obtained);
 
 -- Update user_collection_progress with correct counts
-INSERT INTO user_collection_progress (user_id, total_cards_collected, last_updated)
+INSERT INTO user_collection_progress (user_id, total_cards_collected)
 SELECT
   user_id,
-  COUNT(DISTINCT player_id) as total_cards_collected,
-  NOW() as last_updated
+  COUNT(DISTINCT player_id) as total_cards_collected
 FROM user_cards
 GROUP BY user_id
 ON DUPLICATE KEY UPDATE
-  total_cards_collected = VALUES(total_cards_collected),
-  last_updated = NOW();
+  total_cards_collected = VALUES(total_cards_collected);

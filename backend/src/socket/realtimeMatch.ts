@@ -4,6 +4,7 @@ import pool from '../config/database';
 import { updateEventProgress } from '../utils/eventTracker';
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
 import { checkAndAwardMatchBonuses, applyHappyHourMultiplier } from '../utils/matchBonuses';
+import { awardReferralMatchBonus } from '../utils/referralBonuses';
 
 // 전략 타입 정의
 type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
@@ -661,6 +662,16 @@ async function endMatch(matchId: string, io: Server) {
       const player2Exp = calculateExpReward(matchType, !player1Won);
       addExperience(match.player2.userId, player2Exp).catch(err =>
         console.error('Exp update error (player2):', err)
+      );
+    }
+
+    // 추천인 보너스 지급 (비동기로 처리)
+    awardReferralMatchBonus(match.player1.userId).catch(err =>
+      console.error('Referral bonus error (player1):', err)
+    );
+    if (!isPlayer2AI) {
+      awardReferralMatchBonus(match.player2.userId).catch(err =>
+        console.error('Referral bonus error (player2):', err)
       );
     }
 

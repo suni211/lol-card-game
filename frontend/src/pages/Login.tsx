@@ -24,6 +24,8 @@ export default function Login() {
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showReferralInput, setShowReferralInput] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {
     // Load Google Sign-In script
@@ -62,6 +64,7 @@ export default function Login() {
     try {
       const result = await axios.post(`${API_URL}/auth/google`, {
         credential: response.credential,
+        referralCode: referralCode || undefined,
       });
 
       if (result.data.success) {
@@ -221,6 +224,35 @@ export default function Login() {
             <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
             <span className="px-4 text-sm text-gray-500 dark:text-gray-400">OR</span>
             <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+          </div>
+
+          {/* Referral Code Input */}
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => setShowReferralInput(!showReferralInput)}
+              className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 mb-2"
+            >
+              {showReferralInput ? '추천 코드 숨기기' : '추천 코드가 있으신가요?'}
+            </button>
+            {showReferralInput && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  placeholder="추천 코드 입력"
+                  className="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  추천 코드 입력 시 가입과 동시에 500P 지급!
+                </p>
+              </motion.div>
+            )}
           </div>
 
           {/* Google Sign-In Button */}

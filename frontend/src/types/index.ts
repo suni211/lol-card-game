@@ -302,3 +302,40 @@ export interface GuildMission {
   is_completed: boolean;
   completed_at?: string;
 }
+
+// Referral Types
+export interface ReferralInfo {
+  referralCode: string;
+  totalReferrals: number;
+  totalBonus: number;
+  referrals: ReferredUser[];
+  recentBonuses: ReferralBonus[];
+}
+
+export interface ReferredUser {
+  id: number;
+  referred_id: number;
+  username: string;
+  tier: UserTier;
+  level: number;
+  signup_bonus_points: number;
+  total_match_bonus: number;
+  referred_match_count: number;
+  created_at: string;
+}
+
+export interface ReferralBonus {
+  bonus_type: 'SIGNUP' | 'MATCH_1' | 'MATCH_5' | 'MATCH_10' | 'MATCH_20' | 'MATCH_50' | 'MATCH_100';
+  referrer_bonus: number;
+  referred_bonus: number;
+  match_count: number;
+  created_at: string;
+  referred_username: string;
+}
+
+export interface ReferralMilestone {
+  matches: number;
+  referrerBonus: number;
+  referredBonus: number;
+  currentMatches: number;
+}

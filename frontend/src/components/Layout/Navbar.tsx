@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown } from 'lucide-react';
+import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useThemeStore } from '../../store/themeStore';
@@ -240,6 +240,15 @@ export default function Navbar() {
                     {user.tier}
                   </span>
                 </div>
+
+                {/* Referral */}
+                <Link
+                  to="/referral"
+                  className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg relative"
+                  title="친구 추천"
+                >
+                  <Gift className="w-5 h-5" />
+                </Link>
 
                 {/* Profile */}
                 <Link

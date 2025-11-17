@@ -39,6 +39,7 @@ import EventMilestones from './pages/EventMilestones';
 import EventRewards from './pages/EventRewards';
 import StrategyStats from './pages/StrategyStats';
 import Guild from './pages/Guild';
+import Referral from './pages/Referral';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -314,6 +315,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Guild />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/referral"
+            element={
+              <ProtectedRoute>
+                <Referral />
               </ProtectedRoute>
             }
           />

@@ -32,6 +32,8 @@ import levelRoutes from './routes/level';
 import eventsRoutes from './routes/events';
 import guildRoutes from './routes/guild';
 import referralRoutes from './routes/referral';
+import clanWarRoutes from './routes/clanWar';
+import infiniteChallengeRoutes from './routes/infiniteChallenge';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -103,6 +105,8 @@ app.use('/api/level', levelRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/guild', guildRoutes);
 app.use('/api/referral', referralRoutes);
+app.use('/api/clan-war', clanWarRoutes);
+app.use('/api/infinite-challenge', infiniteChallengeRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

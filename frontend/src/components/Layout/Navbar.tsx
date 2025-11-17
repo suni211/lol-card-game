@@ -218,6 +218,13 @@ export default function Navbar() {
 
             {isAuthenticated && user ? (
               <>
+                {/* Level Display */}
+                <div className="hidden lg:flex items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg">
+                  <span className="text-sm font-bold text-white">
+                    LV {user.level || 1}
+                  </span>
+                </div>
+
                 {/* Points Display */}
                 <div className="hidden lg:flex items-center space-x-1 px-3 py-1.5 bg-primary-100 dark:bg-primary-900 rounded-lg">
                   <Trophy className="w-4 h-4 text-primary-600 dark:text-primary-400" />

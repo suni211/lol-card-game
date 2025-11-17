@@ -44,6 +44,9 @@ export interface User {
   createdAt: string;
   lastCheckIn?: string;
   consecutiveDays?: number;
+  level?: number;
+  exp?: number;
+  total_exp?: number;
 }
 
 export type UserTier = 'IRON' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'MASTER' | 'CHALLENGER';

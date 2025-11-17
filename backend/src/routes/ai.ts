@@ -5,6 +5,7 @@ import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { normalizeTeamName } from '../utils/teamUtils';
 import { updateEventProgress } from '../utils/eventTracker';
+import { addExperience, calculateExpReward } from '../utils/levelTracker';
 
 const router = express.Router();
 
@@ -227,6 +228,12 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     // Update event progress
     updateEventProgress(userId, 'AI_MATCH', 1).catch(err =>
       console.error('Event update error:', err)
+    );
+
+    // Add experience
+    const expGained = calculateExpReward('AI', won);
+    addExperience(userId, expGained).catch(err =>
+      console.error('Exp update error:', err)
     );
 
     // Update achievements
@@ -463,6 +470,15 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
     // Update mission progress for all battles
     updateMissionProgress(userId, 'ai_battle', count).catch(err =>
       console.error('Mission update error:', err)
+    );
+
+    // Add experience for all battles
+    const totalExp = results.reduce((sum, result) => {
+      const expForBattle = calculateExpReward('AI', result.won);
+      return sum + expForBattle;
+    }, 0);
+    addExperience(userId, totalExp).catch(err =>
+      console.error('Exp update error:', err)
     );
 
     // Update achievements

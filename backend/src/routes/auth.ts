@@ -119,6 +119,9 @@ router.post('/google', async (req, res) => {
       rating: user.rating,
       isAdmin: user.is_admin === 1,
       createdAt: user.created_at,
+      level: user.level || 1,
+      exp: user.exp || 0,
+      total_exp: user.total_exp || 0,
     };
 
     res.json({
@@ -189,6 +192,9 @@ router.post('/login', async (req, res) => {
       rating: user.rating,
       isAdmin: user.is_admin === 1,
       createdAt: user.created_at,
+      level: user.level || 1,
+      exp: user.exp || 0,
+      total_exp: user.total_exp || 0,
     };
 
     res.json({ success: true, data: { user: userData, token } });
@@ -204,7 +210,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.user?.id;
 
     const [users]: any = await pool.query(
-      'SELECT id, username, email, points, tier, rating, is_admin, last_check_in, consecutive_days, created_at FROM users WHERE id = ?',
+      'SELECT id, username, email, points, tier, rating, is_admin, last_check_in, consecutive_days, created_at, level, exp, total_exp FROM users WHERE id = ?',
       [userId]
     );
 
@@ -223,6 +229,9 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
       lastCheckIn: users[0].last_check_in,
       consecutiveDays: users[0].consecutive_days,
       createdAt: users[0].created_at,
+      level: users[0].level || 1,
+      exp: users[0].exp || 0,
+      total_exp: users[0].total_exp || 0,
     };
 
     res.json({ success: true, data: user });

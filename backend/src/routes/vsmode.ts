@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { normalizeTeamName, isSameTeam, getTierByOverall } from '../utils/teamUtils';
+import { addExperience, calculateExpReward } from '../utils/levelTracker';
 
 const router = express.Router();
 
@@ -421,6 +422,12 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
     }
 
     await connection.commit();
+
+    // Add experience (비동기로 처리)
+    const expGained = calculateExpReward('VS', isVictory);
+    addExperience(userId, expGained).catch(err =>
+      console.error('Exp update error:', err)
+    );
 
     res.json({
       success: true,

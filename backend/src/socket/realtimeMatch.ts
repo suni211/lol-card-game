@@ -2,6 +2,7 @@ import { normalizeTeamName } from '../utils/teamUtils';
 import { Server, Socket } from 'socket.io';
 import pool from '../config/database';
 import { updateEventProgress } from '../utils/eventTracker';
+import { addExperience, calculateExpReward } from '../utils/levelTracker';
 
 // 전략 타입 정의
 type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
@@ -643,6 +644,19 @@ async function endMatch(matchId: string, io: Server) {
           console.error('Event update error (player2):', err)
         );
       }
+    }
+
+    // 경험치 추가 (비동기로 처리)
+    const matchType = match.isPractice ? 'NORMAL' : 'RANKED';
+    const player1Exp = calculateExpReward(matchType, player1Won);
+    addExperience(match.player1.userId, player1Exp).catch(err =>
+      console.error('Exp update error (player1):', err)
+    );
+    if (!isPlayer2AI) {
+      const player2Exp = calculateExpReward(matchType, !player1Won);
+      addExperience(match.player2.userId, player2Exp).catch(err =>
+        console.error('Exp update error (player2):', err)
+      );
     }
 
     // 최종 결과 전송

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
@@ -9,6 +9,7 @@ import { useAudioStore } from './store/audioStore';
 import Layout from './components/Layout/Layout';
 import { AudioControls } from './components/AudioControls';
 import GlobalMessageBanner from './components/GlobalMessageBanner';
+import NoticePopup from './components/NoticePopup';
 
 // Pages
 import Home from './pages/Home';
@@ -76,6 +77,7 @@ function App() {
   const { theme } = useThemeStore();
   const { playRandomLobbyBGM, initAudio } = useAudioStore();
   const { token, isAuthenticated, updateUser } = useAuthStore();
+  const [showNotice, setShowNotice] = useState(false);
 
   useEffect(() => {
     // Apply theme on mount
@@ -85,6 +87,19 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  // Show notice popup on first visit
+  useEffect(() => {
+    const hasSeenNotice = localStorage.getItem('compensation_notice_seen');
+    if (!hasSeenNotice) {
+      setShowNotice(true);
+    }
+  }, []);
+
+  const handleCloseNotice = () => {
+    setShowNotice(false);
+    localStorage.setItem('compensation_notice_seen', 'true');
+  };
 
   // Real-time point updates via Socket.IO
   useEffect(() => {
@@ -138,6 +153,7 @@ function App() {
     <Router>
       <AudioControls />
       <GlobalMessageBanner />
+      {showNotice && <NoticePopup onClose={handleCloseNotice} />}
       <Routes>
         <Route element={<Layout />}>
           {/* Public Routes */}

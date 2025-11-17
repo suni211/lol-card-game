@@ -1,4 +1,4 @@
-// Add 8 stats to 18WC players based on overall rating
+// Add 12 stats to 18WC players based on overall rating
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
@@ -11,44 +11,18 @@ async function add18WCStats() {
   });
 
   try {
-    console.log('🔄 Adding 8 stats to 18WC players based on overall...\n');
+    console.log('🔄 Adding 12 stats to 18WC players based on overall...\n');
 
     await connection.beginTransaction();
 
-    // 1. Check if stat columns exist, if not add them
-    console.log('📋 Checking if stat columns exist...');
-
-    const statColumns = [
-      'laning',
-      'vision',
-      'mechanics',
-      'teamfight',
-      'adaptability',
-      'champion_pool',
-      'consistency',
-      'synergy'
-    ];
-
-    for (const col of statColumns) {
-      try {
-        await connection.query(`
-          ALTER TABLE players
-          ADD COLUMN IF NOT EXISTS ${col} INT DEFAULT NULL
-        `);
-        console.log(`✅ Added/verified column: ${col}`);
-      } catch (e) {
-        console.log(`ℹ️  Column ${col} may already exist`);
-      }
-    }
-
-    // 2. Get all 18WC players
+    // Get all 18WC players
     const [players] = await connection.query(`
       SELECT id, name, overall, position
       FROM players
       WHERE season = '18WC'
     `);
 
-    console.log(`\n📊 Found ${players.length} 18WC players\n`);
+    console.log(`📊 Found ${players.length} 18WC players\n`);
 
     if (players.length === 0) {
       console.log('⚠️  No 18WC players found. Make sure season column is set correctly.');
@@ -56,7 +30,7 @@ async function add18WCStats() {
       return;
     }
 
-    // 3. Calculate and update stats for each player
+    // Calculate and update stats for each player
     for (const player of players) {
       const overall = player.overall;
 
@@ -73,66 +47,96 @@ async function add18WCStats() {
       switch(player.position) {
         case 'TOP':
           stats = {
+            // 기본 4개
             laning: randomize(Math.floor(overall * 0.95)),
-            vision: randomize(Math.floor(overall * 0.75)),
-            mechanics: randomize(Math.floor(overall * 0.90)),
             teamfight: randomize(Math.floor(overall * 0.95)),
-            adaptability: randomize(Math.floor(overall * 0.85)),
-            champion_pool: randomize(Math.floor(overall * 0.80)),
-            consistency: randomize(Math.floor(overall * 0.90)),
-            synergy: randomize(Math.floor(overall * 0.85))
+            macro: randomize(Math.floor(overall * 0.85)),
+            mental: randomize(Math.floor(overall * 0.90)),
+            // 추가 8개
+            cs_ability: randomize(Math.floor(overall * 0.90)),
+            lane_pressure: randomize(Math.floor(overall * 0.95)),
+            damage_dealing: randomize(Math.floor(overall * 0.90)),
+            survivability: randomize(Math.floor(overall * 0.92)),
+            objective_control: randomize(Math.floor(overall * 0.85)),
+            vision_control: randomize(Math.floor(overall * 0.75)),
+            decision_making: randomize(Math.floor(overall * 0.85)),
+            consistency: randomize(Math.floor(overall * 0.90))
           };
           break;
 
         case 'JUNGLE':
           stats = {
+            // 기본 4개
             laning: randomize(Math.floor(overall * 0.70)),
-            vision: randomize(Math.floor(overall * 0.95)),
-            mechanics: randomize(Math.floor(overall * 0.85)),
             teamfight: randomize(Math.floor(overall * 0.90)),
-            adaptability: randomize(Math.floor(overall * 0.95)),
-            champion_pool: randomize(Math.floor(overall * 0.85)),
-            consistency: randomize(Math.floor(overall * 0.85)),
-            synergy: randomize(Math.floor(overall * 0.90))
+            macro: randomize(Math.floor(overall * 0.95)),
+            mental: randomize(Math.floor(overall * 0.90)),
+            // 추가 8개
+            cs_ability: randomize(Math.floor(overall * 0.75)),
+            lane_pressure: randomize(Math.floor(overall * 0.85)),
+            damage_dealing: randomize(Math.floor(overall * 0.85)),
+            survivability: randomize(Math.floor(overall * 0.85)),
+            objective_control: randomize(Math.floor(overall * 0.95)),
+            vision_control: randomize(Math.floor(overall * 0.95)),
+            decision_making: randomize(Math.floor(overall * 0.95)),
+            consistency: randomize(Math.floor(overall * 0.85))
           };
           break;
 
         case 'MID':
           stats = {
+            // 기본 4개
             laning: randomize(Math.floor(overall * 0.95)),
-            vision: randomize(Math.floor(overall * 0.80)),
-            mechanics: randomize(Math.floor(overall * 0.95)),
             teamfight: randomize(Math.floor(overall * 0.90)),
-            adaptability: randomize(Math.floor(overall * 0.95)),
-            champion_pool: randomize(Math.floor(overall * 0.90)),
-            consistency: randomize(Math.floor(overall * 0.90)),
-            synergy: randomize(Math.floor(overall * 0.85))
+            macro: randomize(Math.floor(overall * 0.90)),
+            mental: randomize(Math.floor(overall * 0.92)),
+            // 추가 8개
+            cs_ability: randomize(Math.floor(overall * 0.95)),
+            lane_pressure: randomize(Math.floor(overall * 0.90)),
+            damage_dealing: randomize(Math.floor(overall * 0.95)),
+            survivability: randomize(Math.floor(overall * 0.85)),
+            objective_control: randomize(Math.floor(overall * 0.85)),
+            vision_control: randomize(Math.floor(overall * 0.80)),
+            decision_making: randomize(Math.floor(overall * 0.95)),
+            consistency: randomize(Math.floor(overall * 0.90))
           };
           break;
 
         case 'ADC':
           stats = {
+            // 기본 4개
             laning: randomize(Math.floor(overall * 0.90)),
-            vision: randomize(Math.floor(overall * 0.75)),
-            mechanics: randomize(Math.floor(overall * 0.95)),
             teamfight: randomize(Math.floor(overall * 0.95)),
-            adaptability: randomize(Math.floor(overall * 0.80)),
-            champion_pool: randomize(Math.floor(overall * 0.75)),
-            consistency: randomize(Math.floor(overall * 0.95)),
-            synergy: randomize(Math.floor(overall * 0.90))
+            macro: randomize(Math.floor(overall * 0.85)),
+            mental: randomize(Math.floor(overall * 0.95)),
+            // 추가 8개
+            cs_ability: randomize(Math.floor(overall * 0.95)),
+            lane_pressure: randomize(Math.floor(overall * 0.85)),
+            damage_dealing: randomize(Math.floor(overall * 0.95)),
+            survivability: randomize(Math.floor(overall * 0.88)),
+            objective_control: randomize(Math.floor(overall * 0.80)),
+            vision_control: randomize(Math.floor(overall * 0.75)),
+            decision_making: randomize(Math.floor(overall * 0.90)),
+            consistency: randomize(Math.floor(overall * 0.95))
           };
           break;
 
         case 'SUPPORT':
           stats = {
+            // 기본 4개
             laning: randomize(Math.floor(overall * 0.85)),
-            vision: randomize(Math.floor(overall * 0.95)),
-            mechanics: randomize(Math.floor(overall * 0.80)),
             teamfight: randomize(Math.floor(overall * 0.95)),
-            adaptability: randomize(Math.floor(overall * 0.90)),
-            champion_pool: randomize(Math.floor(overall * 0.85)),
-            consistency: randomize(Math.floor(overall * 0.85)),
-            synergy: randomize(Math.floor(overall * 0.95))
+            macro: randomize(Math.floor(overall * 0.90)),
+            mental: randomize(Math.floor(overall * 0.90)),
+            // 추가 8개
+            cs_ability: randomize(Math.floor(overall * 0.60)),
+            lane_pressure: randomize(Math.floor(overall * 0.90)),
+            damage_dealing: randomize(Math.floor(overall * 0.70)),
+            survivability: randomize(Math.floor(overall * 0.90)),
+            objective_control: randomize(Math.floor(overall * 0.92)),
+            vision_control: randomize(Math.floor(overall * 0.95)),
+            decision_making: randomize(Math.floor(overall * 0.92)),
+            consistency: randomize(Math.floor(overall * 0.85))
           };
           break;
       }
@@ -141,39 +145,49 @@ async function add18WCStats() {
       await connection.query(`
         UPDATE players
         SET laning = ?,
-            vision = ?,
-            mechanics = ?,
             teamfight = ?,
-            adaptability = ?,
-            champion_pool = ?,
-            consistency = ?,
-            synergy = ?
+            macro = ?,
+            mental = ?,
+            cs_ability = ?,
+            lane_pressure = ?,
+            damage_dealing = ?,
+            survivability = ?,
+            objective_control = ?,
+            vision_control = ?,
+            decision_making = ?,
+            consistency = ?
         WHERE id = ?
       `, [
         stats.laning,
-        stats.vision,
-        stats.mechanics,
         stats.teamfight,
-        stats.adaptability,
-        stats.champion_pool,
+        stats.macro,
+        stats.mental,
+        stats.cs_ability,
+        stats.lane_pressure,
+        stats.damage_dealing,
+        stats.survivability,
+        stats.objective_control,
+        stats.vision_control,
+        stats.decision_making,
         stats.consistency,
-        stats.synergy,
         player.id
       ]);
 
       console.log(`✅ ${player.name} (${player.position}, OVR: ${overall})`);
-      console.log(`   Laning: ${stats.laning}, Vision: ${stats.vision}, Mechanics: ${stats.mechanics}`);
-      console.log(`   Teamfight: ${stats.teamfight}, Adaptability: ${stats.adaptability}`);
-      console.log(`   Champion Pool: ${stats.champion_pool}, Consistency: ${stats.consistency}, Synergy: ${stats.synergy}\n`);
+      console.log(`   기본: Laning ${stats.laning}, Teamfight ${stats.teamfight}, Macro ${stats.macro}, Mental ${stats.mental}`);
+      console.log(`   추가: CS ${stats.cs_ability}, Pressure ${stats.lane_pressure}, Damage ${stats.damage_dealing}, Survival ${stats.survivability}`);
+      console.log(`         Objective ${stats.objective_control}, Vision ${stats.vision_control}, Decision ${stats.decision_making}, Consistency ${stats.consistency}\n`);
     }
 
     await connection.commit();
 
-    console.log('\n✅ Successfully added 8 stats to all 18WC players!');
+    console.log('\n✅ Successfully added 12 stats to all 18WC players!');
     console.log('\n📝 Summary:');
     console.log(`   - Total players updated: ${players.length}`);
-    console.log('   - Stats added: laning, vision, mechanics, teamfight, adaptability, champion_pool, consistency, synergy');
-    console.log('   - Stats are proportional to overall rating with position-specific weights\n');
+    console.log('   - Stats range: 50-200');
+    console.log('   - Stats are proportional to overall rating with position-specific weights');
+    console.log('   - 기본 4개: laning, teamfight, macro, mental');
+    console.log('   - 추가 8개: cs_ability, lane_pressure, damage_dealing, survivability, objective_control, vision_control, decision_making, consistency\n');
 
   } catch (error) {
     await connection.rollback();

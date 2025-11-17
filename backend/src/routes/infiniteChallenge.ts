@@ -19,10 +19,10 @@ function calculateStageReward(stage: number): number {
  * AI gets stronger as stage increases
  */
 function calculateAIDifficulty(stage: number): number {
-  // Very gradual difficulty increase, gets hard around stage 300
-  // Stage 1: 30, Stage 100: 40, Stage 200: 50, Stage 300: 60, Stage 500: 80, Stage 1000: 130
-  // Formula: 30 + (stage - 1) * 0.1
-  const difficulty = 30 + (stage - 1) * 0.1;
+  // Gradual difficulty increase, stage 300 = 90-100 overall
+  // Stage 1: 30, Stage 100: 50, Stage 200: 70, Stage 300: 90, Stage 400: 110, Stage 500: 130
+  // Formula: 30 + (stage - 1) * 0.2
+  const difficulty = 30 + (stage - 1) * 0.2;
   return Math.floor(difficulty);
 }
 

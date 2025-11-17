@@ -103,8 +103,8 @@ export default function Navbar() {
         { path: '/event/rewards', label: '보상 인벤토리' },
       ]
     },
-    { path: '/clan-war', label: '길드전', icon: <Swords className="w-4 h-4" /> },
-    { path: '/infinite-challenge', label: '무한도전', icon: <Zap className="w-4 h-4" /> },
+    { path: '/clan-war', label: '길드전' },
+    { path: '/infinite-challenge', label: '무한도전' },
     { path: '/trade', label: '트레이드' },
     { path: '/coupon', label: '쿠폰' },
     { path: '/notices', label: '공지사항' },

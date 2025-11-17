@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import type { ClanWarSeason, ClanWarGuildStats, ClanWarContribution } from '../types';
-import { Swords, Trophy, Users, TrendingUp, Play, X } from 'lucide-react';
+import { Swords, Trophy, TrendingUp, Play, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import type { InfiniteChallengeProgress, InfiniteChallengeLeaderboard } from '../types';
-import { Zap, Trophy, TrendingUp, Play, RotateCcw, Crown } from 'lucide-react';
+import { Zap, Play, RotateCcw, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 

@@ -93,7 +93,14 @@ export default function Navbar() {
     { path: '/ranking', label: '랭킹' },
     { path: '/missions', label: '미션' },
     { path: '/achievements', label: '업적' },
-    { path: '/event', label: '이벤트' },
+    {
+      label: '이벤트',
+      items: [
+        { path: '/event', label: '퀘스트' },
+        { path: '/event/milestones', label: '마일스톤' },
+        { path: '/event/rewards', label: '보상 인벤토리' },
+      ]
+    },
     { path: '/trade', label: '트레이드' },
     { path: '/coupon', label: '쿠폰' },
     { path: '/notices', label: '공지사항' },

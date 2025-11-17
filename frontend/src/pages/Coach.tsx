@@ -271,7 +271,7 @@ export default function Coach() {
           코치 관리
         </h1>
         <p className="text-white/60 mb-6">
-          코치를 활성화하면 팀이 더욱 강력해집니다. 카드 합성 시 확률적으로 코치를 획득할 수 있습니다.
+          코치를 활성화하면 팀이 더욱 강력해집니다. 카드 강화 시 확률적으로 코치를 획득할 수 있습니다.
         </p>
 
         {/* Active Coach Display */}
@@ -329,7 +329,7 @@ export default function Coach() {
             ) : (
               <div className="col-span-full text-center py-16">
                 <p className="text-white/60 text-lg">보유한 코치가 없습니다.</p>
-                <p className="text-white/40 mt-2">카드 합성 시 확률적으로 코치를 획득할 수 있습니다!</p>
+                <p className="text-white/40 mt-2">카드 강화 시 확률적으로 코치를 획득할 수 있습니다!</p>
               </div>
             )
           ) : (

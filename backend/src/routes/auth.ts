@@ -133,8 +133,8 @@ router.post('/google', async (req, res) => {
       const newReferralCode = `${username.toUpperCase().substring(0, 8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
       const [result]: any = await pool.query(
-        `INSERT INTO users (username, email, password, points, tier, rating, registration_ip, referral_code)
-         VALUES (?, ?, ?, 10000, "IRON", 1000, ?, ?)`,
+        `INSERT INTO users (username, email, password, points, tier, rating, registration_ip, referral_code, welcome_packs_remaining)
+         VALUES (?, ?, ?, 10000, "IRON", 1000, ?, ?, 5)`,
         [username, email, randomPassword, clientIp, newReferralCode]
       );
 

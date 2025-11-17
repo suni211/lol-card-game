@@ -1121,4 +1121,192 @@ router.delete('/dismantle/:cardId', authMiddleware, async (req: AuthRequest, res
   }
 });
 
+// Welcome Pack - Free pack containing only 25WW, 25WUD, and 19G2 cards
+router.post('/welcome-pack', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+
+    // Check if user has remaining welcome packs
+    const [users]: any = await connection.query(
+      'SELECT welcome_packs_remaining FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const packsRemaining = users[0].welcome_packs_remaining || 0;
+
+    if (packsRemaining <= 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: 'No welcome packs remaining' });
+    }
+
+    // Select random player from 25WW, 25WUD, or 19G2
+    const [players]: any = await connection.query(
+      `SELECT *,
+       CASE
+         WHEN name LIKE 'ICON%' THEN 'ICON'
+         WHEN overall <= 80 THEN 'COMMON'
+         WHEN overall <= 90 THEN 'RARE'
+         WHEN overall <= 100 THEN 'EPIC'
+         ELSE 'LEGENDARY'
+       END as tier
+       FROM players
+       WHERE season IN ('25WW', '25WUD', '19G2')
+       ORDER BY RAND()
+       LIMIT 1`
+    );
+
+    if (players.length === 0) {
+      await connection.rollback();
+      return res.status(500).json({ success: false, error: 'No special cards available' });
+    }
+
+    const player = players[0];
+
+    // Check if duplicate
+    const [existing]: any = await connection.query(
+      'SELECT id FROM user_cards WHERE user_id = ? AND player_id = ?',
+      [userId, player.id]
+    );
+
+    const isDuplicate = existing.length > 0;
+    const refundPoints = isDuplicate ? 500 : 0; // Welcome pack duplicate refund
+
+    // Add card to user
+    await connection.query(
+      'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
+      [userId, player.id]
+    );
+
+    // Update card collection
+    await connection.query(
+      `INSERT INTO user_collected_cards (user_id, player_id, total_obtained)
+       VALUES (?, ?, 1)
+       ON DUPLICATE KEY UPDATE total_obtained = total_obtained + 1`,
+      [userId, player.id]
+    );
+
+    // Decrease welcome pack count
+    await connection.query(
+      'UPDATE users SET welcome_packs_remaining = welcome_packs_remaining - 1 WHERE id = ?',
+      [userId]
+    );
+
+    // Refund points if duplicate
+    if (refundPoints > 0) {
+      await connection.query(
+        'UPDATE users SET points = points + ? WHERE id = ?',
+        [refundPoints, userId]
+      );
+    }
+
+    // Get updated user data
+    const [updatedUser]: any = await connection.query(
+      'SELECT points, level, exp, welcome_packs_remaining FROM users WHERE id = ?',
+      [userId]
+    );
+
+    // Record gacha history
+    await connection.query(
+      'INSERT INTO gacha_history (user_id, player_id, cost, is_duplicate, refund_points) VALUES (?, ?, 0, ?, ?)',
+      [userId, player.id, isDuplicate, refundPoints]
+    );
+
+    // Get player traits
+    const [traits]: any = await connection.query(
+      'SELECT * FROM player_traits WHERE player_id = ?',
+      [player.id]
+    );
+
+    await connection.commit();
+
+    // Emit real-time point update
+    if (updatedUser.length > 0) {
+      emitPointUpdate(userId, updatedUser[0].points, updatedUser[0].level, updatedUser[0].exp);
+    }
+
+    // Update mission progress
+    updateMissionProgress(userId, 'gacha', 1).catch(err =>
+      console.error('Mission update error:', err)
+    );
+
+    // Update achievements
+    checkAndUpdateAchievements(userId).catch(err =>
+      console.error('Achievement update error:', err)
+    );
+
+    res.json({
+      success: true,
+      data: {
+        player: {
+          id: player.id,
+          name: player.name,
+          team: player.team,
+          position: player.position,
+          overall: player.overall,
+          region: player.region,
+          tier: player.tier,
+          season: player.season,
+          laning: player.laning || 50,
+          teamfight: player.teamfight || 50,
+          macro: player.macro || 50,
+          mental: player.mental || 50,
+          cs_ability: player.cs_ability || 50,
+          lane_pressure: player.lane_pressure || 50,
+          damage_dealing: player.damage_dealing || 50,
+          survivability: player.survivability || 50,
+          objective_control: player.objective_control || 50,
+          vision_control: player.vision_control || 50,
+          decision_making: player.decision_making || 50,
+          consistency: player.consistency || 50,
+          traits: traits,
+        },
+        isDuplicate,
+        refundPoints,
+        packsRemaining: updatedUser[0].welcome_packs_remaining,
+      },
+    });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Welcome pack error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+// Get welcome pack count
+router.get('/welcome-pack/count', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [users]: any = await pool.query(
+      'SELECT welcome_packs_remaining FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        remaining: users[0].welcome_packs_remaining || 0,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get welcome pack count error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 export default router;

@@ -431,6 +431,13 @@ export default function Gacha() {
             });
           }
 
+          // 코치 획득 메시지
+          if (data.coach) {
+            toast.success(`🎓 코치 획득! ${data.coach.name} (${data.coach.star_rating}성) - ${data.coach.description}`, {
+              duration: 7000,
+            });
+          }
+
           if (option.cost === 0) {
             setDailyFreeUsed(true);
           }
@@ -515,6 +522,14 @@ export default function Gacha() {
               icon: 'ℹ️',
             });
           }
+
+          // 코치 획득 메시지
+          const coachesObtained = results.filter((r: any) => r.coach).map((r: any) => r.coach);
+          coachesObtained.forEach((coach: any) => {
+            toast.success(`🎓 코치 획득! ${coach.name} (${coach.star_rating}성) - ${coach.description}`, {
+              duration: 7000,
+            });
+          });
         }, 2000);
       }
     } catch (error: any) {

@@ -424,7 +424,7 @@ router.get('/requests', authMiddleware, async (req: AuthRequest, res) => {
 
     // 가입 신청 목록 조회
     const [requests]: any = await pool.query(
-      `SELECT gjr.id, gjr.user_id, gjr.message, gjr.created_at,
+      `SELECT gjr.id, gjr.user_id, gjr.message, gjr.created_at, gjr.status,
               u.username, u.tier, u.rating, u.level, u.wins, u.losses
        FROM guild_join_requests gjr
        JOIN users u ON gjr.user_id = u.id
@@ -432,6 +432,8 @@ router.get('/requests', authMiddleware, async (req: AuthRequest, res) => {
        ORDER BY gjr.created_at ASC`,
       [guild_id]
     );
+
+    console.log(`Found ${requests.length} pending requests for guild ${guild_id}`);
 
     res.json({
       success: true,

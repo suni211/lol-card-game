@@ -44,6 +44,8 @@ import Referral from './pages/Referral';
 import ClanWar from './pages/ClanWar';
 import InfiniteChallenge from './pages/InfiniteChallenge';
 import InfiniteChallengeBattle from './pages/InfiniteChallengeBattle';
+import Coach from './pages/Coach';
+import CardCollection from './pages/CardCollection';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -382,6 +384,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <InfiniteChallengeBattle />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coach"
+            element={
+              <ProtectedRoute>
+                <Coach />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/card-collection"
+            element={
+              <ProtectedRoute>
+                <CardCollection />
               </ProtectedRoute>
             }
           />

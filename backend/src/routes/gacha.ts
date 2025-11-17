@@ -183,6 +183,27 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       [userId, player.id]
     );
 
+    // Update card collection
+    await connection.query(
+      `INSERT INTO user_collected_cards (user_id, player_id, total_obtained)
+       VALUES (?, ?, 1)
+       ON DUPLICATE KEY UPDATE total_obtained = total_obtained + 1`,
+      [userId, player.id]
+    );
+
+    // Update collection progress
+    await connection.query(
+      `INSERT INTO user_collection_progress (user_id, total_cards_collected)
+       VALUES (?, 1)
+       ON DUPLICATE KEY UPDATE
+         total_cards_collected = (
+           SELECT COUNT(DISTINCT player_id)
+           FROM user_collected_cards
+           WHERE user_id = ?
+         )`,
+      [userId, userId]
+    );
+
     // Update user points
     const pointsChange = refundPoints - option.cost;
     await connection.query(
@@ -407,6 +428,14 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         [userId, player.id]
       );
 
+      // Update card collection
+      await connection.query(
+        `INSERT INTO user_collected_cards (user_id, player_id, total_obtained)
+         VALUES (?, ?, 1)
+         ON DUPLICATE KEY UPDATE total_obtained = total_obtained + 1`,
+        [userId, player.id]
+      );
+
       // Record history
       await connection.query(
         'INSERT INTO gacha_history (user_id, player_id, cost, is_duplicate, refund_points) VALUES (?, ?, ?, ?, ?)',
@@ -448,6 +477,19 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         coach: coachDropped,
       });
     }
+
+    // Update collection progress
+    await connection.query(
+      `INSERT INTO user_collection_progress (user_id, total_cards_collected)
+       VALUES (?, 1)
+       ON DUPLICATE KEY UPDATE
+         total_cards_collected = (
+           SELECT COUNT(DISTINCT player_id)
+           FROM user_collected_cards
+           WHERE user_id = ?
+         )`,
+      [userId, userId]
+    );
 
     // Update user points
     const pointsChange = totalRefund - totalCost;

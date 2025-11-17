@@ -105,6 +105,8 @@ export default function Navbar() {
     },
     { path: '/clan-war', label: '길드전' },
     { path: '/infinite-challenge', label: '무한도전' },
+    { path: '/coach', label: '코치' },
+    { path: '/card-collection', label: '도감' },
     { path: '/trade', label: '트레이드' },
     { path: '/coupon', label: '쿠폰' },
     { path: '/notices', label: '공지사항' },

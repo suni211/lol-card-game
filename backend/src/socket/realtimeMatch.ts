@@ -1,6 +1,7 @@
 import { normalizeTeamName } from '../utils/teamUtils';
 import { Server, Socket } from 'socket.io';
 import pool from '../config/database';
+import { updateEventProgress } from '../utils/eventTracker';
 
 // 전략 타입 정의
 type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
@@ -620,6 +621,29 @@ async function endMatch(matchId: string, io: Server) {
     }
 
     await connection.commit();
+
+    // 이벤트 진행도 업데이트 (비동기로 처리)
+    if (match.isPractice) {
+      // 일반전
+      updateEventProgress(match.player1.userId, 'NORMAL_MATCH', 1).catch(err =>
+        console.error('Event update error (player1):', err)
+      );
+      if (!isPlayer2AI) {
+        updateEventProgress(match.player2.userId, 'NORMAL_MATCH', 1).catch(err =>
+          console.error('Event update error (player2):', err)
+        );
+      }
+    } else {
+      // 랭킹전
+      updateEventProgress(match.player1.userId, 'RANKED_MATCH', 1).catch(err =>
+        console.error('Event update error (player1):', err)
+      );
+      if (!isPlayer2AI) {
+        updateEventProgress(match.player2.userId, 'RANKED_MATCH', 1).catch(err =>
+          console.error('Event update error (player2):', err)
+        );
+      }
+    }
 
     // 최종 결과 전송
     io.to(match.player1.socketId).emit('matchComplete', {

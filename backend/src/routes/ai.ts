@@ -4,6 +4,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { normalizeTeamName } from '../utils/teamUtils';
+import { updateEventProgress } from '../utils/eventTracker';
 
 const router = express.Router();
 
@@ -221,6 +222,11 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     // Update mission progress (don't await to avoid slowing down response)
     updateMissionProgress(userId, 'ai_battle', 1).catch(err =>
       console.error('Mission update error:', err)
+    );
+
+    // Update event progress
+    updateEventProgress(userId, 'AI_MATCH', 1).catch(err =>
+      console.error('Event update error:', err)
     );
 
     // Update achievements

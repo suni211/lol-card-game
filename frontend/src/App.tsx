@@ -34,6 +34,9 @@ import VSMode from './pages/VSMode';
 import VSBattle from './pages/VSBattle';
 import Coupon from './pages/Coupon';
 import AdminCoupon from './pages/AdminCoupon';
+import Event from './pages/Event';
+import EventMilestones from './pages/EventMilestones';
+import EventRewards from './pages/EventRewards';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -269,6 +272,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminCoupon />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/event"
+            element={
+              <ProtectedRoute>
+                <Event />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/event/milestones"
+            element={
+              <ProtectedRoute>
+                <EventMilestones />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/event/rewards"
+            element={
+              <ProtectedRoute>
+                <EventRewards />
               </ProtectedRoute>
             }
           />

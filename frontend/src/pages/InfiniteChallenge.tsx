@@ -76,7 +76,7 @@ const InfiniteChallenge: React.FC = () => {
   };
 
   const calculateReward = (stage: number): number => {
-    return Math.floor(stage * 7 + stage * 1.4);
+    return Math.floor(stage * 10.5 + stage * 2.1);
   };
 
   if (loading) {
@@ -202,7 +202,7 @@ const InfiniteChallenge: React.FC = () => {
           ))}
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-4 text-center">
-          보상 공식: Stage × 7 + Stage × 1.4
+          보상 공식: Stage × 10.5 + Stage × 2.1
         </p>
       </motion.div>
 

@@ -8,11 +8,11 @@ const router = express.Router();
 
 /**
  * Calculate reward based on stage
- * Formula: stage * 7 + stage * 1.4 (40% increase from stage * 5 + stage)
- * Stage 1: 8P, Stage 10: 84P, Stage 50: 420P, Stage 100: 840P
+ * Formula: stage * 10.5 + stage * 2.1 (50% increase from stage * 7 + stage * 1.4)
+ * Stage 1: 12P, Stage 10: 126P, Stage 50: 630P, Stage 100: 1260P
  */
 function calculateStageReward(stage: number): number {
-  return Math.floor(stage * 7 + stage * 1.4);
+  return Math.floor(stage * 10.5 + stage * 2.1);
 }
 
 /**

@@ -19,18 +19,6 @@ interface Quest {
   end_date: string;
 }
 
-interface Milestone {
-  id: number;
-  required_mileage: number;
-  reward_type: 'POINTS' | 'CARD_PACK' | 'CARD_GUARANTEED';
-  reward_points: number;
-  reward_card_min_overall: number;
-  reward_card_guaranteed_overall: number;
-  reward_card_count: number;
-  reward_g2_probability: number;
-  description: string;
-}
-
 interface EventProgress {
   normalMatchToday: number;
   rankedMatchToday: number;

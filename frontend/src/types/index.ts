@@ -339,3 +339,105 @@ export interface ReferralMilestone {
   referredBonus: number;
   currentMatches: number;
 }
+
+// Clan War Types
+export interface ClanWarSeason {
+  id: number;
+  season_number: number;
+  start_date: string;
+  end_date: string;
+  status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+  created_at: string;
+}
+
+export interface ClanWarGuildStats {
+  id: number;
+  season_id: number;
+  guild_id: number;
+  total_matches: number;
+  wins: number;
+  losses: number;
+  total_points: number;
+  total_damage: number;
+  rank_position: number;
+  reward_claimed: boolean;
+  guild_name?: string;
+  guild_tag?: string;
+  leader_name?: string;
+}
+
+export interface ClanWarMatch {
+  id: number;
+  season_id: number;
+  guild1_id: number;
+  guild2_id: number;
+  player1_id: number;
+  player2_id: number;
+  player1_username?: string;
+  player2_username?: string;
+  guild1_name?: string;
+  guild1_tag?: string;
+  guild2_name?: string;
+  guild2_tag?: string;
+  winner_id: number | null;
+  player1_score: number;
+  player2_score: number;
+  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED';
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface ClanWarContribution {
+  id: number;
+  season_id: number;
+  guild_id: number;
+  user_id: number;
+  username?: string;
+  tier?: UserTier;
+  level?: number;
+  matches_played: number;
+  wins: number;
+  losses: number;
+  total_damage: number;
+  contribution_points: number;
+}
+
+// Infinite Challenge Types
+export interface InfiniteChallengeProgress {
+  id: number;
+  user_id: number;
+  current_stage: number;
+  highest_stage: number;
+  is_active: boolean;
+  total_rewards: number;
+  started_at: string | null;
+  last_played_at: string | null;
+  nextReward?: number;
+  aiDifficulty?: number;
+}
+
+export interface InfiniteChallengeMatch {
+  id: number;
+  user_id: number;
+  stage: number;
+  ai_difficulty: number;
+  user_score: number;
+  ai_score: number;
+  is_victory: boolean;
+  total_damage: number;
+  rewards_earned: number;
+  created_at: string;
+}
+
+export interface InfiniteChallengeLeaderboard {
+  id: number;
+  week_start: string;
+  user_id: number;
+  username: string;
+  tier: UserTier;
+  level: number;
+  guild_tag?: string;
+  highest_stage: number;
+  total_rewards: number;
+  rank_position: number;
+}

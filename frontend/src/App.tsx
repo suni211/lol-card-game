@@ -41,6 +41,8 @@ import EventRewards from './pages/EventRewards';
 import StrategyStats from './pages/StrategyStats';
 import Guild from './pages/Guild';
 import Referral from './pages/Referral';
+import ClanWar from './pages/ClanWar';
+import InfiniteChallenge from './pages/InfiniteChallenge';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -355,6 +357,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Referral />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clan-war"
+            element={
+              <ProtectedRoute>
+                <ClanWar />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/infinite-challenge"
+            element={
+              <ProtectedRoute>
+                <InfiniteChallenge />
               </ProtectedRoute>
             }
           />

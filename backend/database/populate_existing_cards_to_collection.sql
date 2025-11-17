@@ -5,13 +5,12 @@ INSERT INTO user_collected_cards (user_id, player_id, first_obtained_at, total_o
 SELECT
   uc.user_id,
   uc.player_id,
-  MIN(uc.obtained_at) as first_obtained_at,
+  NOW() as first_obtained_at,
   COUNT(*) as total_obtained
 FROM user_cards uc
 GROUP BY uc.user_id, uc.player_id
 ON DUPLICATE KEY UPDATE
-  total_obtained = VALUES(total_obtained),
-  first_obtained_at = LEAST(first_obtained_at, VALUES(first_obtained_at));
+  total_obtained = VALUES(total_obtained);
 
 -- Update user_collection_progress with correct counts
 INSERT INTO user_collection_progress (user_id, total_cards_collected, last_updated)

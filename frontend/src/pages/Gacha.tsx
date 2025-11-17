@@ -460,32 +460,6 @@ export default function Gacha() {
                       </p>
                     </div>
                   )}
-                  {option.is19G2Light && (
-                    <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 text-center">
-                        19G2 카드 0.02% 확률
-                      </p>
-                    </div>
-                  )}
-                  {option.is19G2Premium && (
-                    <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 text-center">
-                        에픽+ 확정 | 19G2 0.132% | 50회 천장
-                      </p>
-                      {pityCount > 0 && (
-                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 text-center mt-1">
-                          현재: {pityCount}회 / 천장까지: {50 - pityCount}회
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {option.is19G2Test && (
-                    <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                      <p className="text-xs font-semibold text-red-800 dark:text-red-300 text-center">
-                        19G2 카드 100% 확정 (관리자 전용)
-                      </p>
-                    </div>
-                  )}
                   {(option.probabilities.gr ?? 0) > 0 && (
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-pink-600 dark:text-pink-400 font-bold">🌟 GR</span>
@@ -1048,122 +1022,6 @@ export default function Gacha() {
                 )
               )}
 
-              {/* Old GR Step 5 (removing) */}
-              {false && drawnCard.tier === 'GR' && (
-                <motion.div
-                  key="gr-player-faceoff"
-                  className="relative w-full h-screen flex items-center justify-center overflow-hidden"
-                >
-                  {/* 검은 배경 */}
-                  <div className="absolute inset-0 bg-black" />
-
-                  {/* 핑크 방사형 그라데이션 배경 */}
-                  <motion.div
-                    className="absolute inset-0"
-                    style={{
-                      background: 'radial-gradient(circle at center, rgba(236, 72, 153, 0.3) 0%, rgba(0, 0, 0, 0.8) 50%, black 100%)',
-                    }}
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.5, 0.8, 0.5],
-                    }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  />
-
-                  {/* 선수 이미지 - FIFA 스타일로 크게 */}
-                  <motion.div
-                    className="relative z-10"
-                    initial={{ opacity: 0, scale: 0.5, y: 100 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
-                  >
-                    <img
-                      src={`/players/${drawnCard.name.replace('GR ', '')}_gr.png`}
-                      alt={drawnCard.name}
-                      className="w-96 h-96 object-contain drop-shadow-2xl"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/players/placeholder.png';
-                      }}
-                      style={{
-                        filter: 'drop-shadow(0 0 50px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 100px rgba(236, 72, 153, 0.5))',
-                      }}
-                    />
-                  </motion.div>
-
-                  {/* 선수 이름 하단 */}
-                  <motion.div
-                    className="absolute bottom-32 left-0 right-0 text-center z-20"
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                  >
-                    <motion.div
-                      className="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-400 to-red-500 mb-4"
-                      style={{
-                        textShadow: '0 0 60px rgba(236, 72, 153, 1)',
-                        WebkitTextStroke: '2px rgba(236, 72, 153, 0.5)',
-                      }}
-                      animate={{
-                        textShadow: [
-                          '0 0 60px rgba(236, 72, 153, 1)',
-                          '0 0 80px rgba(236, 72, 153, 1)',
-                          '0 0 60px rgba(236, 72, 153, 1)',
-                        ],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      {drawnCard.name}
-                    </motion.div>
-
-                    <motion.div
-                      className="text-pink-200 text-2xl font-bold mb-2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.7 }}
-                    >
-                      {drawnCard.team} • {drawnCard.position} • {drawnCard.season}
-                    </motion.div>
-
-                    <motion.div
-                      className="inline-block bg-gradient-to-r from-pink-500 via-rose-500 to-red-600 text-white px-8 py-3 rounded-full text-lg font-black tracking-wider"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.9 }}
-                    >
-                      GOLDEN ROOKIE
-                    </motion.div>
-                  </motion.div>
-
-                  {/* 빛나는 링 효과 */}
-                  <motion.div
-                    className="absolute w-[800px] h-[800px] rounded-full border-4 border-pink-400/30"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
-                  />
-
-                  {/* 반짝이는 입자들 */}
-                  {[...Array(30)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-2 h-2 bg-pink-400 rounded-full"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                      }}
-                      animate={{
-                        opacity: [0, 1, 0],
-                        scale: [0, 2, 0],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        delay: Math.random() * 2,
-                      }}
-                    />
-                  ))}
-                </motion.div>
-              )}
 
               {/* Step 6: ICON - Overall OR 통일 - Final Card */}
               {revealStep === 6 && (
@@ -1191,8 +1049,12 @@ export default function Gacha() {
                   transition={{ type: 'spring', damping: 15 }}
                   className="relative"
                 >
-                  {/* ICON special effects - most dramatic */}
-                  {drawnCard.tier === 'ICON' && (
+                  {/* GR special effects */}
+                  {drawnCard.tier === 'GR' && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400 rounded-2xl blur-3xl opacity-75 animate-pulse"></div>
+                  )}
+                  {/* ICON special effects - most dramatic (never reached for non-ICON) */}
+                  {false && (
                     <>
                       {/* Multiple layered glows for ICON */}
                       <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-400 to-pink-500 rounded-2xl blur-3xl opacity-90 animate-pulse"></div>

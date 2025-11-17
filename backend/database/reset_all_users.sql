@@ -20,7 +20,6 @@ SELECT 'Users deleted:' as status, COUNT(*) as count FROM users;
 SELECT 'User cards deleted:' as status, COUNT(*) as count FROM user_cards;
 SELECT 'Gacha history deleted:' as status, COUNT(*) as count FROM gacha_history;
 SELECT 'Decks deleted:' as status, COUNT(*) as count FROM decks;
-SELECT 'Battles deleted:' as status, COUNT(*) as count FROM battles;
 
 -- Optional: Create new admin account
 -- Uncomment if you want to create a fresh admin account after reset

@@ -3,6 +3,7 @@ import { Server, Socket } from 'socket.io';
 import pool from '../config/database';
 import { updateEventProgress } from '../utils/eventTracker';
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
+import { checkAndAwardMatchBonuses, applyHappyHourMultiplier } from '../utils/matchBonuses';
 
 // 전략 타입 정의
 type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
@@ -553,6 +554,10 @@ async function endMatch(matchId: string, io: Server) {
       player2PointsChange = player1Won ? 300 : 500;
     }
 
+    // 해피아워 적용 (오후 7시 ~ 8시)
+    player1PointsChange = applyHappyHourMultiplier(player1PointsChange);
+    player2PointsChange = applyHappyHourMultiplier(player2PointsChange);
+
     // matches 테이블에 저장 (AI 매치는 player2_deck_id를 NULL로)
     const [matchResult]: any = await connection.query(`
       INSERT INTO matches (player1_id, player2_id, player1_deck_id, player2_deck_id, winner_id, player1_score, player2_score, status, completed_at, match_type)
@@ -659,6 +664,34 @@ async function endMatch(matchId: string, io: Server) {
       );
     }
 
+    // 매치 보너스 체크 (퍼펙트, 역전승, 연승)
+    let player1Bonuses: any = { bonuses: [], totalBonus: 0 };
+    let player2Bonuses: any = { bonuses: [], totalBonus: 0 };
+
+    try {
+      player1Bonuses = await checkAndAwardMatchBonuses(
+        match.player1.userId,
+        dbMatchId,
+        match.player1.score,
+        match.player2.score,
+        true,
+        player1Won
+      );
+
+      if (!isPlayer2AI) {
+        player2Bonuses = await checkAndAwardMatchBonuses(
+          match.player2.userId,
+          dbMatchId,
+          match.player1.score,
+          match.player2.score,
+          false,
+          !player1Won
+        );
+      }
+    } catch (err) {
+      console.error('Match bonus error:', err);
+    }
+
     // 최종 결과 전송
     io.to(match.player1.socketId).emit('matchComplete', {
       won: player1Won,
@@ -667,6 +700,8 @@ async function endMatch(matchId: string, io: Server) {
       opponent: { username: match.player2.username },
       pointsChange: player1PointsChange,
       ratingChange: player1RatingChange,
+      bonuses: player1Bonuses.bonuses,
+      totalBonus: player1Bonuses.totalBonus,
     });
 
     // AI가 아닐 때만 player2에게 결과 전송
@@ -678,6 +713,8 @@ async function endMatch(matchId: string, io: Server) {
         opponent: { username: match.player1.username },
         pointsChange: player2PointsChange,
         ratingChange: player2RatingChange,
+        bonuses: player2Bonuses.bonuses,
+        totalBonus: player2Bonuses.totalBonus,
       });
     }
 

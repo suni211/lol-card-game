@@ -223,6 +223,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       data: {
         id: deck.id,
         name: deck.name,
+        deck_slot: deck.deck_slot || 1, // 덱 슬롯 번호 추가
         top: cards.top || null,
         jungle: cards.jungle || null,
         mid: cards.mid || null,

@@ -159,6 +159,7 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
 
 export default function Deck() {
   const { token } = useAuthStore();
+  const [currentDeckSlot, setCurrentDeckSlot] = useState(1); // 현재 활성 덱 슬롯 (1-5)
   const [deckSlots, setDeckSlots] = useState<DeckSlot[]>([
     { position: 'TOP', label: '탑', card: null },
     { position: 'JUNGLE', label: '정글', card: null },
@@ -200,6 +201,9 @@ export default function Deck() {
 
       if (deckRes.data.success && deckRes.data.data) {
         const deck = deckRes.data.data;
+
+        // 현재 활성 덱 슬롯 설정
+        setCurrentDeckSlot(deck.deck_slot || 1);
 
         setDeckSlots((prev) =>
           prev.map((slot) => {
@@ -267,6 +271,7 @@ export default function Deck() {
       setSaving(true);
 
       const payload = {
+        deckSlot: currentDeckSlot, // 현재 활성 덱 슬롯 지정
         name: 'My Deck',
         topCardId: deckSlots.find((s) => s.position === 'TOP')?.card?.id || null,
         jungleCardId: deckSlots.find((s) => s.position === 'JUNGLE')?.card?.id || null,

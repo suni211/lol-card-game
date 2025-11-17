@@ -80,7 +80,7 @@ router.post('/google', async (req, res) => {
       const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
 
       const [result]: any = await pool.query(
-        `INSERT INTO users (username, email, password, points, tier, rating) VALUES (?, ?, ?, 1000, "IRON", 1000)`,
+        `INSERT INTO users (username, email, password, points, tier, rating) VALUES (?, ?, ?, 10000, "IRON", 1000)`,
         [username, email, randomPassword]
       );
 

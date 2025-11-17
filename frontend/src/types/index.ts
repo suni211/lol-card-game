@@ -256,10 +256,25 @@ export interface Guild {
   level: number;
   max_members: number;
   member_count: number;
+  auto_accept: boolean;
   created_at: string;
   myRole?: 'LEADER' | 'OFFICER' | 'MEMBER';
   myContribution?: number;
   members?: GuildMember[];
+}
+
+export interface GuildJoinRequest {
+  id: number;
+  guild_id: number;
+  user_id: number;
+  username: string;
+  tier: UserTier;
+  rating: number;
+  level?: number;
+  wins: number;
+  losses: number;
+  message: string;
+  created_at: string;
 }
 
 export interface GuildMember {

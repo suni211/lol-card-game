@@ -43,14 +43,12 @@ export default function Event() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [quests, setQuests] = useState<Quest[]>([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [progress, setProgress] = useState<EventProgress>({
     normalMatchToday: 0,
     rankedMatchToday: 0,
     aiMatchToday: 0,
     totalMileage: 0,
   });
-  const [claimedMilestones, setClaimedMilestones] = useState<number[]>([]);
   const [eventPeriod, setEventPeriod] = useState({ start: '', end: '' });
 
   useEffect(() => {
@@ -70,9 +68,7 @@ export default function Event() {
 
       if (response.data.success) {
         setQuests(response.data.data.quests);
-        setMilestones(response.data.data.milestones);
         setProgress(response.data.data.progress);
-        setClaimedMilestones(response.data.data.claimedMilestones);
         setEventPeriod(response.data.data.eventPeriod);
       }
     } catch (error) {

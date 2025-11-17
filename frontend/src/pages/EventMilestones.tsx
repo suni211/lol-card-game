@@ -71,7 +71,7 @@ export default function EventMilestones() {
       );
 
       if (response.data.success) {
-        const { points, cards, milestone } = response.data.data;
+        const { points, cards } = response.data.data;
 
         if (points > 0) {
           toast.success(`${points} 포인트 획득!`);

@@ -140,24 +140,24 @@ export default function EventMilestones() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
           <button
             onClick={() => navigate('/event')}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 transition-colors"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-3 sm:mb-4 transition-colors text-sm sm:text-base"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>이벤트로 돌아가기</span>
           </button>
 
           <div className="text-center">
-            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mb-4">
-              <Trophy className="w-12 h-12 text-white" />
+            <div className="inline-flex items-center justify-center p-3 sm:p-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mb-3 sm:mb-4">
+              <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
               마일스톤 보상
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+            <p className="text-sm sm:text-lg text-gray-600 dark:text-gray-400 px-4">
               마일리지를 모아 보상을 받으세요!
             </p>
           </div>
@@ -167,10 +167,10 @@ export default function EventMilestones() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl shadow-lg p-6 mb-8 text-white text-center"
+          className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 text-white text-center"
         >
-          <p className="text-lg mb-2">현재 마일리지</p>
-          <p className="text-4xl font-bold">{currentMileage} M</p>
+          <p className="text-sm sm:text-lg mb-1 sm:mb-2">현재 마일리지</p>
+          <p className="text-3xl sm:text-4xl font-bold">{currentMileage} M</p>
         </motion.div>
 
         {/* Milestones */}
@@ -201,45 +201,45 @@ export default function EventMilestones() {
                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}
               >
-                <div className="p-6">
-                  <div className="flex items-start gap-4">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-start gap-3 sm:gap-4">
                     {/* Icon */}
                     <div
-                      className={`flex-shrink-0 p-4 rounded-xl bg-gradient-to-br ${getMilestoneColor(
+                      className={`flex-shrink-0 p-3 sm:p-4 rounded-xl bg-gradient-to-br ${getMilestoneColor(
                         milestone.reward_type
                       )}`}
                     >
-                      <Icon className="w-8 h-8 text-white" />
+                      <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       {/* Milestone Title */}
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                           {milestone.required_mileage} M 달성
                         </h3>
                         {isClaimed && (
-                          <span className="px-3 py-1 bg-gray-500 text-white text-sm font-semibold rounded-full">
+                          <span className="px-2 sm:px-3 py-1 bg-gray-500 text-white text-xs sm:text-sm font-semibold rounded-full whitespace-nowrap">
                             완료
                           </span>
                         )}
                         {canClaim && (
-                          <span className="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full animate-pulse">
+                          <span className="px-2 sm:px-3 py-1 bg-green-500 text-white text-xs sm:text-sm font-semibold rounded-full animate-pulse whitespace-nowrap">
                             수령 가능
                           </span>
                         )}
                       </div>
 
                       {/* Description */}
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
                         {milestone.description}
                       </p>
 
                       {/* Progress Bar */}
                       {!isClaimed && (
-                        <div className="mb-4">
-                          <div className="flex items-center justify-between text-sm mb-2">
+                        <div className="mb-3 sm:mb-4">
+                          <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
                             <span className="text-gray-600 dark:text-gray-400">진행도</span>
                             <span className="font-bold text-gray-900 dark:text-white">
                               {currentMileage} / {milestone.required_mileage} M
@@ -263,7 +263,7 @@ export default function EventMilestones() {
                         <button
                           onClick={() => claimMilestone(milestone.id)}
                           disabled={claiming === milestone.id}
-                          className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm sm:text-base"
                         >
                           {claiming === milestone.id ? '수령 중...' : '보상 받기'}
                         </button>

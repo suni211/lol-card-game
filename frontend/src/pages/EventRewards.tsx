@@ -133,24 +133,24 @@ export default function EventRewards() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
           <button
             onClick={() => navigate('/event')}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 transition-colors"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-3 sm:mb-4 transition-colors text-sm sm:text-base"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>이벤트로 돌아가기</span>
           </button>
 
           <div className="text-center">
-            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mb-4">
-              <Gift className="w-12 h-12 text-white" />
+            <div className="inline-flex items-center justify-center p-3 sm:p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mb-3 sm:mb-4">
+              <Gift className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
               이벤트 보상 인벤토리
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+            <p className="text-sm sm:text-lg text-gray-600 dark:text-gray-400 px-4">
               획득한 카드를 확인하고 받아가세요!
             </p>
           </div>
@@ -161,24 +161,24 @@ export default function EventRewards() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-12 text-center border border-gray-200 dark:border-gray-700"
           >
-            <Gift className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <Gift className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
               받을 수 있는 카드가 없습니다
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
               마일스톤을 달성하고 카드 보상을 받으세요!
             </p>
             <button
               onClick={() => navigate('/event/milestones')}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg transition-all transform hover:scale-105 text-sm sm:text-base"
             >
               마일스톤 보기
             </button>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {cards.map((card, index) => (
               <motion.div
                 key={card.id}
@@ -210,21 +210,21 @@ export default function EventRewards() {
                 </div>
 
                 {/* Card Body */}
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                <div className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
                       {card.name}
                     </h3>
                     <span
                       className={`px-2 py-1 ${getPositionColor(
                         card.position
-                      )} text-white text-xs font-semibold rounded`}
+                      )} text-white text-xs font-semibold rounded whitespace-nowrap`}
                     >
                       {card.position}
                     </span>
                   </div>
 
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">팀</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
@@ -256,7 +256,7 @@ export default function EventRewards() {
                   <button
                     onClick={() => claimCard(card.id)}
                     disabled={claiming === card.id}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm sm:text-base"
                   >
                     {claiming === card.id ? '받는 중...' : '카드 받기'}
                   </button>

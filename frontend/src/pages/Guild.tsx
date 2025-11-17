@@ -1,25 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FaUsers,
-  FaPlus,
-  FaTrophy,
-  FaStar,
-  FaCrown,
-  FaShieldAlt,
-  FaUserFriends,
-  FaSignOutAlt,
-  FaTasks,
-  FaCheckCircle,
-  FaHourglassHalf,
-} from 'react-icons/fa';
-import api from '../services/api';
+  Users,
+  Plus,
+  Trophy,
+  Star,
+  Crown,
+  Shield,
+  UserPlus,
+  LogOut,
+  CheckCircle,
+  Clock,
+} from 'lucide-react';
+import api from '../lib/api';
 import { useAuthStore } from '../store/authStore';
-import { Guild, GuildMission } from '../types';
-import { getTierColor, getTierIcon } from '../utils/tierUtils';
+import type { Guild, GuildMission } from '../types';
+
+const getTierColor = (tier: string) => {
+  const colors: Record<string, string> = {
+    IRON: 'text-gray-400',
+    BRONZE: 'text-orange-400',
+    SILVER: 'text-gray-300',
+    GOLD: 'text-yellow-400',
+    PLATINUM: 'text-cyan-400',
+    DIAMOND: 'text-blue-400',
+    MASTER: 'text-purple-400',
+    CHALLENGER: 'text-red-400',
+  };
+  return colors[tier] || 'text-gray-400';
+};
 
 export default function GuildPage() {
-  const { user, setUser } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [myGuild, setMyGuild] = useState<Guild | null>(null);
   const [guilds, setGuilds] = useState<Guild[]>([]);
   const [missions, setMissions] = useState<GuildMission[]>([]);
@@ -105,7 +117,7 @@ export default function GuildPage() {
         setCreateForm({ name: '', tag: '', description: '' });
         // 유저 포인트 업데이트
         if (user) {
-          setUser({ ...user, points: response.data.data.pointsRemaining });
+          updateUser({ points: response.data.data.pointsRemaining });
         }
         fetchMyGuild();
       }
@@ -150,11 +162,11 @@ export default function GuildPage() {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'LEADER':
-        return <FaCrown className="text-yellow-400" />;
+        return <Crown className="w-4 h-4 text-yellow-400" />;
       case 'OFFICER':
-        return <FaShieldAlt className="text-blue-400" />;
+        return <Shield className="w-4 h-4 text-blue-400" />;
       default:
-        return <FaUserFriends className="text-gray-400" />;
+        return <UserPlus className="w-4 h-4 text-gray-400" />;
     }
   };
 
@@ -209,7 +221,7 @@ export default function GuildPage() {
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <FaUsers className="text-4xl text-purple-400" />
+            <Users className="w-10 h-10 text-purple-400" />
             <h1 className="text-4xl font-bold text-white">길드</h1>
           </div>
 
@@ -221,7 +233,7 @@ export default function GuildPage() {
                 onClick={() => setShowGuildList(true)}
                 className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
-                <FaUsers />
+                <Users className="w-5 h-5" />
                 <span>길드 목록</span>
               </motion.button>
               <motion.button
@@ -230,7 +242,7 @@ export default function GuildPage() {
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors"
               >
-                <FaPlus />
+                <Plus className="w-5 h-5" />
                 <span>길드 생성 (50,000P)</span>
               </motion.button>
             </div>
@@ -244,7 +256,7 @@ export default function GuildPage() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-gray-800/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-12 text-center"
           >
-            <FaUsers className="text-6xl text-purple-400 mx-auto mb-6" />
+            <Users className="w-16 h-16 text-purple-400 mx-auto mb-6" />
             <h2 className="text-3xl font-bold text-white mb-4">길드에 가입하세요!</h2>
             <p className="text-gray-300 mb-8">
               길드에 가입하여 다른 플레이어들과 함께 주간 미션을 완료하고 보상을 받으세요.
@@ -256,7 +268,7 @@ export default function GuildPage() {
                 onClick={() => setShowGuildList(true)}
                 className="flex items-center space-x-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-lg"
               >
-                <FaUsers />
+                <Users className="w-5 h-5" />
                 <span>길드 찾기</span>
               </motion.button>
               <motion.button
@@ -265,7 +277,7 @@ export default function GuildPage() {
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors text-lg"
               >
-                <FaPlus />
+                <Plus className="w-5 h-5" />
                 <span>길드 만들기</span>
               </motion.button>
             </div>
@@ -298,7 +310,7 @@ export default function GuildPage() {
                       onClick={handleLeaveGuild}
                       className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm"
                     >
-                      <FaSignOutAlt />
+                      <LogOut className="w-4 h-4" />
                       <span>탈퇴</span>
                     </motion.button>
                   )}
@@ -307,21 +319,21 @@ export default function GuildPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-black/30 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-yellow-400 mb-2">
-                      <FaTrophy />
+                      <Trophy className="w-4 h-4" />
                       <span className="text-sm">길드 레벨</span>
                     </div>
                     <div className="text-2xl font-bold text-white">{myGuild.level}</div>
                   </div>
                   <div className="bg-black/30 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-blue-400 mb-2">
-                      <FaStar />
+                      <Star className="w-4 h-4" />
                       <span className="text-sm">길드 포인트</span>
                     </div>
                     <div className="text-2xl font-bold text-white">{myGuild.points.toLocaleString()}</div>
                   </div>
                   <div className="bg-black/30 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-green-400 mb-2">
-                      <FaUsers />
+                      <Users className="w-5 h-5" />
                       <span className="text-sm">멤버</span>
                     </div>
                     <div className="text-2xl font-bold text-white">
@@ -330,7 +342,7 @@ export default function GuildPage() {
                   </div>
                   <div className="bg-black/30 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-purple-400 mb-2">
-                      <FaCrown />
+                      <Crown className="w-4 h-4" />
                       <span className="text-sm">내 역할</span>
                     </div>
                     <div className="text-lg font-bold text-white">{getRoleLabel(myGuild.myRole || 'MEMBER')}</div>
@@ -346,7 +358,7 @@ export default function GuildPage() {
                 className="bg-gray-800/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6"
               >
                 <div className="flex items-center space-x-3 mb-6">
-                  <FaTasks className="text-2xl text-purple-400" />
+                  <CheckCircle className="w-6 h-6 text-purple-400" />
                   <h3 className="text-2xl font-bold text-white">주간 미션</h3>
                 </div>
 
@@ -376,9 +388,9 @@ export default function GuildPage() {
                           </div>
                           <div className="flex items-center space-x-2 ml-4">
                             {mission.is_completed ? (
-                              <FaCheckCircle className="text-2xl text-green-400" />
+                              <CheckCircle className="w-6 h-6 text-green-400" />
                             ) : (
-                              <FaHourglassHalf className="text-2xl text-yellow-400" />
+                              <Clock className="w-6 h-6 text-yellow-400" />
                             )}
                           </div>
                         </div>
@@ -427,7 +439,7 @@ export default function GuildPage() {
               className="bg-gray-800/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6"
             >
               <div className="flex items-center space-x-3 mb-6">
-                <FaUsers className="text-2xl text-purple-400" />
+                <Users className="w-6 h-6 text-purple-400" />
                 <h3 className="text-2xl font-bold text-white">멤버 ({myGuild.member_count})</h3>
               </div>
 

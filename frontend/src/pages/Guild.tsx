@@ -12,9 +12,11 @@ import {
   CheckCircle,
   Clock,
 } from 'lucide-react';
-import api from '../lib/api';
+import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import type { Guild, GuildMission } from '../types';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const getTierColor = (tier: string) => {
   const colors: Record<string, string> = {
@@ -31,7 +33,7 @@ const getTierColor = (tier: string) => {
 };
 
 export default function GuildPage() {
-  const { user, updateUser } = useAuthStore();
+  const { user, token, updateUser } = useAuthStore();
   const [myGuild, setMyGuild] = useState<Guild | null>(null);
   const [guilds, setGuilds] = useState<Guild[]>([]);
   const [missions, setMissions] = useState<GuildMission[]>([]);
@@ -59,12 +61,17 @@ export default function GuildPage() {
   }, [myGuild]);
 
   const fetchMyGuild = async () => {
+    if (!token) return;
     try {
-      const response = await api.get('/guild/my');
+      const response = await axios.get(`${API_URL}/guild/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (response.data.data) {
         setMyGuild(response.data.data);
         // 상세 정보 조회
-        const detailResponse = await api.get(`/guild/${response.data.data.id}`);
+        const detailResponse = await axios.get(`${API_URL}/guild/${response.data.data.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setMyGuild(detailResponse.data.data);
       }
     } catch (error: any) {
@@ -75,8 +82,11 @@ export default function GuildPage() {
   };
 
   const fetchGuilds = async () => {
+    if (!token) return;
     try {
-      const response = await api.get('/guild');
+      const response = await axios.get(`${API_URL}/guild`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setGuilds(response.data.data);
     } catch (error: any) {
       console.error('Failed to fetch guilds:', error);
@@ -84,8 +94,11 @@ export default function GuildPage() {
   };
 
   const fetchMissions = async () => {
+    if (!token) return;
     try {
-      const response = await api.get('/guild/missions/weekly');
+      const response = await axios.get(`${API_URL}/guild/missions/weekly`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setMissions(response.data.data);
     } catch (error: any) {
       console.error('Failed to fetch missions:', error);
@@ -93,6 +106,7 @@ export default function GuildPage() {
   };
 
   const handleCreateGuild = async () => {
+    if (!token) return;
     try {
       if (!createForm.name || !createForm.tag) {
         alert('길드 이름과 태그를 입력해주세요.');
@@ -109,7 +123,9 @@ export default function GuildPage() {
         return;
       }
 
-      const response = await api.post('/guild/create', createForm);
+      const response = await axios.post(`${API_URL}/guild/create`, createForm, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.data.success) {
         alert(response.data.message);
@@ -127,8 +143,11 @@ export default function GuildPage() {
   };
 
   const handleJoinGuild = async (guildId: number) => {
+    if (!token) return;
     try {
-      const response = await api.post(`/guild/join/${guildId}`);
+      const response = await axios.post(`${API_URL}/guild/join/${guildId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.data.success) {
         alert(response.data.message);
@@ -142,12 +161,15 @@ export default function GuildPage() {
   };
 
   const handleLeaveGuild = async () => {
+    if (!token) return;
     if (!confirm('정말로 길드를 탈퇴하시겠습니까?')) {
       return;
     }
 
     try {
-      const response = await api.post('/guild/leave');
+      const response = await axios.post(`${API_URL}/guild/leave`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.data.success) {
         alert(response.data.message);

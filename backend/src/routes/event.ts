@@ -292,7 +292,13 @@ router.get('/rewards/cards', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         p.region,
         p.season,
         uc.level

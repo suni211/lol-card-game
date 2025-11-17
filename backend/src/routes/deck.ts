@@ -42,7 +42,13 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
           p.position,
           p.overall,
           p.region,
-          p.tier,
+          CASE
+            WHEN p.name LIKE 'ICON%' THEN 'ICON'
+            WHEN p.overall <= 80 THEN 'COMMON'
+            WHEN p.overall <= 90 THEN 'RARE'
+            WHEN p.overall <= 100 THEN 'EPIC'
+            ELSE 'LEGENDARY'
+          END as tier,
           p.laning,
           p.teamfight,
           p.macro,

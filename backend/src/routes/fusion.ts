@@ -39,7 +39,14 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get all cards and verify ownership
     const [cards]: any = await connection.query(
-      `SELECT uc.id, uc.user_id, uc.level, p.overall, p.name, p.tier
+      `SELECT uc.id, uc.user_id, uc.level, p.overall, p.name,
+       CASE
+         WHEN p.name LIKE 'ICON%' THEN 'ICON'
+         WHEN p.overall <= 80 THEN 'COMMON'
+         WHEN p.overall <= 90 THEN 'RARE'
+         WHEN p.overall <= 100 THEN 'EPIC'
+         ELSE 'LEGENDARY'
+       END as tier
        FROM user_cards uc
        JOIN players p ON uc.player_id = p.id
        WHERE uc.id IN (?) AND uc.user_id = ?`,
@@ -61,9 +68,21 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
     const resultTier = calculateFusionTier(totalOverall);
 
     // Get random player of that tier
+    let tierCondition = '';
+    if (resultTier === 'ICON') {
+      tierCondition = "name LIKE 'ICON%'";
+    } else if (resultTier === 'COMMON') {
+      tierCondition = "name NOT LIKE 'ICON%' AND overall <= 80";
+    } else if (resultTier === 'RARE') {
+      tierCondition = "name NOT LIKE 'ICON%' AND overall > 80 AND overall <= 90";
+    } else if (resultTier === 'EPIC') {
+      tierCondition = "name NOT LIKE 'ICON%' AND overall > 90 AND overall <= 100";
+    } else if (resultTier === 'LEGENDARY') {
+      tierCondition = "name NOT LIKE 'ICON%' AND overall > 100";
+    }
+
     const [players]: any = await connection.query(
-      'SELECT * FROM players WHERE tier = ? ORDER BY RAND() LIMIT 1',
-      [resultTier]
+      `SELECT * FROM players WHERE ${tierCondition} ORDER BY RAND() LIMIT 1`
     );
 
     if (players.length === 0) {

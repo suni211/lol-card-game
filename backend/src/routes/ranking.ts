@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
         COALESCE(MAX(s.longest_win_streak), 0) as longest_win_streak,
         ROUND((COALESCE(MAX(s.wins), 0) / NULLIF(COALESCE(MAX(s.total_matches), 0), 0)) * 100, 1) as win_rate,
         (SELECT COUNT(*) FROM user_cards uc WHERE uc.user_id = u.id) as total_cards,
-        (SELECT COUNT(*) FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.user_id = u.id AND p.tier = 'LEGENDARY') as legendary_cards
+        (SELECT COUNT(*) FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.user_id = u.id AND p.name NOT LIKE 'ICON%' AND p.overall > 100) as legendary_cards
       FROM users u
       LEFT JOIN user_stats s ON u.id = s.user_id
       WHERE u.is_admin = FALSE AND u.is_active = TRUE AND u.username NOT LIKE 'AI_%'
@@ -75,7 +75,13 @@ router.get('/popular-cards', async (req, res) => {
         p.team,
         p.position,
         p.overall,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         p.season,
         p.region,
         COUNT(DISTINCT d.user_id) as usage_count,
@@ -94,7 +100,7 @@ router.get('/popular-cards', async (req, res) => {
       ) d ON p.id IN (
         SELECT player_id FROM user_cards WHERE id = d.card_id
       )
-      GROUP BY p.id, p.name, p.team, p.position, p.overall, p.tier, p.season, p.region
+      GROUP BY p.id, p.name, p.team, p.position, p.overall, tier, p.season, p.region
       ORDER BY usage_count DESC, deck_count DESC
       LIMIT ?
     `, [parseInt(limit as string)]);
@@ -133,7 +139,13 @@ router.get('/popular-cards/:position', async (req, res) => {
         p.team,
         p.position,
         p.overall,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         p.season,
         p.region,
         COUNT(DISTINCT d.user_id) as usage_count,
@@ -142,7 +154,7 @@ router.get('/popular-cards/:position', async (req, res) => {
       JOIN user_cards uc ON p.id = uc.player_id
       JOIN decks d ON uc.id = d.${cardIdField}
       WHERE p.position = ?
-      GROUP BY p.id, p.name, p.team, p.position, p.overall, p.tier, p.season, p.region
+      GROUP BY p.id, p.name, p.team, p.position, p.overall, tier, p.season, p.region
       ORDER BY usage_count DESC, deck_count DESC
       LIMIT ?
     `, [position.toUpperCase(), parseInt(limit as string)]);
@@ -172,23 +184,53 @@ router.get('/top-decks', async (req, res) => {
         top_p.name as top_name,
         top_p.team as top_team,
         top_p.overall as top_overall,
-        top_p.tier as top_tier,
+        CASE
+          WHEN top_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN top_p.overall <= 80 THEN 'COMMON'
+          WHEN top_p.overall <= 90 THEN 'RARE'
+          WHEN top_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as top_tier,
         jungle_p.name as jungle_name,
         jungle_p.team as jungle_team,
         jungle_p.overall as jungle_overall,
-        jungle_p.tier as jungle_tier,
+        CASE
+          WHEN jungle_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN jungle_p.overall <= 80 THEN 'COMMON'
+          WHEN jungle_p.overall <= 90 THEN 'RARE'
+          WHEN jungle_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as jungle_tier,
         mid_p.name as mid_name,
         mid_p.team as mid_team,
         mid_p.overall as mid_overall,
-        mid_p.tier as mid_tier,
+        CASE
+          WHEN mid_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN mid_p.overall <= 80 THEN 'COMMON'
+          WHEN mid_p.overall <= 90 THEN 'RARE'
+          WHEN mid_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as mid_tier,
         adc_p.name as adc_name,
         adc_p.team as adc_team,
         adc_p.overall as adc_overall,
-        adc_p.tier as adc_tier,
+        CASE
+          WHEN adc_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN adc_p.overall <= 80 THEN 'COMMON'
+          WHEN adc_p.overall <= 90 THEN 'RARE'
+          WHEN adc_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as adc_tier,
         support_p.name as support_name,
         support_p.team as support_team,
         support_p.overall as support_overall,
-        support_p.tier as support_tier
+        CASE
+          WHEN support_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN support_p.overall <= 80 THEN 'COMMON'
+          WHEN support_p.overall <= 90 THEN 'RARE'
+          WHEN support_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as support_tier
       FROM decks d
       JOIN users u ON d.user_id = u.id
       LEFT JOIN user_cards top_uc ON d.top_card_id = top_uc.id

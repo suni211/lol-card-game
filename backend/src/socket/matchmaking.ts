@@ -121,7 +121,14 @@ async function matchWithAI(player: MatchmakingPlayer, io: Server) {
     for (const position of positions) {
       const [randomPlayers]: any = await connection.query(`
         SELECT
-          id, name, team, position, overall, tier, season,
+          id, name, team, position, overall, season,
+          CASE
+            WHEN name LIKE 'ICON%' THEN 'ICON'
+            WHEN overall <= 80 THEN 'COMMON'
+            WHEN overall <= 90 THEN 'RARE'
+            WHEN overall <= 100 THEN 'EPIC'
+            ELSE 'LEGENDARY'
+          END as tier,
           laning, teamfight, macro, mental,
           cs_ability, lane_pressure, damage_dealing, survivability,
           objective_control, vision_control, decision_making, consistency

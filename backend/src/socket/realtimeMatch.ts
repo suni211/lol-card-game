@@ -790,19 +790,59 @@ async function getDeckInfo(deckId: number) {
     const [decks]: any = await connection.query(`
       SELECT d.*,
         top_p.id as top_player_id, top_p.name as top_name, top_p.team as top_team,
-        top_p.position as top_position, top_p.overall as top_overall, top_p.tier as top_tier, top_p.season as top_season,
+        top_p.position as top_position, top_p.overall as top_overall,
+        CASE
+          WHEN top_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN top_p.overall <= 80 THEN 'COMMON'
+          WHEN top_p.overall <= 90 THEN 'RARE'
+          WHEN top_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as top_tier,
+        top_p.season as top_season,
         top_uc.level as top_level,
         jungle_p.id as jungle_player_id, jungle_p.name as jungle_name, jungle_p.team as jungle_team,
-        jungle_p.position as jungle_position, jungle_p.overall as jungle_overall, jungle_p.tier as jungle_tier, jungle_p.season as jungle_season,
+        jungle_p.position as jungle_position, jungle_p.overall as jungle_overall,
+        CASE
+          WHEN jungle_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN jungle_p.overall <= 80 THEN 'COMMON'
+          WHEN jungle_p.overall <= 90 THEN 'RARE'
+          WHEN jungle_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as jungle_tier,
+        jungle_p.season as jungle_season,
         jungle_uc.level as jungle_level,
         mid_p.id as mid_player_id, mid_p.name as mid_name, mid_p.team as mid_team,
-        mid_p.position as mid_position, mid_p.overall as mid_overall, mid_p.tier as mid_tier, mid_p.season as mid_season,
+        mid_p.position as mid_position, mid_p.overall as mid_overall,
+        CASE
+          WHEN mid_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN mid_p.overall <= 80 THEN 'COMMON'
+          WHEN mid_p.overall <= 90 THEN 'RARE'
+          WHEN mid_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as mid_tier,
+        mid_p.season as mid_season,
         mid_uc.level as mid_level,
         adc_p.id as adc_player_id, adc_p.name as adc_name, adc_p.team as adc_team,
-        adc_p.position as adc_position, adc_p.overall as adc_overall, adc_p.tier as adc_tier, adc_p.season as adc_season,
+        adc_p.position as adc_position, adc_p.overall as adc_overall,
+        CASE
+          WHEN adc_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN adc_p.overall <= 80 THEN 'COMMON'
+          WHEN adc_p.overall <= 90 THEN 'RARE'
+          WHEN adc_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as adc_tier,
+        adc_p.season as adc_season,
         adc_uc.level as adc_level,
         support_p.id as support_player_id, support_p.name as support_name, support_p.team as support_team,
-        support_p.position as support_position, support_p.overall as support_overall, support_p.tier as support_tier, support_p.season as support_season,
+        support_p.position as support_position, support_p.overall as support_overall,
+        CASE
+          WHEN support_p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN support_p.overall <= 80 THEN 'COMMON'
+          WHEN support_p.overall <= 90 THEN 'RARE'
+          WHEN support_p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as support_tier,
+        support_p.season as support_season,
         support_uc.level as support_level
       FROM decks d
       LEFT JOIN user_cards top_uc ON d.top_card_id = top_uc.id

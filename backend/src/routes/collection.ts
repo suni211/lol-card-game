@@ -25,8 +25,18 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     const params: any[] = [userId];
 
     if (tier) {
-      query += ' AND p.tier = ?';
-      params.push(tier);
+      // Calculate tier from overall rating
+      if (tier === 'ICON') {
+        query += " AND p.name LIKE 'ICON%'";
+      } else if (tier === 'COMMON') {
+        query += " AND p.name NOT LIKE 'ICON%' AND p.overall <= 80";
+      } else if (tier === 'RARE') {
+        query += " AND p.name NOT LIKE 'ICON%' AND p.overall > 80 AND p.overall <= 90";
+      } else if (tier === 'EPIC') {
+        query += " AND p.name NOT LIKE 'ICON%' AND p.overall > 90 AND p.overall <= 100";
+      } else if (tier === 'LEGENDARY') {
+        query += " AND p.name NOT LIKE 'ICON%' AND p.overall > 100";
+      }
     }
 
     if (season) {
@@ -90,12 +100,18 @@ router.get('/progress', authMiddleware, async (req: AuthRequest, res) => {
     // Get tier-wise progress
     const [tierProgress]: any = await pool.query(
       `SELECT
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         COUNT(DISTINCT ucc.player_id) as collected,
         COUNT(DISTINCT p.id) as total
        FROM players p
        LEFT JOIN user_collected_cards ucc ON p.id = ucc.player_id AND ucc.user_id = ?
-       GROUP BY p.tier`,
+       GROUP BY tier`,
       [userId]
     );
 
@@ -214,12 +230,25 @@ router.post('/milestones/claim', authMiddleware, async (req: AuthRequest, res) =
       collectedCount = count[0].count;
       meetsRequirement = collectedCount >= milestone.required_cards;
     } else if (milestone.milestone_type === 'TIER') {
+      let tierCondition = '';
+      if (milestone.filter_value === 'ICON') {
+        tierCondition = "p.name LIKE 'ICON%'";
+      } else if (milestone.filter_value === 'COMMON') {
+        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall <= 80";
+      } else if (milestone.filter_value === 'RARE') {
+        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall > 80 AND p.overall <= 90";
+      } else if (milestone.filter_value === 'EPIC') {
+        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall > 90 AND p.overall <= 100";
+      } else if (milestone.filter_value === 'LEGENDARY') {
+        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall > 100";
+      }
+
       const [count]: any = await connection.query(
         `SELECT COUNT(DISTINCT ucc.player_id) as count
          FROM user_collected_cards ucc
          JOIN players p ON ucc.player_id = p.id
-         WHERE ucc.user_id = ? AND p.tier = ?`,
-        [userId, milestone.filter_value]
+         WHERE ucc.user_id = ? AND ${tierCondition}`,
+        [userId]
       );
       collectedCount = count[0].count;
       meetsRequirement = collectedCount >= milestone.required_cards;

@@ -160,8 +160,8 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
         WHERE name = ? AND position = ?
           AND (
             (? <= 11 AND team IN ('LCP', 'LTA'))
-            OR (? BETWEEN 12 AND 49 AND tier != 'ICON' AND region IN ('LPL', 'LCK', 'LEC'))
-            OR (? = 50 AND tier = 'ICON')
+            OR (? BETWEEN 12 AND 49 AND name NOT LIKE 'ICON%' AND region IN ('LPL', 'LCK', 'LEC'))
+            OR (? = 50 AND name LIKE 'ICON%')
           )
         ORDER BY overall DESC
         LIMIT 1
@@ -184,8 +184,8 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
           WHERE position = ?
             AND (
               (? <= 11 AND team IN ('LCP', 'LTA'))
-              OR (? BETWEEN 12 AND 49 AND tier != 'ICON' AND region IN ('LPL', 'LCK', 'LEC'))
-              OR (? = 50 AND tier = 'ICON')
+              OR (? BETWEEN 12 AND 49 AND name NOT LIKE 'ICON%' AND region IN ('LPL', 'LCK', 'LEC'))
+              OR (? = 50 AND name LIKE 'ICON%')
             )
           ORDER BY RAND()
           LIMIT 1
@@ -278,7 +278,10 @@ router.post('/battle/:stageNumber', authMiddleware, async (req: AuthRequest, res
           position: e.position,
           overall: e.overall,
           region: e.region,
-          tier: e.tier,
+          tier: e.name && e.name.startsWith('ICON') ? 'ICON' :
+                e.overall <= 80 ? 'COMMON' :
+                e.overall <= 90 ? 'RARE' :
+                e.overall <= 100 ? 'EPIC' : 'LEGENDARY',
           season: e.season,
           level: isHardMode ? e.hard_enhancement_level : e.enhancement_level
         })),
@@ -390,7 +393,7 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
     if (isHardMode && stageNumber === 50 && !alreadyCleared) {
       // Award ICON pack - give a random ICON player
       const [iconPlayers]: any = await connection.query(
-        "SELECT * FROM players WHERE tier = 'ICON' ORDER BY RAND() LIMIT 1"
+        "SELECT * FROM players WHERE name LIKE 'ICON%' ORDER BY RAND() LIMIT 1"
       );
 
       if (iconPlayers.length > 0) {

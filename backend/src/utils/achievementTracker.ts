@@ -115,12 +115,18 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
     // Get tier-specific card counts
     const [tierCounts]: any = await connection.query(`
       SELECT
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         COUNT(*) as count
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.user_id = ?
-      GROUP BY p.tier
+      GROUP BY tier
     `, [userId]);
 
     for (const tier of tierCounts) {

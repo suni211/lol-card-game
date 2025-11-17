@@ -29,7 +29,13 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         p.region,
         p.season,
         uc.level,
@@ -51,8 +57,18 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     if (tier) {
-      query += ' AND p.tier = ?';
-      params.push(tier);
+      // Filter by tier based on overall ranges
+      if (tier === 'ICON') {
+        query += " AND p.name LIKE 'ICON%'";
+      } else if (tier === 'COMMON') {
+        query += " AND p.overall <= 80 AND p.name NOT LIKE 'ICON%'";
+      } else if (tier === 'RARE') {
+        query += " AND p.overall > 80 AND p.overall <= 90 AND p.name NOT LIKE 'ICON%'";
+      } else if (tier === 'EPIC') {
+        query += " AND p.overall > 90 AND p.overall <= 100 AND p.name NOT LIKE 'ICON%'";
+      } else if (tier === 'LEGENDARY') {
+        query += " AND p.overall > 100 AND p.name NOT LIKE 'ICON%'";
+      }
     }
 
     if (position) {
@@ -93,7 +109,13 @@ router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) =>
       `SELECT
         pmp.*,
         p.name,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         p.team,
         p.position,
         p.overall
@@ -173,7 +195,15 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get card info
     const [cards]: any = await connection.query(
-      `SELECT uc.*, p.id as player_id, p.tier, p.overall
+      `SELECT uc.*, p.id as player_id,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
+        p.overall
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id = ? AND uc.user_id = ?`,
@@ -284,7 +314,15 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
 
     // Get listing info
     const [listings]: any = await connection.query(
-      `SELECT mt.*, p.tier, p.name as player_name
+      `SELECT mt.*,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
+        p.name as player_name
       FROM market_transactions mt
       JOIN players p ON mt.player_id = p.id
       WHERE mt.id = ? AND mt.status = 'LISTED'
@@ -518,7 +556,13 @@ router.get('/my-listings', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
-        p.tier,
+        CASE
+          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
         uc.level,
         CASE WHEN mt.buyer_id IS NOT NULL THEN u.username ELSE NULL END as buyer_username
       FROM market_transactions mt

@@ -1,0 +1,41 @@
+-- Reset all user data (Delete all users and related data)
+-- WARNING: This will delete ALL user data including admin accounts!
+
+USE lol_card_game;
+
+-- Disable foreign key checks temporarily
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Delete all user-related data
+DELETE FROM user_cards;
+DELETE FROM user_collected_cards;
+DELETE FROM gacha_history;
+DELETE FROM user_gacha_pity;
+DELETE FROM deck_cards;
+DELETE FROM decks;
+DELETE FROM battles;
+DELETE FROM battle_logs;
+DELETE FROM trades;
+DELETE FROM market_listings;
+DELETE FROM user_missions;
+DELETE FROM user_achievements;
+DELETE FROM user_referrals;
+DELETE FROM user_guild_members;
+DELETE FROM infinite_challenge_progress;
+DELETE FROM user_coaches;
+DELETE FROM users;
+
+-- Re-enable foreign key checks
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- Verify deletion
+SELECT 'Users deleted:' as status, COUNT(*) as count FROM users;
+SELECT 'User cards deleted:' as status, COUNT(*) as count FROM user_cards;
+SELECT 'Gacha history deleted:' as status, COUNT(*) as count FROM gacha_history;
+SELECT 'Decks deleted:' as status, COUNT(*) as count FROM decks;
+SELECT 'Battles deleted:' as status, COUNT(*) as count FROM battles;
+
+-- Optional: Create new admin account
+-- Uncomment if you want to create a fresh admin account after reset
+-- INSERT INTO users (username, password, points, tier, rating, is_admin, level, exp)
+-- VALUES ('admin', '$2b$10$YourHashedPasswordHere', 1000000, 'BRONZE', 1000, 1, 1, 0);

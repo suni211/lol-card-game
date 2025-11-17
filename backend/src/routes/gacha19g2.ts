@@ -167,12 +167,12 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
       // Reset pity counter
       pullCount = 0;
     } else {
-      // 에픽 이상 확정 + 아이콘 0.025%
+      // 에픽 이상 확정 + 아이콘 0.001%
       // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
       const tierRoll = Math.random();
       let tier;
       let minOverall = 91, maxOverall = 100;
-      if (tierRoll < 0.00025) {
+      if (tierRoll < 0.00001) {
         tier = 'ICON';
         // ICON tier: special handling
         const [players]: any = await connection.query(
@@ -180,7 +180,7 @@ router.post('/premium', authMiddleware, async (req: AuthRequest, res) => {
           ['19G2', '18WC', '17SSG', '25WW%', '25WUD%', '17SSG%']
         );
         player = players[0];
-      } else if (tierRoll < 0.69975) {
+      } else if (tierRoll < 0.69989) {
         tier = 'EPIC';
         minOverall = 91; maxOverall = 100;
       } else {

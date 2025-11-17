@@ -6,22 +6,12 @@ USE lol_card_game;
 -- Disable foreign key checks temporarily
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Delete all user-related data (only tables that exist)
+-- Delete all user-related data (only core tables that definitely exist)
 DELETE FROM user_cards;
-DELETE FROM user_collected_cards;
 DELETE FROM gacha_history;
-DELETE FROM user_gacha_pity;
 DELETE FROM decks;
-DELETE FROM battles;
 DELETE FROM trades;
 DELETE FROM market_listings;
-DELETE FROM user_missions;
-DELETE FROM user_achievements;
-DELETE FROM referrals;
-DELETE FROM referral_bonuses;
-DELETE FROM infinite_challenge_progress;
-DELETE FROM user_coaches;
-DELETE FROM user_stats;
 DELETE FROM users;
 
 -- Re-enable foreign key checks

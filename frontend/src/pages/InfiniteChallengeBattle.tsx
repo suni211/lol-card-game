@@ -28,7 +28,6 @@ interface BattlePhase {
 export default function InfiniteChallengeBattle() {
   const navigate = useNavigate();
   const { token } = useAuthStore();
-  const [battling, setBattling] = useState(false);
   const [result, setResult] = useState<BattleResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [battlePhase, setBattlePhase] = useState<BattlePhase>({
@@ -88,7 +87,6 @@ export default function InfiniteChallengeBattle() {
 
   const startBattle = async () => {
     try {
-      setBattling(true);
       setResult(null);
       setBattlePhase({ phase: 'loading', playerHP: 100, aiHP: 100, turn: 0 });
 
@@ -113,8 +111,6 @@ export default function InfiniteChallengeBattle() {
       console.error('Battle error:', error);
       toast.error(error.response?.data?.error || '전투 실패');
       navigate('/infinite-challenge');
-    } finally {
-      setBattling(false);
     }
   };
 

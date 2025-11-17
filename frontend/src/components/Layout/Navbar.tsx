@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown, Gift, Swords, Zap } from 'lucide-react';
+import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useThemeStore } from '../../store/themeStore';

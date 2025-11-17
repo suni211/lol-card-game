@@ -202,7 +202,7 @@ const InfiniteChallenge: React.FC = () => {
           ))}
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-4 text-center">
-          보상 공식: Stage × 50 + (Stage² × 10)
+          보상 공식: Stage × 10 + (Stage² × 2)
         </p>
       </motion.div>
 

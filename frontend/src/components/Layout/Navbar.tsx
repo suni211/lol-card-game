@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown, Gift } from 'lucide-react';
+import { Moon, Sun, Trophy, User as UserIcon, LogOut, Users, ChevronDown, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
+import type { User } from '../../types';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
@@ -32,6 +33,14 @@ export default function Navbar() {
       setOnlineUsers(count);
     });
 
+    // Listen for user updates (points, tier, level changes)
+    socket.on('user_update', (updatedUser: Partial<User>) => {
+      if (user && updatedUser) {
+        console.log('User update received:', updatedUser);
+        useAuthStore.getState().updateUser(updatedUser);
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log('Socket disconnected');
     });
@@ -40,7 +49,7 @@ export default function Navbar() {
       console.log('Cleaning up socket connection');
       socket.disconnect();
     };
-  }, []);
+  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -270,7 +279,7 @@ export default function Navbar() {
                   to="/profile"
                   className="flex items-center space-x-1 px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
-                  <User className="w-4 h-4" />
+                  <UserIcon className="w-4 h-4" />
                   <span className="hidden lg:inline text-sm font-medium">
                     {user.guild_tag && (
                       <span className="text-purple-600 dark:text-purple-400 font-bold mr-1">

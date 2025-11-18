@@ -860,6 +860,15 @@ export function setupRealtimeMatch(io: Server, socket: Socket, user: any) {
 
     // 둘 다 준비되면 라운드 처리 (AI는 이미 준비됨)
     if (match.player1.ready && match.player2.ready) {
+      console.log('✅ Both players ready, starting processRound');
+
+      // 기존 타임아웃 타이머 제거 (중요!)
+      if (match.roundTimer) {
+        clearTimeout(match.roundTimer);
+        match.roundTimer = undefined;
+        console.log('🔥 Cleared round timeout timer');
+      }
+
       await processRound(data.matchId, io);
     }
   });

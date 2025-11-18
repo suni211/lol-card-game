@@ -20,6 +20,7 @@ import {
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import type { Guild, GuildMission, GuildJoinRequest } from '../types';
+import GuildChat from '../components/GuildChat';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -647,51 +648,56 @@ export default function GuildPage() {
               </motion.div>
             </div>
 
-            {/* 멤버 목록 */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gray-800/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6"
-            >
-              <div className="flex items-center space-x-3 mb-6">
-                <Users className="w-6 h-6 text-purple-400" />
-                <h3 className="text-2xl font-bold text-white">멤버 ({myGuild.member_count})</h3>
-              </div>
+            {/* 멤버 목록 및 채팅 */}
+            <div className="space-y-6">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-gray-800/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6"
+              >
+                <div className="flex items-center space-x-3 mb-6">
+                  <Users className="w-6 h-6 text-purple-400" />
+                  <h3 className="text-2xl font-bold text-white">멤버 ({myGuild.member_count})</h3>
+                </div>
 
-              <div className="space-y-3 max-h-[800px] overflow-y-auto">
-                {myGuild.members && myGuild.members.length > 0 ? (
-                  myGuild.members.map((member) => (
-                    <motion.div
-                      key={member.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="bg-gray-900/50 border border-gray-700/30 rounded-lg p-4"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          {getRoleIcon(member.role)}
-                          <span className="font-bold text-white">{member.username}</span>
-                          {member.level && (
-                            <span className="text-xs px-2 py-0.5 bg-amber-500 text-white rounded">
-                              LV {member.level}
-                            </span>
-                          )}
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {myGuild.members && myGuild.members.length > 0 ? (
+                    myGuild.members.map((member) => (
+                      <motion.div
+                        key={member.id}
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-gray-900/50 border border-gray-700/30 rounded-lg p-4"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            {getRoleIcon(member.role)}
+                            <span className="font-bold text-white">{member.username}</span>
+                            {member.level && (
+                              <span className="text-xs px-2 py-0.5 bg-amber-500 text-white rounded">
+                                LV {member.level}
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-xs font-bold ${getTierColor(member.tier)}`}>{member.tier}</span>
                         </div>
-                        <span className={`text-xs font-bold ${getTierColor(member.tier)}`}>{member.tier}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">
-                          {member.wins}승 {member.losses}패
-                        </span>
-                        <span className="text-purple-400 font-bold">{member.contribution.toLocaleString()} 기여도</span>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-400 py-8">멤버가 없습니다.</div>
-                )}
-              </div>
-            </motion.div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400">
+                            {member.wins}승 {member.losses}패
+                          </span>
+                          <span className="text-purple-400 font-bold">{member.contribution.toLocaleString()} 기여도</span>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-400 py-8">멤버가 없습니다.</div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* 길드 채팅 */}
+              <GuildChat guildId={myGuild.id} guildTag={myGuild.tag} />
+            </div>
           </div>
         )}
 

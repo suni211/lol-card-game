@@ -74,6 +74,8 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Disable validation for trust proxy (we're behind Nginx)
+  validate: { trustProxy: false },
   skip: (req) => {
     // Skip rate limiting for socket.io connections
     return req.url.includes('/socket.io/');
@@ -153,6 +155,10 @@ const authenticatedUsers = new Map<number, string>(); // userId -> socketId
 // Chat message history (in-memory, limited to 100 messages)
 const chatHistory: any[] = [];
 const MAX_CHAT_HISTORY = 100;
+
+// Guild chat history (per guild, limited to 50 messages each)
+const guildChatHistory = new Map<number, any[]>(); // guildId -> messages[]
+const MAX_GUILD_CHAT_HISTORY = 50;
 
 // Helper function to get client IP (works with Nginx reverse proxy)
 function getClientIP(socket: any): string {
@@ -237,6 +243,63 @@ io.on('connection', (socket) => {
 
     // Broadcast to all connected clients
     io.emit('chat_message', chatMessage);
+  });
+
+  // Guild chat events
+  socket.on('guild_chat_join', (data: { guildId: number }) => {
+    const guildId = data.guildId;
+    const roomName = `guild_${guildId}`;
+
+    // Join guild room
+    socket.join(roomName);
+
+    // Initialize guild chat history if not exists
+    if (!guildChatHistory.has(guildId)) {
+      guildChatHistory.set(guildId, []);
+    }
+
+    // Send chat history to newly joined user
+    socket.emit('guild_chat_history', guildChatHistory.get(guildId));
+    console.log(`Socket ${socket.id} joined guild chat room: ${roomName}`);
+  });
+
+  socket.on('guild_chat_leave', (data: { guildId: number }) => {
+    const roomName = `guild_${data.guildId}`;
+    socket.leave(roomName);
+    console.log(`Socket ${socket.id} left guild chat room: ${roomName}`);
+  });
+
+  socket.on('guild_chat_message', (data: { guildId: number; username: string; message: string; tier?: string; guildTag?: string }) => {
+    const guildId = data.guildId;
+    const roomName = `guild_${guildId}`;
+
+    const chatMessage = {
+      id: Date.now() + Math.random(),
+      username: data.username,
+      message: data.message,
+      tier: data.tier || 'IRON',
+      guildTag: data.guildTag,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Initialize guild chat history if not exists
+    if (!guildChatHistory.has(guildId)) {
+      guildChatHistory.set(guildId, []);
+    }
+
+    const history = guildChatHistory.get(guildId)!;
+
+    // Add to guild history
+    history.push(chatMessage);
+
+    // Limit history size
+    if (history.length > MAX_GUILD_CHAT_HISTORY) {
+      history.shift();
+    }
+
+    // Broadcast to all members in the guild room
+    io.to(roomName).emit('guild_chat_message', chatMessage);
+    console.log(`Guild chat message in ${roomName}: ${data.username}: ${data.message}`);
   });
 
   // Remove socket on disconnect

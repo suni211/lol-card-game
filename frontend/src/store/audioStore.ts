@@ -21,7 +21,7 @@ export const useAudioStore = create<AudioState>()(
   persist(
     (set, get) => ({
       volume: 0.5,
-      isMuted: false,
+      isMuted: true, // 기본값을 음소거로 변경 (사용자가 직접 켜도록)
       isPlaying: false,
       currentTrack: null,
       audio: null,
@@ -30,7 +30,19 @@ export const useAudioStore = create<AudioState>()(
       initAudio: () => {
         const audio = new Audio();
         audio.loop = true;
-        audio.volume = get().isMuted ? 0 : get().volume;
+        // localStorage에서 설정 불러오기
+        const savedSettings = localStorage.getItem('audio-settings');
+        if (savedSettings) {
+          try {
+            const { isMuted, volume } = JSON.parse(savedSettings);
+            audio.volume = isMuted ? 0 : volume;
+            set({ isMuted, volume });
+          } catch (e) {
+            audio.volume = 0; // 파싱 실패시 음소거
+          }
+        } else {
+          audio.volume = 0; // 저장된 설정이 없으면 음소거
+        }
         set({ audio });
       },
 

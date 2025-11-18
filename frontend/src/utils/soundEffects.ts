@@ -9,8 +9,18 @@ class SoundEffectsManager {
   private enabled: boolean = true;
 
   constructor() {
-    // AudioContext는 사용자 인터랙션 후에 생성
+    // localStorage에서 사운드 설정 불러오기
     if (typeof window !== 'undefined') {
+      const savedEnabled = localStorage.getItem('soundEnabled');
+      if (savedEnabled !== null) {
+        this.enabled = savedEnabled === 'true';
+      }
+
+      const savedVolume = localStorage.getItem('soundVolume');
+      if (savedVolume !== null) {
+        this.masterVolume = parseFloat(savedVolume);
+      }
+
       this.initAudioContext();
     }
   }

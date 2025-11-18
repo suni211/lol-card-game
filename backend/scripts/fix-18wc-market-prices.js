@@ -45,10 +45,10 @@ async function fix18WCMarketPrices() {
         continue;
       }
 
-      // Calculate base price based on overall
-      const basePrice = Math.floor(player.overall * 10);
-      const priceFloor = Math.floor(basePrice * 0.5);
-      const priceCeiling = Math.floor(basePrice * 2);
+      // Calculate base price based on overall (same as other seasons: overall * 200)
+      const basePrice = Math.floor(player.overall * 200);
+      const priceFloor = Math.floor(player.overall * 150);
+      const priceCeiling = Math.floor(player.overall * 300);
 
       // Add to market prices
       await connection.query(`

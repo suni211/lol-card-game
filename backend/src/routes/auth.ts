@@ -63,6 +63,69 @@ router.post('/google', async (req, res) => {
       const user = existing[0];
       userId = user.id;
       username = user.username;
+
+      // 다중 계정 로그인 체크 (같은 IP에서 다른 계정 로그인 시도)
+      const [sameIpUsers]: any = await connection.query(
+        `SELECT id, username, email,
+                COALESCE(multi_account_ban_until, '1970-01-01') as ban_until
+         FROM users
+         WHERE last_login_ip = ? AND id != ? AND email != ?
+         ORDER BY last_login_at DESC
+         LIMIT 1`,
+        [clientIp, userId, email]
+      );
+
+      if (sameIpUsers.length > 0) {
+        const otherUser = sameIpUsers[0];
+        const now = new Date();
+        const banUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후
+
+        console.log(`🚨 Multi-account detected! IP: ${clientIp}`);
+        console.log(`   └─ User 1: ${otherUser.username} (${otherUser.email})`);
+        console.log(`   └─ User 2: ${username} (${email})`);
+
+        // 두 계정 모두 정지
+        await connection.query(
+          `UPDATE users
+           SET multi_account_ban_until = ?,
+               suspended_reason = ?
+           WHERE id IN (?, ?)`,
+          [
+            banUntil,
+            `다중 계정 사용 적발 (IP: ${clientIp.substring(0, 10)}...) - 7일 정지`,
+            userId,
+            otherUser.id
+          ]
+        );
+
+        return res.status(403).json({
+          success: false,
+          error: '다중 계정 사용이 감지되었습니다.',
+          message: `같은 IP에서 다른 계정(${otherUser.username})이 감지되어 두 계정 모두 7일간 정지되었습니다.`,
+          banUntil: banUntil.toISOString()
+        });
+      }
+
+      // 현재 정지 상태 확인
+      if (user.multi_account_ban_until) {
+        const banUntil = new Date(user.multi_account_ban_until);
+        const now = new Date();
+
+        if (banUntil > now) {
+          return res.status(403).json({
+            success: false,
+            error: '계정이 정지되었습니다.',
+            message: user.suspended_reason || '다중 계정 사용으로 정지되었습니다.',
+            banUntil: banUntil.toISOString()
+          });
+        }
+      }
+
+      // 로그인 IP 업데이트
+      await connection.query(
+        'UPDATE users SET last_login_ip = ?, last_login_at = NOW() WHERE id = ?',
+        [clientIp, userId]
+      );
     } else {
       // New user - register
       isNewUser = true;

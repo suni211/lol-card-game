@@ -159,9 +159,18 @@ export default function Register() {
             <p className="text-gray-600 dark:text-gray-400">
               Google 계정으로 간편하게 시작하세요!
             </p>
-            <p className="text-sm text-primary-600 dark:text-primary-400 mt-2">
-              가입하면 1000 포인트를 드립니다!
-            </p>
+            <div className="mt-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-4">
+              <p className="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">
+                🎁 신규 가입 혜택!
+              </p>
+              <div className="space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
+                <p>✨ 10,000 포인트 지급</p>
+                <p>🎴 환영 카드팩 5개 지급</p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+                  (환영 카드팩은 가챠 페이지에서 확인 가능)
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Referral Code Input */}

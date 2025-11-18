@@ -102,12 +102,30 @@ router.post('/start', authMiddleware, async (req: AuthRequest, res) => {
     );
 
     if (progress.length === 0) {
+      // New user - create fresh progress
       await connection.query(
         'INSERT INTO infinite_challenge_progress (user_id, is_active, started_at) VALUES (?, TRUE, NOW())',
         [userId]
       );
+    } else if (progress[0].is_active) {
+      // Already has active challenge - don't reset, just continue
+      console.log(`[Infinite Challenge] User ${userId} continuing active challenge at stage ${progress[0].current_stage}`);
+      await connection.commit();
+
+      const nextReward = calculateStageReward(progress[0].current_stage);
+      const aiDifficulty = calculateAIDifficulty(progress[0].current_stage);
+
+      return res.json({
+        success: true,
+        data: {
+          ...progress[0],
+          nextReward,
+          aiDifficulty,
+        },
+        message: `스테이지 ${progress[0].current_stage} 계속 진행!`,
+      });
     } else {
-      // Reset to stage 1
+      // Had previous challenge but it's not active - reset to stage 1
       await connection.query(
         `UPDATE infinite_challenge_progress
          SET current_stage = 1, is_active = TRUE, started_at = NOW()
@@ -124,8 +142,8 @@ router.post('/start', authMiddleware, async (req: AuthRequest, res) => {
       [userId]
     );
 
-    const nextReward = calculateStageReward(1);
-    const aiDifficulty = calculateAIDifficulty(1);
+    const nextReward = calculateStageReward(progress[0].current_stage);
+    const aiDifficulty = calculateAIDifficulty(progress[0].current_stage);
 
     res.json({
       success: true,

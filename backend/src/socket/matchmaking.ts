@@ -7,6 +7,24 @@ import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { createRealtimeMatch, setupRealtimeMatch, handlePlayerDisconnect } from './realtimeMatch';
 
+// 해피아워 체크 (20:00-21:00 KST)
+function isHappyHour(): boolean {
+  const now = new Date();
+  const kstOffset = 9 * 60; // KST is UTC+9
+  const kstTime = new Date(now.getTime() + kstOffset * 60 * 1000);
+  const hour = kstTime.getUTCHours();
+  return hour === 20; // 20시(8PM)
+}
+
+// 해피아워 보너스 적용
+function applyHappyHourBonus(points: number): number {
+  if (isHappyHour()) {
+    console.log(`🎉 Happy Hour! Points: ${points} → ${Math.floor(points * 1.05)}`);
+    return Math.floor(points * 1.05); // +5% 보너스
+  }
+  return points;
+}
+
 interface MatchmakingPlayer {
   socketId: string;
   userId: number;
@@ -246,7 +264,11 @@ async function processMatch(player1: MatchmakingPlayer, player2: MatchmakingPlay
       const won = winnerId === player.userId;
 
       // Practice mode: lower rewards, no rating change
-      const pointsChange = isPractice ? (won ? 350 : 100) : (won ? 650 : 200);
+      let pointsChange = isPractice ? (won ? 350 : 100) : (won ? 650 : 200);
+
+      // 해피아워 보너스 적용
+      pointsChange = applyHappyHourBonus(pointsChange);
+
       let ratingChange = isPractice ? 0 : (won ? 25 : -15);
 
       // Get current rating to prevent going below 1000

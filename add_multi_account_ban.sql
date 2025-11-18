@@ -2,6 +2,7 @@
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(100);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at DATETIME;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS multi_account_ban_until DATETIME;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_reason VARCHAR(500);
 
 -- 인덱스 추가 (성능 향상)
 CREATE INDEX IF NOT EXISTS idx_last_login_ip ON users(last_login_ip);

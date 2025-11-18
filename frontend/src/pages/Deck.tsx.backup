@@ -1,0 +1,1130 @@
+import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Save, Info, Target, Users, Map, X, Eye, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '../store/authStore';
+import axios from 'axios';
+import { getPlayerImageUrl } from '../utils/playerImage';
+import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumCard from '../components/ui/PremiumCard';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+interface Player {
+  id: number;
+  name: string;
+  team: string;
+  position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT';
+  overall: number;
+  region: string;
+  tier: string;
+  season?: string;
+  // 기존 4개 스탯
+  laning?: number;
+  teamfight?: number;
+  macro?: number;
+  mental?: number;
+  // 8개 세부 스탯
+  cs_ability?: number;
+  lane_pressure?: number;
+  damage_dealing?: number;
+  survivability?: number;
+  objective_control?: number;
+  vision_control?: number;
+  decision_making?: number;
+  consistency?: number;
+  // 특성
+  trait1?: string;
+  trait2?: string;
+  trait3?: string;
+}
+
+interface UserCard {
+  id: number;
+  userId: number;
+  playerId: number;
+  level: number;
+  player: Player;
+}
+
+interface DeckSlot {
+  position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT';
+  label: string;
+  card: UserCard | null;
+}
+
+const LANING_STRATEGIES = [
+  { value: 'SAFE', label: '안전한', description: '안정적인 성장으로 후반 대비', counters: ['PUSH'], weakTo: ['AGGRESSIVE'] },
+  { value: 'TRADE', label: '트레이딩', description: '짧은 교환으로 체력 우위 확보', counters: ['SAFE'], weakTo: ['AGGRESSIVE'] },
+  { value: 'AGGRESSIVE', label: '공격적', description: '적극적인 라인전으로 초반 우위 확보', counters: ['TRADE'], weakTo: ['PUSH'] },
+  { value: 'PUSH', label: '푸쉬', description: '지속적인 라인 푸쉬로 타워 압박', counters: ['AGGRESSIVE'], weakTo: ['SAFE'] },
+];
+
+const TEAMFIGHT_STRATEGIES = [
+  { value: 'ENGAGE', label: '이니시에이팅', description: '적극적인 교전 시작', counters: ['POKE'], weakTo: ['PROTECT'] },
+  { value: 'POKE', label: '포킹', description: '원거리 견제로 상대 소모', counters: ['PROTECT'], weakTo: ['ENGAGE'] },
+  { value: 'PICK', label: '픽', description: '고립된 적 척살', counters: ['ENGAGE'], weakTo: ['POKE'] },
+  { value: 'PROTECT', label: '보호', description: '캐리 보호 중심의 플레이', counters: ['PICK'], weakTo: ['POKE'] },
+];
+
+const MACRO_STRATEGIES = [
+  { value: 'OBJECTIVE', label: '오브젝트', description: '드래곤/바론 등 중요 목표 확보', counters: ['SPLIT'], weakTo: ['VISION'] },
+  { value: 'SPLIT', label: '스플릿', description: '1-4 스플릿 푸쉬 운영', counters: ['VISION'], weakTo: ['OBJECTIVE'] },
+  { value: 'VISION', label: '시야', description: '맵 장악 및 시야 싸움', counters: ['TEMPO'], weakTo: ['SPLIT'] },
+  { value: 'TEMPO', label: '템포', description: '빠른 라인 이동으로 압박', counters: ['OBJECTIVE'], weakTo: ['VISION'] },
+];
+
+// Normalize team name (SKT and T1 are treated as same team)
+const normalizeTeamName = (team: string): string => {
+  if (!team) return '';
+  const upperTeam = team.toUpperCase();
+  if (upperTeam === 'SKT' || upperTeam === 'T1') return 'T1';
+  return team;
+};
+
+// Calculate team synergy
+const calculateTeamSynergy = (slots: DeckSlot[]) => {
+  const teams: { [key: string]: number } = {};
+  let totalPower = 0;
+
+  slots.forEach(slot => {
+    if (slot.card) {
+      const power = slot.card.player.overall + slot.card.level;
+      totalPower += power;
+
+      const synergyTeam = normalizeTeamName(slot.card.player.team);
+      teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+    }
+  });
+
+  let synergyBonus = 0;
+  const synergyDetails: { team: string; count: number; bonus: number }[] = [];
+
+  Object.entries(teams).forEach(([team, count]) => {
+    let bonus = 0;
+    if (count === 5) bonus = 3;
+    else if (count === 4) bonus = 2;
+    else if (count === 3) bonus = 1;
+
+    if (bonus > 0) {
+      synergyBonus += bonus;
+      synergyDetails.push({ team, count, bonus });
+    }
+  });
+
+  // Special synergies
+  const names = slots.filter(s => s.card).map(s => s.card!.player.name);
+
+  // 17SSG의 귀환
+  const ssgPlayers = ['17SSG CuVee', '17SSG Ambition', '17SSG Crown', '17SSG Ruler', '17SSG CoreJJ'];
+  if (ssgPlayers.every(name => names.includes(name))) {
+    synergyBonus += 3;
+    synergyDetails.push({ team: '17SSG의 귀환', count: 5, bonus: 3 });
+  }
+
+  // 25 도오페구케 우승
+  const t1ChampPlayers = ['Zeus', 'Oner', 'Faker', 'Gumayusi', 'Keria'];
+  const hasT1ChampSynergy = t1ChampPlayers.every(name => {
+    const slot = slots.find(s => s.card && s.card.player.name === name);
+    return slot && slot.card!.player.season === '25';
+  });
+  if (hasT1ChampSynergy) {
+    synergyBonus += 2;
+    synergyDetails.push({ team: '25 도오페구케 우승', count: 5, bonus: 2 });
+  }
+
+  // 대한민국 국가대표
+  const hasZeus = names.includes('Zeus');
+  const hasJungler = names.includes('Canyon') || names.includes('Oner');
+  const hasMid = names.includes('Chovy') || names.includes('Faker');
+  const hasRuler = names.includes('Ruler');
+  const hasKeria = names.includes('Keria');
+  if (hasZeus && hasJungler && hasMid && hasRuler && hasKeria) {
+    synergyBonus += 1;
+    synergyDetails.push({ team: '대한민국 국가대표', count: 5, bonus: 1 });
+  }
+
+  // 2019 G2 GOLDEN ROAD CLOSE
+  const g2Players = ['Wunder', 'Jankos', 'Caps', 'Perkz', 'Mikyx'];
+  const hasG2Synergy = g2Players.every(name => {
+    const slot = slots.find(s => s.card && s.card.player.name === name);
+    return slot && slot.card!.player.season === '19G2';
+  });
+  if (hasG2Synergy) {
+    synergyBonus += 3;
+    synergyDetails.push({ team: '19G2 GOLDEN ROAD CLOSE', count: 5, bonus: 3 });
+  }
+
+  return { totalPower, synergyBonus, synergyDetails };
+};
+
+export default function Deck() {
+  const { token } = useAuthStore();
+  const [currentDeckSlot, setCurrentDeckSlot] = useState(1); // 현재 활성 덱 슬롯 (1-5)
+  const [deckSlots, setDeckSlots] = useState<DeckSlot[]>([
+    { position: 'TOP', label: '탑', card: null },
+    { position: 'JUNGLE', label: '정글', card: null },
+    { position: 'MID', label: '미드', card: null },
+    { position: 'ADC', label: '원딜', card: null },
+    { position: 'SUPPORT', label: '서폿', card: null },
+  ]);
+  const [myCards, setMyCards] = useState<UserCard[]>([]);
+  const [selectedPosition, setSelectedPosition] = useState<'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT' | null>(null);
+  const [laningStrategy, setLaningStrategy] = useState('SAFE');
+  const [teamfightStrategy, setTeamfightStrategy] = useState('ENGAGE');
+  const [macroStrategy, setMacroStrategy] = useState('OBJECTIVE');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [seasonFilter, setSeasonFilter] = useState<string>('ALL');
+  const [detailCard, setDetailCard] = useState<UserCard | null>(null);
+
+  const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
+
+  // Helper function to calculate card OVR with position penalty
+  const calculateCardOVR = (card: UserCard, position: string) => {
+    const baseStat = card.player.overall + calculateEnhancementBonus(card.level);
+    const positionMatch = card.player.position === position;
+    return positionMatch ? baseStat : baseStat - 10;
+  };
+
+  // 필터링 및 정렬된 카드 목록을 미리 계산 (성능 최적화)
+  const filteredAndSortedCards = useMemo(() => {
+    if (!selectedPosition) return [];
+
+    return myCards
+      .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
+      .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
+      .sort((a, b) => {
+        // 포지션 매치 우선, 그 다음 OVR 높은 순
+        const aMatch = a.player.position === selectedPosition;
+        const bMatch = b.player.position === selectedPosition;
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+        return calculateCardOVR(b, selectedPosition) - calculateCardOVR(a, selectedPosition);
+      });
+  }, [myCards, selectedPosition, deckSlots, seasonFilter]);
+
+  useEffect(() => {
+    fetchDeckAndCards();
+  }, []);
+
+  const fetchDeckAndCards = async () => {
+    try {
+      setLoading(true);
+
+      const cardsRes = await axios.get(`${API_URL}/gacha/my-cards`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (cardsRes.data.success) {
+        setMyCards(cardsRes.data.data);
+      }
+
+      const deckRes = await axios.get(`${API_URL}/deck`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (deckRes.data.success && deckRes.data.data) {
+        const deck = deckRes.data.data;
+
+        // 현재 활성 덱 슬롯 설정
+        setCurrentDeckSlot(deck.deck_slot || 1);
+
+        setDeckSlots((prev) =>
+          prev.map((slot) => {
+            const posKey = slot.position.toLowerCase();
+            const cardData = deck[posKey];
+
+            if (cardData) {
+              const fullCard = cardsRes.data.data.find((c: UserCard) => c.id === cardData.id);
+              return { ...slot, card: fullCard || null };
+            }
+            return slot;
+          })
+        );
+
+        setLaningStrategy(deck.laningStrategy || 'SAFE');
+        setTeamfightStrategy(deck.teamfightStrategy || 'ENGAGE');
+        setMacroStrategy(deck.macroStrategy || 'OBJECTIVE');
+      }
+    } catch (error: any) {
+      console.error('Fetch deck error:', error);
+      toast.error('덱 정보를 불러오는데 실패했습니다');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSlotClick = (position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT') => {
+    setSelectedPosition(position);
+  };
+
+  const handleCardSelect = (card: UserCard) => {
+    if (!selectedPosition) return;
+
+    const alreadyInDeck = deckSlots.some((slot) => slot.card?.id === card.id);
+    if (alreadyInDeck) {
+      toast.error('이 카드는 이미 덱에 있습니다');
+      return;
+    }
+
+    setDeckSlots((prev) =>
+      prev.map((slot) =>
+        slot.position === selectedPosition ? { ...slot, card } : slot
+      )
+    );
+
+    setDetailCard(null);
+    setSelectedPosition(null);
+  };
+
+  const handleCardClick = (card: UserCard) => {
+    // Show detail modal
+    setDetailCard(card);
+  };
+
+  const handleRemoveCard = (position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT') => {
+    setDeckSlots((prev) =>
+      prev.map((slot) =>
+        slot.position === position ? { ...slot, card: null } : slot
+      )
+    );
+  };
+
+  const handleSaveDeck = async () => {
+    try {
+      setSaving(true);
+
+      const payload = {
+        deckSlot: currentDeckSlot, // 현재 활성 덱 슬롯 지정
+        name: 'My Deck',
+        topCardId: deckSlots.find((s) => s.position === 'TOP')?.card?.id || null,
+        jungleCardId: deckSlots.find((s) => s.position === 'JUNGLE')?.card?.id || null,
+        midCardId: deckSlots.find((s) => s.position === 'MID')?.card?.id || null,
+        adcCardId: deckSlots.find((s) => s.position === 'ADC')?.card?.id || null,
+        supportCardId: deckSlots.find((s) => s.position === 'SUPPORT')?.card?.id || null,
+        laningStrategy,
+        teamfightStrategy,
+        macroStrategy,
+      };
+
+      const response = await axios.put(`${API_URL}/deck`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        toast.success('덱이 저장되었습니다!');
+      }
+    } catch (error: any) {
+      console.error('Save deck error:', error);
+      toast.error('덱 저장에 실패했습니다');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getTierColor = getTierColorHelper;
+  const getPositionColor = getPositionColorHelper;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">덱 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const filledSlots = deckSlots.filter(s => s.card).length;
+
+  return (
+    <div className="min-h-screen relative overflow-hidden py-8 px-4">
+      {/* Animated Background */}
+      <motion.div
+        animate={{
+          backgroundPosition: ['0% 0%', '100% 100%'],
+        }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          repeatType: 'reverse',
+        }}
+        className="absolute inset-0 bg-gradient-to-br from-gray-50 via-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900/20 dark:via-purple-900/20 dark:to-gray-900 bg-[length:200%_200%]"
+      />
+
+      {/* Floating Particles */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{
+            y: [-20, -80, -20],
+            x: [0, Math.random() * 30 - 15, 0],
+            opacity: [0, 0.6, 0],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+          }}
+          className="absolute text-primary-500/20 dark:text-primary-400/20 text-xl"
+          style={{
+            left: `${Math.random() * 100}%`,
+            bottom: 0,
+          }}
+        >
+          ⭐
+        </motion.div>
+      ))}
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <motion.h1
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{ duration: 5, repeat: Infinity }}
+                className="text-4xl font-bold bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 dark:from-primary-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-2"
+              >
+                덱 편성
+              </motion.h1>
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                최강의 5인 로스터와 전략을 구성하세요
+              </p>
+            </div>
+            <PremiumButton
+              onClick={handleSaveDeck}
+              disabled={saving}
+              variant="primary"
+              size="lg"
+              icon={<Save className="w-5 h-5" />}
+            >
+              {saving ? '저장 중...' : '덱 저장'}
+            </PremiumButton>
+          </div>
+
+          {/* Deck Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <PremiumCard gradient="blue" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 파워</p>
+                <motion.p
+                  key={totalPower}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-primary-600 to-blue-600 dark:from-primary-400 dark:to-blue-400 bg-clip-text text-transparent"
+                >
+                  {totalPower}
+                </motion.p>
+              </div>
+            </PremiumCard>
+            <PremiumCard gradient="gold" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">팀 시너지</p>
+                <motion.p
+                  key={synergyBonus}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-yellow-600 to-orange-600 dark:from-yellow-400 dark:to-orange-400 bg-clip-text text-transparent"
+                >
+                  +{synergyBonus}
+                </motion.p>
+              </div>
+            </PremiumCard>
+            <PremiumCard gradient="rainbow" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">최종 파워</p>
+                <motion.p
+                  key={totalPower + synergyBonus}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent"
+                >
+                  {totalPower + synergyBonus}
+                </motion.p>
+              </div>
+            </PremiumCard>
+            <PremiumCard gradient="purple" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">덱 완성도</p>
+                <motion.p
+                  key={filledSlots}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent"
+                >
+                  {filledSlots}/5
+                </motion.p>
+              </div>
+            </PremiumCard>
+          </div>
+
+          {/* Team Synergy Details */}
+          {synergyDetails.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 relative overflow-hidden rounded-xl p-4 shadow-lg"
+            >
+              {/* Animated gradient background */}
+              <motion.div
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{ duration: 8, repeat: Infinity }}
+                className="absolute inset-0 bg-gradient-to-r from-yellow-100 via-orange-100 to-yellow-100 dark:from-yellow-900/30 dark:via-orange-900/30 dark:to-yellow-900/30 bg-[length:200%_100%]"
+              />
+              {/* Shimmer effect */}
+              <motion.div
+                animate={{
+                  x: ['-100%', '200%'],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatDelay: 2,
+                }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+              />
+              <div className="relative z-10">
+                <div className="flex items-center space-x-2 mb-2">
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Sparkles className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                  </motion.div>
+                  <span className="font-bold text-yellow-800 dark:text-yellow-200">팀 시너지 활성</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {synergyDetails.map((detail, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                      whileHover={{ scale: 1.05 }}
+                      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border-2 border-yellow-400 dark:border-yellow-600 shadow-md"
+                    >
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{detail.team}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
+                        ({detail.count}명 = +{detail.bonus})
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2 font-medium">
+                  💡 같은 팀 3명 = +1, 4명 = +3, 5명 = +5 파워 보너스
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Info Box */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-8"
+        >
+          <div className="flex items-start space-x-3">
+            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800 dark:text-blue-200">
+              <p>• 각 포지션을 클릭하여 카드를 선택하세요</p>
+              <p>• 잘못된 포지션에 배치하면 **OVR -10 페널티**가 적용됩니다</p>
+              <p>• 전략을 선택하면 경기에서 보너스를 받을 수 있습니다</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Deck Slots */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Cards */}
+            <PremiumCard gradient="blue" glow>
+              <div className="p-6">
+                <motion.h2
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-6"
+                >
+                  카드 구성
+                </motion.h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {deckSlots.map((slot) => (
+                  <motion.div
+                    key={slot.position}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleSlotClick(slot.position)}
+                    className={`relative p-4 md:p-4 rounded-xl border-2 transition-all cursor-pointer active:scale-95 min-h-[120px] md:min-h-auto ${
+                      selectedPosition === slot.position
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-primary-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`${getPositionColor(slot.position)} text-white text-xs font-bold px-3 py-1 rounded-full`}>
+                        {slot.label}
+                      </span>
+                      {slot.card && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCard(slot.position);
+                          }}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                        >
+                          제거
+                        </button>
+                      )}
+                    </div>
+
+                    {slot.card ? (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex gap-3">
+                        {/* Player Face */}
+                        <img
+                          src={getPlayerImageUrl(slot.card.player.name, slot.card.player.season, slot.card.player.tier)}
+                          alt={slot.card.player.name}
+                          className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                          }}
+                        />
+
+                        {/* Card Info */}
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(slot.card.player.tier)} rounded text-white text-xs font-bold`}>
+                                {slot.card.player.tier}
+                              </div>
+                              {slot.card.level > 0 && (
+                                <div className="px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded text-white text-xs font-bold">
+                                  +{slot.card.level}
+                                </div>
+                              )}
+                            </div>
+                            <p className="font-bold text-gray-900 dark:text-white mb-1 truncate">
+                              {slot.card.player.name}
+                              {slot.card.player.season && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                                  {slot.card.player.season}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                              {slot.card.player.team} • {slot.card.player.position}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className={`text-2xl font-bold ${slot.card.player.position === slot.position ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                              {calculateCardOVR(slot.card, slot.position)} OVR
+                            </p>
+                            {slot.card.player.position !== slot.position && (
+                              <span className="text-xs text-orange-600 dark:text-orange-400 font-bold bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">
+                                -10 페널티
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-40 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                        <p className="text-gray-500 dark:text-gray-400 text-sm">
+                          카드를 선택하세요
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+              </div>
+            </PremiumCard>
+
+            {/* Strategies */}
+            <PremiumCard gradient="purple" glow>
+              <div className="p-6">
+                <motion.h2
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-400 dark:via-pink-400 dark:to-red-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-6"
+                >
+                  전략 선택
+                </motion.h2>
+
+              <div className="space-y-6">
+                {/* Laning Strategy */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Target className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">라인전 전략</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {LANING_STRATEGIES.map((strategy) => (
+                      <button
+                        key={strategy.value}
+                        onClick={() => setLaningStrategy(strategy.value)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          laningStrategy === strategy.value
+                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-red-400'
+                        }`}
+                        title={strategy.description}
+                      >
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{strategy.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      {LANING_STRATEGIES.find(s => s.value === laningStrategy)?.description}
+                    </p>
+                    <div className="flex gap-4 text-xs">
+                      <div>
+                        <span className="text-green-600 dark:text-green-400 font-bold">카운터: </span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {LANING_STRATEGIES.find(s => s.value === laningStrategy)?.counters.map(c =>
+                            LANING_STRATEGIES.find(s => s.value === c)?.label
+                          ).join(', ')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-red-600 dark:text-red-400 font-bold">약점: </span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {LANING_STRATEGIES.find(s => s.value === laningStrategy)?.weakTo.map(w =>
+                            LANING_STRATEGIES.find(s => s.value === w)?.label
+                          ).join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Teamfight Strategy */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">한타 전략</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {TEAMFIGHT_STRATEGIES.map((strategy) => (
+                      <button
+                        key={strategy.value}
+                        onClick={() => setTeamfightStrategy(strategy.value)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          teamfightStrategy === strategy.value
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                        }`}
+                        title={strategy.description}
+                      >
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{strategy.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      {TEAMFIGHT_STRATEGIES.find(s => s.value === teamfightStrategy)?.description}
+                    </p>
+                    <div className="flex gap-4 text-xs">
+                      <div>
+                        <span className="text-green-600 dark:text-green-400 font-bold">카운터: </span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {TEAMFIGHT_STRATEGIES.find(s => s.value === teamfightStrategy)?.counters.map(c =>
+                            TEAMFIGHT_STRATEGIES.find(s => s.value === c)?.label
+                          ).join(', ')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-red-600 dark:text-red-400 font-bold">약점: </span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {TEAMFIGHT_STRATEGIES.find(s => s.value === teamfightStrategy)?.weakTo.map(w =>
+                            TEAMFIGHT_STRATEGIES.find(s => s.value === w)?.label
+                          ).join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Macro Strategy */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Map className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">운영 전략</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {MACRO_STRATEGIES.map((strategy) => (
+                      <button
+                        key={strategy.value}
+                        onClick={() => setMacroStrategy(strategy.value)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          macroStrategy === strategy.value
+                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-green-400'
+                        }`}
+                        title={strategy.description}
+                      >
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{strategy.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      {MACRO_STRATEGIES.find(s => s.value === macroStrategy)?.description}
+                    </p>
+                    <div className="flex gap-4 text-xs">
+                      <div>
+                        <span className="text-green-600 dark:text-green-400 font-bold">카운터: </span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {MACRO_STRATEGIES.find(s => s.value === macroStrategy)?.counters.map(c =>
+                            MACRO_STRATEGIES.find(s => s.value === c)?.label
+                          ).join(', ')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-red-600 dark:text-red-400 font-bold">약점: </span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {MACRO_STRATEGIES.find(s => s.value === macroStrategy)?.weakTo.map(w =>
+                            MACRO_STRATEGIES.find(s => s.value === w)?.label
+                          ).join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </PremiumCard>
+          </div>
+
+          {/* Card Selection Panel */}
+          <div className="lg:col-span-1">
+            <PremiumCard gradient="gold" glow className="sticky top-4">
+              <div className="p-6">
+                <motion.h2
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  className="text-xl font-bold bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 dark:from-yellow-400 dark:via-orange-400 dark:to-red-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
+                >
+                  {selectedPosition ? `${deckSlots.find(s => s.position === selectedPosition)?.label} 선택` : '내 카드'}
+                </motion.h2>
+
+              {/* Season Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  시즌 필터
+                </label>
+                <select
+                  value={seasonFilter}
+                  onChange={(e) => setSeasonFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="ALL">전체</option>
+                  {Array.from(new Set(myCards.map(card => card.player.season).filter(Boolean))).sort().reverse().map((season) => (
+                    <option key={season} value={season}>{season}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedPosition ? (
+                <>
+                  {/* 빠른 선택 버튼 */}
+                  <PremiumButton
+                    onClick={() => {
+                      const positionCards = filteredAndSortedCards.filter((card) => card.player.position === selectedPosition);
+
+                      if (positionCards.length > 0) {
+                        handleCardSelect(positionCards[0]); // 이미 정렬되어 있어서 첫번째가 최고
+                      } else {
+                        toast.error('해당 포지션에 사용 가능한 카드가 없습니다');
+                      }
+                    }}
+                    variant="gold"
+                    size="md"
+                    icon={<Sparkles className="w-4 h-4" />}
+                    className="w-full mb-3"
+                  >
+                    최고 카드 자동 선택
+                  </PremiumButton>
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {filteredAndSortedCards.map((card) => {
+                      const positionMatch = card.player.position === selectedPosition;
+                      const displayOVR = calculateCardOVR(card, selectedPosition);
+
+                      return (
+                        <motion.div
+                          key={card.id}
+                          whileHover={{ scale: 1.02 }}
+                          className={`p-3 rounded-lg border-2 transition-all ${
+                            !positionMatch
+                              ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-primary-400'
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            {/* Player Image */}
+                            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center relative">
+                              <img
+                                src={getPlayerImageUrl(card.player.name)}
+                                alt={card.player.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent && !parent.querySelector('.fallback-text')) {
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'fallback-text text-2xl font-bold text-gray-400 dark:text-gray-500';
+                                    fallback.textContent = card.player.name[0];
+                                    parent.appendChild(fallback);
+                                  }
+                                }}
+                              />
+                            </div>
+
+                            {/* Card Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(card.player.tier)} rounded text-white text-xs font-bold mb-1`}>
+                                {card.player.tier}
+                              </div>
+                              <p className="font-bold text-gray-900 dark:text-white text-sm truncate">
+                                {card.player.name}
+                                {card.player.season && (
+                                  <span className="ml-1 px-1 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-xs font-semibold">
+                                    {card.player.season}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {card.player.team} • {card.player.position}
+                              </p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className={`text-lg font-bold ${positionMatch ? 'text-primary-600 dark:text-primary-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                  {displayOVR}
+                                </span>
+                                {!positionMatch && (
+                                  <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                                    -10 페널티
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons - 모바일 친화적 크기 */}
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardClick(card);
+                              }}
+                              className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 active:scale-95 min-h-[44px]"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span className="hidden sm:inline">자세히</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardSelect(card);
+                              }}
+                              className="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-bold transition-colors active:scale-95 shadow-md min-h-[44px]"
+                            >
+                              선택
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+
+                  {myCards.filter((card) => !deckSlots.some((s) => s.card?.id === card.id)).length === 0 && (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      사용 가능한 카드가 없습니다
+                    </p>
+                  )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  포지션을 선택하여<br />카드를 배치하세요
+                </p>
+              )}
+              </div>
+            </PremiumCard>
+          </div>
+        </div>
+      </div>
+
+      {/* Player Detail Modal */}
+      {detailCard && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDetailCard(null)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex gap-4 flex-1">
+                <img
+                  src={getPlayerImageUrl(detailCard.player.name, detailCard.player.season, detailCard.player.tier)}
+                  alt={detailCard.player.name}
+                  className="w-24 h-24 rounded-lg object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/players/placeholder.png';
+                  }}
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`inline-block px-3 py-1 bg-gradient-to-r ${getTierColor(detailCard.player.tier)} rounded text-white text-sm font-bold`}>
+                      {detailCard.player.tier}
+                    </div>
+                    <div className={`inline-block px-3 py-1 ${getPositionColor(detailCard.player.position)} rounded text-white text-sm font-bold`}>
+                      {detailCard.player.position}
+                    </div>
+                    {detailCard.level > 0 && (
+                      <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded text-white text-sm font-bold">
+                        +{detailCard.level}
+                      </div>
+                    )}
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                    {detailCard.player.name}
+                    {detailCard.player.season && (
+                      <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-sm font-semibold">
+                        {detailCard.player.season}
+                      </span>
+                    )}
+                  </h2>
+                  <p className="text-lg text-gray-600 dark:text-gray-400">
+                    {detailCard.player.team} • {detailCard.player.region}
+                  </p>
+                  <p className="text-3xl font-bold text-primary-600 dark:text-primary-400 mt-2">
+                    {detailCard.player.overall + calculateEnhancementBonus(detailCard.level)} OVR
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDetailCard(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">세부 스탯</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <StatBar label="CS 능력" value={(detailCard.player.cs_ability || 50) + calculateEnhancementBonus(detailCard.level)} color="blue" />
+                  <StatBar label="라인 압박" value={(detailCard.player.lane_pressure || 50) + calculateEnhancementBonus(detailCard.level)} color="red" />
+                  <StatBar label="딜량" value={(detailCard.player.damage_dealing || 50) + calculateEnhancementBonus(detailCard.level)} color="purple" />
+                  <StatBar label="생존력" value={(detailCard.player.survivability || 50) + calculateEnhancementBonus(detailCard.level)} color="green" />
+                  <StatBar label="오브젝트" value={(detailCard.player.objective_control || 50) + calculateEnhancementBonus(detailCard.level)} color="yellow" />
+                  <StatBar label="시야 장악" value={(detailCard.player.vision_control || 50) + calculateEnhancementBonus(detailCard.level)} color="indigo" />
+                  <StatBar label="판단력" value={(detailCard.player.decision_making || 50) + calculateEnhancementBonus(detailCard.level)} color="pink" />
+                  <StatBar label="안정성" value={(detailCard.player.consistency || 50) + calculateEnhancementBonus(detailCard.level)} color="teal" />
+                </div>
+              </div>
+
+              {/* Traits */}
+              {(detailCard.player.trait1 || detailCard.player.trait2 || detailCard.player.trait3) && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">특성</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {detailCard.player.trait1 && (
+                      <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium shadow-md">
+                        {detailCard.player.trait1}
+                      </div>
+                    )}
+                    {detailCard.player.trait2 && (
+                      <div className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-medium shadow-md">
+                        {detailCard.player.trait2}
+                      </div>
+                    )}
+                    {detailCard.player.trait3 && (
+                      <div className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg font-medium shadow-md">
+                        {detailCard.player.trait3}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDetailCard(null)}
+                  className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors"
+                >
+                  닫기
+                </button>
+                {selectedPosition && !deckSlots.some((s) => s.card?.id === detailCard.id) && (
+                  <button
+                    onClick={() => handleCardSelect(detailCard)}
+                    className="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    이 카드 선택
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Stat Bar Component
+function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
+  const colorClasses: Record<string, string> = {
+    blue: 'bg-blue-500',
+    red: 'bg-red-500',
+    purple: 'bg-purple-500',
+    green: 'bg-green-500',
+    yellow: 'bg-yellow-500',
+    indigo: 'bg-indigo-500',
+    pink: 'bg-pink-500',
+    teal: 'bg-teal-500',
+  };
+
+  // Stats are on a 0-200 scale, convert to percentage for display
+  const percentage = Math.min(100, (value / 200) * 100);
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{value}</span>
+      </div>
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div
+          className={`h-2 rounded-full ${colorClasses[color] || 'bg-gray-500'}`}
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+}

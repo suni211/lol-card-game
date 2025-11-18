@@ -195,7 +195,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get card info
     const [cards]: any = await connection.query(
-      `SELECT uc.*, p.id as player_id,
+      `SELECT uc.*, p.id as player_id, p.name as player_name,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -281,18 +281,139 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     // Create listing
-    await connection.query(
+    const [result]: any = await connection.query(
       `INSERT INTO market_transactions (player_id, seller_id, card_id, listing_price)
       VALUES (?, ?, ?, ?)`,
       [card.player_id, userId, cardId, price]
     );
 
+    const listingId = result.insertId;
+
+    // Check for price alerts and auto-purchase
+    const [priceAlerts]: any = await connection.query(
+      `SELECT pa.*, u.points, u.username
+      FROM price_alerts pa
+      JOIN users u ON pa.user_id = u.id
+      WHERE pa.player_id = ? AND pa.is_active = TRUE AND pa.max_price >= ?
+      ORDER BY pa.created_at ASC
+      LIMIT 1`,
+      [card.player_id, price]
+    );
+
+    let autoSold = false;
+    let buyerUsername = null;
+
+    if (priceAlerts.length > 0) {
+      const alert = priceAlerts[0];
+
+      // Check if buyer has enough points and is not the seller
+      if (alert.user_id !== userId && alert.points >= price) {
+        // Transfer card ownership
+        await connection.query(
+          'UPDATE user_cards SET user_id = ? WHERE id = ?',
+          [alert.user_id, cardId]
+        );
+
+        // Calculate fee (30%)
+        const fee = Math.floor(price * 0.3);
+        const sellerReceives = price - fee;
+
+        // Update buyer points
+        await connection.query(
+          'UPDATE users SET points = points - ? WHERE id = ?',
+          [price, alert.user_id]
+        );
+
+        // Update seller points
+        await connection.query(
+          'UPDATE users SET points = points + ? WHERE id = ?',
+          [sellerReceives, userId]
+        );
+
+        // Update listing status
+        await connection.query(
+          `UPDATE market_transactions
+          SET status = 'SOLD', buyer_id = ?, sold_price = ?, sold_at = NOW()
+          WHERE id = ?`,
+          [alert.user_id, price, listingId]
+        );
+
+        // Update player market price
+        const [recentTrades]: any = await connection.query(
+          `SELECT sold_price, sold_at FROM market_transactions
+          WHERE player_id = ? AND status = 'SOLD'
+          ORDER BY sold_at DESC
+          LIMIT 10`,
+          [card.player_id]
+        );
+
+        if (recentTrades.length > 0) {
+          let weightedSum = 0;
+          let weightSum = 0;
+          recentTrades.forEach((trade: any, index: number) => {
+            const weight = 10 - index;
+            weightedSum += trade.sold_price * weight;
+            weightSum += weight;
+          });
+          const weightedAvgPrice = Math.round(weightedSum / weightSum);
+
+          const [currentPriceInfo]: any = await connection.query(
+            'SELECT current_price, price_floor, price_ceiling FROM player_market_prices WHERE player_id = ?',
+            [card.player_id]
+          );
+
+          if (currentPriceInfo.length > 0) {
+            const currentPrice = currentPriceInfo[0].current_price;
+            const priceFloor = currentPriceInfo[0].price_floor;
+            const priceCeiling = currentPriceInfo[0].price_ceiling;
+
+            const maxIncrease = Math.round(currentPrice * 1.2);
+            const maxDecrease = Math.round(currentPrice * 0.8);
+
+            let newPrice = Math.min(maxIncrease, Math.max(maxDecrease, weightedAvgPrice));
+            newPrice = Math.min(priceCeiling, Math.max(priceFloor, newPrice));
+
+            await connection.query(
+              `UPDATE player_market_prices
+              SET current_price = ?, total_volume = total_volume + 1, last_traded_price = ?, last_traded_at = NOW()
+              WHERE player_id = ?`,
+              [newPrice, price, card.player_id]
+            );
+
+            await connection.query(
+              'INSERT INTO price_history (player_id, price, transaction_id) VALUES (?, ?, ?)',
+              [card.player_id, newPrice, listingId]
+            );
+          }
+        }
+
+        // Deactivate the price alert after successful purchase
+        await connection.query(
+          'UPDATE price_alerts SET is_active = FALSE WHERE id = ?',
+          [alert.id]
+        );
+
+        autoSold = true;
+        buyerUsername = alert.username;
+
+        console.log(`Auto-purchased: ${card.player_name} by ${alert.username} at ${price}P (price alert)`);
+      }
+    }
+
     await connection.commit();
 
-    res.json({
-      success: true,
-      message: '카드가 성공적으로 등록되었습니다.',
-    });
+    if (autoSold) {
+      res.json({
+        success: true,
+        message: `카드가 즉시 판매되었습니다! (구매자: ${buyerUsername})`,
+        autoSold: true,
+      });
+    } else {
+      res.json({
+        success: true,
+        message: '카드가 성공적으로 등록되었습니다.',
+      });
+    }
   } catch (error: any) {
     await connection.rollback();
     console.error('List card error:', error);
@@ -578,6 +699,293 @@ router.get('/my-listings', authMiddleware, async (req: AuthRequest, res) => {
     res.json({ success: true, data: listings });
   } catch (error: any) {
     console.error('Get my listings error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Search all players with market info
+router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const {
+      name,
+      team,
+      position,
+      tier,
+      season,
+      minOverall,
+      maxOverall,
+      sortBy = 'overall_desc',
+      limit = '50',
+      offset = '0'
+    } = req.query;
+
+    let query = `
+      SELECT
+        p.id,
+        p.name,
+        p.team,
+        p.position,
+        p.overall,
+        p.region,
+        p.season,
+        CASE
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
+        pmp.current_price,
+        pmp.price_floor,
+        pmp.price_ceiling,
+        pmp.total_volume,
+        pmp.last_traded_price,
+        pmp.last_traded_at,
+        (SELECT MIN(listing_price) FROM market_transactions WHERE player_id = p.id AND status = 'LISTED') as lowest_price,
+        (SELECT COUNT(*) FROM market_transactions WHERE player_id = p.id AND status = 'LISTED') as listing_count
+      FROM players p
+      LEFT JOIN player_market_prices pmp ON p.id = pmp.player_id
+      WHERE 1=1
+    `;
+
+    const params: any[] = [];
+
+    // Name filter
+    if (name) {
+      query += ' AND p.name LIKE ?';
+      params.push(`%${name}%`);
+    }
+
+    // Team filter
+    if (team && team !== 'ALL') {
+      query += ' AND p.team = ?';
+      params.push(team);
+    }
+
+    // Position filter
+    if (position && position !== 'ALL') {
+      query += ' AND p.position = ?';
+      params.push(position);
+    }
+
+    // Tier filter
+    if (tier && tier !== 'ALL') {
+      if (tier === 'ICON') {
+        query += " AND (p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%')";
+      } else if (tier === 'COMMON') {
+        query += " AND p.overall <= 80 AND p.season != 'ICON' AND p.team != 'ICON' AND p.name NOT LIKE '[ICON]%' AND p.name NOT LIKE 'ICON%'";
+      } else if (tier === 'RARE') {
+        query += " AND p.overall > 80 AND p.overall <= 90 AND p.season != 'ICON' AND p.team != 'ICON' AND p.name NOT LIKE '[ICON]%' AND p.name NOT LIKE 'ICON%'";
+      } else if (tier === 'EPIC') {
+        query += " AND p.overall > 90 AND p.overall <= 100 AND p.season != 'ICON' AND p.team != 'ICON' AND p.name NOT LIKE '[ICON]%' AND p.name NOT LIKE 'ICON%'";
+      } else if (tier === 'LEGENDARY') {
+        query += " AND p.overall > 100 AND p.season != 'ICON' AND p.team != 'ICON' AND p.name NOT LIKE '[ICON]%' AND p.name NOT LIKE 'ICON%'";
+      }
+    }
+
+    // Season filter
+    if (season && season !== 'ALL') {
+      query += ' AND p.season = ?';
+      params.push(season);
+    }
+
+    // Overall range filter
+    if (minOverall) {
+      query += ' AND p.overall >= ?';
+      params.push(parseInt(minOverall as string));
+    }
+    if (maxOverall) {
+      query += ' AND p.overall <= ?';
+      params.push(parseInt(maxOverall as string));
+    }
+
+    // Sorting
+    switch (sortBy) {
+      case 'overall_desc':
+        query += ' ORDER BY p.overall DESC';
+        break;
+      case 'overall_asc':
+        query += ' ORDER BY p.overall ASC';
+        break;
+      case 'price_desc':
+        query += ' ORDER BY pmp.current_price DESC NULLS LAST';
+        break;
+      case 'price_asc':
+        query += ' ORDER BY pmp.current_price ASC NULLS LAST';
+        break;
+      case 'listing_count':
+        query += ' ORDER BY listing_count DESC';
+        break;
+      case 'latest':
+        query += ' ORDER BY p.id DESC';
+        break;
+      default:
+        query += ' ORDER BY p.overall DESC';
+    }
+
+    // Pagination
+    query += ' LIMIT ? OFFSET ?';
+    params.push(parseInt(limit as string), parseInt(offset as string));
+
+    const [players]: any = await pool.query(query, params);
+
+    res.json({ success: true, data: players });
+  } catch (error: any) {
+    console.error('Search players error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Register price alert
+router.post('/price-alert', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { playerId, maxPrice } = req.body;
+
+    if (!playerId || !maxPrice || maxPrice <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: '유효하지 않은 입력입니다.',
+      });
+    }
+
+    // Check if player exists
+    const [players]: any = await pool.query(
+      'SELECT id FROM players WHERE id = ?',
+      [playerId]
+    );
+
+    if (players.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: '선수를 찾을 수 없습니다.',
+      });
+    }
+
+    // Insert or update price alert
+    await pool.query(
+      `INSERT INTO price_alerts (user_id, player_id, max_price, is_active)
+      VALUES (?, ?, ?, TRUE)
+      ON DUPLICATE KEY UPDATE max_price = ?, is_active = TRUE, updated_at = CURRENT_TIMESTAMP`,
+      [userId, playerId, maxPrice, maxPrice]
+    );
+
+    res.json({
+      success: true,
+      message: '상한가 예약이 등록되었습니다.',
+    });
+  } catch (error: any) {
+    console.error('Register price alert error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Get my price alerts
+router.get('/price-alerts', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [alerts]: any = await pool.query(
+      `SELECT
+        pa.id,
+        pa.player_id,
+        pa.max_price,
+        pa.is_active,
+        pa.created_at,
+        p.name,
+        p.team,
+        p.position,
+        p.overall,
+        CASE
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier,
+        p.season,
+        pmp.current_price,
+        (SELECT MIN(listing_price) FROM market_transactions WHERE player_id = p.id AND status = 'LISTED') as lowest_price
+      FROM price_alerts pa
+      JOIN players p ON pa.player_id = p.id
+      LEFT JOIN player_market_prices pmp ON p.id = pmp.player_id
+      WHERE pa.user_id = ?
+      ORDER BY pa.created_at DESC`,
+      [userId]
+    );
+
+    res.json({ success: true, data: alerts });
+  } catch (error: any) {
+    console.error('Get price alerts error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Delete price alert
+router.delete('/price-alert/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    // Check ownership
+    const [alerts]: any = await pool.query(
+      'SELECT id FROM price_alerts WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (alerts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: '예약을 찾을 수 없습니다.',
+      });
+    }
+
+    // Delete alert
+    await pool.query('DELETE FROM price_alerts WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: '상한가 예약이 삭제되었습니다.',
+    });
+  } catch (error: any) {
+    console.error('Delete price alert error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Toggle price alert
+router.patch('/price-alert/:id/toggle', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    // Check ownership
+    const [alerts]: any = await pool.query(
+      'SELECT id, is_active FROM price_alerts WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (alerts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: '예약을 찾을 수 없습니다.',
+      });
+    }
+
+    // Toggle active status
+    const newStatus = !alerts[0].is_active;
+    await pool.query(
+      'UPDATE price_alerts SET is_active = ? WHERE id = ?',
+      [newStatus, id]
+    );
+
+    res.json({
+      success: true,
+      message: newStatus ? '예약이 활성화되었습니다.' : '예약이 비활성화되었습니다.',
+      data: { is_active: newStatus },
+    });
+  } catch (error: any) {
+    console.error('Toggle price alert error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });

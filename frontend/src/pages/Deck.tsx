@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Save, Info, Target, Users, Map, X, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -178,6 +178,23 @@ export default function Deck() {
   const [detailCard, setDetailCard] = useState<UserCard | null>(null);
 
   const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
+
+  // 필터링 및 정렬된 카드 목록을 미리 계산 (성능 최적화)
+  const filteredAndSortedCards = useMemo(() => {
+    if (!selectedPosition) return [];
+
+    return myCards
+      .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
+      .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
+      .sort((a, b) => {
+        // 포지션 매치 우선, 그 다음 OVR 높은 순
+        const aMatch = a.player.position === selectedPosition;
+        const bMatch = b.player.position === selectedPosition;
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+        return calculateCardOVR(b, selectedPosition) - calculateCardOVR(a, selectedPosition);
+      });
+  }, [myCards, selectedPosition, deckSlots, seasonFilter]);
 
   useEffect(() => {
     fetchDeckAndCards();
@@ -688,16 +705,10 @@ export default function Deck() {
                   {/* 빠른 선택 버튼 */}
                   <button
                     onClick={() => {
-                      const availableCards = myCards
-                        .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
-                        .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
-                        .filter((card) => card.player.position === selectedPosition);
+                      const positionCards = filteredAndSortedCards.filter((card) => card.player.position === selectedPosition);
 
-                      if (availableCards.length > 0) {
-                        const bestCard = availableCards.reduce((best, current) =>
-                          calculateCardOVR(current, selectedPosition) > calculateCardOVR(best, selectedPosition) ? current : best
-                        );
-                        handleCardSelect(bestCard);
+                      if (positionCards.length > 0) {
+                        handleCardSelect(positionCards[0]); // 이미 정렬되어 있어서 첫번째가 최고
                       } else {
                         toast.error('해당 포지션에 사용 가능한 카드가 없습니다');
                       }
@@ -707,18 +718,7 @@ export default function Deck() {
                     최고 카드 자동 선택
                   </button>
                   <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {myCards
-                    .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
-                    .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
-                    .sort((a, b) => {
-                      // 포지션 매치 우선, 그 다음 OVR 높은 순
-                      const aMatch = a.player.position === selectedPosition;
-                      const bMatch = b.player.position === selectedPosition;
-                      if (aMatch && !bMatch) return -1;
-                      if (!aMatch && bMatch) return 1;
-                      return calculateCardOVR(b, selectedPosition) - calculateCardOVR(a, selectedPosition);
-                    })
-                    .map((card) => {
+                  {filteredAndSortedCards.map((card) => {
                       const positionMatch = card.player.position === selectedPosition;
                       const displayOVR = calculateCardOVR(card, selectedPosition);
 

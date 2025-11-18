@@ -231,16 +231,24 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
       searchName = tierMatch[2];
     }
 
-    // 선수 검색
+    // 선수 검색 (tier는 overall 기반으로 계산)
     let players: any;
     if (searchTier) {
+      // Tier별 overall 범위 계산
+      let minOvr = 0, maxOvr = 120;
+      if (searchTier === 'ICON') { minOvr = 115; maxOvr = 120; }
+      else if (searchTier === 'LEGENDARY') { minOvr = 101; maxOvr = 114; }
+      else if (searchTier === 'EPIC') { minOvr = 91; maxOvr = 100; }
+      else if (searchTier === 'RARE') { minOvr = 81; maxOvr = 90; }
+      else if (searchTier === 'COMMON') { minOvr = 1; maxOvr = 80; }
+
       [players] = await connection.query(
-        'SELECT id, name, tier FROM players WHERE name LIKE ? AND tier = ?',
-        [`%${searchName}%`, searchTier]
+        'SELECT id, name, overall FROM players WHERE name LIKE ? AND overall BETWEEN ? AND ?',
+        [`%${searchName}%`, minOvr, maxOvr]
       );
     } else {
       [players] = await connection.query(
-        'SELECT id, name, tier FROM players WHERE name LIKE ?',
+        'SELECT id, name, overall FROM players WHERE name LIKE ?',
         [`%${searchName}%`]
       );
     }

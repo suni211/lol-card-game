@@ -47,6 +47,10 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+// Trust proxy - required for Nginx reverse proxy
+app.set('trust proxy', true);
+
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -55,9 +59,6 @@ const io = new Server(httpServer, {
 });
 
 const PORT = process.env.PORT || 5000;
-
-// Trust proxy - required for Nginx reverse proxy to get real client IP
-app.set('trust proxy', true);
 
 // Security middleware
 app.use(helmet());
@@ -153,13 +154,30 @@ const authenticatedUsers = new Map<number, string>(); // userId -> socketId
 const chatHistory: any[] = [];
 const MAX_CHAT_HISTORY = 100;
 
-// Helper function to get client IP
+// Helper function to get client IP (works with Nginx reverse proxy)
 function getClientIP(socket: any): string {
+  // Try x-forwarded-for header first (Nginx sets this)
   const forwarded = socket.handshake.headers['x-forwarded-for'];
   if (forwarded) {
-    return typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
+    const ip = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
+    if (ip && ip !== '127.0.0.1' && ip !== '::1') {
+      return ip;
+    }
   }
-  return socket.handshake.address || 'unknown';
+
+  // Try x-real-ip header (Nginx also sets this)
+  const realIP = socket.handshake.headers['x-real-ip'];
+  if (realIP && typeof realIP === 'string' && realIP !== '127.0.0.1' && realIP !== '::1') {
+    return realIP;
+  }
+
+  // Fallback to socket address
+  const address = socket.handshake.address;
+  if (address && address !== '127.0.0.1' && address !== '::1') {
+    return address;
+  }
+
+  return 'unknown';
 }
 
 io.on('connection', (socket) => {

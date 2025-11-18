@@ -7,13 +7,13 @@ import { emitPointUpdate } from '../server';
 
 const router = express.Router();
 
-// Gacha probabilities (아이콘은 모든 일반 팩에서 제외, icon_test 팩만 가능)
+// Gacha probabilities (ICON 티어는 모든 팩에서 0.0001% 확률로 등장)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { legendary: 0.02, epic: 0.1, rare: 5, common: 94.88 } },
-  basic: { cost: 500, probabilities: { legendary: 0.06, epic: 0.5, rare: 10, common: 89.44 } },
-  premium: { cost: 1000, probabilities: { legendary: 0.22, epic: 3, rare: 18, common: 78.78 } },
-  ultra: { cost: 1500, probabilities: { legendary: 0.52, epic: 6, rare: 25, common: 68.48 } },
-  mega: { cost: 2000, probabilities: { legendary: 1.02, epic: 10, rare: 30, common: 58.98 } },
+  free: { cost: 0, probabilities: { icon: 0.0001, legendary: 0.02, epic: 0.1, rare: 5, common: 94.8799 } },
+  basic: { cost: 500, probabilities: { icon: 0.0001, legendary: 0.06, epic: 0.5, rare: 10, common: 89.4399 } },
+  premium: { cost: 1000, probabilities: { icon: 0.0001, legendary: 0.22, epic: 3, rare: 18, common: 78.7799 } },
+  ultra: { cost: 1500, probabilities: { icon: 0.0001, legendary: 0.52, epic: 6, rare: 25, common: 68.4799 } },
+  mega: { cost: 2000, probabilities: { icon: 0.0001, legendary: 1.02, epic: 10, rare: 30, common: 58.9799 } },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5.01, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   icon_test: { cost: 0, probabilities: { icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
 };

@@ -41,7 +41,8 @@ export default function Gacha() {
       cost: 0,
       label: '일일 무료',
       probabilities: {
-        common: 94.88,
+        icon: 0.0001,
+        common: 94.8799,
         rare: 5,
         epic: 0.1,
         legendary: 0.02,
@@ -52,7 +53,8 @@ export default function Gacha() {
       cost: 500,
       label: '기본',
       probabilities: {
-        common: 89.44,
+        icon: 0.0001,
+        common: 89.4399,
         rare: 10,
         epic: 0.5,
         legendary: 0.06,
@@ -63,7 +65,8 @@ export default function Gacha() {
       cost: 1000,
       label: '고급',
       probabilities: {
-        common: 78.78,
+        icon: 0.0001,
+        common: 78.7799,
         rare: 18,
         epic: 3,
         legendary: 0.22,
@@ -74,7 +77,8 @@ export default function Gacha() {
       cost: 1500,
       label: '프리미엄',
       probabilities: {
-        common: 68.48,
+        icon: 0.0001,
+        common: 68.4799,
         rare: 25,
         epic: 6,
         legendary: 0.52,
@@ -85,7 +89,8 @@ export default function Gacha() {
       cost: 2000,
       label: '울트라',
       probabilities: {
-        common: 58.98,
+        icon: 0.0001,
+        common: 58.9799,
         rare: 30,
         epic: 10,
         legendary: 1.02,

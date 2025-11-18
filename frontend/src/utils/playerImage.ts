@@ -6,17 +6,14 @@ export function getPlayerImageUrl(playerName: string, season: string = '25', tie
   // Remove leading/trailing spaces but keep internal spaces
   let cleanName = playerName.trim();
 
-  // Remove [ICON], [NR], [GR] prefixes from name
-  cleanName = cleanName.replace(/^\[ICON\]\s*/i, '').replace(/^\[NR\]\s*/i, '').replace(/^\[GR\]\s*/i, '');
-
-  // ICON tier uses tier as prefix instead of season
+  // ICON tier - keep [ICON] prefix in filename
   if (tier === 'ICON' || season === 'ICON') {
     return `/players/ICON_${cleanName}.png`;
   }
 
-  // NR tier (No Rival) - use same image as base player
+  // NR tier - keep [NR] prefix in filename
   if (season === 'NR') {
-    return `/players/25_${cleanName}.png`;
+    return `/players/NR_${cleanName}.png`;
   }
 
   // GR tier uses _gr.png suffix

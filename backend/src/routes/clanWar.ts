@@ -136,15 +136,18 @@ router.post('/matchmaking/start', authMiddleware, async (req: AuthRequest, res) 
 
     // Get user's guild
     const [user]: any = await connection.query(
-      'SELECT guild_id FROM users WHERE id = ?',
+      'SELECT id, username, guild_id FROM users WHERE id = ?',
       [userId]
     );
 
+    console.log('[ClanWar] Matchmaking start - User:', userId, 'Guild ID:', user[0]?.guild_id);
+
     if (!user[0] || !user[0].guild_id) {
       await connection.rollback();
+      console.log('[ClanWar] User has no guild - User:', user[0]?.username, 'Guild ID:', user[0]?.guild_id);
       return res.status(400).json({
         success: false,
-        error: '길드에 가입되어 있지 않습니다.',
+        error: '길드에 가입되어 있지 않습니다. 현재 guild_id: ' + (user[0]?.guild_id || 'null'),
       });
     }
 

@@ -83,9 +83,11 @@ export default function GuildPage() {
   const fetchMyGuild = async () => {
     if (!token) return;
     try {
+      console.log('[Guild] Fetching my guild...');
       const response = await axios.get(`${API_URL}/guild/my`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('[Guild] My guild response:', response.data);
       if (response.data.data) {
         setMyGuild(response.data.data);
         // user 정보도 업데이트
@@ -109,6 +111,8 @@ export default function GuildPage() {
       }
     } catch (error: any) {
       console.error('Failed to fetch my guild:', error);
+      console.error('Error details:', error.response?.data);
+      alert('내 길드 정보를 불러오는데 실패했습니다: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -117,12 +121,16 @@ export default function GuildPage() {
   const fetchGuilds = async () => {
     if (!token) return;
     try {
+      console.log('[Guild] Fetching guilds list...');
       const response = await axios.get(`${API_URL}/guild`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('[Guild] Guilds list response:', response.data);
       setGuilds(response.data.data);
     } catch (error: any) {
       console.error('Failed to fetch guilds:', error);
+      console.error('Error details:', error.response?.data);
+      alert('길드 목록을 불러오는데 실패했습니다: ' + (error.response?.data?.error || error.message));
     }
   };
 

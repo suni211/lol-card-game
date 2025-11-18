@@ -113,7 +113,20 @@ export default function Register() {
     } catch (error: any) {
       console.error('Google 회원가입 오류:', error);
       if (error.response?.data?.error) {
-        toast.error(error.response.data.error);
+        // VPN 에러는 더 강조해서 표시
+        if (error.response.data.error.includes('VPN') || error.response.data.error.includes('프록시')) {
+          toast.error(error.response.data.message || error.response.data.error, {
+            duration: 8000,
+            style: {
+              background: '#DC2626',
+              color: '#fff',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }
+          });
+        } else {
+          toast.error(error.response.data.error);
+        }
       } else {
         toast.error('회원가입 실패. 다시 시도해주세요.');
       }

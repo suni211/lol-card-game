@@ -7,6 +7,54 @@ import axios from 'axios';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
+// VPN/프록시 감지 함수
+async function isVpnOrProxy(ip: string): Promise<boolean> {
+  try {
+    // IPv6 로컬호스트는 허용
+    if (ip === '::1' || ip === '::ffff:127.0.0.1' || ip.startsWith('::ffff:127.')) {
+      return false;
+    }
+
+    // IPv4 로컬호스트는 허용
+    if (ip === '127.0.0.1' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+      return false;
+    }
+
+    // ipapi.co를 사용한 VPN 감지 (무료, 요청 제한 있음)
+    const response = await axios.get(`https://ipapi.co/${ip}/json/`, {
+      timeout: 3000,
+      headers: {
+        'User-Agent': 'LOL-Card-Game/1.0'
+      }
+    });
+
+    const data = response.data;
+
+    // VPN/프록시/호스팅 여부 체크
+    if (data.org) {
+      const org = data.org.toLowerCase();
+      const vpnKeywords = [
+        'vpn', 'proxy', 'hosting', 'datacenter', 'cloud',
+        'amazon', 'google cloud', 'microsoft', 'digitalocean',
+        'ovh', 'linode', 'vultr', 'aws', 'azure'
+      ];
+
+      for (const keyword of vpnKeywords) {
+        if (org.includes(keyword)) {
+          console.log(`🚫 VPN/Proxy detected! IP: ${ip}, Org: ${data.org}`);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  } catch (error) {
+    // API 에러 시 일단 허용 (false positive 방지)
+    console.error('VPN check error:', error.message);
+    return false;
+  }
+}
+
 const router = express.Router();
 
 // Validation schemas
@@ -36,6 +84,16 @@ router.post('/google', async (req, res) => {
     const clientIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
                      req.socket.remoteAddress ||
                      'unknown';
+
+    // VPN/프록시 차단
+    const isVpn = await isVpnOrProxy(clientIp);
+    if (isVpn) {
+      return res.status(403).json({
+        success: false,
+        error: 'VPN/프록시 사용이 감지되었습니다.',
+        message: 'VPN 또는 프록시를 사용 중인 것으로 감지되어 접속이 차단되었습니다. VPN을 끄고 다시 시도해주세요.'
+      });
+    }
 
     // Verify Google token
     const googleResponse = await axios.get(

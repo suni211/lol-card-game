@@ -15,6 +15,8 @@ export default function Gacha() {
   const [drawnCards, setDrawnCards] = useState<Player[]>([]);
   const [showResult, setShowResult] = useState(false);
   const [show10Result, setShow10Result] = useState(false);
+  const [showBestCardCutscene, setShowBestCardCutscene] = useState(false);
+  const [bestCard, setBestCard] = useState<Player | null>(null);
   const [dailyFreeUsed, setDailyFreeUsed] = useState(false);
   const [revealStep, setRevealStep] = useState(0); // 0: loading, 1: region, 2: position, 3: season, 4: overall, 5: name+face, 6: final
 
@@ -308,11 +310,20 @@ export default function Gacha() {
       if (response.data.success) {
         const { results, totalRefund } = response.data.data;
 
-        setDrawnCards(results.map((r: any) => r.player));
+        const cards = results.map((r: any) => r.player);
+        setDrawnCards(cards);
+
+        // 최고 OVR 카드 찾기
+        const highestCard = cards.reduce((max: Player, card: Player) =>
+          card.overall > max.overall ? card : max
+        , cards[0]);
+
+        setBestCard(highestCard);
 
         setTimeout(() => {
           setIsDrawing(false);
-          setShow10Result(true);
+          // 최고 OVR 카드 컷신 먼저 보여주기
+          setShowBestCardCutscene(true);
 
           // 업데이트된 유저 정보 가져오기
           axios.get(`${API_URL}/auth/me`, {
@@ -1322,6 +1333,217 @@ export default function Gacha() {
                   >
                     확인
                   </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 최고 OVR 카드 컷신 (10연차) */}
+      <AnimatePresence>
+        {showBestCardCutscene && bestCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => {
+              setShowBestCardCutscene(false);
+              setShow10Result(true);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0, rotateY: 180 }}
+              animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 20,
+              }}
+              className="relative max-w-2xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Particles for best card cutscene */}
+              {(bestCard.tier === 'LEGENDARY' || bestCard.tier === 'ICON' || bestCard.tier === 'GR' || bestCard.tier === 'EPIC') && (
+                <>
+                  <div className="absolute -left-32 top-0 w-40 h-full overflow-visible pointer-events-none">
+                    {[...Array(bestCard.tier === 'ICON' || bestCard.tier === 'GR' ? 80 : bestCard.tier === 'LEGENDARY' ? 60 : 40)].map((_, i) => {
+                      const delay = Math.random() * 5;
+                      const xOffset = Math.random() * 180 + 80;
+                      const yDistance = Math.random() * 600 + 400;
+                      const duration = 2 + Math.random() * 2;
+                      const size = 1 + Math.random() * 3;
+
+                      return (
+                        <motion.div
+                          key={`cutscene-left-${i}`}
+                          className={`absolute rounded-full blur-[1px] ${
+                            bestCard.tier === 'ICON' || bestCard.tier === 'GR'
+                              ? 'bg-gradient-to-br from-red-400 via-yellow-300 to-pink-400'
+                              : bestCard.tier === 'LEGENDARY'
+                              ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-orange-400'
+                              : 'bg-gradient-to-br from-purple-300 via-purple-400 to-pink-400'
+                          }`}
+                          style={{
+                            width: `${size}px`,
+                            height: `${size}px`,
+                            left: `${Math.random() * 40}px`,
+                            top: `${Math.random() * 100 - 50}px`,
+                            boxShadow: bestCard.tier === 'ICON' || bestCard.tier === 'GR'
+                              ? '0 0 15px rgba(239, 68, 68, 0.9)'
+                              : bestCard.tier === 'LEGENDARY'
+                              ? '0 0 12px rgba(251, 191, 36, 0.8)'
+                              : '0 0 10px rgba(192, 132, 252, 0.8)',
+                          }}
+                          animate={{
+                            x: [0, xOffset],
+                            y: [0, yDistance],
+                            scale: [1, 1.3, 0.8, 0],
+                            opacity: [0, 1, 1, 0],
+                          }}
+                          transition={{
+                            duration: duration,
+                            repeat: Infinity,
+                            delay: delay,
+                            ease: [0.25, 0.1, 0.25, 1],
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div className="absolute -right-32 top-0 w-40 h-full overflow-visible pointer-events-none">
+                    {[...Array(bestCard.tier === 'ICON' || bestCard.tier === 'GR' ? 80 : bestCard.tier === 'LEGENDARY' ? 60 : 40)].map((_, i) => {
+                      const delay = Math.random() * 5;
+                      const xOffset = -(Math.random() * 180 + 80);
+                      const yDistance = Math.random() * 600 + 400;
+                      const duration = 2 + Math.random() * 2;
+                      const size = 1 + Math.random() * 3;
+
+                      return (
+                        <motion.div
+                          key={`cutscene-right-${i}`}
+                          className={`absolute rounded-full blur-[1px] ${
+                            bestCard.tier === 'ICON' || bestCard.tier === 'GR'
+                              ? 'bg-gradient-to-br from-red-400 via-yellow-300 to-pink-400'
+                              : bestCard.tier === 'LEGENDARY'
+                              ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-orange-400'
+                              : 'bg-gradient-to-br from-purple-300 via-purple-400 to-pink-400'
+                          }`}
+                          style={{
+                            width: `${size}px`,
+                            height: `${size}px`,
+                            right: `${Math.random() * 40}px`,
+                            top: `${Math.random() * 100 - 50}px`,
+                            boxShadow: bestCard.tier === 'ICON' || bestCard.tier === 'GR'
+                              ? '0 0 15px rgba(239, 68, 68, 0.9)'
+                              : bestCard.tier === 'LEGENDARY'
+                              ? '0 0 12px rgba(251, 191, 36, 0.8)'
+                              : '0 0 10px rgba(192, 132, 252, 0.8)',
+                          }}
+                          animate={{
+                            x: [0, xOffset],
+                            y: [0, yDistance],
+                            scale: [1, 1.3, 0.8, 0],
+                            opacity: [0, 1, 1, 0],
+                          }}
+                          transition={{
+                            duration: duration,
+                            repeat: Infinity,
+                            delay: delay,
+                            ease: [0.25, 0.1, 0.25, 1],
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              <div className={`relative bg-gradient-to-br ${getTierColor(bestCard.tier)} rounded-3xl p-2 shadow-2xl`}>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-10">
+                  {/* Best Card Badge */}
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.3, type: 'spring' }}
+                    className="text-center mb-6"
+                  >
+                    <div className="inline-block px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-lg mb-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-6 h-6 text-white" />
+                        <span className="text-white font-bold text-xl">최고 등급!</span>
+                        <Trophy className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <div className="text-center mb-8">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
+                      className={`inline-block px-8 py-3 bg-gradient-to-r ${getTierColor(bestCard.tier)} rounded-full text-white font-bold text-2xl mb-6 shadow-xl`}
+                    >
+                      {getTierText(bestCard.tier)}
+                    </motion.div>
+
+                    <motion.h2
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                      className="text-5xl font-bold text-gray-900 dark:text-white mb-4"
+                    >
+                      {bestCard.name}
+                      {bestCard.season && (
+                        <span className="ml-3 px-2 py-1 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-lg font-semibold">
+                          {bestCard.season}
+                        </span>
+                      )}
+                    </motion.h2>
+
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.9 }}
+                      className="text-2xl text-gray-600 dark:text-gray-400 mb-8"
+                    >
+                      {bestCard.team} • {bestCard.position}
+                    </motion.p>
+
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.1, type: 'spring' }}
+                      className="bg-gradient-to-br from-primary-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-2xl p-8 mb-6 shadow-inner"
+                    >
+                      <div className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-purple-600 dark:from-primary-400 dark:to-purple-400">
+                        {bestCard.overall}
+                      </div>
+                      <div className="text-lg text-gray-600 dark:text-gray-400 mt-2 font-semibold">
+                        Overall Rating
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.3 }}
+                    onClick={() => {
+                      setShowBestCardCutscene(false);
+                      setShow10Result(true);
+                    }}
+                    className="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl"
+                  >
+                    나머지 카드 확인하기
+                  </motion.button>
+
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+                    아무 곳이나 클릭해도 진행됩니다
+                  </p>
                 </div>
               </div>
             </motion.div>

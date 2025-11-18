@@ -138,7 +138,7 @@ const ClanWar: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <Swords className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <Swords className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
           <h2 className="text-2xl font-bold mb-2">길드 전쟁</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             길드에 가입해야 참여할 수 있습니다

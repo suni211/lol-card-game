@@ -322,7 +322,7 @@ export default function Profile() {
               {stats.winRate}%
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">승률</div>
-            <div className="mt-3 text-xs text-gray-500 dark:text-gray-500">
+            <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
               {stats.wins}승 {stats.losses}패
             </div>
           </motion.div>
@@ -343,7 +343,7 @@ export default function Profile() {
               {stats.currentStreak}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">현재 연승</div>
-            <div className="mt-3 text-xs text-gray-500 dark:text-gray-500">
+            <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
               최고 연승: {stats.longestWinStreak}
             </div>
           </motion.div>
@@ -382,7 +382,7 @@ export default function Profile() {
               {stats.legendaryCards}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">레전드 카드</div>
-            <div className="mt-3 text-xs text-gray-500 dark:text-gray-500">
+            <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
               전체 {stats.totalCards}장 중
             </div>
           </motion.div>

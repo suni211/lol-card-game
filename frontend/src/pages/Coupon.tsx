@@ -115,7 +115,7 @@ export default function Coupon() {
             <Gift className="w-10 h-10 text-yellow-400" />
             <h1 className="text-4xl font-bold text-white">쿠폰 사용</h1>
           </div>
-          <p className="text-gray-400">쿠폰 코드를 입력하여 보상을 받으세요!</p>
+          <p className="text-gray-400 dark:text-gray-500">쿠폰 코드를 입력하여 보상을 받으세요!</p>
         </motion.div>
 
         {/* Coupon Input */}
@@ -184,7 +184,7 @@ export default function Coupon() {
           </div>
 
           {redemptions.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <Gift className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p>아직 사용한 쿠폰이 없습니다</p>
             </div>
@@ -216,13 +216,13 @@ export default function Coupon() {
                         </span>
                       </div>
                       {redemption.description && (
-                        <p className="text-gray-400 text-sm mb-1">{redemption.description}</p>
+                        <p className="text-gray-400 dark:text-gray-500 text-sm mb-1">{redemption.description}</p>
                       )}
                       <p className="text-green-400 font-bold">
                         보상: {formatRewardDetails(redemption.reward_details)}
                       </p>
                     </div>
-                    <div className="text-right text-sm text-gray-500">
+                    <div className="text-right text-sm text-gray-500 dark:text-gray-400">
                       {new Date(redemption.redeemed_at).toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'long',

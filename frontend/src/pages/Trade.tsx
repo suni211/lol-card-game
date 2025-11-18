@@ -323,7 +323,7 @@ export default function Trade() {
                 {isReceived ? trade.sender_username : trade.receiver_username}
               </span>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {new Date(trade.created_at).toLocaleString('ko-KR')}
             </div>
           </div>

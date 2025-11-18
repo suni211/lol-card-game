@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Sparkles, Gift, X } from 'lucide-react';
+import { Package, Sparkles, Gift, X, Trophy } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -31,6 +31,8 @@ export default function Packs() {
   const [loading, setLoading] = useState(true);
   const [opening, setOpening] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [showBestCardCutscene, setShowBestCardCutscene] = useState(false);
+  const [bestCard, setBestCard] = useState<OpenedCard | null>(null);
   const [openedCards, setOpenedCards] = useState<OpenedCard[]>([]);
 
   useEffect(() => {
@@ -66,8 +68,20 @@ export default function Packs() {
       );
 
       if (response.data.success) {
-        setOpenedCards(response.data.data.cards);
-        setShowResult(true);
+        const cards = response.data.data.cards;
+        setOpenedCards(cards);
+
+        // 여러 개 열었을 때만 최고 OVR 카드 컷신 보여주기
+        if (cards.length > 1) {
+          const highestCard = cards.reduce((max: OpenedCard, card: OpenedCard) =>
+            card.overall > max.overall ? card : max
+          , cards[0]);
+          setBestCard(highestCard);
+          setShowBestCardCutscene(true);
+        } else {
+          setShowResult(true);
+        }
+
         loadPacks(); // Reload pack inventory
         toast.success(`${count}개의 팩을 열었습니다!`);
       }
@@ -106,13 +120,38 @@ export default function Packs() {
 
   const getTierColor = (tier: string) => {
     const tierColors: any = {
+      COMMON: 'from-gray-400 to-gray-500',
+      RARE: 'from-blue-400 to-blue-600',
+      EPIC: 'from-purple-400 to-purple-600',
+      LEGENDARY: 'from-yellow-400 to-orange-500',
+      ICON: 'from-pink-500 to-red-500',
+      GR: 'from-red-500 to-pink-600',
+    };
+    return tierColors[tier] || tierColors.COMMON;
+  };
+
+  const getTierTextColor = (tier: string) => {
+    const tierColors: any = {
       COMMON: 'text-gray-500 dark:text-gray-400',
       RARE: 'text-blue-500 dark:text-blue-400',
       EPIC: 'text-purple-500 dark:text-purple-400',
       LEGENDARY: 'text-yellow-500 dark:text-yellow-400',
       ICON: 'text-pink-500 dark:text-pink-400',
+      GR: 'text-red-500 dark:text-red-400',
     };
     return tierColors[tier] || tierColors.COMMON;
+  };
+
+  const getTierText = (tier: string) => {
+    const tierTexts: any = {
+      COMMON: 'COMMON',
+      RARE: 'RARE',
+      EPIC: 'EPIC',
+      LEGENDARY: 'LEGENDARY',
+      ICON: 'ICON',
+      GR: 'GR',
+    };
+    return tierTexts[tier] || tier;
   };
 
   if (loading) {
@@ -223,6 +262,119 @@ export default function Packs() {
         )}
       </div>
 
+      {/* Best Card Cutscene Modal */}
+      <AnimatePresence>
+        {showBestCardCutscene && bestCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => {
+              setShowBestCardCutscene(false);
+              setShowResult(true);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0, rotateY: 180 }}
+              animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 20,
+              }}
+              className="relative max-w-2xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={`relative bg-gradient-to-br ${getTierColor(bestCard.tier)} rounded-3xl p-2 shadow-2xl`}>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-10">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.3, type: 'spring' }}
+                    className="text-center mb-6"
+                  >
+                    <div className="inline-block px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-lg mb-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-6 h-6 text-white" />
+                        <span className="text-white font-bold text-xl">최고 등급!</span>
+                        <Trophy className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <div className="text-center mb-8">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
+                      className={`inline-block px-8 py-3 bg-gradient-to-r ${getTierColor(bestCard.tier)} rounded-full text-white font-bold text-2xl mb-6 shadow-xl`}
+                    >
+                      {getTierText(bestCard.tier)}
+                    </motion.div>
+
+                    <motion.h2
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                      className="text-5xl font-bold text-gray-900 dark:text-white mb-4"
+                    >
+                      {bestCard.name}
+                      {bestCard.season && (
+                        <span className="ml-3 px-2 py-1 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-lg font-semibold">
+                          {bestCard.season}
+                        </span>
+                      )}
+                    </motion.h2>
+
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.9 }}
+                      className="text-2xl text-gray-600 dark:text-gray-400 mb-8"
+                    >
+                      {bestCard.team} • {bestCard.position}
+                    </motion.p>
+
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.1, type: 'spring' }}
+                      className="bg-gradient-to-br from-primary-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-2xl p-8 mb-6 shadow-inner"
+                    >
+                      <div className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-purple-600 dark:from-primary-400 dark:to-purple-400">
+                        {bestCard.overall}
+                      </div>
+                      <div className="text-lg text-gray-600 dark:text-gray-400 mt-2 font-semibold">
+                        Overall Rating
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.3 }}
+                    onClick={() => {
+                      setShowBestCardCutscene(false);
+                      setShowResult(true);
+                    }}
+                    className="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl"
+                  >
+                    나머지 카드 확인하기
+                  </motion.button>
+
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+                    아무 곳이나 클릭해도 진행됩니다
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Pack Opening Result Modal */}
       <AnimatePresence>
         {showResult && (
@@ -267,8 +419,8 @@ export default function Packs() {
                     className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-600"
                   >
                     <div className="text-center">
-                      <div className={`text-sm font-bold mb-1 ${getTierColor(card.tier)}`}>
-                        {card.tier}
+                      <div className={`text-sm font-bold mb-1 ${getTierTextColor(card.tier)}`}>
+                        {getTierText(card.tier)}
                       </div>
                       <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                         {card.name}

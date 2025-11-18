@@ -178,7 +178,7 @@ export default function Coach() {
               <span className="text-white/80">버프 효과</span>
               <div className="flex items-center gap-2">
                 {owned && currentBuffValue > coach.buff_value && (
-                  <span className="text-sm text-gray-400 line-through">+{coach.buff_value}</span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500 line-through">+{coach.buff_value}</span>
                 )}
                 <span className={`text-xl font-bold ${owned && currentBuffValue > coach.buff_value ? 'text-green-400' : 'text-white'}`}>
                   +{currentBuffValue}
@@ -242,7 +242,7 @@ export default function Coach() {
           )}
 
           {isActive && (
-            <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+            <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
               <Zap className="w-4 h-4" />
               활성
             </div>

@@ -151,7 +151,7 @@ export default function AdminCoupon() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">쿠폰 관리</h1>
-            <p className="text-gray-400">보상 쿠폰을 생성하고 관리합니다</p>
+            <p className="text-gray-400 dark:text-gray-500">보상 쿠폰을 생성하고 관리합니다</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
@@ -203,7 +203,7 @@ export default function AdminCoupon() {
 
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
                     <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-gray-400 text-sm mb-1">보상</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mb-1">보상</p>
                       <p className="text-white font-bold">
                         {coupon.type === 'POINTS' && `${coupon.reward_value}P`}
                         {coupon.type === 'CARD' && coupon.reward_player_name}
@@ -213,14 +213,14 @@ export default function AdminCoupon() {
                     </div>
 
                     <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-gray-400 text-sm mb-1">사용 현황</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mb-1">사용 현황</p>
                       <p className="text-white font-bold">
                         {coupon.current_uses} / {coupon.max_uses || '∞'}
                       </p>
                     </div>
 
                     <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-gray-400 text-sm mb-1 flex items-center gap-1">
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mb-1 flex items-center gap-1">
                         <Users className="w-4 h-4" />
                         사용자 수
                       </p>
@@ -230,7 +230,7 @@ export default function AdminCoupon() {
                     </div>
 
                     <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-gray-400 text-sm mb-1 flex items-center gap-1">
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mb-1 flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         만료일
                       </p>
@@ -242,12 +242,12 @@ export default function AdminCoupon() {
                     </div>
 
                     <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-gray-400 text-sm mb-1">생성자</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mb-1">생성자</p>
                       <p className="text-white font-bold">{coupon.created_by_username}</p>
                     </div>
                   </div>
 
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
                     생성일: {new Date(coupon.created_at).toLocaleString('ko-KR')}
                   </p>
                 </div>
@@ -359,7 +359,7 @@ export default function AdminCoupon() {
                     className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white"
                     placeholder="1"
                   />
-                  <p className="text-gray-400 text-xs mt-1">총 사용 가능 횟수 (사용자 중복 포함)</p>
+                  <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">총 사용 가능 횟수 (사용자 중복 포함)</p>
                 </div>
 
                 {/* Max Users */}
@@ -374,7 +374,7 @@ export default function AdminCoupon() {
                     className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white"
                     placeholder="무제한"
                   />
-                  <p className="text-gray-400 text-xs mt-1">쿠폰을 사용할 수 있는 최대 유저 수</p>
+                  <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">쿠폰을 사용할 수 있는 최대 유저 수</p>
                 </div>
 
                 {/* Expires At */}

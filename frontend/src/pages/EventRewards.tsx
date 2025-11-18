@@ -163,7 +163,7 @@ export default function EventRewards() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-12 text-center border border-gray-200 dark:border-gray-700"
           >
-            <Gift className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <Gift className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 dark:text-gray-500 mx-auto mb-3 sm:mb-4" />
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
               받을 수 있는 카드가 없습니다
             </h3>

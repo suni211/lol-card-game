@@ -20,11 +20,15 @@ export default function ChatPopup() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [onlineCount, setOnlineCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Reset unread count when opening chat
+    setUnreadCount(0);
 
     // Connect to socket
     const socket = io(SOCKET_URL, {
@@ -55,6 +59,31 @@ export default function ChatPopup() {
       socket.disconnect();
     };
   }, [isOpen]);
+
+  // Listen for messages when chat is closed
+  useEffect(() => {
+    if (isOpen || !isAuthenticated) return;
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnection: true,
+    });
+
+    socket.on('connect', () => {
+      socket.emit('chat_join');
+    });
+
+    socket.on('chat_message', (message: ChatMessage) => {
+      // Don't count own messages
+      if (message.username !== user?.username) {
+        setUnreadCount(prev => prev + 1);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isOpen, isAuthenticated, user?.username]);
 
   useEffect(() => {
     // Auto scroll to bottom
@@ -117,9 +146,9 @@ export default function ChatPopup() {
             className="fixed bottom-6 left-6 z-50 p-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
           >
             <MessageCircle className="w-6 h-6" />
-            {onlineCount > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                {onlineCount}
+                {unreadCount}
               </span>
             )}
           </motion.button>

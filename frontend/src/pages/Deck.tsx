@@ -422,10 +422,11 @@ export default function Deck() {
                   <motion.div
                     key={slot.position}
                     whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleSlotClick(slot.position)}
-                    className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    className={`relative p-4 md:p-4 rounded-xl border-2 transition-all cursor-pointer active:scale-95 min-h-[120px] md:min-h-auto ${
                       selectedPosition === slot.position
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg'
                         : 'border-gray-300 dark:border-gray-600 hover:border-primary-400'
                     }`}
                   >
@@ -683,10 +684,40 @@ export default function Deck() {
               </div>
 
               {selectedPosition ? (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                <>
+                  {/* 빠른 선택 버튼 */}
+                  <button
+                    onClick={() => {
+                      const availableCards = myCards
+                        .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
+                        .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
+                        .filter((card) => card.player.position === selectedPosition);
+
+                      if (availableCards.length > 0) {
+                        const bestCard = availableCards.reduce((best, current) =>
+                          calculateCardOVR(current, selectedPosition) > calculateCardOVR(best, selectedPosition) ? current : best
+                        );
+                        handleCardSelect(bestCard);
+                      } else {
+                        toast.error('해당 포지션에 사용 가능한 카드가 없습니다');
+                      }
+                    }}
+                    className="w-full mb-3 px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-lg active:scale-95"
+                  >
+                    최고 카드 자동 선택
+                  </button>
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {myCards
                     .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
                     .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
+                    .sort((a, b) => {
+                      // 포지션 매치 우선, 그 다음 OVR 높은 순
+                      const aMatch = a.player.position === selectedPosition;
+                      const bMatch = b.player.position === selectedPosition;
+                      if (aMatch && !bMatch) return -1;
+                      if (!aMatch && bMatch) return 1;
+                      return calculateCardOVR(b, selectedPosition) - calculateCardOVR(a, selectedPosition);
+                    })
                     .map((card) => {
                       const positionMatch = card.player.position === selectedPosition;
                       const displayOVR = calculateCardOVR(card, selectedPosition);
@@ -751,24 +782,24 @@ export default function Deck() {
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
+                          {/* Action Buttons - 모바일 친화적 크기 */}
                           <div className="flex gap-2 mt-3">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCardClick(card);
                               }}
-                              className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
+                              className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 active:scale-95 min-h-[44px]"
                             >
                               <Eye className="w-4 h-4" />
-                              자세히
+                              <span className="hidden sm:inline">자세히</span>
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCardSelect(card);
                               }}
-                              className="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
+                              className="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-bold transition-colors active:scale-95 shadow-md min-h-[44px]"
                             >
                               선택
                             </button>
@@ -782,7 +813,8 @@ export default function Deck() {
                       사용 가능한 카드가 없습니다
                     </p>
                   )}
-                </div>
+                  </div>
+                </>
               ) : (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-8">
                   포지션을 선택하여<br />카드를 배치하세요

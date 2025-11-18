@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import Navbar from './Navbar';
+import Sidebar from './Sidebar';
 import Footer from './Footer';
 import ChatPopup from '../Chat/ChatPopup';
 import { Toaster } from 'react-hot-toast';
@@ -80,11 +80,14 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Navbar />
-      <main className="flex-1">
-        <Outlet />
-      </main>
+    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
+      <Sidebar />
+      <div className="flex-1 flex flex-col lg:ml-0">
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
 
       {/* Happy Hour Banner */}
       <AnimatePresence>
@@ -126,7 +129,6 @@ export default function Layout() {
         )}
       </AnimatePresence>
 
-      <Footer />
       <ChatPopup />
       <Toaster
         position="top-right"

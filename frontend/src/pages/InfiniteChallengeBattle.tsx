@@ -230,17 +230,8 @@ export default function InfiniteChallengeBattle() {
   };
 
   useEffect(() => {
-    // 페이지 최초 로드 시에만 배틀 시작
-    // sessionStorage를 사용해서 현재 세션에서 이미 시작했는지 확인
-    const battleInProgress = sessionStorage.getItem('infinite_battle_in_progress');
-
-    if (!battleInProgress) {
-      sessionStorage.setItem('infinite_battle_in_progress', 'true');
-      startBattle();
-    } else {
-      // 이미 진행 중인 배틀이 있으면 현재 진행 상태 가져오기
-      checkCurrentBattle();
-    }
+    // 페이지 로드 시 저장된 배틀 상태 확인
+    checkCurrentBattle();
 
     // 컴포넌트 언마운트 시 cleanup
     return () => {
@@ -249,11 +240,6 @@ export default function InfiniteChallengeBattle() {
       if (battleIntervalRef.current) {
         clearInterval(battleIntervalRef.current);
         battleIntervalRef.current = null;
-      }
-
-      // 배틀 완료 후 결과 페이지로 이동할 때만 세션 클리어
-      if (window.location.pathname !== '/infinite-challenge/battle') {
-        sessionStorage.removeItem('infinite_battle_in_progress');
       }
     };
   }, []);

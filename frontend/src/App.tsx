@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { useAudioStore } from './store/audioStore';
+import { useOnlineStore } from './store/onlineStore';
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -80,6 +81,7 @@ function App() {
   const { theme } = useThemeStore();
   const { playRandomLobbyBGM, initAudio } = useAudioStore();
   const { token, isAuthenticated, updateUser, logout } = useAuthStore();
+  const { setOnlineUsers } = useOnlineStore();
 
   // Setup axios interceptor for 401 errors (invalid token)
   useEffect(() => {
@@ -110,22 +112,70 @@ function App() {
     }
   }, [theme]);
 
-  // Real-time point updates via Socket.IO
+  // Real-time updates via Socket.IO (CENTRALIZED - only one connection per app)
   useEffect(() => {
     if (!isAuthenticated || !token) return;
+
+    console.log('[App] Initializing single socket connection...');
 
     const socket = io(SOCKET_URL, {
       transports: ['websocket'],
       reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
     });
 
+    let heartbeatInterval: number | null = null;
+
     socket.on('connect', () => {
-      console.log('Connected to socket for point updates');
+      console.log('[App] Socket connected:', socket.id);
       socket.emit('authenticate', { token });
     });
 
+    // Authentication success - start heartbeat
+    socket.on('auth_success', () => {
+      console.log('[App] Authentication successful, starting heartbeat...');
+
+      // Clear any existing heartbeat interval
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+
+      const user = useAuthStore.getState().user;
+      const userId = user?.id;
+
+      if (!userId) {
+        console.error('[App] Cannot start heartbeat: user ID not found');
+        return;
+      }
+
+      // Send initial heartbeat immediately
+      console.log(`[App] Sending heartbeat for user ${userId}`);
+      socket.emit('heartbeat', { userId });
+
+      // Send heartbeat every 15 seconds
+      heartbeatInterval = window.setInterval(() => {
+        console.log(`[App] Sending heartbeat for user ${userId}`);
+        socket.emit('heartbeat', { userId });
+      }, 15000);
+    });
+
+    // Authentication failed - logout
+    socket.on('auth_error', () => {
+      console.error('[App] Authentication failed, logging out...');
+      logout();
+      window.location.href = '/login';
+    });
+
+    // Online users count updated
+    socket.on('online_users', (count: number) => {
+      console.log('[App] Online users:', count);
+      setOnlineUsers(count);
+    });
+
+    // Points/level updates
     socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
-      console.log('Received points update:', data);
+      console.log('[App] Points update:', data);
       updateUser({
         points: data.points,
         level: data.level,
@@ -133,10 +183,22 @@ function App() {
       });
     });
 
+    // User data updates
+    socket.on('user_update', (updatedUser: any) => {
+      if (updatedUser) {
+        console.log('[App] User update:', updatedUser);
+        updateUser(updatedUser);
+      }
+    });
+
     return () => {
+      console.log('[App] Cleaning up socket connection...');
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
       socket.disconnect();
     };
-  }, [isAuthenticated, token, updateUser]);
+  }, [isAuthenticated, token, updateUser, logout, setOnlineUsers]);
 
   useEffect(() => {
     // Initialize audio
@@ -157,6 +219,32 @@ function App() {
 
     // No cleanup needed - once: true handles it
   }, [initAudio, playRandomLobbyBGM]);
+
+  // Global button click sound effect
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // Check if clicked element is a button or has button role
+      if (
+        target.tagName === 'BUTTON' ||
+        target.closest('button') ||
+        target.getAttribute('role') === 'button' ||
+        target.closest('[role="button"]')
+      ) {
+        // Import soundEffects dynamically to avoid circular imports
+        import('./utils/soundEffects').then(({ soundEffects }) => {
+          soundEffects.playClick();
+        });
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick);
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+    };
+  }, []);
 
   return (
     <Router>

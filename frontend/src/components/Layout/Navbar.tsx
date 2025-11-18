@@ -1,87 +1,17 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Moon, Sun, Trophy, User as UserIcon, LogOut, Users, ChevronDown, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
-import type { User } from '../../types';
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+import { useOnlineStore } from '../../store/onlineStore';
 
 export default function Navbar() {
   const { theme, toggleTheme } = useThemeStore();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { onlineUsers } = useOnlineStore();
   const location = useLocation();
-  const [onlineUsers, setOnlineUsers] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [clickedDropdown, setClickedDropdown] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const socket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-    });
-
-    let heartbeatInterval: number | null = null;
-
-    socket.on('connect', () => {
-      console.log('[Navbar] Socket connected:', socket.id);
-
-      // Authenticate with token
-      const token = localStorage.getItem('token');
-      if (token) {
-        console.log('[Navbar] Authenticating...');
-        socket.emit('authenticate', { token });
-      }
-    });
-
-    // Authentication success - start heartbeat
-    socket.on('auth_success', () => {
-      console.log('[Navbar] Authentication successful');
-
-      // Send heartbeat every 5 seconds
-      heartbeatInterval = window.setInterval(() => {
-        socket.emit('heartbeat', { userId: user.id });
-      }, 5000);
-    });
-
-    // Authentication failed - logout
-    socket.on('auth_error', () => {
-      console.error('[Navbar] Authentication failed, logging out...');
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
-    });
-
-    // Online users count updated
-    socket.on('online_users', (count: number) => {
-      console.log('[Navbar] Online users:', count);
-      setOnlineUsers(count);
-    });
-
-    // Points/level updates
-    socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
-      console.log('[Navbar] Points update:', data);
-      useAuthStore.getState().updateUser(data);
-    });
-
-    socket.on('user_update', (updatedUser: Partial<User>) => {
-      if (updatedUser) {
-        useAuthStore.getState().updateUser(updatedUser);
-      }
-    });
-
-    return () => {
-      console.log('[Navbar] Cleaning up...');
-      if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-      }
-      socket.disconnect();
-    };
-  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

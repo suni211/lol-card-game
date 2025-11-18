@@ -146,16 +146,14 @@ setSocketIO(io);
 // Setup socket.io for shop
 setSocketIOForShop(io);
 
-// NEW ONLINE USERS SYSTEM - Heartbeat based
+// NEW ONLINE USERS SYSTEM - Disconnect based only (no cleanup)
 interface OnlineUser {
   userId: number;
   socketId: string;
   username: string;
-  lastHeartbeat: number; // timestamp
 }
 
 const onlineUsers = new Map<number, OnlineUser>(); // userId -> OnlineUser
-const HEARTBEAT_TIMEOUT = 15000; // 15 seconds - if no heartbeat, consider offline
 
 // Chat message history (in-memory, limited to 100 messages)
 const chatHistory: any[] = [];
@@ -164,28 +162,6 @@ const MAX_CHAT_HISTORY = 100;
 // Guild chat history (per guild, limited to 50 messages each)
 const guildChatHistory = new Map<number, any[]>(); // guildId -> messages[]
 const MAX_GUILD_CHAT_HISTORY = 50;
-
-// Cleanup stale users (no heartbeat for HEARTBEAT_TIMEOUT)
-function cleanupStaleUsers() {
-  const now = Date.now();
-  let removed = 0;
-
-  for (const [userId, user] of onlineUsers.entries()) {
-    if (now - user.lastHeartbeat > HEARTBEAT_TIMEOUT) {
-      onlineUsers.delete(userId);
-      removed++;
-      console.log(`[Cleanup] User ${userId} (${user.username}) timed out`);
-    }
-  }
-
-  if (removed > 0) {
-    console.log(`[Cleanup] Removed ${removed} stale users. Online: ${onlineUsers.size}`);
-    io.emit('online_users', onlineUsers.size);
-  }
-}
-
-// Run cleanup every 5 seconds
-setInterval(cleanupStaleUsers, 5000);
 
 io.on('connection', (socket) => {
   console.log(`[Socket] Client connected: ${socket.id}`);
@@ -201,7 +177,6 @@ io.on('connection', (socket) => {
         userId: decoded.id,
         socketId: socket.id,
         username: decoded.username || `User${decoded.id}`,
-        lastHeartbeat: Date.now(),
       });
 
       console.log(`[Auth] User ${decoded.id} (${decoded.username}) authenticated. Online: ${onlineUsers.size}`);
@@ -220,12 +195,10 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Heartbeat to keep user online
+  // Heartbeat - no longer used for timeout, just for logging
   socket.on('heartbeat', (data: { userId: number }) => {
-    const user = onlineUsers.get(data.userId);
-    if (user) {
-      user.lastHeartbeat = Date.now();
-    }
+    // Just log for debugging purposes, don't update anything
+    console.log(`[Heartbeat] User ${data.userId} heartbeat received`);
   });
 
   // Chat events

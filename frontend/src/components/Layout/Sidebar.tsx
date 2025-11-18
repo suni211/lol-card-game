@@ -1,87 +1,18 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown, ChevronRight, Menu, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
+import { useState } from 'react';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
+import { useOnlineStore } from '../../store/onlineStore';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export default function Sidebar() {
   const { theme, toggleTheme } = useThemeStore();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { onlineUsers } = useOnlineStore();
   const location = useLocation();
-  const [onlineUsers, setOnlineUsers] = useState(0);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const socket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-    });
-
-    let heartbeatInterval: number | null = null;
-
-    socket.on('connect', () => {
-      console.log('[Sidebar] Socket connected:', socket.id);
-
-      // Authenticate with token
-      const token = localStorage.getItem('token');
-      if (token) {
-        console.log('[Sidebar] Authenticating...');
-        socket.emit('authenticate', { token });
-      }
-    });
-
-    // Authentication success - start heartbeat
-    socket.on('auth_success', () => {
-      console.log('[Sidebar] Authentication successful');
-
-      // Send heartbeat every 5 seconds
-      heartbeatInterval = window.setInterval(() => {
-        socket.emit('heartbeat', { userId: user.id });
-      }, 5000);
-    });
-
-    // Authentication failed - logout
-    socket.on('auth_error', () => {
-      console.error('[Sidebar] Authentication failed, logging out...');
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
-    });
-
-    // Online users count updated
-    socket.on('online_users', (count: number) => {
-      console.log('[Sidebar] Online users:', count);
-      setOnlineUsers(count);
-    });
-
-    // Points/level updates
-    socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
-      console.log('[Sidebar] Points update:', data);
-      useAuthStore.getState().updateUser(data);
-    });
-
-    socket.on('user_update', (updatedUser: any) => {
-      if (updatedUser) {
-        useAuthStore.getState().updateUser(updatedUser);
-      }
-    });
-
-    return () => {
-      console.log('[Sidebar] Cleaning up...');
-      if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-      }
-      socket.disconnect();
-    };
-  }, [user]);
 
   const isActive = (path: string) => location.pathname === path;
 

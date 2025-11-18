@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import type { Player, GachaOption } from '../types';
 import axios from 'axios';
+import { playSound } from '../utils/soundEffects';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -245,6 +246,9 @@ export default function Gacha() {
 
         setDrawnCard(player);
 
+        // Play sound effect based on tier
+        playSound(player.tier);
+
         // ICON 카드는 특수 컷신
         if (player.tier === 'ICON') {
           setTimeout(() => setRevealStep(1), 500);   // 암전 + 균열 효과
@@ -381,6 +385,9 @@ export default function Gacha() {
         , cards[0]);
 
         setBestCard(highestCard);
+
+        // Play sound effect for best card
+        playSound(highestCard.tier);
 
         setTimeout(() => {
           setIsDrawing(false);

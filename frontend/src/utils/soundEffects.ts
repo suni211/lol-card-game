@@ -448,3 +448,17 @@ class SoundEffectsManager {
 
 // 싱글톤 인스턴스
 export const soundEffects = new SoundEffectsManager();
+
+// 헬퍼 함수: 티어에 맞는 뽑기 효과음 재생
+export function playSound(tier: string) {
+  const tierMap: { [key: string]: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'ICON' } = {
+    'COMMON': 'COMMON',
+    'RARE': 'RARE',
+    'EPIC': 'EPIC',
+    'LEGENDARY': 'LEGENDARY',
+    'ICON': 'ICON',
+  };
+
+  const mappedTier = tierMap[tier.toUpperCase()] || 'COMMON';
+  soundEffects.playGachaSuccess(mappedTier);
+}

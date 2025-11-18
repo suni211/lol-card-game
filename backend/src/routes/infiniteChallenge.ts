@@ -176,6 +176,12 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
     const currentStage = progress[0].current_stage;
     const reward = calculateStageReward(currentStage);
 
+    // Delete battle state (battle completed)
+    await connection.query(
+      'DELETE FROM infinite_challenge_battle_state WHERE user_id = ?',
+      [userId]
+    );
+
     if (isVictory) {
       // Victory - advance to next stage
       const newStage = currentStage + 1;
@@ -349,120 +355,41 @@ router.get('/history', authMiddleware, async (req: AuthRequest, res) => {
  * Get current battle state (for tab restoration)
  */
 router.get('/current-battle', authMiddleware, async (req: AuthRequest, res) => {
-  const connection = await pool.getConnection();
-
   try {
     const userId = req.user?.id;
 
-    await connection.beginTransaction();
-
-    // Get current progress
-    const [progress]: any = await connection.query(
-      'SELECT * FROM infinite_challenge_progress WHERE user_id = ? FOR UPDATE',
+    // Check if there's a saved battle state
+    const [battleState]: any = await pool.query(
+      'SELECT * FROM infinite_challenge_battle_state WHERE user_id = ?',
       [userId]
     );
 
-    if (progress.length === 0 || !progress[0].is_active) {
-      await connection.rollback();
-      return res.status(200).json({
+    if (battleState.length > 0) {
+      // Return saved battle state
+      const state = battleState[0];
+      return res.json({
         success: true,
-        data: null,
+        data: {
+          won: state.won,
+          playerScore: state.player_score,
+          aiScore: state.ai_score,
+          playerPower: state.player_power,
+          aiPower: state.ai_power,
+          currentStage: state.stage,
+          aiDifficulty: state.ai_difficulty,
+          battleCompleted: false,
+        },
       });
     }
 
-    const currentStage = progress[0].current_stage;
-    const aiDifficulty = calculateAIDifficulty(currentStage);
-
-    // Get active deck
-    const [decks]: any = await connection.query(
-      'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',
-      [userId]
-    );
-
-    if (decks.length === 0) {
-      await connection.rollback();
-      return res.status(200).json({
-        success: true,
-        data: null,
-      });
-    }
-
-    const deckId = decks[0].id;
-
-    // Calculate deck power
-    const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);
-    const deckData = deck[0];
-    const cardIds = [
-      deckData.top_card_id,
-      deckData.jungle_card_id,
-      deckData.mid_card_id,
-      deckData.adc_card_id,
-      deckData.support_card_id,
-    ].filter(Boolean);
-
-    const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.team
-      FROM user_cards uc
-      JOIN players p ON uc.player_id = p.id
-      WHERE uc.id IN (?)
-    `, [cardIds]);
-
-    let playerPower = 0;
-    const teams: any = {};
-
-    // Calculate enhancement bonus helper
-    const calculateEnhancementBonus = (level: number): number => {
-      if (level <= 0) return 0;
-      if (level <= 4) return level; // 1~4강: +1씩
-      if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
-      return 10 + (level - 7) * 5; // 8~10강: +5씩
-    };
-
-    cards.forEach((card: any) => {
-      const enhancementBonus = calculateEnhancementBonus(card.level || 0);
-      playerPower += card.overall + enhancementBonus;
-      teams[card.team] = (teams[card.team] || 0) + 1;
-    });
-
-    // Team synergy bonus
-    Object.values(teams).forEach((count: any) => {
-      if (count === 3) playerPower += 1;
-      if (count === 4) playerPower += 3;
-      if (count === 5) playerPower += 5;
-    });
-
-    // Battle simulation
-    const playerRandomFactor = 0.9 + Math.random() * 0.2;
-    const aiRandomFactor = 0.9 + Math.random() * 0.2;
-
-    const playerFinalPower = playerPower * playerRandomFactor;
-    const aiFinalPower = aiDifficulty * 10 * aiRandomFactor; // Convert difficulty to power
-
-    const won = playerFinalPower > aiFinalPower;
-    const playerScore = won ? 3 : 1;
-    const aiScore = won ? 1 : 3;
-
-    await connection.commit();
-
+    // No saved state
     res.json({
       success: true,
-      data: {
-        won,
-        playerScore,
-        aiScore,
-        playerPower: Math.floor(playerFinalPower),
-        aiPower: Math.floor(aiFinalPower),
-        currentStage,
-        aiDifficulty,
-        battleCompleted: false,
-      },
+      data: null,
     });
   } catch (error: any) {
-    await connection.rollback();
     console.error('Get current battle error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
-  } finally {
-    connection.release();
   }
 });
 
@@ -562,6 +489,32 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
     const won = playerFinalPower > aiFinalPower;
     const playerScore = won ? 3 : 1;
     const aiScore = won ? 1 : 3;
+
+    // Save battle state to database (for refresh recovery)
+    await connection.query(
+      `INSERT INTO infinite_challenge_battle_state
+       (user_id, stage, player_power, ai_power, ai_difficulty, won, player_score, ai_score)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       stage = VALUES(stage),
+       player_power = VALUES(player_power),
+       ai_power = VALUES(ai_power),
+       ai_difficulty = VALUES(ai_difficulty),
+       won = VALUES(won),
+       player_score = VALUES(player_score),
+       ai_score = VALUES(ai_score),
+       created_at = CURRENT_TIMESTAMP`,
+      [
+        userId,
+        currentStage,
+        Math.floor(playerFinalPower),
+        Math.floor(aiFinalPower),
+        aiDifficulty,
+        won,
+        playerScore,
+        aiScore,
+      ]
+    );
 
     await connection.commit();
 

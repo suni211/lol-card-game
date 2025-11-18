@@ -75,7 +75,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         `SELECT created_at FROM gacha_history
          WHERE user_id = ?
          AND cost = 0
-         AND DATE(created_at) = CURDATE()
+         AND DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+09:00'))
          AND player_id NOT IN (SELECT id FROM players WHERE season IN ('25WW', '25WUD', '19G2'))`,
         [userId]
       );

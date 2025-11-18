@@ -136,11 +136,9 @@ export default function Sidebar() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ x: isMobileOpen ? 0 : '100%' }}
+      <aside
         className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-40 overflow-y-auto
-          lg:translate-x-0 lg:static transition-transform duration-300`}
+          lg:static lg:block ${isMobileOpen ? 'block' : 'hidden lg:block'}`}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -323,7 +321,7 @@ export default function Sidebar() {
             </div>
           )}
         </div>
-      </motion.aside>
+      </aside>
     </>
   );
 }

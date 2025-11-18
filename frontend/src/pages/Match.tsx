@@ -715,24 +715,69 @@ export default function Match() {
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-4 border-yellow-500"
                 >
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Sparkles className="w-8 h-8 text-yellow-500" />
-                    실시간 중계 ({matchEvents.length}개)
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-8 h-8 text-yellow-500" />
+                      실시간 중계
+                    </div>
+                    {/* 현재 우세 표시 */}
+                    {matchEvents.length > 0 && (
+                      <div className="text-lg font-bold">
+                        {myScore > opponentScore ? (
+                          <span className="text-blue-600 dark:text-blue-400">YOU 우세!</span>
+                        ) : myScore < opponentScore ? (
+                          <span className="text-red-600 dark:text-red-400">{opponent?.username} 우세!</span>
+                        ) : (
+                          <span className="text-gray-600 dark:text-gray-400">박빙!</span>
+                        )}
+                      </div>
+                    )}
                   </h3>
+
+                  {/* 점수 바 */}
+                  {matchEvents.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400 w-20">YOU</span>
+                        <div className="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+                            style={{ width: `${(myScore / 3) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400 w-8">{myScore}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-red-600 dark:text-red-400 w-20">{opponent?.username}</span>
+                        <div className="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-500"
+                            style={{ width: `${(opponentScore / 3) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xl font-bold text-red-600 dark:text-red-400 w-8">{opponentScore}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {matchEvents.length === 0 ? (
                     <div className="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">
-                      <p className="text-lg text-gray-600 dark:text-gray-300">이벤트 대기 중...</p>
+                      <p className="text-lg text-gray-600 dark:text-gray-300">경기 시작 대기 중...</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
                       {matchEvents.map((event, idx) => (
                         <motion.div
                           key={idx}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
                           className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border-2 border-blue-400 dark:border-blue-600"
                         >
-                          <p className="text-base text-gray-900 dark:text-white font-bold">{event}</p>
+                          <div className="flex items-start gap-2">
+                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 mt-1">{idx + 1}</span>
+                            <p className="text-base text-gray-900 dark:text-white font-bold flex-1">{event}</p>
+                          </div>
                         </motion.div>
                       ))}
                     </div>

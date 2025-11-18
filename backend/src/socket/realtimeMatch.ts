@@ -426,46 +426,66 @@ function generateMatchEvent(
   player2Deck: any
 ): string {
   const positions = ['top', 'jungle', 'mid', 'adc', 'support'];
+  const positionNames: any = {
+    'top': '탑',
+    'jungle': '정글',
+    'mid': '미드',
+    'adc': '원딜',
+    'support': '서포터'
+  };
+
+  // 랜덤 포지션 선택
   const randomPos = positions[Math.floor(Math.random() * positions.length)];
   const player1Card = player1Deck?.[randomPos];
   const player2Card = player2Deck?.[randomPos];
 
+  // 다른 포지션도 가져오기
+  const otherPos = positions[Math.floor(Math.random() * positions.length)];
+  const player1Other = player1Deck?.[otherPos];
+  const player2Other = player2Deck?.[otherPos];
+
   const events = [
     // Stage 0 (0초): 라운드 시작
     [
-      `경기가 시작되었습니다!`,
-      `양 팀 선수들이 소환사의 협곡에 입장했습니다`,
-      `초반 라인전이 시작됩니다`,
+      `⚔️ 라운드 ${match.currentRound} 시작! 양 팀 선수들이 소환사의 협곡에 입장합니다`,
+      `🎮 ${match.player1.username} vs ${match.player2.username} - 승부의 시작!`,
+      `📢 초반 라인전 페이즈 - 양 팀 모두 집중력을 높이고 있습니다`,
     ],
-    // Stage 1 (5초): 초반
+    // Stage 1 (5초): 초반 라인전
     [
-      player1Card ? `${player1Card.name}이(가) 초반 라인전에서 우위를 점하고 있습니다` : `양 팀 모두 안정적으로 CS를 챙기고 있습니다`,
-      `정글러들이 갱킹 루트를 그리며 움직입니다`,
-      `미드 라인에서 치열한 견제가 오가고 있습니다`,
+      player1Card ? `🔥 ${positionNames[randomPos]} ${player1Card.name}이(가) 강력한 라인 압박을 가하고 있습니다!` : `⚡ 양 팀 ${positionNames[randomPos]} 라이너들의 치열한 CS 싸움!`,
+      player2Card ? `💪 ${player2Card.name}(${positionNames[randomPos]})이(가) 완벽한 포지셔닝으로 견제에 성공합니다` : `🎯 정글러들이 갱킹 타이밍을 노리며 맵을 순회 중입니다`,
+      player1Other ? `⭐ ${player1Other.name}이(가) ${positionNames[otherPos]} 라인을 장악하기 시작합니다` : `🌟 미드 라인에서 치열한 견제전이 벌어지고 있습니다`,
     ],
-    // Stage 2 (10초): 중반 1
+    // Stage 2 (10초): 초중반 - 오브젝트 싸움
     [
-      `첫 번째 드래곤 싸움이 시작되었습니다!`,
-      player2Card ? `${player2Card.name}의 로밍으로 게임 템포가 빨라집니다` : `양 팀 모두 오브젝트를 노리고 있습니다`,
-      `한타가 벌어질 조짐이 보입니다`,
+      `🐉 첫 번째 드래곤 싸움! 양 팀 모두 포지션을 잡기 시작합니다`,
+      player2Card ? `🏃 ${player2Card.name}의 로밍! 게임 템포가 급격히 빨라집니다` : `🎪 양 팀 정글러들의 치열한 시야 싸움이 펼쳐집니다`,
+      player1Card && player2Card ? `⚔️ ${player1Card.name} vs ${player2Card.name} - ${positionNames[randomPos]} 라인의 치열한 대결!` : `🔮 한타 전조 - 양 팀 모두 긴장감이 최고조에 달하고 있습니다`,
     ],
-    // Stage 3 (15초): 중반 2
+    // Stage 3 (15초): 중반 - 한타
     [
-      `팀파이트가 시작되었습니다!`,
-      `양 팀 모두 스킬을 쏟아붓고 있습니다`,
-      `누가 이 한타를 가져갈 것인가?!`,
+      `💥 대규모 팀파이트 발발! 양 팀의 협동력이 시험대에 오릅니다`,
+      player1Other ? `⚡ ${player1Other.name}이(가) 완벽한 이니시로 한타를 시작합니다!` : `🎯 양 팀 모두 스킬을 쏟아붓고 있습니다 - 아슬아슬한 접전!`,
+      player2Other ? `🌟 ${player2Other.name}의 캐리! 상대팀을 압도하고 있습니다` : `🔥 누가 이 한타를 가져갈 것인가? 승부의 분수령!`,
     ],
-    // Stage 4 (20초): 후반 1
+    // Stage 4 (20초): 후반 - 결정적 순간
     [
-      `결정적인 순간입니다!`,
-      player1Card && player2Card ? `${player1Card.name}과(와) ${player2Card.name}의 대결!` : `양 팀 모두 승리를 위해 최선을 다하고 있습니다`,
-      `바론을 향한 치열한 경쟁이 펼쳐집니다`,
+      `👑 바론 나쉬를 향한 치열한 경쟁! 이 오브젝트가 게임을 결정할 수 있습니다`,
+      player1Card && player2Card ? `⚔️ 에이스 대결! ${player1Card.name} vs ${player2Card.name} - 모든 것을 걸었습니다` : `💎 양 팀 모두 승리를 위해 마지막 역량을 집중하고 있습니다`,
+      player1Other && player2Other ? `🎭 ${player1Other.name}과(와) ${player2Other.name}의 하이라이트급 플레이 대결!` : `⚡ 결정적인 순간! 한 번의 실수가 게임을 뒤집을 수 있습니다`,
     ],
-    // Stage 5 (25초): 후반 2
+    // Stage 5 (25초): 최종 - 승부 결정
     [
-      `승부의 갈림길에 섰습니다!`,
-      `한 팀의 넥서스가 위험합니다`,
-      `마지막 한타가 시작됩니다!`,
+      `🏆 승부의 갈림길! 한 팀의 넥서스가 위험에 처했습니다`,
+      player2Card ? `💫 ${player2Card.name}의 마지막 분투! 역전의 기회를 노립니다` : `⏰ 최후의 한타 - 이 싸움이 모든 것을 결정합니다!`,
+      player1Card ? `🔥 ${player1Card.name}이(가) 결정적인 플레이를 보여줍니다!` : `🎯 양 팀 모두 마지막 역량을 쏟아붓고 있습니다 - 승부는 순식간에!`,
+    ],
+    // Stage 6 (30초): 결과 직전
+    [
+      `⏱️ 곧 라운드 결과가 발표됩니다...`,
+      `🎬 백중지세의 명승부! 과연 승자는?`,
+      `🎮 치열했던 라운드 ${match.currentRound}의 결과가 계산되고 있습니다`,
     ],
   ];
 

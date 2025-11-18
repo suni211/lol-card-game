@@ -7,24 +7,27 @@ import { emitPointUpdate } from '../server';
 
 const router = express.Router();
 
-// Gacha probabilities (모든 팩 아이콘 확률 0.00000000322% 통일 - 극도로 낮춤)
+// Gacha probabilities (아이콘은 모든 일반 팩에서 제외, icon_test 팩만 가능)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { icon: 0.00000000322, legendary: 0.01999999678, epic: 0.1, rare: 5, common: 94.88 } },
-  basic: { cost: 500, probabilities: { icon: 0.00000000322, legendary: 0.05999999678, epic: 0.5, rare: 10, common: 89.44 } },
-  premium: { cost: 1000, probabilities: { icon: 0.00000000322, legendary: 0.21999999678, epic: 3, rare: 18, common: 78.78 } },
-  ultra: { cost: 1500, probabilities: { icon: 0.00000000322, legendary: 0.51999999678, epic: 6, rare: 25, common: 68.48 } },
-  mega: { cost: 2000, probabilities: { icon: 0.00000000322, legendary: 1.01999999678, epic: 10, rare: 30, common: 58.98 } },
-  worlds_winner: { cost: 2500, probabilities: { icon: 0.00000000322, legendary: 5.00999999678, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
+  free: { cost: 0, probabilities: { legendary: 0.02, epic: 0.1, rare: 5, common: 94.88 } },
+  basic: { cost: 500, probabilities: { legendary: 0.06, epic: 0.5, rare: 10, common: 89.44 } },
+  premium: { cost: 1000, probabilities: { legendary: 0.22, epic: 3, rare: 18, common: 78.78 } },
+  ultra: { cost: 1500, probabilities: { legendary: 0.52, epic: 6, rare: 25, common: 68.48 } },
+  mega: { cost: 2000, probabilities: { legendary: 1.02, epic: 10, rare: 30, common: 58.98 } },
+  worlds_winner: { cost: 2500, probabilities: { legendary: 5.01, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   icon_test: { cost: 0, probabilities: { icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
 };
 
 function selectTierByProbability(probabilities: any): string {
   const random = Math.random() * 100;
 
-  if (random < probabilities.icon) return 'ICON';
-  if (random < probabilities.icon + probabilities.legendary) return 'LEGENDARY';
-  if (random < probabilities.icon + probabilities.legendary + probabilities.epic) return 'EPIC';
-  if (random < probabilities.icon + probabilities.legendary + probabilities.epic + probabilities.rare) return 'RARE';
+  // ICON tier (only for icon_test pack)
+  if (probabilities.icon && random < probabilities.icon) return 'ICON';
+
+  const iconProb = probabilities.icon || 0;
+  if (random < iconProb + probabilities.legendary) return 'LEGENDARY';
+  if (random < iconProb + probabilities.legendary + probabilities.epic) return 'EPIC';
+  if (random < iconProb + probabilities.legendary + probabilities.epic + probabilities.rare) return 'RARE';
   return 'COMMON';
 }
 

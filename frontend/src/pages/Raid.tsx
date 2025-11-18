@@ -115,11 +115,17 @@ export default function Raid() {
 
   const startRaid = async () => {
     try {
+      console.log('Starting raid with data:', adminForm);
+      console.log('Token:', token ? 'exists' : 'missing');
+      console.log('User admin status:', user?.isAdmin);
+
       const response = await axios.post(
         `${API_URL}/raid/admin/start`,
         adminForm,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      console.log('Raid start response:', response.data);
 
       if (response.data.success) {
         toast.success(response.data.message);
@@ -128,6 +134,8 @@ export default function Raid() {
         fetchRaidData();
       }
     } catch (error: any) {
+      console.error('Raid start error:', error);
+      console.error('Error response:', error.response?.data);
       toast.error(error.response?.data?.error || '레이드 시작에 실패했습니다');
     }
   };

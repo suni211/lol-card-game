@@ -30,7 +30,7 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
         p.position,
         p.overall,
         CASE
-          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -110,7 +110,7 @@ router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) =>
         pmp.*,
         p.name,
         CASE
-          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -197,7 +197,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     const [cards]: any = await connection.query(
       `SELECT uc.*, p.id as player_id,
         CASE
-          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -316,7 +316,7 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
     const [listings]: any = await connection.query(
       `SELECT mt.*,
         CASE
-          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -557,7 +557,7 @@ router.get('/my-listings', authMiddleware, async (req: AuthRequest, res) => {
         p.position,
         p.overall,
         CASE
-          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'

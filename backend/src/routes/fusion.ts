@@ -44,7 +44,7 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
     const [cards]: any = await connection.query(
       `SELECT uc.id, uc.user_id, uc.level, uc.is_locked, p.overall, p.name,
        CASE
-         WHEN p.name LIKE 'ICON%' THEN 'ICON'
+         WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
          WHEN p.overall <= 80 THEN 'COMMON'
          WHEN p.overall <= 90 THEN 'RARE'
          WHEN p.overall <= 100 THEN 'EPIC'

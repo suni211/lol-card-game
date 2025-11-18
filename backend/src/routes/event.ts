@@ -293,7 +293,7 @@ router.get('/rewards/cards', authMiddleware, async (req: AuthRequest, res) => {
         p.position,
         p.overall,
         CASE
-          WHEN p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'

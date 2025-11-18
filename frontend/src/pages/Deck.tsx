@@ -5,8 +5,6 @@ import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
-import PremiumButton from '../components/ui/PremiumButton';
-import PremiumCard from '../components/ui/PremiumCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -376,20 +374,19 @@ export default function Deck() {
                 최강의 5인 로스터와 전략을 구성하세요
               </p>
             </div>
-            <PremiumButton
+            <button
               onClick={handleSaveDeck}
               disabled={saving}
-              variant="primary"
-              size="lg"
-              icon={<Save className="w-5 h-5" />}
+              className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
             >
+              <Save className="w-5 h-5" />
               {saving ? '저장 중...' : '덱 저장'}
-            </PremiumButton>
+            </button>
           </div>
 
           {/* Deck Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <PremiumCard gradient="blue" glow hover3D>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 파워</p>
                 <p
@@ -399,8 +396,8 @@ export default function Deck() {
                   {totalPower}
                 </p>
               </div>
-            </PremiumCard>
-            <PremiumCard gradient="gold" glow hover3D>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">팀 시너지</p>
                 <p
@@ -410,8 +407,8 @@ export default function Deck() {
                   +{synergyBonus}
                 </p>
               </div>
-            </PremiumCard>
-            <PremiumCard gradient="rainbow" glow hover3D>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">최종 파워</p>
                 <p
@@ -421,8 +418,8 @@ export default function Deck() {
                   {totalPower + synergyBonus}
                 </p>
               </div>
-            </PremiumCard>
-            <PremiumCard gradient="purple" glow hover3D>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">덱 완성도</p>
                 <p
@@ -432,7 +429,7 @@ export default function Deck() {
                   {filledSlots}/5
                 </p>
               </div>
-            </PremiumCard>
+            </div>
           </div>
 
           {/* Team Synergy Details */}
@@ -495,7 +492,7 @@ export default function Deck() {
           {/* Deck Slots */}
           <div className="lg:col-span-2 space-y-6">
             {/* Cards */}
-            <PremiumCard gradient="blue" glow>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-6">
                 <h2
                   className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-6"
@@ -591,10 +588,10 @@ export default function Deck() {
                 ))}
               </div>
               </div>
-            </PremiumCard>
+            </div>
 
             {/* Strategies */}
-            <PremiumCard gradient="purple" glow>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-6">
                 <h2
                   className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-400 dark:via-pink-400 dark:to-red-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-6"
@@ -745,12 +742,12 @@ export default function Deck() {
                 </div>
               </div>
               </div>
-            </PremiumCard>
+            </div>
           </div>
 
           {/* Card Selection Panel */}
           <div className="lg:col-span-1">
-            <PremiumCard gradient="gold" glow className="sticky top-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 sticky top-4">
               <div className="p-6">
                 <h2
                   className="text-xl font-bold bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 dark:from-yellow-400 dark:via-orange-400 dark:to-red-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
@@ -778,7 +775,7 @@ export default function Deck() {
               {selectedPosition ? (
                 <>
                   {/* 빠른 선택 버튼 */}
-                  <PremiumButton
+                  <button
                     onClick={() => {
                       const positionCards = filteredAndSortedCards.filter((card) => card.player.position === selectedPosition);
 
@@ -788,13 +785,11 @@ export default function Deck() {
                         toast.error('해당 포지션에 사용 가능한 카드가 없습니다');
                       }
                     }}
-                    variant="gold"
-                    size="md"
-                    icon={<Sparkles className="w-4 h-4" />}
-                    className="w-full mb-3"
+                    className="w-full mb-3 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg font-bold transition-colors flex items-center justify-center gap-2"
                   >
+                    <Sparkles className="w-4 h-4" />
                     최고 카드 자동 선택
-                  </PremiumButton>
+                  </button>
                   <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {filteredAndSortedCards.map((card) => {
                       const positionMatch = card.player.position === selectedPosition;
@@ -898,7 +893,7 @@ export default function Deck() {
                 </p>
               )}
               </div>
-            </PremiumCard>
+            </div>
           </div>
         </div>
       </div>

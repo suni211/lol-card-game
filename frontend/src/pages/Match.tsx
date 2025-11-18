@@ -243,8 +243,12 @@ export default function Match() {
     });
 
     socket.on('matchEvent', (data: { round: number; stage: number; time: number; message: string }) => {
-      console.log('Match event:', data);
-      setMatchEvents(prev => [...prev, data.message]);
+      console.log('📢 Match event received:', data);
+      setMatchEvents(prev => {
+        const updated = [...prev, data.message];
+        console.log('📋 Updated events:', updated);
+        return updated;
+      });
       setEventTimer(data.time);
     });
 
@@ -336,6 +340,7 @@ export default function Match() {
   const selectStrategy = (strategy: Strategy) => {
     if (!socketRef.current || !matchId || selectedStrategy) return;
 
+    console.log('🎯 Selecting strategy:', strategy, 'for match:', matchId);
     setSelectedStrategy(strategy);
     socketRef.current.emit('selectStrategy', { matchId, strategy });
     toast.success(`${getStrategyName(strategy)} 선택!`);

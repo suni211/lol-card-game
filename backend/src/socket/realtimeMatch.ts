@@ -476,7 +476,12 @@ function generateMatchEvent(
 // 라운드 결과 처리 (30초 이벤트 포함)
 async function processRound(matchId: string, io: Server) {
   const match = activeMatches.get(matchId);
-  if (!match) return;
+  if (!match) {
+    console.log('❌ processRound: Match not found:', matchId);
+    return;
+  }
+
+  console.log(`🎮 processRound: Starting for match ${matchId}, round ${match.currentRound}`);
 
   // 타이머 정리
   if (match.roundTimer) {
@@ -491,27 +496,36 @@ async function processRound(matchId: string, io: Server) {
   const eventStages = [0, 5000, 10000, 15000, 20000, 25000]; // 0, 5, 10, 15, 20, 25초
 
   for (let i = 0; i < eventStages.length; i++) {
-    setTimeout(() => {
-      const eventMessage = generateMatchEvent(i, match, match.player1Deck, match.player2Deck);
+    ((stage) => {
+      setTimeout(() => {
+        const currentMatch = activeMatches.get(matchId);
+        if (!currentMatch) {
+          console.log(`❌ Match ${matchId} no longer exists for event stage ${stage}`);
+          return;
+        }
 
-      // Player 1에게 이벤트 전송
-      io.to(match.player1.socketId).emit('matchEvent', {
-        round: match.currentRound,
-        stage: i,
-        time: eventStages[i] / 1000,
-        message: eventMessage,
-      });
+        const eventMessage = generateMatchEvent(stage, currentMatch, currentMatch.player1Deck, currentMatch.player2Deck);
+        console.log(`📢 Sending event stage ${stage} (${eventStages[stage] / 1000}s): ${eventMessage}`);
 
-      // Player 2에게 이벤트 전송 (AI가 아닐 때만)
-      if (!isPlayer2AI) {
-        io.to(match.player2.socketId).emit('matchEvent', {
-          round: match.currentRound,
-          stage: i,
-          time: eventStages[i] / 1000,
+        // Player 1에게 이벤트 전송
+        io.to(currentMatch.player1.socketId).emit('matchEvent', {
+          round: currentMatch.currentRound,
+          stage: stage,
+          time: eventStages[stage] / 1000,
           message: eventMessage,
         });
-      }
-    }, eventStages[i]);
+
+        // Player 2에게 이벤트 전송 (AI가 아닐 때만)
+        if (!isPlayer2AI) {
+          io.to(currentMatch.player2.socketId).emit('matchEvent', {
+            round: currentMatch.currentRound,
+            stage: stage,
+            time: eventStages[stage] / 1000,
+            message: eventMessage,
+          });
+        }
+      }, eventStages[stage]);
+    })(i);
   }
 
   // 30초 후 결과 계산 및 전송

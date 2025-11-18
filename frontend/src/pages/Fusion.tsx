@@ -108,9 +108,10 @@ export default function Fusion() {
   };
 
   const getExpectedTier = (totalOverall: number) => {
-    if (totalOverall >= 450) return 'EPIC / LEGENDARY';
-    if (totalOverall >= 400) return 'RARE / EPIC';
-    if (totalOverall >= 350) return 'COMMON / RARE';
+    if (totalOverall >= 500) return 'EPIC / LEGENDARY (90% / 10%)';
+    if (totalOverall >= 475) return 'RARE / EPIC (80% / 20%)';
+    if (totalOverall >= 450) return 'COMMON / RARE (70% / 30%)';
+    if (totalOverall >= 425) return 'COMMON / RARE (85% / 15%)';
     return 'COMMON';
   };
 

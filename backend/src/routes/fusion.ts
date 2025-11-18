@@ -4,19 +4,22 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
-// Fusion tier determination based on total overall
+// Fusion tier determination based on total overall (더 어려운 확률)
 function calculateFusionTier(totalOverall: number): string {
-  if (totalOverall >= 450) {
-    // 450+ = Epic or Legendary (70% Epic, 30% Legendary)
-    return Math.random() < 0.7 ? 'EPIC' : 'LEGENDARY';
-  } else if (totalOverall >= 400) {
-    // 400-449 = Rare or Epic (60% Rare, 40% Epic)
-    return Math.random() < 0.6 ? 'RARE' : 'EPIC';
-  } else if (totalOverall >= 350) {
-    // 350-399 = Common or Rare (50% Common, 50% Rare)
-    return Math.random() < 0.5 ? 'COMMON' : 'RARE';
+  if (totalOverall >= 500) {
+    // 500+ = Epic or Legendary (90% Epic, 10% Legendary)
+    return Math.random() < 0.9 ? 'EPIC' : 'LEGENDARY';
+  } else if (totalOverall >= 475) {
+    // 475-499 = Rare or Epic (80% Rare, 20% Epic)
+    return Math.random() < 0.8 ? 'RARE' : 'EPIC';
+  } else if (totalOverall >= 450) {
+    // 450-474 = Common or Rare (70% Common, 30% Rare)
+    return Math.random() < 0.7 ? 'COMMON' : 'RARE';
+  } else if (totalOverall >= 425) {
+    // 425-449 = Common or Rare (85% Common, 15% Rare)
+    return Math.random() < 0.85 ? 'COMMON' : 'RARE';
   } else {
-    // Below 350 = Common
+    // Below 425 = Common
     return 'COMMON';
   }
 }
@@ -39,13 +42,14 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get all cards and verify ownership
     const [cards]: any = await connection.query(
-      `SELECT uc.id, uc.user_id, uc.level, p.overall, p.name,
+      `SELECT uc.id, uc.user_id, uc.level, p.overall, p.name, p.tier,
        CASE
          WHEN p.name LIKE 'ICON%' THEN 'ICON'
          WHEN p.overall <= 80 THEN 'COMMON'
          WHEN p.overall <= 90 THEN 'RARE'
-         WHEN p.overall <= 100 THEN 'EPIC'
-         ELSE 'LEGENDARY'
+         WHEN p.overall <= 100 AND p.tier != 'LEGENDARY' THEN 'EPIC'
+         WHEN p.tier = 'LEGENDARY' THEN 'LEGENDARY'
+         ELSE 'EPIC'
        END as tier
        FROM user_cards uc
        JOIN players p ON uc.player_id = p.id
@@ -76,9 +80,9 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
     } else if (resultTier === 'RARE') {
       tierCondition = "name NOT LIKE 'ICON%' AND overall > 80 AND overall <= 90";
     } else if (resultTier === 'EPIC') {
-      tierCondition = "name NOT LIKE 'ICON%' AND overall > 90 AND overall <= 100";
+      tierCondition = "name NOT LIKE 'ICON%' AND overall > 90 AND overall <= 100 AND tier != 'LEGENDARY'";
     } else if (resultTier === 'LEGENDARY') {
-      tierCondition = "name NOT LIKE 'ICON%' AND overall > 100";
+      tierCondition = "name NOT LIKE 'ICON%' AND tier = 'LEGENDARY'";
     }
 
     const [players]: any = await connection.query(

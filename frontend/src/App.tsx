@@ -48,6 +48,7 @@ import InfiniteChallengeBattle from './pages/InfiniteChallengeBattle';
 import Coach from './pages/Coach';
 import CoachEnhancement from './pages/CoachEnhancement';
 import CardCollection from './pages/CardCollection';
+import Settings from './pages/Settings';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -418,6 +419,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CardCollection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

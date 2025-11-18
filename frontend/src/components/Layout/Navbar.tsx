@@ -129,6 +129,7 @@ export default function Navbar() {
     { path: '/trade', label: '트레이드' },
     { path: '/coupon', label: '쿠폰' },
     { path: '/packs', label: '팩 인벤토리' },
+    { path: '/settings', label: '설정' },
     { path: '/notices', label: '공지사항' },
     { path: '/suggestions', label: '건의사항' },
   ];

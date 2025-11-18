@@ -2,6 +2,15 @@
 USE lol_card_game;
 
 -- ============================================
+-- DELETE OLD VERSIONS
+-- ============================================
+
+-- Remove old Mystic, Deft, Peanut (non-ICON/NR versions)
+DELETE FROM players WHERE name = 'Mystic' AND season IS NULL;
+DELETE FROM players WHERE name = 'Deft' AND season IS NULL;
+DELETE FROM players WHERE name = 'Peanut' AND season IS NULL;
+
+-- ============================================
 -- ICON SERIES - LEGENDARY RETIRED PLAYERS
 -- ============================================
 

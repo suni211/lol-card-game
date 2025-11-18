@@ -17,6 +17,8 @@ export default function Sidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+
     const socket = io(SOCKET_URL, {
       transports: ['websocket'],
       reconnection: true,
@@ -24,51 +26,59 @@ export default function Sidebar() {
       reconnectionAttempts: 5,
     });
 
+    let heartbeatInterval: number | null = null;
+
     socket.on('connect', () => {
       console.log('[Sidebar] Socket connected:', socket.id);
 
-      // 인증된 사용자면 토큰 전송하여 인증
+      // Authenticate with token
       const token = localStorage.getItem('token');
-      if (token && user) {
-        console.log('[Sidebar] Authenticating with token...');
+      if (token) {
+        console.log('[Sidebar] Authenticating...');
         socket.emit('authenticate', { token });
       }
     });
 
-    socket.on('online_users', (count: number) => {
-      console.log('[Sidebar] Online users updated:', count);
-      setOnlineUsers(count);
+    // Authentication success - start heartbeat
+    socket.on('auth_success', () => {
+      console.log('[Sidebar] Authentication successful');
+
+      // Send heartbeat every 5 seconds
+      heartbeatInterval = window.setInterval(() => {
+        socket.emit('heartbeat', { userId: user.id });
+      }, 5000);
     });
 
-    // Listen for user updates (points, tier, level changes)
-    socket.on('user_update', (updatedUser: any) => {
-      console.log('[Sidebar] User update received:', updatedUser);
-      if (user && updatedUser) {
-        const { updateUser } = useAuthStore.getState();
-        updateUser(updatedUser);
-      }
-    });
-
-    // Listen for pointsUpdate event (legacy support)
-    socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
-      console.log('[Sidebar] Points update received:', data);
-      const { updateUser } = useAuthStore.getState();
-      updateUser(data);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('[Sidebar] Socket disconnected');
-    });
-
-    // Handle authentication errors (invalid/expired token)
+    // Authentication failed - logout
     socket.on('auth_error', () => {
-      console.error('[Sidebar] Authentication failed - invalid token, logging out...');
+      console.error('[Sidebar] Authentication failed, logging out...');
       useAuthStore.getState().logout();
       window.location.href = '/login';
     });
 
+    // Online users count updated
+    socket.on('online_users', (count: number) => {
+      console.log('[Sidebar] Online users:', count);
+      setOnlineUsers(count);
+    });
+
+    // Points/level updates
+    socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
+      console.log('[Sidebar] Points update:', data);
+      useAuthStore.getState().updateUser(data);
+    });
+
+    socket.on('user_update', (updatedUser: any) => {
+      if (updatedUser) {
+        useAuthStore.getState().updateUser(updatedUser);
+      }
+    });
+
     return () => {
-      console.log('[Sidebar] Cleaning up socket connection');
+      console.log('[Sidebar] Cleaning up...');
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
       socket.disconnect();
     };
   }, [user]);

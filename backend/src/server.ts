@@ -146,11 +146,16 @@ setSocketIO(io);
 // Setup socket.io for shop
 setSocketIOForShop(io);
 
-// Track unique online users by IP address instead of socket ID
-const connectedIPs = new Map<string, Set<string>>(); // IP -> Set of socket IDs
+// NEW ONLINE USERS SYSTEM - Heartbeat based
+interface OnlineUser {
+  userId: number;
+  socketId: string;
+  username: string;
+  lastHeartbeat: number; // timestamp
+}
 
-// Track authenticated users by userId -> socketId
-const authenticatedUsers = new Map<number, string>(); // userId -> socketId
+const onlineUsers = new Map<number, OnlineUser>(); // userId -> OnlineUser
+const HEARTBEAT_TIMEOUT = 15000; // 15 seconds - if no heartbeat, consider offline
 
 // Chat message history (in-memory, limited to 100 messages)
 const chatHistory: any[] = [];
@@ -160,64 +165,66 @@ const MAX_CHAT_HISTORY = 100;
 const guildChatHistory = new Map<number, any[]>(); // guildId -> messages[]
 const MAX_GUILD_CHAT_HISTORY = 50;
 
-// Helper function to get client IP (works with Nginx reverse proxy)
-function getClientIP(socket: any): string {
-  // Try x-forwarded-for header first (Nginx sets this)
-  const forwarded = socket.handshake.headers['x-forwarded-for'];
-  if (forwarded) {
-    const ip = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
-    if (ip && ip !== '127.0.0.1' && ip !== '::1') {
-      return ip;
+// Cleanup stale users (no heartbeat for HEARTBEAT_TIMEOUT)
+function cleanupStaleUsers() {
+  const now = Date.now();
+  let removed = 0;
+
+  for (const [userId, user] of onlineUsers.entries()) {
+    if (now - user.lastHeartbeat > HEARTBEAT_TIMEOUT) {
+      onlineUsers.delete(userId);
+      removed++;
+      console.log(`[Cleanup] User ${userId} (${user.username}) timed out`);
     }
   }
 
-  // Try x-real-ip header (Nginx also sets this)
-  const realIP = socket.handshake.headers['x-real-ip'];
-  if (realIP && typeof realIP === 'string' && realIP !== '127.0.0.1' && realIP !== '::1') {
-    return realIP;
+  if (removed > 0) {
+    console.log(`[Cleanup] Removed ${removed} stale users. Online: ${onlineUsers.size}`);
+    io.emit('online_users', onlineUsers.size);
   }
-
-  // Fallback to socket address
-  const address = socket.handshake.address;
-  if (address && address !== '127.0.0.1' && address !== '::1') {
-    return address;
-  }
-
-  return 'unknown';
 }
 
+// Run cleanup every 5 seconds
+setInterval(cleanupStaleUsers, 5000);
+
 io.on('connection', (socket) => {
-  // Get client IP
-  const clientIP = getClientIP(socket);
+  console.log(`[Socket] Client connected: ${socket.id}`);
 
-  // Add socket to IP's socket set (for tracking, but don't count yet)
-  if (!connectedIPs.has(clientIP)) {
-    connectedIPs.set(clientIP, new Set());
-  }
-  connectedIPs.get(clientIP)!.add(socket.id);
-
-  console.log(`Client connected: ${socket.id}`);
-
-  // Verify user token and setup realtime match handlers
+  // Authenticate user with JWT token
   socket.on('authenticate', (data: { token: string }) => {
     try {
       const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
       const decoded: any = jwt.verify(data.token, jwtSecret);
 
-      // Track authenticated user
-      authenticatedUsers.set(decoded.id, socket.id);
-      console.log(`User ${decoded.id} authenticated on socket ${socket.id}`);
+      // Add or update user in online users map
+      onlineUsers.set(decoded.id, {
+        userId: decoded.id,
+        socketId: socket.id,
+        username: decoded.username || `User${decoded.id}`,
+        lastHeartbeat: Date.now(),
+      });
 
-      // Emit updated authenticated user count
-      io.emit('online_users', authenticatedUsers.size);
-      console.log(`Authenticated users: ${authenticatedUsers.size}`);
+      console.log(`[Auth] User ${decoded.id} (${decoded.username}) authenticated. Online: ${onlineUsers.size}`);
 
-      // Setup realtime match event handlers for this authenticated user
+      // Emit updated online user count to ALL clients
+      io.emit('online_users', onlineUsers.size);
+
+      // Send confirmation to this client
+      socket.emit('auth_success', { userId: decoded.id });
+
+      // Setup realtime match event handlers
       setupRealtimeMatch(io, socket, decoded);
     } catch (error) {
-      console.error('Socket authentication error:', error);
-      // Notify client of authentication failure
+      console.error('[Auth] Authentication error:', error);
       socket.emit('auth_error', { message: 'Invalid token' });
+    }
+  });
+
+  // Heartbeat to keep user online
+  socket.on('heartbeat', (data: { userId: number }) => {
+    const user = onlineUsers.get(data.userId);
+    if (user) {
+      user.lastHeartbeat = Date.now();
     }
   });
 
@@ -305,32 +312,17 @@ io.on('connection', (socket) => {
     console.log(`Guild chat message in ${roomName}: ${data.username}: ${data.message}`);
   });
 
-  // Remove socket on disconnect
+  // Handle disconnection
   socket.on('disconnect', () => {
-    const clientIP = getClientIP(socket);
-
-    // Remove from authenticated users
-    for (const [userId, socketId] of authenticatedUsers.entries()) {
-      if (socketId === socket.id) {
-        authenticatedUsers.delete(userId);
-        console.log(`User ${userId} disconnected`);
+    // Find and remove user by socket ID
+    for (const [userId, user] of onlineUsers.entries()) {
+      if (user.socketId === socket.id) {
+        onlineUsers.delete(userId);
+        console.log(`[Disconnect] User ${userId} (${user.username}) disconnected. Online: ${onlineUsers.size}`);
+        io.emit('online_users', onlineUsers.size);
         break;
       }
     }
-
-    // Remove socket from IP's socket set
-    if (connectedIPs.has(clientIP)) {
-      connectedIPs.get(clientIP)!.delete(socket.id);
-
-      // If no more sockets from this IP, remove the IP entry
-      if (connectedIPs.get(clientIP)!.size === 0) {
-        connectedIPs.delete(clientIP);
-      }
-    }
-
-    // Emit updated authenticated user count
-    io.emit('online_users', authenticatedUsers.size);
-    console.log(`Client disconnected: ${socket.id}, Authenticated users: ${authenticatedUsers.size}`);
   });
 });
 
@@ -350,14 +342,14 @@ httpServer.listen(PORT, () => {
 
 // Helper function to emit point updates to a specific user
 function emitPointUpdate(userId: number, newPoints: number, newLevel?: number, newExp?: number) {
-  const socketId = authenticatedUsers.get(userId);
-  if (socketId) {
-    io.to(socketId).emit('pointsUpdate', {
+  const user = onlineUsers.get(userId);
+  if (user) {
+    io.to(user.socketId).emit('pointsUpdate', {
       points: newPoints,
       level: newLevel,
       exp: newExp,
     });
-    console.log(`Sent points update to user ${userId}: ${newPoints}P`);
+    console.log(`[Points] Sent update to user ${userId} (${user.username}): ${newPoints}P`);
   }
 }
 

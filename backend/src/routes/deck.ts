@@ -65,7 +65,7 @@ router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
           p.overall,
           p.region,
           CASE
-            WHEN p.name LIKE 'ICON%' THEN 'ICON'
+            WHEN p.season = 'ICON' THEN 'ICON'
             WHEN p.overall <= 80 THEN 'COMMON'
             WHEN p.overall <= 90 THEN 'RARE'
             WHEN p.overall <= 100 THEN 'EPIC'
@@ -174,7 +174,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
           p.overall,
           p.region,
           CASE
-            WHEN p.name LIKE 'ICON%' THEN 'ICON'
+            WHEN p.season = 'ICON' THEN 'ICON'
             WHEN p.overall <= 80 THEN 'COMMON'
             WHEN p.overall <= 90 THEN 'RARE'
             WHEN p.overall <= 100 THEN 'EPIC'

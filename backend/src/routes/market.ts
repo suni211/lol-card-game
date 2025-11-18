@@ -9,7 +9,7 @@ function calculateEnhancementBonus(level: number): number {
   if (level <= 0) return 0;
   if (level <= 4) return level; // 1~4강: +1씩
   if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
-  return 10 + (level - 7) * 4; // 8~10강: +4씩
+  return 10 + (level - 7) * 5; // 8~10강: +5씩
 }
 
 // Get market listings

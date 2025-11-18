@@ -410,8 +410,17 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
     let playerPower = 0;
     const teams: any = {};
 
+    // Calculate enhancement bonus helper
+    const calculateEnhancementBonus = (level: number): number => {
+      if (level <= 0) return 0;
+      if (level <= 4) return level; // 1~4강: +1씩
+      if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
+      return 10 + (level - 7) * 5; // 8~10강: +5씩
+    };
+
     cards.forEach((card: any) => {
-      playerPower += card.overall + card.level;
+      const enhancementBonus = calculateEnhancementBonus(card.level || 0);
+      playerPower += card.overall + enhancementBonus;
       teams[card.team] = (teams[card.team] || 0) + 1;
     });
 

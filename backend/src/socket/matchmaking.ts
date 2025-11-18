@@ -60,6 +60,14 @@ async function calculateDeckPower(deckId: number): Promise<number> {
     let totalPower = 0;
     const teams: any = {};
 
+    // Calculate enhancement bonus helper
+    const calculateEnhancementBonus = (level: number): number => {
+      if (level <= 0) return 0;
+      if (level <= 4) return level; // 1~4강: +1씩
+      if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
+      return 10 + (level - 7) * 5; // 8~10강: +5씩
+    };
+
     // Team synergy mapping: old teams treated as current teams
     const teamMapping: any = {
       'NJS': 'BRO',
@@ -69,7 +77,8 @@ async function calculateDeckPower(deckId: number): Promise<number> {
     };
 
     cards.forEach((card: any) => {
-      let power = card.overall + card.level;
+      const enhancementBonus = calculateEnhancementBonus(card.level || 0);
+      let power = card.overall + enhancementBonus;
       totalPower += power;
 
       // Map old team names to current teams for synergy calculation

@@ -98,17 +98,11 @@ async function calculateDeckPower(connection: any, deckId: number, userId?: numb
 
   // Calculate enhancement bonus (대폭 하향)
   const calculateEnhancementBonus = (level: number, overall: number): number => {
-    // 오버롤에 비례한 강화 보너스
-    // 낮은 오버롤 카드는 보너스가 적고, 높은 오버롤 카드는 보너스가 많음
-    const baseBonus = overall >= 100 ? 1.0 : overall >= 90 ? 0.8 : overall >= 80 ? 0.6 : 0.5;
-
-    if (level <= 4) {
-      return Math.floor(level * baseBonus); // 1~4강: 오버롤에 비례
-    } else if (level <= 7) {
-      return Math.floor(4 * baseBonus + (level - 4) * baseBonus * 1.5); // 5~7강: 조금 더 증가
-    } else {
-      return Math.floor(4 * baseBonus + 3 * baseBonus * 1.5 + (level - 7) * baseBonus * 2); // 8~10강: 더 증가하지만 여전히 제한적
-    }
+    // 강화 레벨에 따른 보너스 (오버롤, 스탯 전부 동일 적용)
+    if (level <= 0) return 0;
+    if (level <= 4) return level; // 1~4강: +1씩
+    if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
+    return 10 + (level - 7) * 5; // 8~10강: +5씩
   };
 
   // Apply coach buffs if userId is provided

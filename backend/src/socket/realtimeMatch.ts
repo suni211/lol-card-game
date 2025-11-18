@@ -136,7 +136,7 @@ function calculateDeckObjectPower(
     } else if (level <= 7) {
       levelBonus = 4 + (level - 4) * 2; // 5~7강: +2씩
     } else {
-      levelBonus = 10 + (level - 7) * 4; // 8~10강: +4씩
+      levelBonus = 10 + (level - 7) * 5; // 8~10강: +5씩
     }
 
     // 포지션별 가중치 적용한 스탯 평균 계산

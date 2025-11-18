@@ -25,54 +25,54 @@ async function addVSSeason3() {
     const stages = [];
     let totalRewards = 0;
 
-    // Stage 1-20: 400 power, 2000P each (40,000 total)
+    // Stage 1-20: 400 power, 800P each (16,000 total) - 60% reduced
     for (let i = 1; i <= 20; i++) {
       stages.push({
         stage_number: i,
         ai_power: 400,
-        reward_points: 2000,
+        reward_points: 800,
       });
-      totalRewards += 2000;
+      totalRewards += 800;
     }
 
-    // Stage 21-60: 500-600 power, 4500P each (180,000 total)
+    // Stage 21-60: 500-600 power, 1800P each (72,000 total) - 60% reduced
     for (let i = 21; i <= 60; i++) {
       const power = Math.floor(500 + ((i - 21) / 39) * 100); // 500 -> 600
       stages.push({
         stage_number: i,
         ai_power: power,
-        reward_points: 4500,
+        reward_points: 1800,
       });
-      totalRewards += 4500;
+      totalRewards += 1800;
     }
 
-    // Stage 61-90: 550-600 power, 6000P each (180,000 total)
+    // Stage 61-90: 550-600 power, 2400P each (72,000 total) - 60% reduced
     for (let i = 61; i <= 90; i++) {
       const power = Math.floor(550 + ((i - 61) / 29) * 50); // 550 -> 600
       stages.push({
         stage_number: i,
         ai_power: power,
-        reward_points: 6000,
+        reward_points: 2400,
       });
-      totalRewards += 6000;
+      totalRewards += 2400;
     }
 
-    // Stage 91-100: 580-630 power, 10000P each (100,000 total)
+    // Stage 91-100: 580-630 power, 4000P each (40,000 total) - 60% reduced
     for (let i = 91; i <= 100; i++) {
       const power = Math.floor(580 + ((i - 91) / 9) * 50); // 580 -> 630
       stages.push({
         stage_number: i,
         ai_power: power,
-        reward_points: 10000,
+        reward_points: 4000,
       });
-      totalRewards += 10000;
+      totalRewards += 4000;
     }
 
-    console.log('📊 Season 3 Stage Distribution:');
-    console.log(`  Stages 1-20: 400 power, 2,000P each (40,000P total)`);
-    console.log(`  Stages 21-60: 500-600 power, 4,500P each (180,000P total)`);
-    console.log(`  Stages 61-90: 550-600 power, 6,000P each (180,000P total)`);
-    console.log(`  Stages 91-100: 580-630 power, 10,000P each (100,000P total)`);
+    console.log('📊 Season 3 Stage Distribution (60% reduced):');
+    console.log(`  Stages 1-20: 400 power, 800P each (16,000P total)`);
+    console.log(`  Stages 21-60: 500-600 power, 1,800P each (72,000P total)`);
+    console.log(`  Stages 61-90: 550-600 power, 2,400P each (72,000P total)`);
+    console.log(`  Stages 91-100: 580-630 power, 4,000P each (40,000P total)`);
     console.log(`  Total rewards: ${totalRewards.toLocaleString()}P\n`);
 
     // Insert all stages
@@ -94,7 +94,7 @@ async function addVSSeason3() {
     console.log('\n🗼 Tower of Challenge (도전의 탑):');
     console.log('   - 100 stages total');
     console.log('   - No hard mode');
-    console.log('   - Total rewards: 500,000P');
+    console.log('   - Total rewards: 200,000P (60% reduced from 500,000P)');
     console.log('   - Progressive difficulty: 400 → 630 power\n');
 
     // Show sample stages

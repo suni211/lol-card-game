@@ -476,3 +476,46 @@ INSERT INTO players (name, team, position, overall, region, tier) VALUES
 -- 100T substitutes
 INSERT INTO players (name, team, position, overall, region, tier) VALUES
 ('Dhokla', '100T', 'TOP', 71, 'LTA', 'RARE');
+
+-- ============================================
+-- ICON SERIES - LEGENDARY RETIRED PLAYERS
+-- ============================================
+
+-- ICON Mystic (WE, DNF)
+INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
+('Mystic', 'WE', 'ADC', 119, 'LPL', 'ICON', 'ICON');
+
+INSERT INTO player_traits (player_id, name, description, effect) VALUES
+(LAST_INSERT_ID(), '울트라 하이퍼 캐리', '팀이 지고있을때 엄청난 기량을 보입니다.', '+5 ALL_STATS_WHEN_LOSING'),
+(LAST_INSERT_ID(), '팀이 이상해', '파워 레벨이 팀이 550 미만일 경우 능력치 상승', '+10 ALL_STATS_IF_TEAM_POWER_BELOW_550');
+
+-- ICON Deft (DRX, KT, EDG)
+INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
+('Deft', 'DRX', 'ADC', 121, 'LCK', 'ICON', 'ICON');
+
+INSERT INTO player_traits (player_id, name, description, effect) VALUES
+(LAST_INSERT_ID(), '중꺾마', '팀이 지고 있을때 기량을 보임', '+3 ALL_STATS_WHEN_LOSING'),
+(LAST_INSERT_ID(), '알파카', '타고난 재능', '+1 ALL_STATS');
+
+-- ICON Peanut (HLE, T1, LGD, GEN)
+INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
+('Peanut', 'HLE', 'JUNGLE', 118, 'LCK', 'ICON', 'ICON');
+
+INSERT INTO player_traits (player_id, name, description, effect) VALUES
+(LAST_INSERT_ID(), '내가 최고야', '팀이 이기고 있을때 한타력 상승', '+10 TEAMFIGHT_WHEN_WINNING');
+
+-- ============================================
+-- NO RIVAL SERIES - LOWER OVR VERSIONS (NO TRAITS)
+-- ============================================
+
+-- No Rival Mystic (WE, DNF) - OVR 114
+INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
+('Mystic', 'DNF', 'ADC', 114, 'LPL', 'LEGENDARY', 'NR');
+
+-- No Rival Deft (DRX, KT, EDG) - OVR 116
+INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
+('Deft', 'KT', 'ADC', 116, 'LCK', 'LEGENDARY', 'NR');
+
+-- No Rival Peanut (HLE, T1, LGD, GEN) - OVR 113
+INSERT INTO players (name, team, position, overall, region, tier, season) VALUES
+('Peanut', 'T1', 'JUNGLE', 113, 'LCK', 'LEGENDARY', 'NR');

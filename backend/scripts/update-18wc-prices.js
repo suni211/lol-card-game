@@ -28,9 +28,9 @@ async function update18WCPrices() {
     let updatedCount = 0;
 
     for (const player of wcPlayers) {
-      const newBasePrice = Math.floor(player.overall * 200);
-      const newPriceFloor = Math.floor(player.overall * 150);
-      const newPriceCeiling = Math.floor(player.overall * 300);
+      const newBasePrice = Math.floor(player.overall * 60);
+      const newPriceFloor = Math.floor(player.overall * 45);
+      const newPriceCeiling = Math.floor(player.overall * 90);
 
       // Update existing price
       await connection.query(`
@@ -48,8 +48,8 @@ async function update18WCPrices() {
     console.log('\n✅ 18WC market prices updated successfully!');
     console.log('\n📝 Summary:');
     console.log(`   - Total players updated: ${updatedCount}`);
-    console.log(`   - New pricing: overall * 200 (was overall * 10)`);
-    console.log(`   - Price range: overall * 150 ~ overall * 300\n`);
+    console.log(`   - New pricing: overall * 60 (6x increase from overall * 10)`);
+    console.log(`   - Price range: overall * 45 ~ overall * 90\n`);
 
   } catch (error) {
     await connection.rollback();

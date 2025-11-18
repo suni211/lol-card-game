@@ -65,14 +65,17 @@ router.post('/google', async (req, res) => {
       username = user.username;
 
       // 다중 계정 로그인 체크 (같은 IP에서 다른 계정 로그인 시도)
+      // registration_ip 또는 last_login_ip 둘 중 하나라도 같으면 감지
       const [sameIpUsers]: any = await connection.query(
         `SELECT id, username, email,
                 COALESCE(multi_account_ban_until, '1970-01-01') as ban_until
          FROM users
-         WHERE last_login_ip = ? AND id != ? AND email != ?
+         WHERE (last_login_ip = ? OR registration_ip = ?)
+           AND id != ?
+           AND email != ?
          ORDER BY last_login_at DESC
          LIMIT 1`,
-        [clientIp, userId, email]
+        [clientIp, clientIp, userId, email]
       );
 
       if (sameIpUsers.length > 0) {
@@ -97,6 +100,8 @@ router.post('/google', async (req, res) => {
             otherUser.id
           ]
         );
+
+        await connection.commit();
 
         return res.status(403).json({
           success: false,

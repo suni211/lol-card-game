@@ -62,15 +62,15 @@ export default function VSMode() {
     title: 'VS 모드 시즌 3 - 도전의 탑',
     description: '100개의 스테이지를 클리어하고 최고의 보상을 획득하세요!',
     totalStages: 100,
-    totalReward: 500000,
+    totalReward: 200000,
   };
 
   // 난이도별 스테이지 정보
   const getDifficultyInfo = (num: number) => {
-    if (num <= 20) return { label: '초급', color: 'from-green-500 to-emerald-500', icon: Star, pts: 2000 };
-    if (num <= 60) return { label: '중급', color: 'from-blue-500 to-cyan-500', icon: Zap, pts: 4500 };
-    if (num <= 90) return { label: '고급', color: 'from-orange-500 to-red-500', icon: Flame, pts: 6000 };
-    return { label: '최종', color: 'from-purple-600 to-pink-600', icon: Crown, pts: 10000 };
+    if (num <= 20) return { label: '초급', color: 'from-green-500 to-emerald-500', icon: Star, pts: 800 };
+    if (num <= 60) return { label: '중급', color: 'from-blue-500 to-cyan-500', icon: Zap, pts: 1800 };
+    if (num <= 90) return { label: '고급', color: 'from-orange-500 to-red-500', icon: Flame, pts: 2400 };
+    return { label: '최종', color: 'from-purple-600 to-pink-600', icon: Crown, pts: 4000 };
   };
 
   const isBoss = (num: number) => {
@@ -131,19 +131,19 @@ export default function VSMode() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg p-3 text-white text-center">
             <div className="font-bold">1-20단계</div>
-            <div className="text-sm">초급 (2000P)</div>
+            <div className="text-sm">초급 (800P)</div>
           </div>
           <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg p-3 text-white text-center">
             <div className="font-bold">21-60단계</div>
-            <div className="text-sm">중급 (4500P)</div>
+            <div className="text-sm">중급 (1800P)</div>
           </div>
           <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg p-3 text-white text-center">
             <div className="font-bold">61-90단계</div>
-            <div className="text-sm">고급 (6000P)</div>
+            <div className="text-sm">고급 (2400P)</div>
           </div>
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg p-3 text-white text-center">
             <div className="font-bold">91-100단계</div>
-            <div className="text-sm">최종 (10000P)</div>
+            <div className="text-sm">최종 (4000P)</div>
           </div>
         </div>
 

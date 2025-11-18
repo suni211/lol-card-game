@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Info, Target, Users, Map, X, Eye } from 'lucide-react';
+import { Save, Info, Target, Users, Map, X, Eye, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumCard from '../components/ui/PremiumCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -339,8 +341,45 @@ export default function Deck() {
   const filledSlots = deckSlots.filter(s => s.card).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen relative overflow-hidden py-8 px-4">
+      {/* Animated Background */}
+      <motion.div
+        animate={{
+          backgroundPosition: ['0% 0%', '100% 100%'],
+        }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          repeatType: 'reverse',
+        }}
+        className="absolute inset-0 bg-gradient-to-br from-gray-50 via-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900/20 dark:via-purple-900/20 dark:to-gray-900 bg-[length:200%_200%]"
+      />
+
+      {/* Floating Particles */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{
+            y: [-20, -80, -20],
+            x: [0, Math.random() * 30 - 15, 0],
+            opacity: [0, 0.6, 0],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+          }}
+          className="absolute text-primary-500/20 dark:text-primary-400/20 text-xl"
+          style={{
+            left: `${Math.random() * 100}%`,
+            bottom: 0,
+          }}
+        >
+          ⭐
+        </motion.div>
+      ))}
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -349,64 +388,145 @@ export default function Deck() {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <motion.h1
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{ duration: 5, repeat: Infinity }}
+                className="text-4xl font-bold bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 dark:from-primary-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-2"
+              >
                 덱 편성
-              </h1>
+              </motion.h1>
               <p className="text-lg text-gray-600 dark:text-gray-400">
                 최강의 5인 로스터와 전략을 구성하세요
               </p>
             </div>
-            <button
+            <PremiumButton
               onClick={handleSaveDeck}
               disabled={saving}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+              variant="primary"
+              size="lg"
+              icon={<Save className="w-5 h-5" />}
             >
-              <Save className="w-5 h-5" />
-              <span>{saving ? '저장 중...' : '덱 저장'}</span>
-            </button>
+              {saving ? '저장 중...' : '덱 저장'}
+            </PremiumButton>
           </div>
 
           {/* Deck Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 파워</p>
-              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{totalPower}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">팀 시너지</p>
-              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">+{synergyBonus}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">최종 파워</p>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{totalPower + synergyBonus}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">덱 완성도</p>
-              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{filledSlots}/5</p>
-            </div>
+            <PremiumCard gradient="blue" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 파워</p>
+                <motion.p
+                  key={totalPower}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-primary-600 to-blue-600 dark:from-primary-400 dark:to-blue-400 bg-clip-text text-transparent"
+                >
+                  {totalPower}
+                </motion.p>
+              </div>
+            </PremiumCard>
+            <PremiumCard gradient="gold" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">팀 시너지</p>
+                <motion.p
+                  key={synergyBonus}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-yellow-600 to-orange-600 dark:from-yellow-400 dark:to-orange-400 bg-clip-text text-transparent"
+                >
+                  +{synergyBonus}
+                </motion.p>
+              </div>
+            </PremiumCard>
+            <PremiumCard gradient="rainbow" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">최종 파워</p>
+                <motion.p
+                  key={totalPower + synergyBonus}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent"
+                >
+                  {totalPower + synergyBonus}
+                </motion.p>
+              </div>
+            </PremiumCard>
+            <PremiumCard gradient="purple" glow hover3D>
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">덱 완성도</p>
+                <motion.p
+                  key={filledSlots}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent"
+                >
+                  {filledSlots}/5
+                </motion.p>
+              </div>
+            </PremiumCard>
           </div>
 
           {/* Team Synergy Details */}
           {synergyDetails.length > 0 && (
-            <div className="mt-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
-              <div className="flex items-center space-x-2 mb-2">
-                <Users className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                <span className="font-bold text-yellow-800 dark:text-yellow-200">팀 시너지 활성</span>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 relative overflow-hidden rounded-xl p-4 shadow-lg"
+            >
+              {/* Animated gradient background */}
+              <motion.div
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{ duration: 8, repeat: Infinity }}
+                className="absolute inset-0 bg-gradient-to-r from-yellow-100 via-orange-100 to-yellow-100 dark:from-yellow-900/30 dark:via-orange-900/30 dark:to-yellow-900/30 bg-[length:200%_100%]"
+              />
+              {/* Shimmer effect */}
+              <motion.div
+                animate={{
+                  x: ['-100%', '200%'],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatDelay: 2,
+                }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+              />
+              <div className="relative z-10">
+                <div className="flex items-center space-x-2 mb-2">
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Sparkles className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                  </motion.div>
+                  <span className="font-bold text-yellow-800 dark:text-yellow-200">팀 시너지 활성</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {synergyDetails.map((detail, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                      whileHover={{ scale: 1.05 }}
+                      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border-2 border-yellow-400 dark:border-yellow-600 shadow-md"
+                    >
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{detail.team}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
+                        ({detail.count}명 = +{detail.bonus})
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2 font-medium">
+                  💡 같은 팀 3명 = +1, 4명 = +3, 5명 = +5 파워 보너스
+                </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {synergyDetails.map((detail, idx) => (
-                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-md px-3 py-1.5 border border-yellow-300 dark:border-yellow-700">
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">{detail.team}</span>
-                    <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
-                      ({detail.count}명 = +{detail.bonus})
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
-                💡 같은 팀 3명 = +1, 4명 = +3, 5명 = +5 파워 보너스
-              </p>
-            </div>
+            </motion.div>
           )}
         </motion.div>
 
@@ -430,10 +550,17 @@ export default function Deck() {
           {/* Deck Slots */}
           <div className="lg:col-span-2 space-y-6">
             {/* Cards */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                카드 구성
-              </h2>
+            <PremiumCard gradient="blue" glow>
+              <div className="p-6">
+                <motion.h2
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-6"
+                >
+                  카드 구성
+                </motion.h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {deckSlots.map((slot) => (
@@ -524,13 +651,21 @@ export default function Deck() {
                   </motion.div>
                 ))}
               </div>
-            </div>
+              </div>
+            </PremiumCard>
 
             {/* Strategies */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                전략 선택
-              </h2>
+            <PremiumCard gradient="purple" glow>
+              <div className="p-6">
+                <motion.h2
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-400 dark:via-pink-400 dark:to-red-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-6"
+                >
+                  전략 선택
+                </motion.h2>
 
               <div className="space-y-6">
                 {/* Laning Strategy */}
@@ -674,15 +809,23 @@ export default function Deck() {
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            </PremiumCard>
           </div>
 
           {/* Card Selection Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 sticky top-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                {selectedPosition ? `${deckSlots.find(s => s.position === selectedPosition)?.label} 선택` : '내 카드'}
-              </h2>
+            <PremiumCard gradient="gold" glow className="sticky top-4">
+              <div className="p-6">
+                <motion.h2
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  className="text-xl font-bold bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 dark:from-yellow-400 dark:via-orange-400 dark:to-red-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
+                >
+                  {selectedPosition ? `${deckSlots.find(s => s.position === selectedPosition)?.label} 선택` : '내 카드'}
+                </motion.h2>
 
               {/* Season Filter */}
               <div className="mb-4">
@@ -704,7 +847,7 @@ export default function Deck() {
               {selectedPosition ? (
                 <>
                   {/* 빠른 선택 버튼 */}
-                  <button
+                  <PremiumButton
                     onClick={() => {
                       const positionCards = filteredAndSortedCards.filter((card) => card.player.position === selectedPosition);
 
@@ -714,10 +857,13 @@ export default function Deck() {
                         toast.error('해당 포지션에 사용 가능한 카드가 없습니다');
                       }
                     }}
-                    className="w-full mb-3 px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-lg active:scale-95"
+                    variant="gold"
+                    size="md"
+                    icon={<Sparkles className="w-4 h-4" />}
+                    className="w-full mb-3"
                   >
                     최고 카드 자동 선택
-                  </button>
+                  </PremiumButton>
                   <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {filteredAndSortedCards.map((card) => {
                       const positionMatch = card.player.position === selectedPosition;
@@ -821,7 +967,8 @@ export default function Deck() {
                   포지션을 선택하여<br />카드를 배치하세요
                 </p>
               )}
-            </div>
+              </div>
+            </PremiumCard>
           </div>
         </div>
       </div>

@@ -142,20 +142,69 @@ router.post('/google', async (req, res) => {
         const banUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후
 
         console.log(`🚨 Multi-account detected! IP: ${clientIp}`);
-        console.log(`   └─ User 1: ${otherUser.username} (${otherUser.email})`);
-        console.log(`   └─ User 2: ${username} (${email})`);
+        console.log(`   └─ User 1: ${otherUser.username} (${otherUser.email}) ID: ${otherUser.id}`);
+        console.log(`   └─ User 2: ${username} (${email}) ID: ${userId}`);
 
-        // 두 계정 모두 정지
+        // 누가 먼저 가입했는지 확인 (created_at 비교)
+        const [userCreatedAt]: any = await connection.query(
+          'SELECT created_at FROM users WHERE id = ?',
+          [userId]
+        );
+        const [otherUserCreatedAt]: any = await connection.query(
+          'SELECT created_at FROM users WHERE id = ?',
+          [otherUser.id]
+        );
+
+        const currentUserDate = new Date(userCreatedAt[0].created_at);
+        const otherUserDate = new Date(otherUserCreatedAt[0].created_at);
+
+        let accountToDelete;
+        let accountToKeep;
+        let deleteUsername;
+        let keepUsername;
+
+        // 나중에 가입한 계정을 삭제 대상으로 설정
+        if (currentUserDate > otherUserDate) {
+          // 현재 로그인하는 계정이 나중에 가입함 → 삭제
+          accountToDelete = userId;
+          accountToKeep = otherUser.id;
+          deleteUsername = username;
+          keepUsername = otherUser.username;
+        } else {
+          // 기존 계정이 나중에 가입함 → 기존 계정 삭제
+          accountToDelete = otherUser.id;
+          accountToKeep = userId;
+          deleteUsername = otherUser.username;
+          keepUsername = username;
+        }
+
+        console.log(`🗑️  Deleting later account: ${deleteUsername} (ID: ${accountToDelete})`);
+        console.log(`✅ Keeping earlier account: ${keepUsername} (ID: ${accountToKeep})`);
+
+        // 나중 계정 관련 데이터 삭제
+        await connection.query('DELETE FROM user_cards WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM decks WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM user_collected_cards WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM user_collection_progress WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM match_history WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM gacha_history WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM user_missions WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM user_achievements WHERE user_id = ?', [accountToDelete]);
+        await connection.query('DELETE FROM fusion_history WHERE user_id = ?', [accountToDelete]);
+
+        // 나중 계정 삭제
+        await connection.query('DELETE FROM users WHERE id = ?', [accountToDelete]);
+
+        // 먼저 가입한 계정은 7일 정지
         await connection.query(
           `UPDATE users
            SET multi_account_ban_until = ?,
                suspended_reason = ?
-           WHERE id IN (?, ?)`,
+           WHERE id = ?`,
           [
             banUntil,
-            `다중 계정 사용 적발 (IP: ${clientIp.substring(0, 10)}...) - 7일 정지`,
-            userId,
-            otherUser.id
+            `다중 계정 사용 적발 (IP: ${clientIp.substring(0, 10)}...) - 나중 계정(${deleteUsername}) 삭제됨. 7일 정지`,
+            accountToKeep
           ]
         );
 
@@ -164,7 +213,7 @@ router.post('/google', async (req, res) => {
         return res.status(403).json({
           success: false,
           error: '다중 계정 사용이 감지되었습니다.',
-          message: `같은 IP에서 다른 계정(${otherUser.username})이 감지되어 두 계정 모두 7일간 정지되었습니다.`,
+          message: `같은 IP에서 다중 계정이 감지되었습니다. 나중에 생성된 계정(${deleteUsername})은 삭제되었고, 기존 계정(${keepUsername})은 7일간 정지되었습니다.`,
           banUntil: banUntil.toISOString()
         });
       }

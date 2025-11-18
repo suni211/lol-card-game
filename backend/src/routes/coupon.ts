@@ -205,15 +205,31 @@ router.post('/redeem', authMiddleware, async (req: AuthRequest, res) => {
         break;
 
       case 'PACK':
-        // Add pack opening logic here (similar to gacha)
-        rewardDetails = { packType: coupon.reward_pack_type, count: coupon.reward_pack_count };
-        // For now, just give points equivalent
-        const packPoints = coupon.reward_pack_count * 300; // 300 points per pack
-        await connection.query(
-          'UPDATE users SET points = points + ? WHERE id = ?',
-          [packPoints, userId]
+        // Add pack to user inventory
+        const packType = coupon.reward_pack_type || 'STANDARD';
+        const packCount = coupon.reward_pack_count || 1;
+
+        // Check if user already has this pack type
+        const [existingPacks]: any = await connection.query(
+          'SELECT id, quantity FROM user_packs WHERE user_id = ? AND pack_type = ?',
+          [userId, packType]
         );
-        rewardDetails.points = packPoints;
+
+        if (existingPacks.length > 0) {
+          // Update existing pack quantity
+          await connection.query(
+            'UPDATE user_packs SET quantity = quantity + ? WHERE user_id = ? AND pack_type = ?',
+            [packCount, userId, packType]
+          );
+        } else {
+          // Insert new pack
+          await connection.query(
+            'INSERT INTO user_packs (user_id, pack_type, quantity) VALUES (?, ?, ?)',
+            [userId, packType, packCount]
+          );
+        }
+
+        rewardDetails = { packType, count: packCount };
         break;
     }
 

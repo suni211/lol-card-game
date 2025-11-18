@@ -35,6 +35,7 @@ import VSMode from './pages/VSMode';
 import VSBattle from './pages/VSBattle';
 import Coupon from './pages/Coupon';
 import AdminCoupon from './pages/AdminCoupon';
+import Packs from './pages/Packs';
 import Event from './pages/Event';
 import EventMilestones from './pages/EventMilestones';
 import EventRewards from './pages/EventRewards';
@@ -313,6 +314,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminCoupon />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/packs"
+            element={
+              <ProtectedRoute>
+                <Packs />
               </ProtectedRoute>
             }
           />

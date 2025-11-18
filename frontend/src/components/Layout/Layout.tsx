@@ -19,6 +19,26 @@ interface NoticePopup {
 
 export default function Layout() {
   const [noticePopup, setNoticePopup] = useState<NoticePopup | null>(null);
+  const [isHappyHour, setIsHappyHour] = useState(false);
+
+  // Check if it's Happy Hour (20:00-21:00 KST)
+  useEffect(() => {
+    const checkHappyHour = () => {
+      const now = new Date();
+      const kstOffset = 9 * 60; // KST is UTC+9
+      const kstTime = new Date(now.getTime() + kstOffset * 60 * 1000);
+      const hour = kstTime.getUTCHours();
+      setIsHappyHour(hour === 20); // 20시(8PM)
+    };
+
+    // Check immediately
+    checkHappyHour();
+
+    // Check every minute
+    const interval = setInterval(checkHappyHour, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // Connect to socket.io for global events (notice alerts)
@@ -65,6 +85,47 @@ export default function Layout() {
       <main className="flex-1">
         <Outlet />
       </main>
+
+      {/* Happy Hour Banner */}
+      <AnimatePresence>
+        {isHappyHour && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-yellow-500 via-orange-500 to-pink-500 text-white shadow-2xl"
+          >
+            <div className="container mx-auto px-4 py-3">
+              <div className="flex items-center justify-center gap-3">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="text-3xl"
+                >
+                  🎉
+                </motion.div>
+                <div className="text-center">
+                  <div className="text-xl font-bold tracking-wide">
+                    ⏰ HAPPY HOUR 진행중! ⏰
+                  </div>
+                  <div className="text-sm font-medium opacity-95">
+                    모든 경기 포인트 <span className="text-yellow-200 font-bold">+5% 보너스</span> 적용! (20:00-21:00 KST)
+                  </div>
+                </div>
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="text-3xl"
+                >
+                  🎊
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Footer />
       <ChatPopup />
       <Toaster

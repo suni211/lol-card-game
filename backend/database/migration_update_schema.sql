@@ -1,10 +1,12 @@
 -- Migration: Update players table schema
 USE lol_card_game;
 
--- Add new columns to players table
-ALTER TABLE players ADD COLUMN season VARCHAR(20) AFTER region;
-ALTER TABLE players ADD COLUMN market_value INT DEFAULT 0 AFTER season;
-ALTER TABLE players ADD INDEX idx_season (season);
+-- Add new columns to players table (with IF NOT EXISTS check)
+ALTER TABLE players ADD COLUMN IF NOT EXISTS season VARCHAR(20) AFTER region;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS market_value INT DEFAULT 0 AFTER season;
+
+-- Add index if not exists
+CREATE INDEX IF NOT EXISTS idx_season ON players(season);
 
 -- Create player_stats table
 CREATE TABLE IF NOT EXISTS player_stats (

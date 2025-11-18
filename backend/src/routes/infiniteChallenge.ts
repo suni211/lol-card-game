@@ -346,6 +346,127 @@ router.get('/history', authMiddleware, async (req: AuthRequest, res) => {
 });
 
 /**
+ * Get current battle state (for tab restoration)
+ */
+router.get('/current-battle', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const userId = req.user?.id;
+
+    await connection.beginTransaction();
+
+    // Get current progress
+    const [progress]: any = await connection.query(
+      'SELECT * FROM infinite_challenge_progress WHERE user_id = ? FOR UPDATE',
+      [userId]
+    );
+
+    if (progress.length === 0 || !progress[0].is_active) {
+      await connection.rollback();
+      return res.status(200).json({
+        success: true,
+        data: null,
+      });
+    }
+
+    const currentStage = progress[0].current_stage;
+    const aiDifficulty = calculateAIDifficulty(currentStage);
+
+    // Get active deck
+    const [decks]: any = await connection.query(
+      'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',
+      [userId]
+    );
+
+    if (decks.length === 0) {
+      await connection.rollback();
+      return res.status(200).json({
+        success: true,
+        data: null,
+      });
+    }
+
+    const deckId = decks[0].id;
+
+    // Calculate deck power
+    const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);
+    const deckData = deck[0];
+    const cardIds = [
+      deckData.top_card_id,
+      deckData.jungle_card_id,
+      deckData.mid_card_id,
+      deckData.adc_card_id,
+      deckData.support_card_id,
+    ].filter(Boolean);
+
+    const [cards]: any = await connection.query(`
+      SELECT uc.level, p.overall, p.team
+      FROM user_cards uc
+      JOIN players p ON uc.player_id = p.id
+      WHERE uc.id IN (?)
+    `, [cardIds]);
+
+    let playerPower = 0;
+    const teams: any = {};
+
+    // Calculate enhancement bonus helper
+    const calculateEnhancementBonus = (level: number): number => {
+      if (level <= 0) return 0;
+      if (level <= 4) return level; // 1~4강: +1씩
+      if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
+      return 10 + (level - 7) * 5; // 8~10강: +5씩
+    };
+
+    cards.forEach((card: any) => {
+      const enhancementBonus = calculateEnhancementBonus(card.level || 0);
+      playerPower += card.overall + enhancementBonus;
+      teams[card.team] = (teams[card.team] || 0) + 1;
+    });
+
+    // Team synergy bonus
+    Object.values(teams).forEach((count: any) => {
+      if (count === 3) playerPower += 1;
+      if (count === 4) playerPower += 3;
+      if (count === 5) playerPower += 5;
+    });
+
+    // Battle simulation
+    const playerRandomFactor = 0.9 + Math.random() * 0.2;
+    const aiRandomFactor = 0.9 + Math.random() * 0.2;
+
+    const playerFinalPower = playerPower * playerRandomFactor;
+    const aiFinalPower = aiDifficulty * 10 * aiRandomFactor; // Convert difficulty to power
+
+    const won = playerFinalPower > aiFinalPower;
+    const playerScore = won ? 3 : 1;
+    const aiScore = won ? 1 : 3;
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      data: {
+        won,
+        playerScore,
+        aiScore,
+        playerPower: Math.floor(playerFinalPower),
+        aiPower: Math.floor(aiFinalPower),
+        currentStage,
+        aiDifficulty,
+        battleCompleted: false,
+      },
+    });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Get current battle error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+/**
  * Battle current stage
  */
 router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {

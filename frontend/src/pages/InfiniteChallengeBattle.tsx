@@ -85,6 +85,46 @@ export default function InfiniteChallengeBattle() {
     }, 1000);
   };
 
+  const checkCurrentBattle = async () => {
+    try {
+      // 백엔드에서 현재 진행 중인 배틀 상태 가져오기
+      const response = await axios.get(
+        `${API_URL}/infinite-challenge/current-battle`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success && response.data.data) {
+        // 진행 중인 배틀이 있으면 그 상태로 복원
+        const data = response.data.data;
+        setResult(data);
+
+        // 이미 배틀이 끝난 상태라면 결과 표시
+        if (data.battleCompleted) {
+          setBattlePhase({
+            phase: 'result',
+            playerHP: data.won ? 100 : 0,
+            aiHP: data.won ? 0 : 100,
+            turn: 0
+          });
+        } else {
+          // 배틀 시뮬레이션 다시 시작
+          setTimeout(() => {
+            simulateBattle(data.playerPower, data.aiPower);
+          }, 500);
+        }
+      } else {
+        // 진행 중인 배틀이 없으면 새로 시작
+        startBattle();
+      }
+    } catch (error: any) {
+      console.error('Check current battle error:', error);
+      // 에러 발생 시 새로 시작
+      startBattle();
+    }
+  };
+
   const startBattle = async () => {
     try {
       setResult(null);
@@ -159,7 +199,25 @@ export default function InfiniteChallengeBattle() {
   };
 
   useEffect(() => {
-    startBattle();
+    // 페이지 최초 로드 시에만 배틀 시작
+    // sessionStorage를 사용해서 현재 세션에서 이미 시작했는지 확인
+    const battleInProgress = sessionStorage.getItem('infinite_battle_in_progress');
+
+    if (!battleInProgress) {
+      sessionStorage.setItem('infinite_battle_in_progress', 'true');
+      startBattle();
+    } else {
+      // 이미 진행 중인 배틀이 있으면 현재 진행 상태 가져오기
+      checkCurrentBattle();
+    }
+
+    // 컴포넌트 언마운트 시에만 세션 클리어 (페이지를 완전히 벗어날 때)
+    return () => {
+      // 배틀 완료 후 결과 페이지로 이동할 때만 세션 클리어
+      if (window.location.pathname !== '/infinite-challenge/battle') {
+        sessionStorage.removeItem('infinite_battle_in_progress');
+      }
+    };
   }, []);
 
   // Auto-submit result when battle phase reaches 'result'

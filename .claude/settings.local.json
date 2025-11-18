@@ -25,7 +25,8 @@
       "Bash(mysql:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(\"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysql.exe\" -u root -pqwe123 lol_card_game -e \"DESCRIBE user_cards;\")"
+      "Bash(\"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysql.exe\" -u root -pqwe123 lol_card_game -e \"DESCRIBE user_cards;\")",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []

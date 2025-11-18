@@ -38,3 +38,4 @@ coverage/
 temp/
 tmp/
 *.sql
+!lol_card_game_backup.sql

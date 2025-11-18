@@ -136,6 +136,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       }
 
       if (tier !== 'ICON') {
+        // Make absolutely sure ICON cards are never selected for non-ICON tiers
         [players] = await connection.query(
           `SELECT *,
            CASE
@@ -145,7 +146,16 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
              WHEN overall <= 100 THEN 'EPIC'
              ELSE 'LEGENDARY'
            END as tier
-           FROM players WHERE overall >= ? AND overall <= ? AND season != '17SSG' AND season != 'ICON' AND name NOT LIKE '17SSG%' AND name NOT LIKE '25WW%' AND name NOT LIKE '25WUD%' ORDER BY RAND() LIMIT 1`,
+           FROM players
+           WHERE overall >= ?
+             AND overall <= ?
+             AND season != '17SSG'
+             AND season != 'ICON'
+             AND name NOT LIKE 'ICON%'
+             AND name NOT LIKE '17SSG%'
+             AND name NOT LIKE '25WW%'
+             AND name NOT LIKE '25WUD%'
+           ORDER BY RAND() LIMIT 1`,
           [minOverall, maxOverall]
         );
       }

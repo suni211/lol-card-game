@@ -57,6 +57,19 @@ export default function Register() {
     };
   }, []);
 
+  // Debounced referral code validation
+  useEffect(() => {
+    if (referralCode.length >= 4) {
+      const timer = setTimeout(() => {
+        validateReferralCode(referralCode);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setReferralValid(null);
+      setReferralUsername('');
+    }
+  }, [referralCode]);
+
   const validateReferralCode = async (code: string) => {
     if (!code) {
       setReferralValid(null);
@@ -78,22 +91,6 @@ export default function Register() {
       }
     } catch (error: any) {
       setReferralValid(false);
-      setReferralUsername('');
-    }
-  };
-
-  const handleReferralCodeChange = (value: string) => {
-    const upperValue = value.toUpperCase();
-    setReferralCode(upperValue);
-
-    // Debounce validation
-    if (upperValue.length >= 4) {
-      const timer = setTimeout(() => {
-        validateReferralCode(upperValue);
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setReferralValid(null);
       setReferralUsername('');
     }
   };
@@ -166,7 +163,7 @@ export default function Register() {
               <input
                 type="text"
                 value={referralCode}
-                onChange={(e) => handleReferralCodeChange(e.target.value)}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 placeholder="추천인 코드를 입력하세요"
                 className={`w-full px-4 py-3 pr-12 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
                   referralValid === true

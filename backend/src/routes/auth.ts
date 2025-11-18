@@ -123,20 +123,50 @@ router.post('/google', async (req, res) => {
       username = user.username;
 
       // 다중 계정 로그인 체크 (같은 IP에서 다른 계정 로그인 시도)
-      // registration_ip 또는 last_login_ip 둘 중 하나라도 같으면 감지
-      const [sameIpUsers]: any = await connection.query(
-        `SELECT id, username, email,
-                COALESCE(multi_account_ban_until, '1970-01-01') as ban_until
-         FROM users
-         WHERE (last_login_ip = ? OR registration_ip = ?)
-           AND id != ?
-           AND email != ?
-         ORDER BY last_login_at DESC
-         LIMIT 1`,
-        [clientIp, clientIp, userId, email]
-      );
+      // 로컬호스트와 사설 IP는 제외
+      const isLocalOrPrivateIp =
+        clientIp === '::1' ||
+        clientIp === '::ffff:127.0.0.1' ||
+        clientIp.startsWith('::ffff:127.') ||
+        clientIp === '127.0.0.1' ||
+        clientIp.startsWith('127.') ||
+        clientIp.startsWith('192.168.') ||
+        clientIp.startsWith('10.') ||
+        clientIp.startsWith('172.16.') ||
+        clientIp.startsWith('172.17.') ||
+        clientIp.startsWith('172.18.') ||
+        clientIp.startsWith('172.19.') ||
+        clientIp.startsWith('172.20.') ||
+        clientIp.startsWith('172.21.') ||
+        clientIp.startsWith('172.22.') ||
+        clientIp.startsWith('172.23.') ||
+        clientIp.startsWith('172.24.') ||
+        clientIp.startsWith('172.25.') ||
+        clientIp.startsWith('172.26.') ||
+        clientIp.startsWith('172.27.') ||
+        clientIp.startsWith('172.28.') ||
+        clientIp.startsWith('172.29.') ||
+        clientIp.startsWith('172.30.') ||
+        clientIp.startsWith('172.31.');
 
-      if (sameIpUsers.length > 0) {
+      let sameIpUsers: any[] = [];
+
+      if (!isLocalOrPrivateIp) {
+        // registration_ip 또는 last_login_ip 둘 중 하나라도 같으면 감지
+        [sameIpUsers] = await connection.query(
+          `SELECT id, username, email,
+                  COALESCE(multi_account_ban_until, '1970-01-01') as ban_until
+           FROM users
+           WHERE (last_login_ip = ? OR registration_ip = ?)
+             AND id != ?
+             AND email != ?
+           ORDER BY last_login_at DESC
+           LIMIT 1`,
+          [clientIp, clientIp, userId, email]
+        );
+      }
+
+      if (sameIpUsers.length > 0 && !isLocalOrPrivateIp) {
         const otherUser = sameIpUsers[0];
         const now = new Date();
         const banUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후

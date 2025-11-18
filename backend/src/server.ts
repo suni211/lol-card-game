@@ -9,6 +9,7 @@ import { Server } from 'socket.io';
 // Import routes
 import authRoutes from './routes/auth';
 import gachaRoutes from './routes/gacha';
+import mileageRoutes from './routes/mileage';
 import deckRoutes from './routes/deck';
 import matchRoutes from './routes/match';
 import rankingRoutes from './routes/ranking';
@@ -84,6 +85,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/gacha', gachaRoutes);
+app.use('/api/mileage', mileageRoutes);
 app.use('/api/deck', deckRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/ranking', rankingRoutes);

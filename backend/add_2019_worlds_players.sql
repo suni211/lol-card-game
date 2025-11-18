@@ -215,42 +215,42 @@ UPDATE players SET market_value =
 WHERE season = '19WC' OR season = '19FPX';
 
 -- Add traits for G2 Esports players
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, 'MSI 챔피언', 'MSI 2019 우승 - 모든 스탯 +3' FROM players WHERE name = '19WC Wunder';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '정글 캐리', '공격적인 정글 플레이로 초반 주도권 장악 - 객관 장악 +5' FROM players WHERE name = '19WC Jankos';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '로밍 마스터', '맵 장악력과 로밍 능력 탁월 - 매크로 +5, 비전 장악 +5' FROM players WHERE name = '19WC Caps';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '롤 스왑 전문가', '미드에서 원딜로 포지션 변경 성공 - 다재다능 +7' FROM players WHERE name = '19WC Perkz';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '유럽의 서포터', '뛰어난 비전 컨트롤과 로밍 - 비전 장악 +7' FROM players WHERE name = '19WC Mikyx';
 
 -- Add traits for FPX players (World Champions)
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '월드 챔피언', 'Worlds 2019 우승 - 모든 스탯 +5' FROM players WHERE name = '19FPX GimGoon';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '월드 챔피언', 'Worlds 2019 우승 - 모든 스탯 +5' FROM players WHERE name = '19FPX Tian';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, 'FMVP', 'Worlds 2019 파이널 MVP - 모든 스탯 +8' FROM players WHERE name = '19FPX Tian';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '월드 챔피언', 'Worlds 2019 우승 - 모든 스탯 +5' FROM players WHERE name = '19FPX Doinb';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '유니크 챔피언 풀', '독특한 챔피언 선택으로 상대 혼란 - 매크로 +8' FROM players WHERE name = '19FPX Doinb';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '월드 챔피언', 'Worlds 2019 우승 - 모든 스탯 +5' FROM players WHERE name = '19FPX Lwx';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '월드 챔피언', 'Worlds 2019 우승 - 모든 스탯 +5' FROM players WHERE name = '19FPX Crisp';
 
-INSERT INTO player_traits (player_id, trait_name, trait_description)
+INSERT INTO player_traits (player_id, name, description)
 SELECT id, '완벽한 시너지', 'FPX 팀 시너지 완성 - 19FPX 5명 모일 시 모든 스탯 +10' FROM players WHERE name LIKE '19FPX%';

@@ -8,7 +8,7 @@ import { io, Socket } from 'socket.io-client';
 import { getPlayerImageUrl } from '../utils/playerImage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 // Calculate enhancement bonus (1-4강: +1/level, 5-7강: +2/level, 8-10강: +4/level)
 function calculateEnhancementBonus(level: number): number {

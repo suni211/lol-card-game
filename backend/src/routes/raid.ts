@@ -289,7 +289,7 @@ router.post('/attack', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     // Create AI opponent (ICON tier all +10 boss)
-    const aiPower = 500; // ICON all +10 = approximately 500 power
+    const aiPower = 550; // ICON all +10 = approximately 550 power
 
     // Simulate battle
     const playerWinChance = deckPower / (deckPower + aiPower);

@@ -493,7 +493,7 @@ function generateMatchEvent(
   return stageEvents[Math.floor(Math.random() * stageEvents.length)];
 }
 
-// 라운드 결과 처리 (30초 이벤트 포함)
+// 라운드 결과 처리 (즉시 결과 계산, 5초마다 이벤트)
 async function processRound(matchId: string, io: Server) {
   const match = activeMatches.get(matchId);
   if (!match) {
@@ -512,7 +512,57 @@ async function processRound(matchId: string, io: Server) {
   // Check if player2 is AI
   const isPlayer2AI = match.player2.socketId.startsWith('ai_');
 
-  // 30초 이벤트 진행
+  // 즉시 결과 계산
+  const result = await calculateRoundResult(match);
+
+  // 점수 업데이트
+  if (result.winner === 1) {
+    match.player1.score++;
+  } else {
+    match.player2.score++;
+  }
+
+  console.log(`📊 Round ${match.currentRound} result calculated - Winner: Player ${result.winner}`);
+
+  // 즉시 결과 전송
+  const player1Socket = io.sockets.sockets.get(match.player1.socketId);
+  if (player1Socket) {
+    player1Socket.emit('roundResult', {
+      round: match.currentRound,
+      player1Strategy: match.player1.strategy,
+      player2Strategy: match.player2.strategy,
+      player1Power: result.player1Power,
+      player2Power: result.player2Power,
+      winner: result.winner,
+      currentScore: {
+        player1: match.player1.score,
+        player2: match.player2.score,
+      },
+    });
+    console.log(`✅ Sent roundResult to Player 1 immediately`);
+  }
+
+  // Player 2에게 결과 전송 (AI가 아닐 때만)
+  if (!isPlayer2AI) {
+    const player2Socket = io.sockets.sockets.get(match.player2.socketId);
+    if (player2Socket) {
+      player2Socket.emit('roundResult', {
+        round: match.currentRound,
+        player1Strategy: match.player2.strategy,
+        player2Strategy: match.player1.strategy,
+        player1Power: result.player2Power,
+        player2Power: result.player1Power,
+        winner: result.winner === 1 ? 2 : 1,
+        currentScore: {
+          player1: match.player2.score,
+          player2: match.player1.score,
+        },
+      });
+      console.log(`✅ Sent roundResult to Player 2 immediately`);
+    }
+  }
+
+  // 30초 동안 5초마다 이벤트 전송
   const eventStages = [0, 5000, 10000, 15000, 20000, 25000]; // 0, 5, 10, 15, 20, 25초
 
   for (let i = 0; i < eventStages.length; i++) {
@@ -526,7 +576,6 @@ async function processRound(matchId: string, io: Server) {
 
         const eventMessage = generateMatchEvent(stage, currentMatch, currentMatch.player1Deck, currentMatch.player2Deck);
         console.log(`📢 Sending event stage ${stage} (${eventStages[stage] / 1000}s): ${eventMessage}`);
-        console.log(`   └─ To socketId: ${currentMatch.player1.socketId}`);
 
         const eventData = {
           round: currentMatch.currentRound,
@@ -535,7 +584,7 @@ async function processRound(matchId: string, io: Server) {
           message: eventMessage,
         };
 
-        // Player 1에게 이벤트 전송 - 소켓 객체 직접 찾기
+        // Player 1에게 이벤트 전송
         const player1Socket = io.sockets.sockets.get(currentMatch.player1.socketId);
         if (player1Socket) {
           player1Socket.emit('matchEvent', eventData);
@@ -546,62 +595,18 @@ async function processRound(matchId: string, io: Server) {
 
         // Player 2에게 이벤트 전송 (AI가 아닐 때만)
         if (!isPlayer2AI) {
-          console.log(`   └─ Also sending to Player 2: ${currentMatch.player2.socketId}`);
           const player2Socket = io.sockets.sockets.get(currentMatch.player2.socketId);
           if (player2Socket) {
             player2Socket.emit('matchEvent', eventData);
             console.log(`   └─ ✅ Sent to Player 2`);
-          } else {
-            console.log(`   └─ ❌ Player 2 socket not found`);
           }
         }
       }, eventStages[stage]);
     })(i);
   }
 
-  // 30초 후 결과 계산 및 전송
+  // 30초 후 다음 라운드 또는 매치 종료
   setTimeout(async () => {
-    // 결과 계산
-    const result = await calculateRoundResult(match);
-
-    // 점수 업데이트
-    if (result.winner === 1) {
-      match.player1.score++;
-    } else {
-      match.player2.score++;
-    }
-
-    // 라운드 결과 전송 (각 플레이어 관점으로)
-    // Player 1 관점
-    io.to(match.player1.socketId).emit('roundResult', {
-      round: match.currentRound,
-      player1Strategy: match.player1.strategy,
-      player2Strategy: match.player2.strategy,
-      player1Power: result.player1Power,
-      player2Power: result.player2Power,
-      winner: result.winner,
-      currentScore: {
-        player1: match.player1.score,
-        player2: match.player2.score,
-      },
-    });
-
-    // Player 2 관점 (winner를 반대로) - AI가 아닐 때만
-    if (!isPlayer2AI) {
-      io.to(match.player2.socketId).emit('roundResult', {
-        round: match.currentRound,
-        player1Strategy: match.player2.strategy,
-        player2Strategy: match.player1.strategy,
-        player1Power: result.player2Power,
-        player2Power: result.player1Power,
-        winner: result.winner === 1 ? 2 : 1,
-        currentScore: {
-          player1: match.player2.score,
-          player2: match.player1.score,
-        },
-      });
-    }
-
     // 매치 종료 확인 (3승)
     if (match.player1.score >= 3 || match.player2.score >= 3) {
       await endMatch(matchId, io);

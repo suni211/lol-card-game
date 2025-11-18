@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, TrendingUp, Award, X, Eye } from 'lucide-react';
+import { Trophy, Medal, TrendingUp, Award, X, Eye, Swords } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { calculateEnhancementBonus } from '../utils/cardHelpers';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumCard from '../components/ui/PremiumCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -186,80 +188,135 @@ export default function Ranking() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen relative overflow-hidden py-8 px-4">
+      {/* Animated Background */}
+      <motion.div
+        animate={{
+          backgroundPosition: ['0% 0%', '100% 100%'],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          repeatType: 'reverse',
+        }}
+        className="absolute inset-0 bg-gradient-to-br from-yellow-50 via-orange-50 via-amber-50 to-yellow-50 dark:from-gray-900 dark:via-yellow-900/10 dark:via-orange-900/10 dark:to-gray-900 bg-[length:200%_200%]"
+      />
+
+      {/* Trophy Particles */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{
+            y: [-20, -80, -20],
+            x: [0, Math.random() * 30 - 15, 0],
+            opacity: [0, 0.6, 0],
+            rotate: [0, 360],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+          }}
+          className="absolute text-yellow-500/20 dark:text-yellow-400/20 text-2xl"
+          style={{
+            left: `${Math.random() * 100}%`,
+            bottom: 0,
+          }}
+        >
+          🏆
+        </motion.div>
+      ))}
+
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mb-4">
-            <Trophy className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+            }}
+            className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mb-4 shadow-2xl relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 blur-xl opacity-50 animate-pulse rounded-full" />
+            <Trophy className="w-12 h-12 text-white relative z-10" />
+          </motion.div>
+          <motion.h1
+            animate={{
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+            }}
+            transition={{ duration: 5, repeat: Infinity }}
+            className="text-5xl font-black bg-gradient-to-r from-yellow-600 via-orange-600 to-amber-600 dark:from-yellow-400 dark:via-orange-400 dark:to-amber-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
+          >
             글로벌 랭킹
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          </motion.h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 font-medium">
             최고의 플레이어들과 경쟁하세요
           </p>
         </motion.div>
 
         {/* Tabs */}
         <div className="flex justify-center mb-8 space-x-2">
-          <button
+          <PremiumButton
             onClick={() => setActiveTab('players')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'players'
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            variant={activeTab === 'players' ? 'gold' : 'secondary'}
+            size="md"
+            icon={<Trophy className="w-4 h-4" />}
           >
             플레이어 랭킹
-          </button>
-          <button
+          </PremiumButton>
+          <PremiumButton
             onClick={() => setActiveTab('decks')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'decks'
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            variant={activeTab === 'decks' ? 'gold' : 'secondary'}
+            size="md"
+            icon={<Medal className="w-4 h-4" />}
           >
             인기 덱
-          </button>
-          <button
+          </PremiumButton>
+          <PremiumButton
             onClick={() => setActiveTab('cards')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'cards'
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            variant={activeTab === 'cards' ? 'gold' : 'secondary'}
+            size="md"
+            icon={<Award className="w-4 h-4" />}
           >
             인기 카드
-          </button>
+          </PremiumButton>
         </div>
 
         {activeTab === 'players' && rankings.length === 0 ? (
           /* Empty State */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center border border-gray-200 dark:border-gray-700"
-          >
-            <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              아직 랭킹 데이터가 없습니다
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              경기를 플레이하고 랭킹에 올라보세요!
-            </p>
-            <a
-              href="/match"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-colors"
+          <PremiumCard gradient="dark" glow hover3D>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-12 text-center"
             >
-              경기 시작하기
-            </a>
-          </motion.div>
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              </motion.div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                아직 랭킹 데이터가 없습니다
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                경기를 플레이하고 랭킹에 올라보세요!
+              </p>
+              <a href="/match">
+                <PremiumButton variant="danger" size="lg" icon={<Swords className="w-5 h-5" />}>
+                  경기 시작하기
+                </PremiumButton>
+              </a>
+            </motion.div>
+          </PremiumCard>
         ) : activeTab === 'players' ? (
           /* Rankings List */
           <motion.div
@@ -352,13 +409,14 @@ export default function Ranking() {
 
                       {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <button
+                        <PremiumButton
                           onClick={() => fetchUserProfile(user.userId)}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                          variant="primary"
+                          size="sm"
+                          icon={<Eye className="w-4 h-4" />}
                         >
-                          <Eye className="w-4 h-4" />
-                          <span>덱 보기</span>
-                        </button>
+                          덱 보기
+                        </PremiumButton>
                       </td>
                     </motion.tr>
                   ))}

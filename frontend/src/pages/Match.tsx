@@ -6,6 +6,8 @@ import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 import { getPlayerImageUrl } from '../utils/playerImage';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumCard from '../components/ui/PremiumCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -434,21 +436,76 @@ export default function Match() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900/20 dark:to-orange-900/20 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen relative overflow-hidden py-12 px-4">
+      {/* Animated Background */}
+      <motion.div
+        animate={{
+          backgroundPosition: ['0% 0%', '100% 100%'],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          repeatType: 'reverse',
+        }}
+        className="absolute inset-0 bg-gradient-to-br from-red-50 via-orange-50 via-yellow-50 to-red-50 dark:from-gray-900 dark:via-red-900/30 dark:via-orange-900/30 dark:to-gray-900 bg-[length:200%_200%]"
+      />
+
+      {/* Battle Particles */}
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{
+            y: [-30, -100, -30],
+            x: [0, Math.random() * 40 - 20, 0],
+            opacity: [0, 0.8, 0],
+            rotate: [0, 360],
+          }}
+          transition={{
+            duration: 2 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+          }}
+          className="absolute text-red-500/20 dark:text-orange-400/20 text-2xl"
+          style={{
+            left: `${Math.random() * 100}%`,
+            bottom: 0,
+          }}
+        >
+          ⚔️
+        </motion.div>
+      ))}
+
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-red-500 to-orange-500 rounded-full mb-4">
-            <Swords className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+            }}
+            className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-red-500 to-orange-500 rounded-full mb-4 shadow-2xl relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-orange-400 blur-xl opacity-50 animate-pulse rounded-full" />
+            <Swords className="w-12 h-12 text-white relative z-10" />
+          </motion.div>
+          <motion.h1
+            animate={{
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+            }}
+            transition={{ duration: 5, repeat: Infinity }}
+            className="text-5xl font-black bg-gradient-to-r from-red-600 via-orange-600 to-yellow-600 dark:from-red-400 dark:via-orange-400 dark:to-yellow-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
+          >
             랭크 경기
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          </motion.h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 font-medium">
             실시간 전략 대결!
           </p>
         </motion.div>
@@ -456,33 +513,38 @@ export default function Match() {
         {/* Check if deck is incomplete first */}
         {!deck || !isDeckComplete() ? (
           /* Empty State - Need Deck */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center border border-gray-200 dark:border-gray-700"
-          >
-            <Layers className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              경기를 시작하려면 완성된 덱이 필요합니다
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              5명의 선수를 모두 배치하고 전략을 설정해야 합니다
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="/gacha"
-                className="inline-block px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold rounded-lg transition-colors"
+          <PremiumCard gradient="dark" glow hover3D>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-12 text-center"
+            >
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
               >
-                카드 뽑기
-              </a>
-              <a
-                href="/deck"
-                className="inline-block px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-colors"
-              >
-                덱 편성하기
-              </a>
-            </div>
-          </motion.div>
+                <Layers className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              </motion.div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                경기를 시작하려면 완성된 덱이 필요합니다
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                5명의 선수를 모두 배치하고 전략을 설정해야 합니다
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/gacha">
+                  <PremiumButton variant="gold" size="lg" icon={<Sparkles className="w-5 h-5" />}>
+                    카드 뽑기
+                  </PremiumButton>
+                </a>
+                <a href="/deck">
+                  <PremiumButton variant="primary" size="lg" icon={<Layers className="w-5 h-5" />}>
+                    덱 편성하기
+                  </PremiumButton>
+                </a>
+              </div>
+            </motion.div>
+          </PremiumCard>
         ) : matchState === 'lineup' ? (
           /* 🔥 LINEUP PREVIEW - THIS SHOULD SHOW! */
           <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
@@ -848,44 +910,84 @@ export default function Match() {
           /* Deck Ready - Show Match Options */
           <div className="space-y-6">
             {/* Deck Info */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                내 덱: {deck!.name}
-              </h2>
+            <PremiumCard gradient="blue" glow hover3D>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-6"
+              >
+                <motion.h2
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
+                >
+                  내 덱: {deck!.name}
+                </motion.h2>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Trophy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-medium text-blue-900 dark:text-blue-300">총 OVR</span>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{calculateTotalOVR()}</p>
-                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                  <PremiumCard gradient="blue" glow hover3D>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <motion.div
+                          animate={{ rotate: [0, 360] }}
+                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Trophy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </motion.div>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">총 OVR</span>
+                      </div>
+                      <motion.p
+                        key={calculateTotalOVR()}
+                        initial={{ scale: 1.2, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-2xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent"
+                      >
+                        {calculateTotalOVR()}
+                      </motion.p>
+                    </div>
+                  </PremiumCard>
 
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <span className="text-sm font-medium text-purple-900 dark:text-purple-300">평균 OVR</span>
-                  </div>
-                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                    {Math.round(calculateTotalOVR() / 5)}
-                  </p>
-                </div>
+                  <PremiumCard gradient="purple" glow hover3D>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        </motion.div>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">평균 OVR</span>
+                      </div>
+                      <motion.p
+                        key={Math.round(calculateTotalOVR() / 5)}
+                        initial={{ scale: 1.2, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-2xl font-black bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent"
+                      >
+                        {Math.round(calculateTotalOVR() / 5)}
+                      </motion.p>
+                    </div>
+                  </PremiumCard>
 
-                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
-                    <span className="text-sm font-medium text-green-900 dark:text-green-300">전략</span>
-                  </div>
-                  <p className="text-sm font-bold text-green-900 dark:text-green-100">
-                    {deck!.laningStrategy}
-                  </p>
+                  <PremiumCard gradient="rainbow" glow hover3D>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <motion.div
+                          animate={{ rotate: [0, 10, -10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        </motion.div>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">전략</span>
+                      </div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">
+                        {deck!.laningStrategy}
+                      </p>
+                    </div>
+                  </PremiumCard>
                 </div>
-              </div>
 
               {/* Roster Preview */}
               <div className="grid grid-cols-5 gap-2">
@@ -915,33 +1017,35 @@ export default function Match() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+              </motion.div>
+            </PremiumCard>
 
             {/* Match Button or Result */}
             {!matchResult ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700"
-              >
-                {!matching ? (
-                  <>
-                    <button
-                      onClick={startMatch}
-                      className="w-full px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold text-xl rounded-lg transition-all transform hover:scale-105 shadow-lg"
-                    >
-                      <div className="flex items-center justify-center gap-3">
-                        <Swords className="w-6 h-6" />
-                        <span>랭크 매칭 시작</span>
-                      </div>
-                    </button>
-                    <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                      실시간 전략 대결 - 5판 3선승
-                    </p>
-                  </>
-                ) : (
-                  <>
+              <PremiumCard gradient="dark" glow>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="p-8 text-center"
+                >
+                  {!matching ? (
+                    <>
+                      <PremiumButton
+                        onClick={startMatch}
+                        variant="danger"
+                        size="lg"
+                        icon={<Swords className="w-6 h-6" />}
+                        className="w-full text-xl"
+                      >
+                        랭크 매칭 시작
+                      </PremiumButton>
+                      <p className="mt-4 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        실시간 전략 대결 - 5판 3선승
+                      </p>
+                    </>
+                  ) : (
+                    <>
                     <div className="mb-6">
                       <div className="flex items-center justify-center gap-3 mb-4">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -959,22 +1063,26 @@ export default function Match() {
                         상대를 찾고 있습니다
                       </p>
                     </div>
-                    <button
+                    <PremiumButton
                       onClick={cancelMatch}
-                      className="w-full px-8 py-4 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-bold text-xl rounded-lg transition-all"
+                      variant="secondary"
+                      size="lg"
+                      className="w-full text-xl"
                     >
                       매칭 취소
-                    </button>
+                    </PremiumButton>
                   </>
                 )}
-              </motion.div>
+                </motion.div>
+              </PremiumCard>
             ) : (
               /* Match Result */
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700"
-              >
+              <PremiumCard gradient={matchResult.won ? "rainbow" : "dark"} glow hover3D>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-8"
+                >
                 <div className={`text-center mb-6 ${matchResult.won ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   <div className="text-6xl font-bold mb-2">
                     {matchResult.won ? '승리!' : '패배'}
@@ -1010,13 +1118,17 @@ export default function Match() {
                   </div>
                 </div>
 
-                <button
+                <PremiumButton
                   onClick={playAgain}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all"
+                  variant="primary"
+                  size="lg"
+                  icon={<Swords className="w-5 h-5" />}
+                  className="w-full"
                 >
                   다시 경기하기
-                </button>
-              </motion.div>
+                </PremiumButton>
+                </motion.div>
+              </PremiumCard>
             )}
           </div>
         )}

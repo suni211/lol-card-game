@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Trash2, TrendingUp, Zap, X } from 'lucide-react';
+import { Search, Trash2, TrendingUp, Zap, X, Sparkles } from 'lucide-react';
 import type { UserCard } from '../types';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTeamColor, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 import toast from 'react-hot-toast';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumCard from '../components/ui/PremiumCard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -162,8 +164,45 @@ export default function Collection() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen relative overflow-hidden py-8 px-4">
+      {/* Animated Background */}
+      <motion.div
+        animate={{
+          backgroundPosition: ['0% 0%', '100% 100%'],
+        }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          repeatType: 'reverse',
+        }}
+        className="absolute inset-0 bg-gradient-to-br from-gray-50 via-purple-50 via-blue-50 to-gray-50 dark:from-gray-900 dark:via-purple-900/20 dark:via-blue-900/20 dark:to-gray-900 bg-[length:200%_200%]"
+      />
+
+      {/* Collection Particles */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{
+            y: [-20, -80, -20],
+            x: [0, Math.random() * 30 - 15, 0],
+            opacity: [0, 0.5, 0],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+          }}
+          className="absolute text-purple-500/20 dark:text-purple-400/20 text-xl"
+          style={{
+            left: `${Math.random() * 100}%`,
+            bottom: 0,
+          }}
+        >
+          ✨
+        </motion.div>
+      ))}
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -171,32 +210,36 @@ export default function Collection() {
           className="mb-8 flex justify-between items-center"
         >
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            <motion.h1
+              animate={{
+                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+              }}
+              transition={{ duration: 5, repeat: Infinity }}
+              className="text-4xl font-black bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 dark:from-purple-400 dark:via-blue-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-2"
+            >
               내 카드 컬렉션
-            </h1>
+            </motion.h1>
             <p className="text-lg text-gray-600 dark:text-gray-400">
               총 {cards.length}장의 카드를 보유하고 있습니다
             </p>
           </div>
-          <button
+          <PremiumButton
             onClick={() => setEnhancementMode(!enhancementMode)}
-            className={`px-6 py-3 rounded-lg font-bold transition-all flex items-center space-x-2 ${
-              enhancementMode
-                ? 'bg-red-500 hover:bg-red-600 text-white'
-                : 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white'
-            }`}
+            variant={enhancementMode ? "danger" : "gold"}
+            size="lg"
+            icon={<Zap className="w-5 h-5" />}
           >
-            <Zap className="w-5 h-5" />
-            <span>{enhancementMode ? '강화 모드 종료' : '카드 강화'}</span>
-          </button>
+            {enhancementMode ? '강화 모드 종료' : '카드 강화'}
+          </PremiumButton>
         </motion.div>
 
         {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-200 dark:border-gray-700"
-        >
+        <PremiumCard gradient="blue" glow>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-6 mb-8"
+          >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
             <div className="relative">
@@ -272,7 +315,8 @@ export default function Collection() {
               </select>
             </div>
           </div>
-        </motion.div>
+          </motion.div>
+        </PremiumCard>
 
         {/* Loading State */}
         {loading ? (
@@ -282,21 +326,28 @@ export default function Collection() {
           </div>
         ) : cards.length === 0 ? (
           /* Empty State */
-          <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="text-6xl mb-4">📦</div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              아직 보유한 카드가 없습니다
-            </h3>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-              가챠를 통해 첫 번째 카드를 획득해보세요!
-            </p>
-            <a
-              href="/gacha"
-              className="inline-block px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg transition-colors"
-            >
-              카드 뽑기
-            </a>
-          </div>
+          <PremiumCard gradient="dark" glow hover3D>
+            <div className="text-center py-20">
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-6xl mb-4"
+              >
+                📦
+              </motion.div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                아직 보유한 카드가 없습니다
+              </h3>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                가챠를 통해 첫 번째 카드를 획득해보세요!
+              </p>
+              <a href="/gacha">
+                <PremiumButton variant="gold" size="lg" icon={<Sparkles className="w-5 h-5" />}>
+                  카드 뽑기
+                </PremiumButton>
+              </a>
+            </div>
+          </PremiumCard>
         ) : (
           /* Cards Grid */
           <>
@@ -780,21 +831,20 @@ export default function Collection() {
                     </div>
 
                     {/* Enhance Button */}
-                    <button
+                    <PremiumButton
                       onClick={handleEnhancement}
                       disabled={!materialCard || (user?.points || 0) < (targetCard.level + 1) * 100}
-                      className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-                        !materialCard || (user?.points || 0) < (targetCard.level + 1) * 100
-                          ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white shadow-lg'
-                      }`}
+                      variant="gold"
+                      size="lg"
+                      icon={<Zap className="w-5 h-5" />}
+                      className="w-full"
                     >
                       {!materialCard
                         ? '재료 카드를 선택하세요'
                         : (user?.points || 0) < (targetCard.level + 1) * 100
                         ? '포인트가 부족합니다'
                         : `강화하기 (${ENHANCEMENT_RATES[targetCard.level]}%)`}
-                    </button>
+                    </PremiumButton>
                   </>
                 )}
               </motion.div>

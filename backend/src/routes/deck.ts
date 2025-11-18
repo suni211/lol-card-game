@@ -548,4 +548,284 @@ router.post('/copy/:fromSlot/:toSlot', authMiddleware, async (req: AuthRequest, 
   }
 });
 
+// ==========================================
+// DECK PRESET MANAGEMENT SYSTEM
+// ==========================================
+
+// Get all presets for the user
+router.get('/presets', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [decks]: any = await pool.query(
+      'SELECT id, deck_slot, name, preset_name, is_active, created_at, updated_at FROM decks WHERE user_id = ? ORDER BY deck_slot ASC',
+      [userId]
+    );
+
+    // Get card previews for each deck (first 5 cards)
+    const decksWithCards = await Promise.all(
+      decks.map(async (deck: any) => {
+        const cardIds = [
+          deck.top_card_id,
+          deck.jungle_card_id,
+          deck.mid_card_id,
+          deck.adc_card_id,
+          deck.support_card_id,
+        ].filter(Boolean);
+
+        let cards: any[] = [];
+
+        if (cardIds.length > 0) {
+          const [cardResults]: any = await pool.query(`
+            SELECT
+              uc.id,
+              uc.level,
+              p.name,
+              p.position,
+              p.overall,
+              CASE
+                WHEN p.season = 'ICON' THEN 'ICON'
+                WHEN p.overall <= 80 THEN 'COMMON'
+                WHEN p.overall <= 90 THEN 'RARE'
+                WHEN p.overall <= 100 THEN 'EPIC'
+                ELSE 'LEGENDARY'
+              END as tier
+            FROM user_cards uc
+            JOIN players p ON uc.player_id = p.id
+            WHERE uc.id IN (?)
+          `, [cardIds]);
+
+          cards = cardResults;
+        }
+
+        return {
+          id: deck.id,
+          deckSlot: deck.deck_slot,
+          name: deck.name,
+          presetName: deck.preset_name,
+          isActive: deck.is_active,
+          cards,
+          createdAt: deck.created_at,
+          updatedAt: deck.updated_at,
+        };
+      })
+    );
+
+    res.json({ success: true, data: decksWithCards });
+  } catch (error: any) {
+    console.error('Get presets error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Save new preset
+router.post('/preset', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+    const { presetName, name, topCardId, jungleCardId, midCardId, adcCardId, supportCardId, laningStrategy, teamfightStrategy, macroStrategy } = req.body;
+
+    // Check if user already has 5 decks
+    const [existingDecks]: any = await connection.query(
+      'SELECT COUNT(*) as count FROM decks WHERE user_id = ?',
+      [userId]
+    );
+
+    if (existingDecks[0].count >= 5) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '최대 5개의 덱만 저장할 수 있습니다.' });
+    }
+
+    if (!presetName || presetName.trim().length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '프리셋 이름을 입력해주세요.' });
+    }
+
+    // Find next available slot
+    const [usedSlots]: any = await connection.query(
+      'SELECT deck_slot FROM decks WHERE user_id = ? ORDER BY deck_slot ASC',
+      [userId]
+    );
+
+    let nextSlot = 1;
+    const usedSlotNumbers = usedSlots.map((s: any) => s.deck_slot);
+    for (let i = 1; i <= 5; i++) {
+      if (!usedSlotNumbers.includes(i)) {
+        nextSlot = i;
+        break;
+      }
+    }
+
+    // Validate cards
+    const cardIds = [topCardId, jungleCardId, midCardId, adcCardId, supportCardId].filter(Boolean);
+
+    if (cardIds.length > 0) {
+      const [userCards]: any = await connection.query(
+        'SELECT id, player_id FROM user_cards WHERE id IN (?) AND user_id = ?',
+        [cardIds, userId]
+      );
+
+      if (userCards.length !== cardIds.length) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, error: '일부 카드가 소유하지 않은 카드입니다.' });
+      }
+
+      // Check for duplicate players
+      const playerIds = userCards.map((card: any) => card.player_id);
+      const uniquePlayerIds = new Set(playerIds);
+
+      if (playerIds.length !== uniquePlayerIds.size) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, error: '같은 선수를 여러 포지션에 배치할 수 없습니다.' });
+      }
+    }
+
+    // Create new preset
+    const [result]: any = await connection.query(`
+      INSERT INTO decks (user_id, deck_slot, name, preset_name, top_card_id, jungle_card_id, mid_card_id, adc_card_id, support_card_id, laning_strategy, teamfight_strategy, macro_strategy, is_active, is_default)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE, FALSE)
+    `, [userId, nextSlot, name || `덱 ${nextSlot}`, presetName, topCardId, jungleCardId, midCardId, adcCardId, supportCardId, laningStrategy || 'SAFE', teamfightStrategy || 'ENGAGE', macroStrategy || 'OBJECTIVE']);
+
+    await connection.commit();
+
+    res.json({ success: true, data: { id: result.insertId, deckSlot: nextSlot }, message: '프리셋이 저장되었습니다.' });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Save preset error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+// Activate preset (set as active deck)
+router.patch('/preset/:id/activate', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+    const presetId = parseInt(req.params.id);
+
+    // Check if deck exists and belongs to user
+    const [decks]: any = await connection.query(
+      'SELECT id FROM decks WHERE id = ? AND user_id = ?',
+      [presetId, userId]
+    );
+
+    if (decks.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: '해당 프리셋을 찾을 수 없습니다.' });
+    }
+
+    // Set all decks to inactive
+    await connection.query(
+      'UPDATE decks SET is_active = FALSE WHERE user_id = ?',
+      [userId]
+    );
+
+    // Set selected deck as active
+    await connection.query(
+      'UPDATE decks SET is_active = TRUE WHERE id = ?',
+      [presetId]
+    );
+
+    await connection.commit();
+
+    res.json({ success: true, message: '덱이 활성화되었습니다.' });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Activate preset error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+// Update preset name
+router.put('/preset/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const presetId = parseInt(req.params.id);
+    const { presetName } = req.body;
+
+    if (!presetName || presetName.trim().length === 0) {
+      return res.status(400).json({ success: false, error: '프리셋 이름을 입력해주세요.' });
+    }
+
+    // Check if deck exists and belongs to user
+    const [decks]: any = await pool.query(
+      'SELECT id FROM decks WHERE id = ? AND user_id = ?',
+      [presetId, userId]
+    );
+
+    if (decks.length === 0) {
+      return res.status(404).json({ success: false, error: '해당 프리셋을 찾을 수 없습니다.' });
+    }
+
+    await pool.query(
+      'UPDATE decks SET preset_name = ? WHERE id = ?',
+      [presetName, presetId]
+    );
+
+    res.json({ success: true, message: '프리셋 이름이 변경되었습니다.' });
+  } catch (error: any) {
+    console.error('Update preset name error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Delete preset
+router.delete('/preset/:id', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+    const presetId = parseInt(req.params.id);
+
+    // Check if deck exists and belongs to user
+    const [decks]: any = await connection.query(
+      'SELECT id, is_active FROM decks WHERE id = ? AND user_id = ?',
+      [presetId, userId]
+    );
+
+    if (decks.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: '해당 프리셋을 찾을 수 없습니다.' });
+    }
+
+    const wasActive = decks[0].is_active;
+
+    // Delete preset
+    await connection.query(
+      'DELETE FROM decks WHERE id = ?',
+      [presetId]
+    );
+
+    // If deleted deck was active, set first available deck as active
+    if (wasActive) {
+      await connection.query(
+        'UPDATE decks SET is_active = TRUE WHERE user_id = ? ORDER BY deck_slot ASC LIMIT 1',
+        [userId]
+      );
+    }
+
+    await connection.commit();
+
+    res.json({ success: true, message: '프리셋이 삭제되었습니다.' });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Delete preset error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
 export default router;

@@ -52,6 +52,9 @@ import Coach from './pages/Coach';
 import CoachEnhancement from './pages/CoachEnhancement';
 import CardCollection from './pages/CardCollection';
 import Settings from './pages/Settings';
+import Friendly from './pages/Friendly';
+import Titles from './pages/Titles';
+import Raid from './pages/Raid';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -537,6 +540,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/friendly"
+            element={
+              <ProtectedRoute>
+                <Friendly />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/titles"
+            element={
+              <ProtectedRoute>
+                <Titles />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/raid"
+            element={
+              <ProtectedRoute>
+                <Raid />
               </ProtectedRoute>
             }
           />

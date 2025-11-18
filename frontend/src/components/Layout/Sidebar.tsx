@@ -54,6 +54,7 @@ export default function Sidebar() {
       items: [
         { path: '/match', label: '랭크전' },
         { path: '/practice', label: '일반전' },
+        { path: '/friendly', label: '친선전' },
         { path: '/ai-battle', label: 'AI 배틀' },
         { path: '/vsmode', label: 'VS 모드' },
         { path: '/infinite-challenge', label: '무한도전' },
@@ -85,6 +86,8 @@ export default function Sidebar() {
       ]
     },
     { path: '/trade', label: '트레이드' },
+    { path: '/titles', label: '칭호' },
+    { path: '/raid', label: '레이드' },
     { path: '/coupon', label: '쿠폰' },
     { path: '/packs', label: '팩 인벤토리' },
     { path: '/settings', label: '설정' },

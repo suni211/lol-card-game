@@ -52,9 +52,9 @@ async function fix18WCMarketPrices() {
 
       // Add to market prices
       await connection.query(`
-        INSERT INTO player_market_prices (player_id, current_price, price_floor, price_ceiling, total_volume, last_traded_at)
-        VALUES (?, ?, ?, ?, 0, NULL)
-      `, [player.id, basePrice, priceFloor, priceCeiling]);
+        INSERT INTO player_market_prices (player_id, base_price, current_price, price_floor, price_ceiling, total_volume, last_traded_at)
+        VALUES (?, ?, ?, ?, ?, 0, NULL)
+      `, [player.id, basePrice, basePrice, priceFloor, priceCeiling]);
 
       console.log(`✅ Added ${player.name} (${player.overall} OVR) - Price: ${basePrice}P (${priceFloor}P ~ ${priceCeiling}P)`);
       addedCount++;

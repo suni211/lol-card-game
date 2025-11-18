@@ -58,12 +58,15 @@ export default function Navbar() {
       items: [
         { path: '/match', label: '랭크전' },
         { path: '/practice', label: '일반전' },
+        { path: '/friendly', label: '친선전' },
         { path: '/ai-battle', label: 'AI 배틀' },
         { path: '/vsmode', label: 'VS 모드' },
         { path: '/infinite-challenge', label: '무한도전' },
       ]
     },
     { path: '/market', label: '이적시장' },
+    { path: '/raid', label: '레이드' },
+    { path: '/titles', label: '칭호' },
     { path: '/ranking', label: '랭킹' },
     { path: '/strategy-stats', label: '전략 통계' },
     {

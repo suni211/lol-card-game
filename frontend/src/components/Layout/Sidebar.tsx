@@ -61,6 +61,8 @@ export default function Sidebar() {
       ]
     },
     { path: '/market', label: '이적시장' },
+    { path: '/raid', label: '레이드' },
+    { path: '/titles', label: '칭호' },
     { path: '/ranking', label: '랭킹' },
     { path: '/strategy-stats', label: '전략 통계' },
     {
@@ -86,8 +88,6 @@ export default function Sidebar() {
       ]
     },
     { path: '/trade', label: '트레이드' },
-    { path: '/titles', label: '칭호' },
-    { path: '/raid', label: '레이드' },
     { path: '/coupon', label: '쿠폰' },
     { path: '/packs', label: '팩 인벤토리' },
     { path: '/settings', label: '설정' },

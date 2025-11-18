@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Trophy, Swords, SkipForward, Shield, Target, Flame } from 'lucide-react';
@@ -30,6 +30,7 @@ export default function InfiniteChallengeBattle() {
   const { token } = useAuthStore();
   const [result, setResult] = useState<BattleResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitRetries, setSubmitRetries] = useState(0);
   const [battlePhase, setBattlePhase] = useState<BattlePhase>({
     phase: 'loading',
     playerHP: 100,
@@ -37,8 +38,15 @@ export default function InfiniteChallengeBattle() {
     turn: 0,
   });
   const [battleLog, setBattleLog] = useState<string[]>([]);
+  const battleIntervalRef = useRef<number | null>(null);
 
   const simulateBattle = (playerPower: number, aiPower: number) => {
+    // Clear any existing battle interval
+    if (battleIntervalRef.current) {
+      clearInterval(battleIntervalRef.current);
+      battleIntervalRef.current = null;
+    }
+
     setBattlePhase({ phase: 'fighting', playerHP: 100, aiHP: 100, turn: 0 });
     setBattleLog(['전투 시작!']);
 
@@ -47,7 +55,7 @@ export default function InfiniteChallengeBattle() {
     let turn = 0;
     const logs: string[] = ['전투 시작!'];
 
-    const interval = setInterval(() => {
+    battleIntervalRef.current = setInterval(() => {
       turn++;
 
       // Player attacks
@@ -56,7 +64,10 @@ export default function InfiniteChallengeBattle() {
       logs.push(`턴 ${turn}: 당신이 ${playerDamage} 데미지를 입혔습니다!`);
 
       if (aHP <= 0) {
-        clearInterval(interval);
+        if (battleIntervalRef.current) {
+          clearInterval(battleIntervalRef.current);
+          battleIntervalRef.current = null;
+        }
         logs.push('승리!');
         setBattleLog([...logs]);
         setTimeout(() => {
@@ -71,7 +82,10 @@ export default function InfiniteChallengeBattle() {
       logs.push(`턴 ${turn}: AI가 ${aiDamage} 데미지를 입혔습니다!`);
 
       if (pHP <= 0) {
-        clearInterval(interval);
+        if (battleIntervalRef.current) {
+          clearInterval(battleIntervalRef.current);
+          battleIntervalRef.current = null;
+        }
         logs.push('패배...');
         setBattleLog([...logs]);
         setTimeout(() => {
@@ -157,8 +171,18 @@ export default function InfiniteChallengeBattle() {
   const submitResult = async () => {
     if (!result) return;
 
+    // Prevent infinite retry loop (max 3 attempts)
+    if (submitRetries >= 3) {
+      console.error('Max submit retries reached');
+      toast.error('결과 제출 실패. 다시 시도하려면 버튼을 클릭하세요.');
+      return;
+    }
+
     try {
       setSubmitting(true);
+      setSubmitRetries(prev => prev + 1);
+
+      console.log(`[Infinite Challenge] Submitting result (attempt ${submitRetries + 1})...`);
 
       const response = await axios.post(
         `${API_URL}/infinite-challenge/complete-stage`,
@@ -173,7 +197,11 @@ export default function InfiniteChallengeBattle() {
       );
 
       if (response.data.success) {
+        console.log('[Infinite Challenge] Result submitted successfully');
         toast.success(response.data.message);
+
+        // Reset retry counter on success
+        setSubmitRetries(0);
 
         if (result.won) {
           // Victory - continue to next stage
@@ -185,8 +213,9 @@ export default function InfiniteChallengeBattle() {
         }
       }
     } catch (error: any) {
-      console.error('Submit result error:', error);
-      toast.error(error.response?.data?.error || '결과 제출 실패');
+      console.error('[Infinite Challenge] Submit result error:', error);
+      const errorMsg = error.response?.data?.error || '결과 제출 실패';
+      toast.error(`${errorMsg} (시도 ${submitRetries + 1}/3)`);
     } finally {
       setSubmitting(false);
     }
@@ -194,6 +223,8 @@ export default function InfiniteChallengeBattle() {
 
   const skipToResult = () => {
     if (result) {
+      // Reset retry counter for manual submission
+      setSubmitRetries(0);
       submitResult();
     }
   };
@@ -211,8 +242,15 @@ export default function InfiniteChallengeBattle() {
       checkCurrentBattle();
     }
 
-    // 컴포넌트 언마운트 시에만 세션 클리어 (페이지를 완전히 벗어날 때)
+    // 컴포넌트 언마운트 시 cleanup
     return () => {
+      console.log('[Infinite Challenge] Cleaning up battle interval');
+      // Clear battle interval to prevent memory leaks
+      if (battleIntervalRef.current) {
+        clearInterval(battleIntervalRef.current);
+        battleIntervalRef.current = null;
+      }
+
       // 배틀 완료 후 결과 페이지로 이동할 때만 세션 클리어
       if (window.location.pathname !== '/infinite-challenge/battle') {
         sessionStorage.removeItem('infinite_battle_in_progress');
@@ -221,11 +259,16 @@ export default function InfiniteChallengeBattle() {
   }, []);
 
   // Auto-submit result when battle phase reaches 'result'
+  // Dependencies include submitting to allow retry on failure
   useEffect(() => {
     if (battlePhase.phase === 'result' && result && !submitting) {
-      submitResult();
+      // Small delay to show result before submitting
+      const timer = setTimeout(() => {
+        submitResult();
+      }, 1500);
+      return () => clearTimeout(timer);
     }
-  }, [battlePhase.phase]);
+  }, [battlePhase.phase, result, submitting]);
 
   // Loading phase
   if (battlePhase.phase === 'loading' || !result) {

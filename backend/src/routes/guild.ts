@@ -199,75 +199,6 @@ router.get('/my', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-// 길드 상세 정보 조회
-router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const guildId = parseInt(req.params.id);
-
-    const [guilds]: any = await pool.query(
-      `SELECT g.*, u.username as leader_name,
-              (SELECT COUNT(*) FROM guild_members WHERE guild_id = g.id) as member_count
-       FROM guilds g
-       JOIN users u ON g.leader_id = u.id
-       WHERE g.id = ?`,
-      [guildId]
-    );
-
-    if (guilds.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: '길드를 찾을 수 없습니다.',
-      });
-    }
-
-    const guild = guilds[0];
-
-    // 멤버 목록
-    const [members]: any = await pool.query(
-      `SELECT gm.role, gm.contribution, gm.joined_at,
-              u.id, u.username, u.tier, u.wins, u.losses, u.level
-       FROM guild_members gm
-       JOIN users u ON gm.user_id = u.id
-       WHERE gm.guild_id = ?
-       ORDER BY gm.role ASC, gm.contribution DESC`,
-      [guildId]
-    );
-
-    res.json({
-      success: true,
-      data: {
-        ...guild,
-        members,
-      },
-    });
-  } catch (error: any) {
-    console.error('Get guild detail error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
-
-// 길드 목록 조회
-router.get('/', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const [guilds]: any = await pool.query(
-      `SELECT g.*, u.username as leader_name,
-              (SELECT COUNT(*) FROM guild_members WHERE guild_id = g.id) as member_count
-       FROM guilds g
-       JOIN users u ON g.leader_id = u.id
-       ORDER BY g.points DESC, g.level DESC
-       LIMIT 100`
-    );
-
-    res.json({
-      success: true,
-      data: guilds,
-    });
-  } catch (error: any) {
-    console.error('Get guilds error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
-
 // 길드 가입 신청
 router.post('/join/:id', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
@@ -867,6 +798,75 @@ router.patch('/settings', authMiddleware, async (req: AuthRequest, res) => {
     res.status(500).json({ success: false, error: 'Server error' });
   } finally {
     connection.release();
+  }
+});
+
+// 길드 목록 조회 (GET / must come before GET /:id)
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const [guilds]: any = await pool.query(
+      `SELECT g.*, u.username as leader_name,
+              (SELECT COUNT(*) FROM guild_members WHERE guild_id = g.id) as member_count
+       FROM guilds g
+       JOIN users u ON g.leader_id = u.id
+       ORDER BY g.points DESC, g.level DESC
+       LIMIT 100`
+    );
+
+    res.json({
+      success: true,
+      data: guilds,
+    });
+  } catch (error: any) {
+    console.error('Get guilds error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// 길드 상세 정보 조회 (MUST BE LAST - dynamic route catches all GET requests)
+router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const guildId = parseInt(req.params.id);
+
+    const [guilds]: any = await pool.query(
+      `SELECT g.*, u.username as leader_name,
+              (SELECT COUNT(*) FROM guild_members WHERE guild_id = g.id) as member_count
+       FROM guilds g
+       JOIN users u ON g.leader_id = u.id
+       WHERE g.id = ?`,
+      [guildId]
+    );
+
+    if (guilds.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: '길드를 찾을 수 없습니다.',
+      });
+    }
+
+    const guild = guilds[0];
+
+    // 멤버 목록
+    const [members]: any = await pool.query(
+      `SELECT gm.role, gm.contribution, gm.joined_at,
+              u.id, u.username, u.tier, u.wins, u.losses, u.level
+       FROM guild_members gm
+       JOIN users u ON gm.user_id = u.id
+       WHERE gm.guild_id = ?
+       ORDER BY gm.role ASC, gm.contribution DESC`,
+      [guildId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        ...guild,
+        members,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get guild detail error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 

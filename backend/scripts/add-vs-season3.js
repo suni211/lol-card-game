@@ -77,10 +77,14 @@ async function addVSSeason3() {
 
     // Insert all stages
     for (const stage of stages) {
+      const isBoss = stage.stage_number === 20 || stage.stage_number === 60 ||
+                     stage.stage_number === 90 || stage.stage_number === 100;
+      const stageName = isBoss ? `Stage ${stage.stage_number} - BOSS` : `Stage ${stage.stage_number}`;
+
       await connection.query(
-        `INSERT INTO vs_stages (season, stage_number, ai_power, reward_points, hard_mode_multiplier)
-         VALUES (3, ?, ?, ?, 1.0)`,
-        [stage.stage_number, stage.ai_power, stage.reward_points]
+        `INSERT INTO vs_stages (season, stage_number, stage_name, is_boss, ai_power, reward_points, hard_mode_multiplier)
+         VALUES (3, ?, ?, ?, ?, ?, 1.0)`,
+        [stage.stage_number, stageName, isBoss, stage.ai_power, stage.reward_points]
       );
     }
 

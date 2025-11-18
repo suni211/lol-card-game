@@ -4,32 +4,32 @@ USE lol_card_game;
 -- [ICON] Mystic (overall 119) - 울트라 하이퍼 캐리 ADC
 DELETE FROM player_stats WHERE player_id = 1062;
 INSERT INTO player_stats (player_id, laning, mechanics, teamfight, vision, macro, mental) VALUES
-(1062, 92, 96, 100, 88, 93, 95);
+(1062, 115, 122, 128, 110, 118, 121);
 
 -- [ICON] Deft (overall 121) - 완벽한 포지셔닝의 ADC
 DELETE FROM player_stats WHERE player_id = 1063;
 INSERT INTO player_stats (player_id, laning, mechanics, teamfight, vision, macro, mental) VALUES
-(1063, 95, 98, 98, 90, 96, 97);
+(1063, 120, 127, 126, 115, 123, 125);
 
 -- [ICON] Peanut (overall 118) - 공격적인 정글러
 DELETE FROM player_stats WHERE player_id = 1064;
 INSERT INTO player_stats (player_id, laning, mechanics, teamfight, vision, macro, mental) VALUES
-(1064, 90, 94, 96, 97, 95, 92);
+(1064, 114, 119, 122, 124, 121, 118);
 
 -- [NR] Mystic (overall 114) - 초반 강력한 ADC
 DELETE FROM player_stats WHERE player_id = 1065;
 INSERT INTO player_stats (player_id, laning, mechanics, teamfight, vision, macro, mental) VALUES
-(1065, 88, 92, 95, 84, 89, 90);
+(1065, 112, 117, 121, 108, 113, 115);
 
 -- [NR] Deft (overall 116) - 안정적인 후반 캐리
 DELETE FROM player_stats WHERE player_id = 1066;
 INSERT INTO player_stats (player_id, laning, mechanics, teamfight, vision, macro, mental) VALUES
-(1066, 91, 94, 94, 86, 92, 93);
+(1066, 115, 120, 119, 110, 117, 118);
 
 -- [NR] Peanut (overall 113) - 적극적인 갱커
 DELETE FROM player_stats WHERE player_id = 1067;
 INSERT INTO player_stats (player_id, laning, mechanics, teamfight, vision, macro, mental) VALUES
-(1067, 86, 90, 92, 93, 91, 88);
+(1067, 110, 114, 117, 118, 116, 113);
 
 -- 결과 확인
 SELECT

@@ -1,12 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Trophy, Info } from 'lucide-react';
+import { Sparkles, Trophy, Info, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import type { Player, GachaOption } from '../types';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+interface MileageReward {
+  milestone: number;
+  points: number;
+  pack: string | null;
+}
+
+interface MileageStatus {
+  currentMileage: number;
+  availableRewards: MileageReward[];
+  allRewards: MileageReward[];
+  claimedMilestones: number[];
+}
 
 export default function Gacha() {
   const { user, token, updateUser } = useAuthStore();
@@ -19,6 +32,8 @@ export default function Gacha() {
   const [bestCard, setBestCard] = useState<Player | null>(null);
   const [dailyFreeUsed, setDailyFreeUsed] = useState(false);
   const [revealStep, setRevealStep] = useState(0); // 0: loading, 1: region, 2: position, 3: season, 4: overall, 5: name+face, 6: final
+  const [mileageStatus, setMileageStatus] = useState<MileageStatus | null>(null);
+  const [showMileageModal, setShowMileageModal] = useState(false);
 
   const gachaOptions: GachaOption[] = [
     {
@@ -146,6 +161,50 @@ export default function Gacha() {
     }
   };
 
+  // 마일리지 현황 불러오기
+  const fetchMileageStatus = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/mileage/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setMileageStatus(response.data.data);
+      }
+    } catch (error: any) {
+      console.error('Fetch mileage status error:', error);
+    }
+  };
+
+  // 마일리지 보상 수령
+  const claimMileageReward = async (milestone: number) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/mileage/claim/${milestone}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        fetchMileageStatus();
+
+        const userResponse = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (userResponse.data.success) {
+          updateUser(userResponse.data.data);
+        }
+      }
+    } catch (error: any) {
+      console.error('Claim mileage error:', error);
+      toast.error(error.response?.data?.error || '보상 수령 실패');
+    }
+  };
+
+  useEffect(() => {
+    fetchMileageStatus();
+  }, []);
+
   const handleDraw = async (option: GachaOption) => {
     if (!user) {
       toast.error('로그인이 필요합니다!');
@@ -248,6 +307,9 @@ export default function Gacha() {
               icon: 'ℹ️',
             });
           }
+
+          // 마일리지 업데이트
+          fetchMileageStatus();
 
           if (option.cost === 0) {
             setDailyFreeUsed(true);
@@ -405,6 +467,39 @@ export default function Gacha() {
             </div>
           )}
         </motion.div>
+
+        {/* Mileage Banner */}
+        {mileageStatus && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 dark:from-yellow-600 dark:via-orange-600 dark:to-pink-600 rounded-xl p-6 shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
+            onClick={() => setShowMileageModal(true)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-white/20 backdrop-blur rounded-full">
+                  <Gift className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-1">
+                    마일리지: {mileageStatus.currentMileage}회
+                  </h3>
+                  <p className="text-white/90 text-sm">
+                    {mileageStatus.availableRewards.length > 0
+                      ? `받을 수 있는 보상 ${mileageStatus.availableRewards.length}개!`
+                      : '다음 마일스톤까지 뽑기를 계속하세요!'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-white">
+                  {mileageStatus.availableRewards.length > 0 ? '🎁' : '⭐'}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Gacha Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -1351,6 +1446,7 @@ export default function Gacha() {
             onClick={() => {
               setShowBestCardCutscene(false);
               setShow10Result(true);
+              fetchMileageStatus();
             }}
           >
             <motion.div
@@ -1628,6 +1724,101 @@ export default function Gacha() {
                   className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all"
                 >
                   확인
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mileage Modal */}
+      <AnimatePresence>
+        {showMileageModal && mileageStatus && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowMileageModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                  <Gift className="w-8 h-8 text-yellow-500" />
+                  마일리지 보상
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                  현재 마일리지: <span className="font-bold text-primary-600 dark:text-primary-400">{mileageStatus.currentMileage}회</span>
+                </p>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {mileageStatus.allRewards.map((reward) => {
+                  const isClaimed = mileageStatus.claimedMilestones.includes(reward.milestone);
+                  const isAvailable = mileageStatus.currentMileage >= reward.milestone && !isClaimed;
+                  const progress = Math.min((mileageStatus.currentMileage / reward.milestone) * 100, 100);
+
+                  return (
+                    <div
+                      key={reward.milestone}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        isClaimed
+                          ? 'bg-gray-100 dark:bg-gray-700/50 border-gray-300 dark:border-gray-600 opacity-60'
+                          : isAvailable
+                          ? 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-400 dark:border-yellow-600 shadow-lg'
+                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <div className="text-lg font-bold text-gray-900 dark:text-white">
+                            {reward.milestone}회 달성
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {reward.points.toLocaleString()}P
+                            {reward.pack && ` + ${reward.pack === 'LEGENDARY' ? '레전드' : '아이콘'} 팩`}
+                          </div>
+                        </div>
+                        {isClaimed ? (
+                          <div className="px-4 py-2 bg-gray-400 text-white rounded-lg font-medium">
+                            수령완료
+                          </div>
+                        ) : isAvailable ? (
+                          <button
+                            onClick={() => claimMileageReward(reward.milestone)}
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg font-bold shadow-lg transition-all transform hover:scale-105"
+                          >
+                            수령하기 🎁
+                          </button>
+                        ) : (
+                          <div className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg font-medium">
+                            {reward.milestone - mileageStatus.currentMileage}회 남음
+                          </div>
+                        )}
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-yellow-400 to-orange-400 h-2 rounded-full transition-all"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowMileageModal(false)}
+                  className="w-full py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors"
+                >
+                  닫기
                 </button>
               </div>
             </motion.div>

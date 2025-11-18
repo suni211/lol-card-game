@@ -42,13 +42,12 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get all cards and verify ownership
     const [cards]: any = await connection.query(
-      `SELECT uc.id, uc.user_id, uc.level, p.overall, p.name, p.tier,
+      `SELECT uc.id, uc.user_id, uc.level, p.overall, p.name,
        CASE
          WHEN p.name LIKE 'ICON%' THEN 'ICON'
          WHEN p.overall <= 80 THEN 'COMMON'
          WHEN p.overall <= 90 THEN 'RARE'
-         WHEN p.overall <= 100 AND p.tier != 'LEGENDARY' THEN 'EPIC'
-         WHEN p.tier = 'LEGENDARY' THEN 'LEGENDARY'
+         WHEN p.overall <= 100 THEN 'EPIC'
          ELSE 'EPIC'
        END as tier
        FROM user_cards uc
@@ -80,9 +79,9 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
     } else if (resultTier === 'RARE') {
       tierCondition = "name NOT LIKE 'ICON%' AND overall > 80 AND overall <= 90";
     } else if (resultTier === 'EPIC') {
-      tierCondition = "name NOT LIKE 'ICON%' AND overall > 90 AND overall <= 100 AND tier != 'LEGENDARY'";
+      tierCondition = "name NOT LIKE 'ICON%' AND overall > 90 AND overall < 100";
     } else if (resultTier === 'LEGENDARY') {
-      tierCondition = "name NOT LIKE 'ICON%' AND tier = 'LEGENDARY'";
+      tierCondition = "name NOT LIKE 'ICON%' AND overall = 100";
     }
 
     const [players]: any = await connection.query(

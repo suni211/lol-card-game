@@ -56,6 +56,9 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy - required for Nginx reverse proxy to get real client IP
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({

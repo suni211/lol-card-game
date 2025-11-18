@@ -216,7 +216,7 @@ router.get('/my-stats', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-// Attack raid boss
+// Attack raid boss with AI battle
 router.post('/attack', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
 
@@ -267,17 +267,47 @@ router.post('/attack', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: '오늘의 공격 횟수를 모두 사용했습니다.' });
     }
 
-    // Calculate deck power
+    // Get user's active deck
+    const [decks]: any = await connection.query(
+      'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',
+      [userId]
+    );
+
+    if (decks.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '활성 덱이 없습니다.' });
+    }
+
+    const deckId = decks[0].id;
+
+    // Calculate deck power (user's power for AI battle)
     const deckPower = await calculateDeckPower(userId, connection);
 
     if (deckPower === 0) {
       await connection.rollback();
-      return res.status(400).json({ success: false, error: '활성 덱이 없거나 카드가 없습니다.' });
+      return res.status(400).json({ success: false, error: '덱에 카드가 없습니다.' });
     }
 
-    // Calculate damage (power * random multiplier 0.8~1.2)
-    const randomMultiplier = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
-    const damage = Math.floor(deckPower * randomMultiplier);
+    // Create AI opponent (ICON tier all +10 boss)
+    const aiPower = 500; // ICON all +10 = approximately 500 power
+
+    // Simulate battle
+    const playerWinChance = deckPower / (deckPower + aiPower);
+    const won = Math.random() < playerWinChance;
+
+    let damage = 0;
+    let battleResult = '';
+
+    if (won) {
+      // Victory: deal damage based on deck power
+      const randomMultiplier = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+      damage = Math.floor(deckPower * randomMultiplier);
+      battleResult = '승리';
+    } else {
+      // Loss: deal minimal damage
+      damage = Math.floor(deckPower * 0.1); // 10% of power
+      battleResult = '패배';
+    }
 
     // Update or insert participation
     if (participation.length > 0) {
@@ -318,9 +348,12 @@ router.post('/attack', authMiddleware, async (req: AuthRequest, res) => {
 
     res.json({
       success: true,
-      message: `${damage.toLocaleString()} 데미지를 입혔습니다!`,
+      message: `${battleResult}! ${damage.toLocaleString()} 데미지를 입혔습니다!`,
       data: {
         damage,
+        won,
+        playerPower: deckPower,
+        aiPower,
         newHp,
         maxHp: raid.max_hp,
         remainingAttacks: DAILY_ATTACK_LIMIT - currentAttempts - 1,

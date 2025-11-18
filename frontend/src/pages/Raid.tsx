@@ -62,18 +62,32 @@ export default function Raid() {
   };
 
   const attack = async () => {
+    if (!window.confirm('AI 레이드 보스와 대전하시겠습니까?')) return;
+
     try {
+      console.log('Attacking raid boss...');
       const response = await axios.post(
         `${API_URL}/raid/attack`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log('Attack response:', response.data);
+
       if (response.data.success) {
-        toast.success(response.data.message);
+        const { won, damage, playerPower, aiPower } = response.data.data;
+
+        if (won) {
+          toast.success(`승리! ${damage.toLocaleString()} 데미지!`, { duration: 5000 });
+        } else {
+          toast.error(`패배... ${damage.toLocaleString()} 데미지`, { duration: 5000 });
+        }
+
+        console.log(`Player: ${playerPower} vs AI: ${aiPower} = ${won ? 'Win' : 'Loss'}`);
         fetchRaid();
       }
     } catch (error: any) {
+      console.error('Attack error:', error);
       toast.error(error.response?.data?.error || '공격 실패');
     }
   };
@@ -85,9 +99,12 @@ export default function Raid() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-gray-900 dark:text-white">
-          레이드 시스템 (Simple)
+        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+          레이드 시스템
         </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">
+          AI 보스와 대전하여 데미지를 입히세요! (하루 10회 제한)
+        </p>
 
         {user?.isAdmin && (
           <button

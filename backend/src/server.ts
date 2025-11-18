@@ -216,6 +216,8 @@ io.on('connection', (socket) => {
       setupRealtimeMatch(io, socket, decoded);
     } catch (error) {
       console.error('Socket authentication error:', error);
+      // Notify client of authentication failure
+      socket.emit('auth_error', { message: 'Invalid token' });
     }
   });
 

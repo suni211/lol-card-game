@@ -60,6 +60,13 @@ export default function Sidebar() {
       console.log('[Sidebar] Socket disconnected');
     });
 
+    // Handle authentication errors (invalid/expired token)
+    socket.on('auth_error', () => {
+      console.error('[Sidebar] Authentication failed - invalid token, logging out...');
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
+    });
+
     return () => {
       console.log('[Sidebar] Cleaning up socket connection');
       socket.disconnect();

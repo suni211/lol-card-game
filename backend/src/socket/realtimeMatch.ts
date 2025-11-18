@@ -508,24 +508,32 @@ async function processRound(matchId: string, io: Server) {
         console.log(`📢 Sending event stage ${stage} (${eventStages[stage] / 1000}s): ${eventMessage}`);
         console.log(`   └─ To socketId: ${currentMatch.player1.socketId}`);
 
-        // Player 1에게 이벤트 전송
-        const emitted = io.to(currentMatch.player1.socketId).emit('matchEvent', {
+        const eventData = {
           round: currentMatch.currentRound,
           stage: stage,
           time: eventStages[stage] / 1000,
           message: eventMessage,
-        });
-        console.log(`   └─ Emitted result:`, emitted ? 'success' : 'failed');
+        };
+
+        // Player 1에게 이벤트 전송 - 소켓 객체 직접 찾기
+        const player1Socket = io.sockets.sockets.get(currentMatch.player1.socketId);
+        if (player1Socket) {
+          player1Socket.emit('matchEvent', eventData);
+          console.log(`   └─ ✅ Sent to Player 1`);
+        } else {
+          console.log(`   └─ ❌ Player 1 socket not found`);
+        }
 
         // Player 2에게 이벤트 전송 (AI가 아닐 때만)
         if (!isPlayer2AI) {
           console.log(`   └─ Also sending to Player 2: ${currentMatch.player2.socketId}`);
-          io.to(currentMatch.player2.socketId).emit('matchEvent', {
-            round: currentMatch.currentRound,
-            stage: stage,
-            time: eventStages[stage] / 1000,
-            message: eventMessage,
-          });
+          const player2Socket = io.sockets.sockets.get(currentMatch.player2.socketId);
+          if (player2Socket) {
+            player2Socket.emit('matchEvent', eventData);
+            console.log(`   └─ ✅ Sent to Player 2`);
+          } else {
+            console.log(`   └─ ❌ Player 2 socket not found`);
+          }
         }
       }, eventStages[stage]);
     })(i);

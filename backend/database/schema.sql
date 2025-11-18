@@ -41,7 +41,20 @@ CREATE TABLE players (
     INDEX idx_overall (overall)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Player Traits 테이블
+-- 3. Player Teams 테이블 (다대다 관계 - 선수가 거쳐간 팀들)
+CREATE TABLE player_teams (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    player_id INT NOT NULL,
+    team_name VARCHAR(50) NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    INDEX idx_player_id (player_id),
+    INDEX idx_team_name (team_name),
+    UNIQUE KEY unique_player_team (player_id, team_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Player Traits 테이블
 CREATE TABLE player_traits (
     id INT PRIMARY KEY AUTO_INCREMENT,
     player_id INT NOT NULL,
@@ -52,7 +65,7 @@ CREATE TABLE player_traits (
     INDEX idx_player_id (player_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. User Cards 테이블 (유저가 보유한 카드)
+-- 5. User Cards 테이블 (유저가 보유한 카드)
 CREATE TABLE user_cards (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -65,7 +78,7 @@ CREATE TABLE user_cards (
     INDEX idx_player_id (player_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Decks 테이블
+-- 6. Decks 테이블
 CREATE TABLE decks (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -91,7 +104,7 @@ CREATE TABLE decks (
     INDEX idx_is_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. Matches 테이블
+-- 7. Matches 테이블
 CREATE TABLE matches (
     id INT PRIMARY KEY AUTO_INCREMENT,
     player1_id INT NOT NULL,
@@ -117,7 +130,7 @@ CREATE TABLE matches (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Match History 테이블
+-- 8. Match History 테이블
 CREATE TABLE match_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -132,7 +145,7 @@ CREATE TABLE match_history (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Missions 테이블
+-- 9. Missions 테이블
 CREATE TABLE missions (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(100) NOT NULL,
@@ -144,7 +157,7 @@ CREATE TABLE missions (
     INDEX idx_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. User Missions 테이블
+-- 10. User Missions 테이블
 CREATE TABLE user_missions (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -161,7 +174,7 @@ CREATE TABLE user_missions (
     INDEX idx_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 10. Trades 테이블
+-- 11. Trades 테이블
 CREATE TABLE trades (
     id INT PRIMARY KEY AUTO_INCREMENT,
     sender_id INT NOT NULL,
@@ -180,7 +193,7 @@ CREATE TABLE trades (
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 11. Notices 테이블
+-- 12. Notices 테이블
 CREATE TABLE notices (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(200) NOT NULL,
@@ -194,7 +207,7 @@ CREATE TABLE notices (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 12. User Stats 테이블
+-- 13. User Stats 테이블
 CREATE TABLE user_stats (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL UNIQUE,
@@ -207,7 +220,7 @@ CREATE TABLE user_stats (
     INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 13. Gacha History 테이블
+-- 14. Gacha History 테이블
 CREATE TABLE gacha_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,

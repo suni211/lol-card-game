@@ -117,7 +117,7 @@ export default function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
+        className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
       >
         {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
@@ -138,8 +138,8 @@ export default function Sidebar() {
       {/* Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ x: isMobileOpen ? 0 : '-100%' }}
-        className={`fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg z-40 overflow-y-auto
+        animate={{ x: isMobileOpen ? 0 : '100%' }}
+        className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-40 overflow-y-auto
           lg:translate-x-0 lg:static transition-transform duration-300`}
       >
         {/* Header */}

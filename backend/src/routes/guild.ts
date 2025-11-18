@@ -185,10 +185,22 @@ router.get('/my', authMiddleware, async (req: AuthRequest, res) => {
       [guildId, userId]
     );
 
+    // 멤버 목록
+    const [members]: any = await pool.query(
+      `SELECT gm.role, gm.contribution, gm.joined_at,
+              u.id, u.username, u.tier, u.wins, u.losses, u.level
+       FROM guild_members gm
+       JOIN users u ON gm.user_id = u.id
+       WHERE gm.guild_id = ?
+       ORDER BY gm.role ASC, gm.contribution DESC`,
+      [guildId]
+    );
+
     res.json({
       success: true,
       data: {
         ...guild,
+        members,
         myRole: myMember[0]?.role || 'MEMBER',
         myContribution: myMember[0]?.contribution || 0,
       },
@@ -826,6 +838,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 // 길드 상세 정보 조회 (MUST BE LAST - dynamic route catches all GET requests)
 router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
   try {
+    const userId = req.user!.id;
     const guildId = parseInt(req.params.id);
 
     const [guilds]: any = await pool.query(
@@ -857,11 +870,19 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
       [guildId]
     );
 
+    // 현재 사용자의 길드 멤버 정보 조회
+    const [myMember]: any = await pool.query(
+      'SELECT role, contribution FROM guild_members WHERE guild_id = ? AND user_id = ?',
+      [guildId, userId]
+    );
+
     res.json({
       success: true,
       data: {
         ...guild,
         members,
+        myRole: myMember[0]?.role || null,
+        myContribution: myMember[0]?.contribution || 0,
       },
     });
   } catch (error: any) {

@@ -88,11 +88,24 @@ export default function GuildPage() {
       });
       if (response.data.data) {
         setMyGuild(response.data.data);
-        // 상세 정보 조회
-        const detailResponse = await axios.get(`${API_URL}/guild/${response.data.data.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMyGuild(detailResponse.data.data);
+        // user 정보도 업데이트
+        if (user) {
+          updateUser({
+            guild_id: response.data.data.id,
+            guild_name: response.data.data.name,
+            guild_tag: response.data.data.tag,
+          });
+        }
+      } else {
+        setMyGuild(null);
+        // 길드가 없으면 user 정보에서도 제거
+        if (user && user.guild_id) {
+          updateUser({
+            guild_id: undefined,
+            guild_name: undefined,
+            guild_tag: undefined,
+          });
+        }
       }
     } catch (error: any) {
       console.error('Failed to fetch my guild:', error);
@@ -163,8 +176,13 @@ export default function GuildPage() {
         alert(response.data.message);
         setShowCreateModal(false);
         setCreateForm({ name: '', tag: '', description: '' });
-        if (user) {
-          updateUser({ points: response.data.data.pointsRemaining });
+        if (user && response.data.data) {
+          updateUser({
+            points: response.data.data.pointsRemaining,
+            guild_id: response.data.data.guildId,
+            guild_name: response.data.data.name,
+            guild_tag: response.data.data.tag,
+          });
         }
         fetchMyGuild();
       }
@@ -183,6 +201,14 @@ export default function GuildPage() {
       if (response.data.success) {
         alert(response.data.message);
         setShowGuildList(false);
+        // user 정보 즉시 업데이트
+        if (user && response.data.data) {
+          updateUser({
+            guild_id: response.data.data.guildId,
+            guild_name: response.data.data.guildName,
+            guild_tag: response.data.data.guildTag,
+          });
+        }
         fetchMyGuild();
       }
     } catch (error: any) {
@@ -204,6 +230,14 @@ export default function GuildPage() {
       if (response.data.success) {
         alert(response.data.message);
         setMyGuild(null);
+        // user 정보에서 길드 정보 제거
+        if (user) {
+          updateUser({
+            guild_id: undefined,
+            guild_name: undefined,
+            guild_tag: undefined,
+          });
+        }
         fetchMyGuild();
       }
     } catch (error: any) {
@@ -229,6 +263,14 @@ export default function GuildPage() {
       if (response.data.success) {
         alert(response.data.message);
         setMyGuild(null);
+        // user 정보에서 길드 정보 제거
+        if (user) {
+          updateUser({
+            guild_id: undefined,
+            guild_name: undefined,
+            guild_tag: undefined,
+          });
+        }
         fetchMyGuild();
       }
     } catch (error: any) {

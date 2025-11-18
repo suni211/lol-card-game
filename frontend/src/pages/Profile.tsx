@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Target, Flame, Award, TrendingUp, Calendar, Gift, Edit2 } from 'lucide-react';
+import { Trophy, Target, Flame, Award, TrendingUp, Calendar, Gift, Edit2, Layout } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { useLayoutStore } from '../store/layoutStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -9,6 +10,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Profile() {
   const { user, token, updateUser } = useAuthStore();
+  const { layoutType, setLayoutType } = useLayoutStore();
   const [stats, setStats] = useState({
     totalMatches: 0,
     wins: 0,
@@ -261,6 +263,47 @@ export default function Profile() {
                   <div className="text-xs text-white/80">총 승리</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Layout Settings Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-200 dark:border-gray-700"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-br from-primary-500 to-purple-500 rounded-lg">
+                <Layout className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">레이아웃 설정</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">내비게이션 방식을 선택하세요</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLayoutType('navbar')}
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                  layoutType === 'navbar'
+                    ? 'bg-primary-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                📱 상단 네비바
+              </button>
+              <button
+                onClick={() => setLayoutType('sidebar')}
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                  layoutType === 'sidebar'
+                    ? 'bg-primary-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                📂 우측 사이드바
+              </button>
             </div>
           </div>
         </motion.div>

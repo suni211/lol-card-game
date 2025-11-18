@@ -1,11 +1,13 @@
 import { Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 import ChatPopup from '../Chat/ChatPopup';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useLayoutStore } from '../../store/layoutStore';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
@@ -18,6 +20,7 @@ interface NoticePopup {
 }
 
 export default function Layout() {
+  const { layoutType } = useLayoutStore();
   const [noticePopup, setNoticePopup] = useState<NoticePopup | null>(null);
   const [isHappyHour, setIsHappyHour] = useState(false);
 
@@ -80,14 +83,28 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex flex-col lg:mr-0">
-        <main className="flex-1">
-          <Outlet />
-        </main>
-        <Footer />
-      </div>
-      <Sidebar />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {layoutType === 'navbar' ? (
+        // Navbar Layout (위쪽)
+        <div className="flex flex-col">
+          <Navbar />
+          <main className="flex-1">
+            <Outlet />
+          </main>
+          <Footer />
+        </div>
+      ) : (
+        // Sidebar Layout (오른쪽)
+        <div className="flex">
+          <div className="flex-1 flex flex-col">
+            <main className="flex-1">
+              <Outlet />
+            </main>
+            <Footer />
+          </div>
+          <Sidebar />
+        </div>
+      )}
 
       {/* Happy Hour Banner */}
       <AnimatePresence>

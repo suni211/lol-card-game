@@ -179,6 +179,13 @@ export default function Deck() {
 
   const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
 
+  // Helper function to calculate card OVR with position penalty
+  const calculateCardOVR = (card: UserCard, position: string) => {
+    const baseStat = card.player.overall + calculateEnhancementBonus(card.level);
+    const positionMatch = card.player.position === position;
+    return positionMatch ? baseStat : baseStat - 10;
+  };
+
   // 필터링 및 정렬된 카드 목록을 미리 계산 (성능 최적화)
   const filteredAndSortedCards = useMemo(() => {
     if (!selectedPosition) return [];
@@ -313,12 +320,6 @@ export default function Deck() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const calculateCardOVR = (card: UserCard, position: string) => {
-    const baseStat = card.player.overall + calculateEnhancementBonus(card.level);
-    const positionMatch = card.player.position === position;
-    return positionMatch ? baseStat : baseStat - 10;
   };
 
   const getTierColor = getTierColorHelper;

@@ -25,28 +25,41 @@ export default function Navbar() {
     });
 
     socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
+      console.log('[Navbar] Socket connected:', socket.id);
+
+      // 인증된 사용자면 토큰 전송하여 인증
+      const token = localStorage.getItem('token');
+      if (token && user) {
+        console.log('[Navbar] Authenticating with token...');
+        socket.emit('authenticate', { token });
+      }
     });
 
     socket.on('online_users', (count: number) => {
-      console.log('Online users updated:', count);
+      console.log('[Navbar] Online users updated:', count);
       setOnlineUsers(count);
     });
 
     // Listen for user updates (points, tier, level changes)
     socket.on('user_update', (updatedUser: Partial<User>) => {
+      console.log('[Navbar] User update received:', updatedUser);
       if (user && updatedUser) {
-        console.log('User update received:', updatedUser);
         useAuthStore.getState().updateUser(updatedUser);
       }
     });
 
+    // Listen for pointsUpdate event (legacy support)
+    socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
+      console.log('[Navbar] Points update received:', data);
+      useAuthStore.getState().updateUser(data);
+    });
+
     socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+      console.log('[Navbar] Socket disconnected');
     });
 
     return () => {
-      console.log('Cleaning up socket connection');
+      console.log('[Navbar] Cleaning up socket connection');
       socket.disconnect();
     };
   }, [user]);

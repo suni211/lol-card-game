@@ -25,23 +25,46 @@ export default function Sidebar() {
     });
 
     socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
+      console.log('[Sidebar] Socket connected:', socket.id);
+
+      // 인증된 사용자면 토큰 전송하여 인증
+      const token = localStorage.getItem('token');
+      if (token && user) {
+        console.log('[Sidebar] Authenticating with token...');
+        socket.emit('authenticate', { token });
+      }
     });
 
     socket.on('online_users', (count: number) => {
-      console.log('Online users updated:', count);
+      console.log('[Sidebar] Online users updated:', count);
       setOnlineUsers(count);
     });
 
+    // Listen for user updates (points, tier, level changes)
+    socket.on('user_update', (updatedUser: any) => {
+      console.log('[Sidebar] User update received:', updatedUser);
+      if (user && updatedUser) {
+        const { updateUser } = useAuthStore.getState();
+        updateUser(updatedUser);
+      }
+    });
+
+    // Listen for pointsUpdate event (legacy support)
+    socket.on('pointsUpdate', (data: { points: number; level?: number; exp?: number }) => {
+      console.log('[Sidebar] Points update received:', data);
+      const { updateUser } = useAuthStore.getState();
+      updateUser(data);
+    });
+
     socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+      console.log('[Sidebar] Socket disconnected');
     });
 
     return () => {
-      console.log('Cleaning up socket connection');
+      console.log('[Sidebar] Cleaning up socket connection');
       socket.disconnect();
     };
-  }, []);
+  }, [user]);
 
   const isActive = (path: string) => location.pathname === path;
 

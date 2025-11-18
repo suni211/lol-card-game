@@ -47,7 +47,7 @@ export default function Raid() {
   const [attacking, setAttacking] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminForm, setAdminForm] = useState({
-    name: '',
+    name: 'ICON 올 10강 보스',
     maxHp: 100000,
     rewardMultiplier: 1.0,
   });
@@ -124,7 +124,7 @@ export default function Raid() {
       if (response.data.success) {
         toast.success(response.data.message);
         setShowAdminModal(false);
-        setAdminForm({ name: '', maxHp: 100000, rewardMultiplier: 1.0 });
+        setAdminForm({ name: 'ICON 올 10강 보스', maxHp: 100000, rewardMultiplier: 1.0 });
         fetchRaidData();
       }
     } catch (error: any) {

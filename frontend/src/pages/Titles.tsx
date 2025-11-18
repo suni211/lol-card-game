@@ -40,12 +40,19 @@ export default function Titles() {
   const [activeTab, setActiveTab] = useState<'my' | 'all'>('my');
   const [loading, setLoading] = useState(true);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminModalType, setAdminModalType] = useState<'create' | 'grant'>('create');
   const [adminForm, setAdminForm] = useState({
     name: '',
     description: '',
     color: '#3B82F6',
     rarity: 'COMMON',
   });
+  const [grantForm, setGrantForm] = useState({
+    username: '',
+    titleId: '',
+  });
+  const [userSearchResults, setUserSearchResults] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchTitles();
@@ -148,6 +155,50 @@ export default function Titles() {
     }
   };
 
+  const searchUsers = async (username: string) => {
+    if (username.length < 2) {
+      setUserSearchResults([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_URL}/auth/search?username=${username}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        setUserSearchResults(response.data.data);
+      }
+    } catch (error: any) {
+      console.error('Search users error:', error);
+    }
+  };
+
+  const grantTitle = async () => {
+    if (!selectedUserId || !grantForm.titleId) {
+      toast.error('사용자와 칭호를 선택해주세요');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/titles/admin/grant`,
+        { userId: selectedUserId, titleId: parseInt(grantForm.titleId) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setShowAdminModal(false);
+        setGrantForm({ username: '', titleId: '' });
+        setSelectedUserId(null);
+        setUserSearchResults([]);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || '칭호 부여에 실패했습니다');
+    }
+  };
+
   const getRarityIcon = (rarity: string) => {
     switch (rarity) {
       case 'LEGENDARY':
@@ -191,13 +242,28 @@ export default function Titles() {
               </div>
             </div>
             {user?.isAdmin && (
-              <button
-                onClick={() => setShowAdminModal(true)}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                칭호 생성
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setAdminModalType('create');
+                    setShowAdminModal(true);
+                  }}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  칭호 생성
+                </button>
+                <button
+                  onClick={() => {
+                    setAdminModalType('grant');
+                    setShowAdminModal(true);
+                  }}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
+                >
+                  <Award className="w-5 h-5" />
+                  칭호 부여
+                </button>
+              </div>
             )}
           </div>
 
@@ -355,78 +421,149 @@ export default function Titles() {
       {showAdminModal && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowAdminModal(false)}
+          onClick={() => {
+            setShowAdminModal(false);
+            setGrantForm({ username: '', titleId: '' });
+            setSelectedUserId(null);
+            setUserSearchResults([]);
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
           >
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              새 칭호 생성
+              {adminModalType === 'create' ? '새 칭호 생성' : '칭호 부여'}
             </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  칭호 이름
-                </label>
-                <input
-                  type="text"
-                  value={adminForm.name}
-                  onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+
+            {adminModalType === 'create' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    칭호 이름
+                  </label>
+                  <input
+                    type="text"
+                    value={adminForm.name}
+                    onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    설명
+                  </label>
+                  <textarea
+                    value={adminForm.description}
+                    onChange={(e) => setAdminForm({ ...adminForm, description: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    색상
+                  </label>
+                  <input
+                    type="color"
+                    value={adminForm.color}
+                    onChange={(e) => setAdminForm({ ...adminForm, color: e.target.value })}
+                    className="w-full h-12 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    희귀도
+                  </label>
+                  <select
+                    value={adminForm.rarity}
+                    onChange={(e) => setAdminForm({ ...adminForm, rarity: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="COMMON">COMMON</option>
+                    <option value="RARE">RARE</option>
+                    <option value="EPIC">EPIC</option>
+                    <option value="LEGENDARY">LEGENDARY</option>
+                    <option value="SPECIAL">SPECIAL</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  설명
-                </label>
-                <textarea
-                  value={adminForm.description}
-                  onChange={(e) => setAdminForm({ ...adminForm, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    사용자 검색
+                  </label>
+                  <input
+                    type="text"
+                    value={grantForm.username}
+                    onChange={(e) => {
+                      setGrantForm({ ...grantForm, username: e.target.value });
+                      searchUsers(e.target.value);
+                    }}
+                    placeholder="사용자 이름 입력..."
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                  {userSearchResults.length > 0 && (
+                    <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-lg max-h-40 overflow-y-auto">
+                      {userSearchResults.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={() => {
+                            setSelectedUserId(user.id);
+                            setGrantForm({ ...grantForm, username: user.username });
+                            setUserSearchResults([]);
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                        >
+                          {user.username} (Lv.{user.level})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {selectedUserId && (
+                    <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                      ✓ 선택된 사용자: {grantForm.username}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    칭호 선택
+                  </label>
+                  <select
+                    value={grantForm.titleId}
+                    onChange={(e) => setGrantForm({ ...grantForm, titleId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">칭호를 선택하세요</option>
+                    {allTitles.map((title) => (
+                      <option key={title.id} value={title.id}>
+                        {title.name} ({title.rarity})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  색상
-                </label>
-                <input
-                  type="color"
-                  value={adminForm.color}
-                  onChange={(e) => setAdminForm({ ...adminForm, color: e.target.value })}
-                  className="w-full h-12 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  희귀도
-                </label>
-                <select
-                  value={adminForm.rarity}
-                  onChange={(e) => setAdminForm({ ...adminForm, rarity: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="COMMON">COMMON</option>
-                  <option value="RARE">RARE</option>
-                  <option value="EPIC">EPIC</option>
-                  <option value="LEGENDARY">LEGENDARY</option>
-                  <option value="SPECIAL">SPECIAL</option>
-                </select>
-              </div>
-            </div>
+            )}
+
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setShowAdminModal(false)}
+                onClick={() => {
+                  setShowAdminModal(false);
+                  setGrantForm({ username: '', titleId: '' });
+                  setSelectedUserId(null);
+                  setUserSearchResults([]);
+                }}
                 className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-bold transition-colors"
               >
                 취소
               </button>
               <button
-                onClick={createTitle}
+                onClick={adminModalType === 'create' ? createTitle : grantTitle}
                 className="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold transition-colors"
               >
-                생성
+                {adminModalType === 'create' ? '생성' : '부여'}
               </button>
             </div>
           </div>

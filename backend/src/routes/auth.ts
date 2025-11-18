@@ -655,4 +655,28 @@ router.post('/change-username', authMiddleware, async (req: AuthRequest, res) =>
   }
 });
 
+// Search users (for admin features like granting titles)
+router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { username } = req.query;
+
+    if (!username || typeof username !== 'string' || username.length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const [users]: any = await pool.query(
+      `SELECT id, username, level, tier, points
+       FROM users
+       WHERE username LIKE ?
+       LIMIT 10`,
+      [`%${username}%`]
+    );
+
+    res.json({ success: true, data: users });
+  } catch (error: any) {
+    console.error('Search users error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 export default router;

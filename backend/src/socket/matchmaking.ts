@@ -605,28 +605,26 @@ export function setupMatchmaking(io: Server) {
           // Add to queue
           queue.push(player);
 
-          // Set timeout for auto-match after 30 seconds
-          const timeoutId = setTimeout(async () => {
-            const playerIndex = queue.findIndex(p => p.socketId === socket.id);
-            if (playerIndex !== -1) {
-              const queuedPlayer = queue[playerIndex];
-              queue.splice(playerIndex, 1);
+          // Set timeout for auto-match after 30 seconds (ONLY for practice mode)
+          if (isPractice) {
+            const timeoutId = setTimeout(async () => {
+              const playerIndex = queue.findIndex(p => p.socketId === socket.id);
+              if (playerIndex !== -1) {
+                const queuedPlayer = queue[playerIndex];
+                queue.splice(playerIndex, 1);
 
-              // Try force match (any opponent)
-              const forceMatched = await findMatch(queuedPlayer, queue, recentMatchesMap, io, isPractice, true);
+                // Try force match (any opponent)
+                const forceMatched = await findMatch(queuedPlayer, queue, recentMatchesMap, io, isPractice, true);
 
-              if (!forceMatched && isPractice) {
-                // No opponents - match with AI for practice mode
-                matchWithAI(queuedPlayer, io);
-              } else if (!forceMatched) {
-                // Ranked mode - put back in queue
-                queue.push(queuedPlayer);
-                broadcastQueueSize(io, queue, 'queue_update');
+                if (!forceMatched) {
+                  // No opponents - match with AI for practice mode
+                  matchWithAI(queuedPlayer, io);
+                }
               }
-            }
-          }, AUTO_MATCH_TIMEOUT);
+            }, AUTO_MATCH_TIMEOUT);
 
-          player.timeoutId = timeoutId;
+            player.timeoutId = timeoutId;
+          }
 
           // Broadcast queue size to ALL players (including new one)
           broadcastQueueSize(io, queue, isPractice ? 'practice_queue_update' : 'queue_update');

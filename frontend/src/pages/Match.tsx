@@ -832,8 +832,7 @@ export default function Match() {
                         </div>
                       </div>
                       <p className="text-gray-600 dark:text-gray-400 text-center text-sm">
-                        상대를 찾고 있습니다<br />
-                        <span className="text-xs">30초 후 자동 매칭됩니다</span>
+                        상대를 찾고 있습니다
                       </p>
                     </div>
                     <button

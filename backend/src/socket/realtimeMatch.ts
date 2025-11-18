@@ -418,7 +418,62 @@ async function processRoundTimeout(matchId: string, io: Server) {
   await processRound(matchId, io);
 }
 
-// 라운드 결과 처리
+// 이벤트 메시지 생성 함수
+function generateMatchEvent(
+  stage: number,
+  match: ActiveMatch,
+  player1Deck: any,
+  player2Deck: any
+): string {
+  const positions = ['top', 'jungle', 'mid', 'adc', 'support'];
+  const randomPos = positions[Math.floor(Math.random() * positions.length)];
+  const player1Card = player1Deck?.[randomPos];
+  const player2Card = player2Deck?.[randomPos];
+
+  const events = [
+    // Stage 0 (0초): 라운드 시작
+    [
+      `경기가 시작되었습니다!`,
+      `양 팀 선수들이 소환사의 협곡에 입장했습니다`,
+      `초반 라인전이 시작됩니다`,
+    ],
+    // Stage 1 (5초): 초반
+    [
+      player1Card ? `${player1Card.name}이(가) 초반 라인전에서 우위를 점하고 있습니다` : `양 팀 모두 안정적으로 CS를 챙기고 있습니다`,
+      `정글러들이 갱킹 루트를 그리며 움직입니다`,
+      `미드 라인에서 치열한 견제가 오가고 있습니다`,
+    ],
+    // Stage 2 (10초): 중반 1
+    [
+      `첫 번째 드래곤 싸움이 시작되었습니다!`,
+      player2Card ? `${player2Card.name}의 로밍으로 게임 템포가 빨라집니다` : `양 팀 모두 오브젝트를 노리고 있습니다`,
+      `한타가 벌어질 조짐이 보입니다`,
+    ],
+    // Stage 3 (15초): 중반 2
+    [
+      `팀파이트가 시작되었습니다!`,
+      `양 팀 모두 스킬을 쏟아붓고 있습니다`,
+      `누가 이 한타를 가져갈 것인가?!`,
+    ],
+    // Stage 4 (20초): 후반 1
+    [
+      `결정적인 순간입니다!`,
+      player1Card && player2Card ? `${player1Card.name}과(와) ${player2Card.name}의 대결!` : `양 팀 모두 승리를 위해 최선을 다하고 있습니다`,
+      `바론을 향한 치열한 경쟁이 펼쳐집니다`,
+    ],
+    // Stage 5 (25초): 후반 2
+    [
+      `승부의 갈림길에 섰습니다!`,
+      `한 팀의 넥서스가 위험합니다`,
+      `마지막 한타가 시작됩니다!`,
+    ],
+  ];
+
+  const stageEvents = events[stage] || events[0];
+  return stageEvents[Math.floor(Math.random() * stageEvents.length)];
+}
+
+// 라운드 결과 처리 (30초 이벤트 포함)
 async function processRound(matchId: string, io: Server) {
   const match = activeMatches.get(matchId);
   if (!match) return;
@@ -429,58 +484,88 @@ async function processRound(matchId: string, io: Server) {
     match.roundTimer = undefined;
   }
 
-  // 결과 계산
-  const result = await calculateRoundResult(match);
-
-  // 점수 업데이트
-  if (result.winner === 1) {
-    match.player1.score++;
-  } else {
-    match.player2.score++;
-  }
-
   // Check if player2 is AI
   const isPlayer2AI = match.player2.socketId.startsWith('ai_');
 
-  // 라운드 결과 전송 (각 플레이어 관점으로)
-  // Player 1 관점
-  io.to(match.player1.socketId).emit('roundResult', {
-    round: match.currentRound,
-    player1Strategy: match.player1.strategy,
-    player2Strategy: match.player2.strategy,
-    player1Power: result.player1Power,
-    player2Power: result.player2Power,
-    winner: result.winner,
-    currentScore: {
-      player1: match.player1.score,
-      player2: match.player2.score,
-    },
-  });
+  // 30초 이벤트 진행
+  const eventStages = [0, 5000, 10000, 15000, 20000, 25000]; // 0, 5, 10, 15, 20, 25초
 
-  // Player 2 관점 (winner를 반대로) - AI가 아닐 때만
-  if (!isPlayer2AI) {
-    io.to(match.player2.socketId).emit('roundResult', {
+  for (let i = 0; i < eventStages.length; i++) {
+    setTimeout(() => {
+      const eventMessage = generateMatchEvent(i, match, match.player1Deck, match.player2Deck);
+
+      // Player 1에게 이벤트 전송
+      io.to(match.player1.socketId).emit('matchEvent', {
+        round: match.currentRound,
+        stage: i,
+        time: eventStages[i] / 1000,
+        message: eventMessage,
+      });
+
+      // Player 2에게 이벤트 전송 (AI가 아닐 때만)
+      if (!isPlayer2AI) {
+        io.to(match.player2.socketId).emit('matchEvent', {
+          round: match.currentRound,
+          stage: i,
+          time: eventStages[i] / 1000,
+          message: eventMessage,
+        });
+      }
+    }, eventStages[i]);
+  }
+
+  // 30초 후 결과 계산 및 전송
+  setTimeout(async () => {
+    // 결과 계산
+    const result = await calculateRoundResult(match);
+
+    // 점수 업데이트
+    if (result.winner === 1) {
+      match.player1.score++;
+    } else {
+      match.player2.score++;
+    }
+
+    // 라운드 결과 전송 (각 플레이어 관점으로)
+    // Player 1 관점
+    io.to(match.player1.socketId).emit('roundResult', {
       round: match.currentRound,
-      player1Strategy: match.player2.strategy,
-      player2Strategy: match.player1.strategy,
-      player1Power: result.player2Power,
-      player2Power: result.player1Power,
-      winner: result.winner === 1 ? 2 : 1,
+      player1Strategy: match.player1.strategy,
+      player2Strategy: match.player2.strategy,
+      player1Power: result.player1Power,
+      player2Power: result.player2Power,
+      winner: result.winner,
       currentScore: {
-        player1: match.player2.score,
-        player2: match.player1.score,
+        player1: match.player1.score,
+        player2: match.player2.score,
       },
     });
-  }
 
-  // 매치 종료 확인 (3승)
-  if (match.player1.score >= 3 || match.player2.score >= 3) {
-    await endMatch(matchId, io);
-  } else {
-    // 다음 라운드 시작
-    match.currentRound++;
-    setTimeout(() => startRound(matchId, io), 3000); // 3초 후 다음 라운드
-  }
+    // Player 2 관점 (winner를 반대로) - AI가 아닐 때만
+    if (!isPlayer2AI) {
+      io.to(match.player2.socketId).emit('roundResult', {
+        round: match.currentRound,
+        player1Strategy: match.player2.strategy,
+        player2Strategy: match.player1.strategy,
+        player1Power: result.player2Power,
+        player2Power: result.player1Power,
+        winner: result.winner === 1 ? 2 : 1,
+        currentScore: {
+          player1: match.player2.score,
+          player2: match.player1.score,
+        },
+      });
+    }
+
+    // 매치 종료 확인 (3승)
+    if (match.player1.score >= 3 || match.player2.score >= 3) {
+      await endMatch(matchId, io);
+    } else {
+      // 다음 라운드 시작
+      match.currentRound++;
+      setTimeout(() => startRound(matchId, io), 3000); // 3초 후 다음 라운드
+    }
+  }, 30000); // 30초 후
 }
 
 // MMR 기반 레이팅 변화 계산

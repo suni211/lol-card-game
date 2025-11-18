@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Swords, Layers, Users, Trophy, Target, Zap, Shield, MapPin } from 'lucide-react';
+import { Swords, Layers, Users, Trophy, Target, Zap, Shield, MapPin, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -84,6 +84,8 @@ export default function Match() {
   const [roundHistory, setRoundHistory] = useState<RoundResult[]>([]);
   const [myScore, setMyScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
+  const [matchEvents, setMatchEvents] = useState<string[]>([]);
+  const [eventTimer, setEventTimer] = useState(0);
 
   useEffect(() => {
     const fetchDeck = async () => {
@@ -240,11 +242,21 @@ export default function Match() {
       return () => clearInterval(interval);
     });
 
+    socket.on('matchEvent', (data: { round: number; stage: number; time: number; message: string }) => {
+      console.log('Match event:', data);
+      setMatchEvents(prev => [...prev, data.message]);
+      setEventTimer(data.time);
+    });
+
     socket.on('roundResult', (data: RoundResult) => {
       console.log('Round result:', data);
       setRoundHistory(prev => [...prev, data]);
       setMyScore(data.currentScore.player1);
       setOpponentScore(data.currentScore.player2);
+
+      // 라운드 종료 시 이벤트 초기화
+      setMatchEvents([]);
+      setEventTimer(0);
 
       // Show round result toast
       if (data.winner === 1) {
@@ -649,19 +661,58 @@ export default function Match() {
             )}
 
             {selectedStrategy && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center"
-              >
-                <div className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                  선택 완료! 상대방을 기다리는 중...
-                </div>
-                <div className={`inline-flex items-center gap-3 px-6 py-4 rounded-xl bg-gradient-to-r ${getStrategyColor(selectedStrategy)} text-white`}>
-                  {getStrategyIcon(selectedStrategy)}
-                  <span className="text-2xl font-bold">{getStrategyName(selectedStrategy)}</span>
-                </div>
-              </motion.div>
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center"
+                >
+                  <div className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    {matchEvents.length > 0 ? '경기 진행 중...' : '선택 완료! 상대방을 기다리는 중...'}
+                  </div>
+                  <div className={`inline-flex items-center gap-3 px-6 py-4 rounded-xl bg-gradient-to-r ${getStrategyColor(selectedStrategy)} text-white`}>
+                    {getStrategyIcon(selectedStrategy)}
+                    <span className="text-2xl font-bold">{getStrategyName(selectedStrategy)}</span>
+                  </div>
+
+                  {/* Event Timer */}
+                  {matchEvents.length > 0 && (
+                    <div className="mt-6">
+                      <div className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+                        {eventTimer}초
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">경기 진행 시간</div>
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* Match Events */}
+                {matchEvents.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+                  >
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Sparkles className="w-6 h-6 text-yellow-500" />
+                      실시간 중계
+                    </h3>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {matchEvents.map((event, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                        >
+                          <p className="text-sm text-gray-900 dark:text-white font-medium">{event}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </>
             )}
 
             {/* Round History */}

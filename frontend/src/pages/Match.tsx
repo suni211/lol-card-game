@@ -232,6 +232,10 @@ export default function Match() {
       setRoundTimeLeft(Math.floor(data.timeLimit / 1000));
       setSelectedStrategy(null);
 
+      // 새 라운드 시작 시 이벤트 초기화
+      setMatchEvents([]);
+      setEventTimer(0);
+
       // Start countdown timer
       const interval = setInterval(() => {
         setRoundTimeLeft(prev => {
@@ -270,9 +274,7 @@ export default function Match() {
       setMyScore(data.currentScore.player1);
       setOpponentScore(data.currentScore.player2);
 
-      // 라운드 종료 시 이벤트 초기화
-      setMatchEvents([]);
-      setEventTimer(0);
+      // 이벤트 초기화 제거 - 다음 라운드 시작할 때 초기화됨
 
       // Show round result toast
       if (data.winner === 1) {

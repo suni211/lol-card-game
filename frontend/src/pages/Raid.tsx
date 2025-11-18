@@ -184,7 +184,12 @@ export default function Raid() {
             </p>
             {user?.isAdmin && (
               <button
-                onClick={() => setShowAdminModal(true)}
+                onClick={() => {
+                  console.log('레이드 시작 버튼 클릭');
+                  console.log('User:', user);
+                  alert('레이드 시작 버튼 클릭됨!');
+                  setShowAdminModal(true);
+                }}
                 className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold transition-colors inline-flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
@@ -224,7 +229,11 @@ export default function Raid() {
           {user?.isAdmin && (
             <div className="flex gap-3">
               <button
-                onClick={() => setShowAdminModal(true)}
+                onClick={() => {
+                  console.log('새 레이드 버튼 클릭');
+                  alert('새 레이드 버튼 클릭됨!');
+                  setShowAdminModal(true);
+                }}
                 className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
@@ -467,7 +476,10 @@ export default function Raid() {
                 취소
               </button>
               <button
-                onClick={startRaid}
+                onClick={() => {
+                  alert('버튼 클릭됨!');
+                  startRaid();
+                }}
                 className="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold transition-colors"
               >
                 시작

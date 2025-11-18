@@ -36,7 +36,7 @@ async function fix18WCMarketPrices() {
     for (const player of wcPlayers) {
       // Check if price already exists
       const [existing] = await connection.query(
-        'SELECT id FROM player_market_prices WHERE player_id = ?',
+        'SELECT player_id FROM player_market_prices WHERE player_id = ?',
         [player.id]
       );
 

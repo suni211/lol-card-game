@@ -154,10 +154,13 @@ export default function Match() {
     let hasConnected = false;
 
     socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
+      console.log('🔌 Socket connected!');
+      console.log('   └─ Socket ID:', socket.id);
+      console.log('   └─ Socket URL:', SOCKET_URL);
       if (!hasConnected) {
         hasConnected = true;
         // Authenticate for realtime match handlers
+        console.log('   └─ Sending authenticate event');
         socket.emit('authenticate', { token });
       }
     });
@@ -198,9 +201,10 @@ export default function Match() {
     // Realtime match events
     socket.on('matchFound', (data) => {
       console.log('🎯 MATCH FOUND EVENT RECEIVED');
+      console.log('  ├─ My Socket ID:', socket.id);
+      console.log('  ├─ Match ID:', data.matchId);
       console.log('  ├─ Opponent:', data.opponent.username);
-      console.log('  ├─ Opponent Deck:', data.opponent?.deck);
-      console.log('  └─ Match ID:', data.matchId);
+      console.log('  └─ Opponent Deck:', data.opponent?.deck);
 
       // Set all match data
       setMatchId(data.matchId);

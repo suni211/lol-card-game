@@ -506,17 +506,20 @@ async function processRound(matchId: string, io: Server) {
 
         const eventMessage = generateMatchEvent(stage, currentMatch, currentMatch.player1Deck, currentMatch.player2Deck);
         console.log(`📢 Sending event stage ${stage} (${eventStages[stage] / 1000}s): ${eventMessage}`);
+        console.log(`   └─ To socketId: ${currentMatch.player1.socketId}`);
 
         // Player 1에게 이벤트 전송
-        io.to(currentMatch.player1.socketId).emit('matchEvent', {
+        const emitted = io.to(currentMatch.player1.socketId).emit('matchEvent', {
           round: currentMatch.currentRound,
           stage: stage,
           time: eventStages[stage] / 1000,
           message: eventMessage,
         });
+        console.log(`   └─ Emitted result:`, emitted ? 'success' : 'failed');
 
         // Player 2에게 이벤트 전송 (AI가 아닐 때만)
         if (!isPlayer2AI) {
+          console.log(`   └─ Also sending to Player 2: ${currentMatch.player2.socketId}`);
           io.to(currentMatch.player2.socketId).emit('matchEvent', {
             round: currentMatch.currentRound,
             stage: stage,

@@ -244,12 +244,20 @@ export default function Match() {
 
     socket.on('matchEvent', (data: { round: number; stage: number; time: number; message: string }) => {
       console.log('📢 Match event received:', data);
+      console.log('  ├─ Round:', data.round);
+      console.log('  ├─ Stage:', data.stage);
+      console.log('  ├─ Time:', data.time);
+      console.log('  └─ Message:', data.message);
+
       setMatchEvents(prev => {
         const updated = [...prev, data.message];
-        console.log('📋 Updated events:', updated);
+        console.log('📋 Updated events array:', updated);
+        console.log('📊 Events count:', updated.length);
         return updated;
       });
+
       setEventTimer(data.time);
+      console.log('⏱️ Event timer set to:', data.time);
     });
 
     socket.on('roundResult', (data: RoundResult) => {
@@ -402,6 +410,10 @@ export default function Match() {
   console.log('📋 Opponent Deck:', opponentDeck ? 'loaded' : 'none');
   console.log('🎯 Match ID:', matchId || 'none');
   console.log('✅ Deck complete:', isDeckComplete());
+  console.log('🎲 Selected Strategy:', selectedStrategy);
+  console.log('📢 Match Events:', matchEvents);
+  console.log('📊 Events Count:', matchEvents.length);
+  console.log('⏱️ Event Timer:', eventTimer);
   console.log('═══════════════════════════════════');
 
   if (loading) {
@@ -667,6 +679,8 @@ export default function Match() {
 
             {selectedStrategy && (
               <>
+                {console.log('🔍 Rendering strategy selected section')}
+                {console.log('  └─ matchEvents.length:', matchEvents.length)}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -691,32 +705,35 @@ export default function Match() {
                   )}
                 </motion.div>
 
-                {/* Match Events */}
-                {matchEvents.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
-                  >
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <Sparkles className="w-6 h-6 text-yellow-500" />
-                      실시간 중계
-                    </h3>
+                {/* Match Events - 무조건 표시 */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-4 border-yellow-500"
+                >
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Sparkles className="w-8 h-8 text-yellow-500" />
+                    실시간 중계 ({matchEvents.length}개)
+                  </h3>
+                  {matchEvents.length === 0 ? (
+                    <div className="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">
+                      <p className="text-lg text-gray-600 dark:text-gray-300">이벤트 대기 중...</p>
+                    </div>
+                  ) : (
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                       {matchEvents.map((event, idx) => (
                         <motion.div
                           key={idx}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.1 }}
-                          className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                          className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border-2 border-blue-400 dark:border-blue-600"
                         >
-                          <p className="text-sm text-gray-900 dark:text-white font-medium">{event}</p>
+                          <p className="text-base text-gray-900 dark:text-white font-bold">{event}</p>
                         </motion.div>
                       ))}
                     </div>
-                  </motion.div>
-                )}
+                  )}
+                </motion.div>
               </>
             )}
 

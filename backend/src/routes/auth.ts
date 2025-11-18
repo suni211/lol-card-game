@@ -23,6 +23,8 @@ const loginSchema = Joi.object({
 
 // Google OAuth Register/Login
 router.post('/google', async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
     const { credential, referralCode } = req.body;
 
@@ -47,7 +49,7 @@ router.post('/google', async (req, res) => {
     }
 
     // Check if user exists
-    const [existing]: any = await pool.query(
+    const [existing]: any = await connection.query(
       'SELECT * FROM users WHERE email = ?',
       [email]
     );
@@ -65,122 +67,135 @@ router.post('/google', async (req, res) => {
       // New user - register
       isNewUser = true;
 
-      // Validate referral code if provided
-      let referrerId = null;
-      let referrerIp = null;
+      await connection.beginTransaction();
 
-      if (referralCode) {
-        const [referrerUser]: any = await pool.query(
-          'SELECT id, referral_code, registration_ip FROM users WHERE referral_code = ?',
-          [referralCode]
-        );
+      try {
+        // Validate referral code if provided
+        let referrerId = null;
+        let referrerIp = null;
 
-        if (referrerUser.length === 0) {
-          return res.status(400).json({
-            success: false,
-            error: '유효하지 않은 추천 코드입니다.'
-          });
+        if (referralCode) {
+          const [referrerUser]: any = await connection.query(
+            'SELECT id, referral_code, registration_ip FROM users WHERE referral_code = ?',
+            [referralCode]
+          );
+
+          if (referrerUser.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({
+              success: false,
+              error: '유효하지 않은 추천 코드입니다.'
+            });
+          }
+
+          referrerId = referrerUser[0].id;
+          referrerIp = referrerUser[0].registration_ip;
+
+          // Check IP - must be different
+          if (referrerIp && referrerIp === clientIp) {
+            await connection.rollback();
+            return res.status(400).json({
+              success: false,
+              error: '동일한 IP에서는 추천인 가입이 불가능합니다.'
+            });
+          }
+
+          // Check if IP already used for registration
+          const [ipCheck]: any = await connection.query(
+            'SELECT id FROM users WHERE registration_ip = ?',
+            [clientIp]
+          );
+
+          if (ipCheck.length > 0) {
+            await connection.rollback();
+            return res.status(400).json({
+              success: false,
+              error: '이미 가입된 IP입니다.'
+            });
+          }
         }
 
-        referrerId = referrerUser[0].id;
-        referrerIp = referrerUser[0].registration_ip;
+        // Generate unique username from email
+        const baseUsername = email.split('@')[0];
+        let finalUsername = baseUsername;
+        let counter = 1;
 
-        // Check IP - must be different
-        if (referrerIp && referrerIp === clientIp) {
-          return res.status(400).json({
-            success: false,
-            error: '동일한 IP에서는 추천인 가입이 불가능합니다.'
-          });
+        // Check username uniqueness
+        while (true) {
+          const [usernameCheck]: any = await connection.query(
+            'SELECT id FROM users WHERE username = ?',
+            [finalUsername]
+          );
+
+          if (usernameCheck.length === 0) break;
+          finalUsername = `${baseUsername}${counter}`;
+          counter++;
         }
 
-        // Check if IP already used for registration
-        const [ipCheck]: any = await pool.query(
-          'SELECT id FROM users WHERE registration_ip = ?',
-          [clientIp]
+        username = finalUsername;
+
+        // Create user with random password (not used for Google login)
+        const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+
+        // Generate referral code for new user
+        const newReferralCode = `${username.toUpperCase().substring(0, 8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+        const [result]: any = await connection.query(
+          `INSERT INTO users (username, email, password, points, tier, rating, registration_ip, referral_code, welcome_packs_remaining)
+           VALUES (?, ?, ?, 10000, "IRON", 1000, ?, ?, 5)`,
+          [username, email, randomPassword, clientIp, newReferralCode]
         );
 
-        if (ipCheck.length > 0) {
-          return res.status(400).json({
-            success: false,
-            error: '이미 가입된 IP입니다.'
-          });
-        }
-      }
+        userId = result.insertId;
 
-      // Generate unique username from email
-      const baseUsername = email.split('@')[0];
-      let finalUsername = baseUsername;
-      let counter = 1;
-
-      // Check username uniqueness
-      while (true) {
-        const [usernameCheck]: any = await pool.query(
-          'SELECT id FROM users WHERE username = ?',
-          [finalUsername]
-        );
-
-        if (usernameCheck.length === 0) break;
-        finalUsername = `${baseUsername}${counter}`;
-        counter++;
-      }
-
-      username = finalUsername;
-
-      // Create user with random password (not used for Google login)
-      const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
-
-      // Generate referral code for new user
-      const newReferralCode = `${username.toUpperCase().substring(0, 8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-      const [result]: any = await pool.query(
-        `INSERT INTO users (username, email, password, points, tier, rating, registration_ip, referral_code, welcome_packs_remaining)
-         VALUES (?, ?, ?, 10000, "IRON", 1000, ?, ?, 5)`,
-        [username, email, randomPassword, clientIp, newReferralCode]
-      );
-
-      userId = result.insertId;
-
-      // Create user stats
-      await pool.query(
-        'INSERT INTO user_stats (user_id) VALUES (?)',
-        [userId]
-      );
-
-      // Create referral relationship if referral code was used
-      if (referrerId) {
-        const signupBonus = 5000;
-
-        await pool.query(
-          `INSERT INTO referrals (referrer_id, referred_id, referrer_ip, referred_ip, signup_bonus_points)
-           VALUES (?, ?, ?, ?, ?)`,
-          [referrerId, userId, referrerIp, clientIp, signupBonus]
-        );
-
-        // Give signup bonus to referrer
-        await pool.query(
-          'UPDATE users SET points = points + ?, total_referrals = total_referrals + 1, total_referral_bonus = total_referral_bonus + ? WHERE id = ?',
-          [signupBonus, signupBonus, referrerId]
-        );
-
-        // Give signup bonus to referred user
-        await pool.query(
-          'UPDATE users SET points = points + ? WHERE id = ?',
-          [signupBonus, userId]
-        );
-
-        // Log the signup bonus
-        const [referralRow]: any = await pool.query(
-          'SELECT id FROM referrals WHERE referred_id = ?',
+        // Create user stats
+        await connection.query(
+          'INSERT INTO user_stats (user_id) VALUES (?)',
           [userId]
         );
 
-        if (referralRow.length > 0) {
-          await pool.query(
+        // Create referral relationship if referral code was used
+        if (referrerId) {
+          const signupBonus = 5000;
+
+          console.log(`🎁 Processing referral signup: Referrer ID ${referrerId} -> New User ID ${userId}`);
+
+          // Insert referral record
+          const [referralResult]: any = await connection.query(
+            `INSERT INTO referrals (referrer_id, referred_id, referrer_ip, referred_ip, signup_bonus_points)
+             VALUES (?, ?, ?, ?, ?)`,
+            [referrerId, userId, referrerIp, clientIp, signupBonus]
+          );
+
+          const referralId = referralResult.insertId;
+
+          // Give signup bonus to referrer
+          await connection.query(
+            'UPDATE users SET points = points + ?, total_referrals = total_referrals + 1, total_referral_bonus = total_referral_bonus + ? WHERE id = ?',
+            [signupBonus, signupBonus, referrerId]
+          );
+
+          // Give signup bonus to referred user
+          await connection.query(
+            'UPDATE users SET points = points + ? WHERE id = ?',
+            [signupBonus, userId]
+          );
+
+          // Log the signup bonus
+          await connection.query(
             `INSERT INTO referral_bonuses (referral_id, referrer_id, referred_id, bonus_type, referrer_bonus, referred_bonus)
              VALUES (?, ?, ?, 'SIGNUP', ?, ?)`,
-            [referralRow[0].id, referrerId, userId, signupBonus, signupBonus]
+            [referralId, referrerId, userId, signupBonus, signupBonus]
           );
+
+          console.log(`✅ Referral bonus awarded: ${signupBonus}P to referrer ${referrerId} and new user ${userId}`);
         }
+
+        await connection.commit();
+      } catch (error) {
+        await connection.rollback();
+        console.error('Registration transaction error:', error);
+        throw error;
       }
     }
 
@@ -241,6 +256,8 @@ router.post('/google', async (req, res) => {
   } catch (error: any) {
     console.error('Google OAuth error:', error);
     res.status(500).json({ success: false, error: 'Google authentication failed' });
+  } finally {
+    connection.release();
   }
 });
 

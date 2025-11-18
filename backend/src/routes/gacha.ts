@@ -7,14 +7,14 @@ import { emitPointUpdate } from '../server';
 
 const router = express.Router();
 
-// Gacha probabilities (모든 팩 아이콘 확률 0.0005% 통일 - 더 낮춤)
+// Gacha probabilities (모든 팩 아이콘 확률 0.0001% 통일 - 더더 낮춤)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { icon: 0.0005, legendary: 0.0195, epic: 0.1, rare: 5, common: 94.88 } },
-  basic: { cost: 500, probabilities: { icon: 0.0005, legendary: 0.0595, epic: 0.5, rare: 10, common: 89.44 } },
-  premium: { cost: 1000, probabilities: { icon: 0.0005, legendary: 0.2195, epic: 3, rare: 18, common: 78.78 } },
-  ultra: { cost: 1500, probabilities: { icon: 0.0005, legendary: 0.5195, epic: 6, rare: 25, common: 68.48 } },
-  mega: { cost: 2000, probabilities: { icon: 0.0005, legendary: 1.0195, epic: 10, rare: 30, common: 58.98 } },
-  worlds_winner: { cost: 2500, probabilities: { icon: 0.0005, legendary: 5.0095, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
+  free: { cost: 0, probabilities: { icon: 0.0001, legendary: 0.0199, epic: 0.1, rare: 5, common: 94.88 } },
+  basic: { cost: 500, probabilities: { icon: 0.0001, legendary: 0.0599, epic: 0.5, rare: 10, common: 89.44 } },
+  premium: { cost: 1000, probabilities: { icon: 0.0001, legendary: 0.2199, epic: 3, rare: 18, common: 78.78 } },
+  ultra: { cost: 1500, probabilities: { icon: 0.0001, legendary: 0.5199, epic: 6, rare: 25, common: 68.48 } },
+  mega: { cost: 2000, probabilities: { icon: 0.0001, legendary: 1.0199, epic: 10, rare: 30, common: 58.98 } },
+  worlds_winner: { cost: 2500, probabilities: { icon: 0.0001, legendary: 5.0099, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   icon_test: { cost: 0, probabilities: { icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
 };
 

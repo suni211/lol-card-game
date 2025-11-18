@@ -190,16 +190,13 @@ io.on('connection', (socket) => {
   // Get client IP
   const clientIP = getClientIP(socket);
 
-  // Add socket to IP's socket set
+  // Add socket to IP's socket set (for tracking, but don't count yet)
   if (!connectedIPs.has(clientIP)) {
     connectedIPs.set(clientIP, new Set());
   }
   connectedIPs.get(clientIP)!.add(socket.id);
 
-  // Emit updated unique user count (number of unique IPs)
-  io.emit('online_users', connectedIPs.size);
-
-  console.log(`User connected: ${socket.id} (IP: ${clientIP}), Unique users: ${connectedIPs.size}`);
+  console.log(`Client connected: ${socket.id}`);
 
   // Verify user token and setup realtime match handlers
   socket.on('authenticate', (data: { token: string }) => {
@@ -210,6 +207,10 @@ io.on('connection', (socket) => {
       // Track authenticated user
       authenticatedUsers.set(decoded.id, socket.id);
       console.log(`User ${decoded.id} authenticated on socket ${socket.id}`);
+
+      // Emit updated authenticated user count
+      io.emit('online_users', authenticatedUsers.size);
+      console.log(`Authenticated users: ${authenticatedUsers.size}`);
 
       // Setup realtime match event handlers for this authenticated user
       setupRealtimeMatch(io, socket, decoded);
@@ -325,9 +326,9 @@ io.on('connection', (socket) => {
       }
     }
 
-    // Emit updated unique user count
-    io.emit('online_users', connectedIPs.size);
-    console.log(`User disconnected: ${socket.id} (IP: ${clientIP}), Unique users: ${connectedIPs.size}`);
+    // Emit updated authenticated user count
+    io.emit('online_users', authenticatedUsers.size);
+    console.log(`Client disconnected: ${socket.id}, Authenticated users: ${authenticatedUsers.size}`);
   });
 });
 

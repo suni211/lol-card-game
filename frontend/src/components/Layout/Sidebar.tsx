@@ -73,9 +73,11 @@ export default function Sidebar() {
         { path: '/gacha', label: '뽑기' },
         { path: '/fusion', label: '합성' },
         { path: '/enhancement', label: '강화' },
+        { path: '/deck', label: '덱 편성' },
+        { path: '/coach', label: '코치' },
+        { path: '/card-collection', label: '도감' },
       ]
     },
-    { path: '/deck', label: '덱 편성' },
     {
       label: '경기',
       items: [
@@ -83,24 +85,34 @@ export default function Sidebar() {
         { path: '/practice', label: '일반전' },
         { path: '/ai-battle', label: 'AI 배틀' },
         { path: '/vsmode', label: 'VS 모드' },
+        { path: '/infinite-challenge', label: '무한도전' },
       ]
     },
     { path: '/market', label: '이적시장' },
     { path: '/ranking', label: '랭킹' },
     { path: '/strategy-stats', label: '전략 통계' },
-    { path: '/guild', label: '길드' },
-    { path: '/missions', label: '미션' },
-    { path: '/achievements', label: '업적' },
     {
-      label: '이벤트',
+      label: '길드',
       items: [
-        { path: '/event', label: '이벤트' },
-        { path: '/infinite-challenge', label: '무한도전' },
+        { path: '/guild', label: '길드' },
         { path: '/clan-war', label: '길드전' },
       ]
     },
-    { path: '/coach', label: '코치' },
-    { path: '/card-collection', label: '도감' },
+    {
+      label: '미션/업적',
+      items: [
+        { path: '/missions', label: '미션' },
+        { path: '/achievements', label: '업적' },
+      ]
+    },
+    {
+      label: '이벤트',
+      items: [
+        { path: '/event', label: '퀘스트' },
+        { path: '/event/milestones', label: '마일스톤' },
+        { path: '/event/rewards', label: '보상 인벤토리' },
+      ]
+    },
     { path: '/trade', label: '트레이드' },
     { path: '/coupon', label: '쿠폰' },
     { path: '/packs', label: '팩 인벤토리' },

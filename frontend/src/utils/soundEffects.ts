@@ -5,7 +5,7 @@
 
 class SoundEffectsManager {
   private audioContext: AudioContext | null = null;
-  private masterVolume: number = 0.3; // 기본 볼륨 30%
+  private masterVolume: number = 0.1; // 기본 볼륨 10%
   private enabled: boolean = true;
 
   constructor() {

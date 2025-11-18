@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { useAudioStore } from './store/audioStore';
@@ -77,7 +79,27 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 function App() {
   const { theme } = useThemeStore();
   const { playRandomLobbyBGM, initAudio } = useAudioStore();
-  const { token, isAuthenticated, updateUser } = useAuthStore();
+  const { token, isAuthenticated, updateUser, logout } = useAuthStore();
+
+  // Setup axios interceptor for 401 errors (invalid token)
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 && isAuthenticated) {
+          console.log('[Auth] Token invalid (401), logging out...');
+          toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          logout();
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [isAuthenticated, logout]);
 
   useEffect(() => {
     // Apply theme on mount

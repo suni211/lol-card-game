@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trophy } from 'lucide-react';
+import { Trophy, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
@@ -20,6 +20,7 @@ declare global {
 export default function Register() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {
     // Load Google Sign-In script
@@ -58,6 +59,7 @@ export default function Register() {
     try {
       const result = await axios.post(`${API_URL}/auth/google`, {
         credential: response.credential,
+        referralCode: referralCode || undefined,
       });
 
       if (result.data.success) {
@@ -106,6 +108,27 @@ export default function Register() {
             </p>
             <p className="text-sm text-primary-600 dark:text-primary-400 mt-2">
               가입하면 1000 포인트를 드립니다!
+            </p>
+          </div>
+
+          {/* Referral Code Input */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="flex items-center gap-2">
+                <Gift className="w-4 h-4 text-purple-500" />
+                추천인 코드 (선택사항)
+              </div>
+            </label>
+            <input
+              type="text"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+              placeholder="추천인 코드를 입력하세요"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              maxLength={12}
+            />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              추천인 코드를 입력하면 양측 모두 5,000P를 받습니다!
             </p>
           </div>
 

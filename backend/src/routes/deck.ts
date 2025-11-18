@@ -289,13 +289,24 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
 
     // Check if deck exists for this slot
     const [existingDecks]: any = await connection.query(
-      'SELECT id FROM decks WHERE user_id = ? AND deck_slot = ?',
+      'SELECT id, top_card_id, jungle_card_id, mid_card_id, adc_card_id, support_card_id FROM decks WHERE user_id = ? AND deck_slot = ?',
       [userId, finalDeckSlot]
     );
 
     let deckId;
+    let oldCardIds: number[] = [];
 
     if (existingDecks.length > 0) {
+      // Get old card IDs to unlock them
+      const oldDeck = existingDecks[0];
+      oldCardIds = [
+        oldDeck.top_card_id,
+        oldDeck.jungle_card_id,
+        oldDeck.mid_card_id,
+        oldDeck.adc_card_id,
+        oldDeck.support_card_id
+      ].filter(Boolean);
+
       // Update existing deck
       deckId = existingDecks[0].id;
       await connection.query(`
@@ -318,6 +329,23 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?)
       `, [userId, finalDeckSlot, name || `덱 ${finalDeckSlot}`, topCardId, jungleCardId, midCardId, adcCardId, supportCardId, finalLaningStrategy, finalTeamfightStrategy, finalMacroStrategy, finalDeckSlot === 1]);
       deckId = result.insertId;
+    }
+
+    // Unlock old cards (that are no longer in the deck)
+    const cardsToUnlock = oldCardIds.filter(id => !cardIds.includes(id));
+    if (cardsToUnlock.length > 0) {
+      await connection.query(
+        'UPDATE user_cards SET is_locked = FALSE WHERE id IN (?) AND user_id = ?',
+        [cardsToUnlock, userId]
+      );
+    }
+
+    // Lock new cards in deck
+    if (cardIds.length > 0) {
+      await connection.query(
+        'UPDATE user_cards SET is_locked = TRUE WHERE id IN (?) AND user_id = ?',
+        [cardIds, userId]
+      );
     }
 
     // 이 슬롯의 덱을 활성화하고 다른 슬롯은 비활성화

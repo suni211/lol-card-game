@@ -40,9 +40,9 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'Must select 2-5 cards to fuse' });
     }
 
-    // Get all cards and verify ownership
+    // Get all cards and verify ownership and lock status
     const [cards]: any = await connection.query(
-      `SELECT uc.id, uc.user_id, uc.level, p.overall, p.name,
+      `SELECT uc.id, uc.user_id, uc.level, uc.is_locked, p.overall, p.name,
        CASE
          WHEN p.name LIKE 'ICON%' THEN 'ICON'
          WHEN p.overall <= 80 THEN 'COMMON'
@@ -59,6 +59,13 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
     if (cards.length !== cardIds.length) {
       await connection.rollback();
       return res.status(404).json({ success: false, error: 'One or more cards not found or not owned' });
+    }
+
+    // Check if any card is locked
+    const lockedCard = cards.find((card: any) => card.is_locked);
+    if (lockedCard) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '덱에 편성된 카드는 합성할 수 없습니다.' });
     }
 
     // Calculate total overall (base + level)

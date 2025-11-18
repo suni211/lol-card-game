@@ -32,9 +32,9 @@ router.post('/send', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'Cannot trade with yourself' });
     }
 
-    // Verify sender owns sender card
+    // Verify sender owns sender card and it's not locked
     const [senderCards]: any = await connection.query(
-      'SELECT id FROM user_cards WHERE id = ? AND user_id = ?',
+      'SELECT id, is_locked FROM user_cards WHERE id = ? AND user_id = ?',
       [senderCardId, senderId]
     );
 
@@ -43,15 +43,25 @@ router.post('/send', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'You do not own this card' });
     }
 
-    // Verify receiver owns receiver card
+    if (senderCards[0].is_locked) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '덱에 편성된 카드는 거래할 수 없습니다.' });
+    }
+
+    // Verify receiver owns receiver card and it's not locked
     const [receiverCards]: any = await connection.query(
-      'SELECT id FROM user_cards WHERE id = ? AND user_id = ?',
+      'SELECT id, is_locked FROM user_cards WHERE id = ? AND user_id = ?',
       [receiverCardId, receiverId]
     );
 
     if (receiverCards.length === 0) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Receiver does not own that card' });
+    }
+
+    if (receiverCards[0].is_locked) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '상대방의 카드가 덱에 편성되어 있습니다.' });
     }
 
     // Create trade

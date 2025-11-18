@@ -318,4 +318,42 @@ router.post('/milestones/claim', authMiddleware, async (req: AuthRequest, res) =
   }
 });
 
+// Toggle card lock status
+router.post('/lock/:userCardId', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const userCardId = parseInt(req.params.userCardId);
+
+    // Check if card belongs to user
+    const [cards]: any = await pool.query(
+      'SELECT id, is_locked FROM user_cards WHERE id = ? AND user_id = ?',
+      [userCardId, userId]
+    );
+
+    if (cards.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: '카드를 찾을 수 없습니다.',
+      });
+    }
+
+    const newLockStatus = !cards[0].is_locked;
+
+    // Toggle lock status
+    await pool.query(
+      'UPDATE user_cards SET is_locked = ? WHERE id = ?',
+      [newLockStatus, userCardId]
+    );
+
+    res.json({
+      success: true,
+      message: newLockStatus ? '카드가 잠금되었습니다.' : '카드 잠금이 해제되었습니다.',
+      data: { is_locked: newLockStatus },
+    });
+  } catch (error: any) {
+    console.error('Toggle lock error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 export default router;

@@ -6,7 +6,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export default function Raid() {
+export default function RaidSimple() {
   const { token, user } = useAuthStore();
   const [raid, setRaid] = useState<any>(null);
   const [loading, setLoading] = useState(true);

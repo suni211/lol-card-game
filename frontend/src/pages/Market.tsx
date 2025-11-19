@@ -1442,10 +1442,24 @@ export default function Market() {
                   </div>
                 )}
 
-                {/* Market Info */}
+                {/* Player Info */}
                 <div className="mb-6">
-                  <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">시장 정보</h4>
+                  <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">선수 정보</h4>
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 p-4 rounded-lg">
+                      <div className="text-sm text-green-700 dark:text-green-400 mb-1">급여</div>
+                      <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                        {selectedPlayer.salary || 5}
+                      </div>
+                    </div>
+                    {selectedPlayer.lowest_price && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <div className="text-sm text-blue-700 dark:text-blue-400 mb-1">최저가</div>
+                        <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                          {selectedPlayer.lowest_price.toLocaleString()}P
+                        </div>
+                      </div>
+                    )}
                     {selectedPlayer.current_price && (
                       <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                         <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">현재 시세</div>
@@ -1454,28 +1468,12 @@ export default function Market() {
                         </div>
                       </div>
                     )}
-                    {selectedPlayer.lowest_price && (
-                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                        <div className="text-sm text-green-700 dark:text-green-400 mb-1">최저가</div>
-                        <div className="text-xl font-bold text-green-600 dark:text-green-400">
-                          {selectedPlayer.lowest_price.toLocaleString()}P
-                        </div>
-                      </div>
-                    )}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                      <div className="text-sm text-blue-700 dark:text-blue-400 mb-1">매물 수</div>
-                      <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                      <div className="text-sm text-purple-700 dark:text-purple-400 mb-1">매물 수</div>
+                      <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
                         {selectedPlayer.listing_count || 0}개
                       </div>
                     </div>
-                    {selectedPlayer.total_volume > 0 && (
-                      <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                        <div className="text-sm text-purple-700 dark:text-purple-400 mb-1">총 거래량</div>
-                        <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                          {selectedPlayer.total_volume}회
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
 

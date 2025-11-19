@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Lock, Sword, Award, TrendingUp } from 'lucide-react';
-import api from '../services/api';
+import { Trophy, Star, Lock, Sword } from 'lucide-react';
+import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '../store/authStore';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface Stage {
   id: number;
@@ -41,7 +42,6 @@ const REGION_INFO: Record<string, { name: string; color: string; description: st
 };
 
 export default function Campaign() {
-  const { updateUser } = useAuthStore();
   const [stages, setStages] = useState<RegionStages>({});
   const [loading, setLoading] = useState(true);
   const [battling, setBattling] = useState(false);
@@ -55,7 +55,7 @@ export default function Campaign() {
 
   const fetchStages = async () => {
     try {
-      const response = await api.get('/campaign/stages');
+      const response = await axios.get(`${API_URL}/campaign/stages`);
       if (response.data.success) {
         setStages(response.data.data);
       }
@@ -71,7 +71,7 @@ export default function Campaign() {
 
     setBattling(true);
     try {
-      const response = await api.post('/campaign/battle', { stageId });
+      const response = await axios.post(`${API_URL}/campaign/battle`, { stageId });
       if (response.data.success) {
         setBattleResult(response.data.data);
         setShowResultModal(true);
@@ -79,11 +79,8 @@ export default function Campaign() {
         if (response.data.data.won) {
           toast.success(`승리! ${response.data.data.pointsEarned.toLocaleString()}P 획득`);
 
-          // Refresh user data and stages
-          await Promise.all([
-            updateUser(),
-            fetchStages()
-          ]);
+          // Refresh stages (user points updated via socket.io)
+          await fetchStages();
         } else {
           toast.error('패배! 더 강한 덱이 필요합니다');
         }
@@ -92,16 +89,6 @@ export default function Campaign() {
       toast.error(error.response?.data?.error || '전투 실패');
     } finally {
       setBattling(false);
-    }
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'EASY': return 'text-green-600 dark:text-green-400';
-      case 'NORMAL': return 'text-blue-600 dark:text-blue-400';
-      case 'HARD': return 'text-purple-600 dark:text-purple-400';
-      case 'HELL': return 'text-red-600 dark:text-red-400';
-      default: return 'text-gray-600 dark:text-gray-400';
     }
   };
 

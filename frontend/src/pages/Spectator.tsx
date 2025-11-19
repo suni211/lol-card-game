@@ -68,6 +68,10 @@ export default function Spectator() {
 
     return () => {
       if (socketRef.current) {
+        // 관전 중단 알림
+        if (matchId) {
+          socketRef.current.emit('stopSpectating', { matchId });
+        }
         socketRef.current.disconnect();
         socketRef.current = null;
       }
@@ -113,6 +117,21 @@ export default function Spectator() {
         socket.on('connect', () => {
           console.log('[Spectator] Socket connected');
           socket.emit('authenticate', { token });
+
+          // 관전 시작
+          socket.emit('spectateMatch', { matchId: id });
+        });
+
+        // 관전 참가 성공
+        socket.on('spectateJoined', (data: any) => {
+          console.log('[Spectator] Spectate joined:', data);
+        });
+
+        // 관전 오류
+        socket.on('spectateError', (data: any) => {
+          console.error('[Spectator] Spectate error:', data);
+          toast.error(data.error || '관전 실패');
+          navigate('/spectator');
         });
 
         // Listen for round results

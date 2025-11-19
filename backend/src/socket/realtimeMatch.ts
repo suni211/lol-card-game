@@ -103,6 +103,7 @@ interface ActiveMatch {
   roundStartTime?: number;
   roundTimer?: NodeJS.Timeout;
   isPractice: boolean;
+  spectators?: string[]; // Array of spectator socket IDs
 }
 
 export const activeMatches = new Map<string, ActiveMatch>();
@@ -301,7 +302,15 @@ async function calculateDeckStatPower(
 // 라운드 결과 계산
 async function calculateRoundResult(
   match: ActiveMatch
-): Promise<{ winner: 1 | 2; player1Power: number; player2Power: number }> {
+): Promise<{
+  winner: 1 | 2;
+  player1Power: number;
+  player2Power: number;
+  details?: {
+    player1?: Record<string, { name: string; power: number }>;
+    player2?: Record<string, { name: string; power: number }>;
+  };
+}> {
   const p1Strategy = match.player1.strategy!;
   const p2Strategy = match.player2.strategy!;
 
@@ -391,6 +400,18 @@ function startRound(matchId: string, io: Server) {
     match.player2.strategy = strategies[Math.floor(Math.random() * strategies.length)];
     match.player2.ready = true;
     console.log(`AI selected strategy: ${match.player2.strategy}`);
+  }
+
+  // 관전자들에게도 라운드 시작 알림
+  if (match.spectators && match.spectators.length > 0) {
+    const roundStartData = {
+      round: match.currentRound,
+      timeLimit: ROUND_TIME_LIMIT,
+    };
+    match.spectators.forEach(spectatorSocketId => {
+      io.to(spectatorSocketId).emit('roundStart', roundStartData);
+    });
+    console.log(`Sent roundStart to ${match.spectators.length} spectator(s)`);
   }
 
   // 타임아웃 설정 (10초)
@@ -524,44 +545,6 @@ async function processRound(matchId: string, io: Server) {
 
   console.log(`📊 Round ${match.currentRound} result calculated - Winner: Player ${result.winner}`);
 
-  // 즉시 결과 전송
-  const player1Socket = io.sockets.sockets.get(match.player1.socketId);
-  if (player1Socket) {
-    player1Socket.emit('roundResult', {
-      round: match.currentRound,
-      player1Strategy: match.player1.strategy,
-      player2Strategy: match.player2.strategy,
-      player1Power: result.player1Power,
-      player2Power: result.player2Power,
-      winner: result.winner,
-      currentScore: {
-        player1: match.player1.score,
-        player2: match.player2.score,
-      },
-    });
-    console.log(`✅ Sent roundResult to Player 1 immediately`);
-  }
-
-  // Player 2에게 결과 전송 (AI가 아닐 때만)
-  if (!isPlayer2AI) {
-    const player2Socket = io.sockets.sockets.get(match.player2.socketId);
-    if (player2Socket) {
-      player2Socket.emit('roundResult', {
-        round: match.currentRound,
-        player1Strategy: match.player2.strategy,
-        player2Strategy: match.player1.strategy,
-        player1Power: result.player2Power,
-        player2Power: result.player1Power,
-        winner: result.winner === 1 ? 2 : 1,
-        currentScore: {
-          player1: match.player2.score,
-          player2: match.player1.score,
-        },
-      });
-      console.log(`✅ Sent roundResult to Player 2 immediately`);
-    }
-  }
-
   // 30초 동안 5초마다 이벤트 전송
   const eventStages = [0, 5000, 10000, 15000, 20000, 25000]; // 0, 5, 10, 15, 20, 25초
 
@@ -601,9 +584,89 @@ async function processRound(matchId: string, io: Server) {
             console.log(`   └─ ✅ Sent to Player 2`);
           }
         }
+
+        // 관전자들에게도 이벤트 전송
+        if (currentMatch.spectators && currentMatch.spectators.length > 0) {
+          currentMatch.spectators.forEach(spectatorSocketId => {
+            io.to(spectatorSocketId).emit('matchEvent', eventData);
+          });
+          console.log(`   └─ ✅ Sent to ${currentMatch.spectators.length} spectator(s)`);
+        }
       }, eventStages[stage]);
     })(i);
   }
+
+  // 28초 후 라운드 결과 전송 (모든 이벤트가 끝난 후)
+  setTimeout(() => {
+    const currentMatch = activeMatches.get(matchId);
+    if (!currentMatch) return;
+
+    console.log(`🏁 Sending roundResult after all events for round ${currentMatch.currentRound}`);
+
+    // Player 1에게 결과 전송
+    const player1Socket = io.sockets.sockets.get(currentMatch.player1.socketId);
+    if (player1Socket) {
+      player1Socket.emit('roundResult', {
+        round: currentMatch.currentRound,
+        player1Strategy: currentMatch.player1.strategy,
+        player2Strategy: currentMatch.player2.strategy,
+        player1Power: result.player1Power,
+        player2Power: result.player2Power,
+        winner: result.winner,
+        currentScore: {
+          player1: currentMatch.player1.score,
+          player2: currentMatch.player2.score,
+        },
+        details: result.details,
+      });
+      console.log(`   └─ ✅ Sent roundResult to Player 1`);
+    }
+
+    // Player 2에게 결과 전송 (AI가 아닐 때만)
+    if (!isPlayer2AI) {
+      const player2Socket = io.sockets.sockets.get(currentMatch.player2.socketId);
+      if (player2Socket) {
+        player2Socket.emit('roundResult', {
+          round: currentMatch.currentRound,
+          player1Strategy: currentMatch.player2.strategy,
+          player2Strategy: currentMatch.player1.strategy,
+          player1Power: result.player2Power,
+          player2Power: result.player1Power,
+          winner: result.winner === 1 ? 2 : 1,
+          currentScore: {
+            player1: currentMatch.player2.score,
+            player2: currentMatch.player1.score,
+          },
+          details: {
+            player1: result.details?.player2,
+            player2: result.details?.player1,
+          },
+        });
+        console.log(`   └─ ✅ Sent roundResult to Player 2`);
+      }
+    }
+
+    // 관전자들에게도 결과 전송
+    if (currentMatch.spectators && currentMatch.spectators.length > 0) {
+      const spectatorResultData = {
+        round: currentMatch.currentRound,
+        player1Strategy: currentMatch.player1.strategy,
+        player2Strategy: currentMatch.player2.strategy,
+        player1Power: result.player1Power,
+        player2Power: result.player2Power,
+        winner: result.winner,
+        currentScore: {
+          player1: currentMatch.player1.score,
+          player2: currentMatch.player2.score,
+        },
+        details: result.details,
+      };
+      currentMatch.spectators.forEach(spectatorSocketId => {
+        io.to(spectatorSocketId).emit('roundResult', spectatorResultData);
+      });
+      console.log(`   └─ ✅ Sent roundResult to ${currentMatch.spectators.length} spectator(s)`);
+    }
+  }, 28000); // 28초 후
 
   // 30초 후 다음 라운드 또는 매치 종료
   setTimeout(async () => {
@@ -872,6 +935,30 @@ async function endMatch(matchId: string, io: Server) {
       });
     }
 
+    // 관전자들에게도 매치 종료 알림
+    if (match.spectators && match.spectators.length > 0) {
+      const spectatorMatchCompleteData = {
+        winner: {
+          userId: winnerId,
+          username: player1Won ? match.player1.username : match.player2.username,
+        },
+        player1: {
+          userId: match.player1.userId,
+          username: match.player1.username,
+          score: match.player1.score,
+        },
+        player2: {
+          userId: match.player2.userId,
+          username: match.player2.username,
+          score: match.player2.score,
+        },
+      };
+      match.spectators.forEach(spectatorSocketId => {
+        io.to(spectatorSocketId).emit('matchComplete', spectatorMatchCompleteData);
+      });
+      console.log(`Sent matchComplete to ${match.spectators.length} spectator(s)`);
+    }
+
     console.log(`Match ${matchId} completed. Winner: ${player1Won ? match.player1.username : match.player2.username} (${match.player1.score}-${match.player2.score})`);
 
   } catch (error) {
@@ -932,6 +1019,65 @@ export function setupRealtimeMatch(io: Server, socket: Socket, user: any) {
     }
 
     await endMatch(data.matchId, io);
+  });
+
+  // 관전 시작
+  socket.on('spectateMatch', (data: { matchId: string }) => {
+    const match = activeMatches.get(data.matchId);
+    if (!match) {
+      console.log(`❌ Match ${data.matchId} not found for spectating`);
+      socket.emit('spectateError', { error: 'Match not found' });
+      return;
+    }
+
+    // 관전자 목록에 추가
+    if (!match.spectators) {
+      match.spectators = [];
+    }
+
+    if (!match.spectators.includes(socket.id)) {
+      match.spectators.push(socket.id);
+      console.log(`✅ Added spectator ${socket.id} to match ${data.matchId}. Total spectators: ${match.spectators.length}`);
+    }
+
+    // 현재 매치 상태 전송
+    socket.emit('spectateJoined', {
+      matchId: data.matchId,
+      currentRound: match.currentRound,
+      player1: {
+        username: match.player1.username,
+        score: match.player1.score,
+      },
+      player2: {
+        username: match.player2.username,
+        score: match.player2.score,
+      },
+    });
+  });
+
+  // 관전 중단
+  socket.on('stopSpectating', (data: { matchId: string }) => {
+    const match = activeMatches.get(data.matchId);
+    if (!match || !match.spectators) return;
+
+    const index = match.spectators.indexOf(socket.id);
+    if (index > -1) {
+      match.spectators.splice(index, 1);
+      console.log(`❌ Removed spectator ${socket.id} from match ${data.matchId}. Total spectators: ${match.spectators.length}`);
+    }
+  });
+
+  // 소켓 연결 해제 시 관전자 목록에서 제거
+  socket.on('disconnect', () => {
+    activeMatches.forEach((match, matchId) => {
+      if (match.spectators && match.spectators.includes(socket.id)) {
+        const index = match.spectators.indexOf(socket.id);
+        if (index > -1) {
+          match.spectators.splice(index, 1);
+          console.log(`❌ Removed disconnected spectator ${socket.id} from match ${matchId}`);
+        }
+      }
+    });
   });
 }
 
@@ -1067,6 +1213,7 @@ export async function createRealtimeMatch(
     player2Deck,
     currentRound: 1,
     isPractice,
+    spectators: [], // 관전자 목록 초기화
   };
 
   activeMatches.set(matchId, match);

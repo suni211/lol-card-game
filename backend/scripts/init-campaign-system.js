@@ -112,14 +112,14 @@ async function initCampaignSystem() {
       ${lplStages.join(',\n      ')}
     `);
 
-    // LCK - HELL (30 stages, starts at 700 power)
-    console.log('📍 LCK (Hell - 좋게) - 30 stages');
+    // LCK - HELL (30 stages, starts at 700 power, 최소 20,000P per clear)
+    console.log('📍 LCK (Hell - 최고 보상) - 30 stages');
     const lckStages = [];
     for (let i = 1; i <= 30; i++) {
       const power = 700 + (i - 1) * 40;
-      const reward = 700 + (i - 1) * 30;
-      const firstBonus = 1500 + (i - 1) * 80;
-      const starBonus = 700 + (i - 1) * 30;
+      const reward = 5000 + (i - 1) * 200;       // 5,000 ~ 10,800P
+      const firstBonus = 15000 + (i - 1) * 500;  // 15,000 ~ 29,500P (첫 클리어)
+      const starBonus = 5000 + (i - 1) * 200;    // 5,000 ~ 10,800P (3성)
       lckStages.push(`('LCK', ${i}, 'HELL', ${power}, ${reward}, ${firstBonus}, ${starBonus})`);
     }
     await connection.query(`

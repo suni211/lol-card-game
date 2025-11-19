@@ -603,12 +603,12 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
         if (oldTier !== newTier) {
           // Promotion detected - give bonus
           switch (newTier) {
-            case 'SILVER': promotionBonus = 1000; break;
-            case 'GOLD': promotionBonus = 2000; break;
-            case 'PLATINUM': promotionBonus = 3000; break;
-            case 'DIAMOND': promotionBonus = 5000; break;
-            case 'MASTER': promotionBonus = 10000; break;
-            case 'CHALLENGER': promotionBonus = 20000; break;
+            case 'SILVER': promotionBonus = 10000; break;
+            case 'GOLD': promotionBonus = 20000; break;
+            case 'PLATINUM': promotionBonus = 30000; break;
+            case 'DIAMOND': promotionBonus = 50000; break;
+            case 'MASTER': promotionBonus = 100000; break;
+            case 'CHALLENGER': promotionBonus = 200000; break;
           }
 
           if (promotionBonus > 0) {

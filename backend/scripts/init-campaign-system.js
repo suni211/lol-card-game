@@ -50,61 +50,81 @@ async function initCampaignSystem() {
     `);
 
     // Insert stages
-    console.log('\n🌏 Inserting campaign stages...\n');
+    console.log('\n🌏 Inserting campaign stages (150 total)...\n');
 
-    // LCP - EASY
-    console.log('📍 LCP (Easy - 짜게)');
+    // LCP - EASY (30 stages)
+    console.log('📍 LCP (Easy - 짜게) - 30 stages');
+    const lcpStages = [];
+    for (let i = 1; i <= 30; i++) {
+      const power = 300 + (i - 1) * 20;
+      const reward = 50 + (i - 1) * 5;
+      const firstBonus = 100 + (i - 1) * 10;
+      const starBonus = 50 + (i - 1) * 5;
+      lcpStages.push(`('LCP', ${i}, 'EASY', ${power}, ${reward}, ${firstBonus}, ${starBonus})`);
+    }
     await connection.query(`
       INSERT IGNORE INTO campaign_stages (region, stage_number, difficulty, required_power, points_reward, first_clear_bonus, three_star_bonus) VALUES
-      ('LCP', 1, 'EASY', 300, 50, 100, 50),
-      ('LCP', 2, 'EASY', 350, 60, 120, 60),
-      ('LCP', 3, 'EASY', 400, 70, 140, 70),
-      ('LCP', 4, 'EASY', 450, 80, 160, 80),
-      ('LCP', 5, 'EASY', 500, 100, 200, 100)
+      ${lcpStages.join(',\n      ')}
     `);
 
-    // LTA - NORMAL
-    console.log('📍 LTA (Normal - 짜게)');
+    // LTA - NORMAL (30 stages)
+    console.log('📍 LTA (Normal - 짜게) - 30 stages');
+    const ltaStages = [];
+    for (let i = 1; i <= 30; i++) {
+      const power = 550 + (i - 1) * 25;
+      const reward = 120 + (i - 1) * 8;
+      const firstBonus = 250 + (i - 1) * 15;
+      const starBonus = 120 + (i - 1) * 8;
+      ltaStages.push(`('LTA', ${i}, 'NORMAL', ${power}, ${reward}, ${firstBonus}, ${starBonus})`);
+    }
     await connection.query(`
       INSERT IGNORE INTO campaign_stages (region, stage_number, difficulty, required_power, points_reward, first_clear_bonus, three_star_bonus) VALUES
-      ('LTA', 1, 'NORMAL', 550, 120, 250, 120),
-      ('LTA', 2, 'NORMAL', 600, 140, 300, 140),
-      ('LTA', 3, 'NORMAL', 650, 160, 350, 160),
-      ('LTA', 4, 'NORMAL', 700, 180, 400, 180),
-      ('LTA', 5, 'NORMAL', 750, 200, 450, 200)
+      ${ltaStages.join(',\n      ')}
     `);
 
-    // LEC - HARD
-    console.log('📍 LEC (Hard - 보통)');
+    // LEC - HARD (30 stages)
+    console.log('📍 LEC (Hard - 보통) - 30 stages');
+    const lecStages = [];
+    for (let i = 1; i <= 30; i++) {
+      const power = 800 + (i - 1) * 30;
+      const reward = 300 + (i - 1) * 20;
+      const firstBonus = 600 + (i - 1) * 40;
+      const starBonus = 300 + (i - 1) * 20;
+      lecStages.push(`('LEC', ${i}, 'HARD', ${power}, ${reward}, ${firstBonus}, ${starBonus})`);
+    }
     await connection.query(`
       INSERT IGNORE INTO campaign_stages (region, stage_number, difficulty, required_power, points_reward, first_clear_bonus, three_star_bonus) VALUES
-      ('LEC', 1, 'HARD', 800, 300, 600, 300),
-      ('LEC', 2, 'HARD', 850, 350, 700, 350),
-      ('LEC', 3, 'HARD', 900, 400, 800, 400),
-      ('LEC', 4, 'HARD', 950, 450, 900, 450),
-      ('LEC', 5, 'HARD', 1000, 500, 1000, 500)
+      ${lecStages.join(',\n      ')}
     `);
 
-    // LPL - HELL
-    console.log('📍 LPL (Hell - 좋게)');
+    // LPL - HELL (30 stages)
+    console.log('📍 LPL (Hell - 좋게) - 30 stages');
+    const lplStages = [];
+    for (let i = 1; i <= 30; i++) {
+      const power = 1100 + (i - 1) * 40;
+      const reward = 700 + (i - 1) * 30;
+      const firstBonus = 1500 + (i - 1) * 80;
+      const starBonus = 700 + (i - 1) * 30;
+      lplStages.push(`('LPL', ${i}, 'HELL', ${power}, ${reward}, ${firstBonus}, ${starBonus})`);
+    }
     await connection.query(`
       INSERT IGNORE INTO campaign_stages (region, stage_number, difficulty, required_power, points_reward, first_clear_bonus, three_star_bonus) VALUES
-      ('LPL', 1, 'HELL', 1100, 700, 1500, 700),
-      ('LPL', 2, 'HELL', 1200, 800, 1700, 800),
-      ('LPL', 3, 'HELL', 1300, 900, 2000, 900),
-      ('LPL', 4, 'HELL', 1400, 1000, 2500, 1000),
-      ('LPL', 5, 'HELL', 1500, 1200, 3000, 1200)
+      ${lplStages.join(',\n      ')}
     `);
 
-    // LCK - HELL
-    console.log('📍 LCK (Hell - 좋게)');
+    // LCK - HELL (30 stages, starts at 700 power)
+    console.log('📍 LCK (Hell - 좋게) - 30 stages');
+    const lckStages = [];
+    for (let i = 1; i <= 30; i++) {
+      const power = 700 + (i - 1) * 40;
+      const reward = 700 + (i - 1) * 30;
+      const firstBonus = 1500 + (i - 1) * 80;
+      const starBonus = 700 + (i - 1) * 30;
+      lckStages.push(`('LCK', ${i}, 'HELL', ${power}, ${reward}, ${firstBonus}, ${starBonus})`);
+    }
     await connection.query(`
       INSERT IGNORE INTO campaign_stages (region, stage_number, difficulty, required_power, points_reward, first_clear_bonus, three_star_bonus) VALUES
-      ('LCK', 1, 'HELL', 1100, 700, 1500, 700),
-      ('LCK', 2, 'HELL', 1200, 800, 1700, 800),
-      ('LCK', 3, 'HELL', 1300, 900, 2000, 900),
-      ('LCK', 4, 'HELL', 1400, 1000, 2500, 1000),
-      ('LCK', 5, 'HELL', 1500, 1200, 3000, 1200)
+      ${lckStages.join(',\n      ')}
     `);
 
     await connection.commit();
@@ -112,9 +132,10 @@ async function initCampaignSystem() {
     console.log('\n✅ Campaign System initialized successfully!');
     console.log('\n📝 Summary:');
     console.log('   - 5 regions created (LCP, LTA, LEC, LPL, LCK)');
-    console.log('   - 25 total stages');
+    console.log('   - 150 total stages (30 per region)');
     console.log('   - Difficulty progression: EASY → NORMAL → HARD → HELL');
-    console.log('   - Reward progression: 짜게 → 보통 → 좋게\n');
+    console.log('   - Reward progression: 짜게 → 보통 → 좋게');
+    console.log('   - LCK starts at 700 power (easier entry)\n');
 
   } catch (error) {
     await connection.rollback();

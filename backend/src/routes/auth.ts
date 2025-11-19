@@ -166,7 +166,12 @@ router.post('/google', async (req, res) => {
         );
       }
 
-      if (sameIpUsers.length > 0 && !isLocalOrPrivateIp) {
+      // 가족 계정 예외 처리 (limsong1, 우주야)
+      const familyAccounts = ['limsong1', '우주야'];
+      const isFamilyAccount = familyAccounts.includes(username) ||
+                              (sameIpUsers.length > 0 && familyAccounts.includes(sameIpUsers[0].username));
+
+      if (sameIpUsers.length > 0 && !isLocalOrPrivateIp && !isFamilyAccount) {
         const otherUser = sameIpUsers[0];
         const now = new Date();
         const banUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일 후

@@ -233,7 +233,7 @@ export default function Deck() {
     }, 0);
   }, [deckSlots]);
 
-  const SALARY_CAP = 100;
+  const SALARY_CAP = 115;
   const isOverSalaryCap = totalSalary > SALARY_CAP;
 
   useEffect(() => {
@@ -685,6 +685,10 @@ export default function Deck() {
                               </span>
                             )}
                           </div>
+                          <div className="mt-2 flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded px-2 py-1">
+                            <span className="text-xs font-semibold text-green-700 dark:text-green-300">급여</span>
+                            <span className="text-sm font-bold text-green-900 dark:text-green-100">{slot.card.player.salary || 5}</span>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -960,6 +964,10 @@ export default function Deck() {
                                     -10 페널티
                                   </span>
                                 )}
+                              </div>
+                              <div className="flex items-center justify-between mt-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded px-2 py-0.5">
+                                <span className="text-xs font-semibold text-green-700 dark:text-green-300">급여</span>
+                                <span className="text-xs font-bold text-green-900 dark:text-green-100">{card.player.salary || 5}</span>
                               </div>
                             </div>
                           </div>

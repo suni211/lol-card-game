@@ -4,6 +4,26 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// Reward type definitions
+interface PointsReward {
+  type: 'points';
+  value: number;
+  chance: number;
+}
+
+interface PackReward {
+  type: 'pack';
+  value: string;
+  minOverall?: number;
+  excludeIcon?: boolean;
+  iconOnly?: boolean;
+  includeIcon?: boolean;
+  minLevel?: number;
+  chance: number;
+}
+
+type AgentReward = PointsReward | PackReward;
+
 // Agent types with their requirements and rewards
 const AGENT_TYPES = {
   daily: {
@@ -13,14 +33,14 @@ const AGENT_TYPES = {
     maxCards: 5,
     cooldownHours: 24,
     rewards: [
-      { type: 'points', value: 300, chance: 50.0 },
-      { type: 'points', value: 2000, chance: 35.0 },
-      { type: 'points', value: 5000, chance: 10.0 },
-      { type: 'pack', value: '105+ OVR 확정팩', minOverall: 105, excludeIcon: true, chance: 3.22 },
-      { type: 'pack', value: '108+ OVR 확정팩', minOverall: 108, excludeIcon: true, chance: 1.5 },
-      { type: 'pack', value: '109+ OVR 확정팩', minOverall: 109, excludeIcon: true, chance: 0.2 },
-      { type: 'points', value: 300000, chance: 0.07999153 },
-      { type: 'pack', value: 'ICON 5강 확정팩', iconOnly: true, minLevel: 5, chance: 0.00000947 },
+      { type: 'points' as const, value: 300, chance: 50.0 },
+      { type: 'points' as const, value: 2000, chance: 35.0 },
+      { type: 'points' as const, value: 5000, chance: 10.0 },
+      { type: 'pack' as const, value: '105+ OVR 확정팩', minOverall: 105, excludeIcon: true, chance: 3.22 },
+      { type: 'pack' as const, value: '108+ OVR 확정팩', minOverall: 108, excludeIcon: true, chance: 1.5 },
+      { type: 'pack' as const, value: '109+ OVR 확정팩', minOverall: 109, excludeIcon: true, chance: 0.2 },
+      { type: 'points' as const, value: 300000, chance: 0.07999153 },
+      { type: 'pack' as const, value: 'ICON 5강 확정팩', iconOnly: true, minLevel: 5, chance: 0.00000947 },
     ]
   },
   weekly: {
@@ -30,12 +50,12 @@ const AGENT_TYPES = {
     maxCards: 5,
     cooldownHours: 168, // 7 days
     rewards: [
-      { type: 'points', value: 5000, chance: 90.0 },
-      { type: 'points', value: 10000, chance: 5.3 },
-      { type: 'points', value: 20000, chance: 3.5 },
-      { type: 'pack', value: '101+ OVR 확정팩', minOverall: 101, includeIcon: true, chance: 0.77 },
-      { type: 'pack', value: '103+ OVR ICON 포함 팩', minOverall: 103, includeIcon: true, chance: 0.4221 },
-      { type: 'pack', value: '110+ OVR ICON 포함 팩', minOverall: 110, includeIcon: true, chance: 0.0079 },
+      { type: 'points' as const, value: 5000, chance: 90.0 },
+      { type: 'points' as const, value: 10000, chance: 5.3 },
+      { type: 'points' as const, value: 20000, chance: 3.5 },
+      { type: 'pack' as const, value: '101+ OVR 확정팩', minOverall: 101, includeIcon: true, chance: 0.77 },
+      { type: 'pack' as const, value: '103+ OVR ICON 포함 팩', minOverall: 103, includeIcon: true, chance: 0.4221 },
+      { type: 'pack' as const, value: '110+ OVR ICON 포함 팩', minOverall: 110, includeIcon: true, chance: 0.0079 },
     ]
   },
   monthly: {
@@ -45,10 +65,10 @@ const AGENT_TYPES = {
     maxCards: 5,
     cooldownHours: 720, // 30 days
     rewards: [
-      { type: 'points', value: 20000, chance: 50.0 },
-      { type: 'points', value: 50000, chance: 49.533 },
-      { type: 'points', value: 100000, chance: 0.311 },
-      { type: 'points', value: 500000, chance: 0.156 },
+      { type: 'points' as const, value: 20000, chance: 50.0 },
+      { type: 'points' as const, value: 50000, chance: 49.533 },
+      { type: 'points' as const, value: 100000, chance: 0.311 },
+      { type: 'points' as const, value: 500000, chance: 0.156 },
     ]
   }
 };
@@ -167,7 +187,7 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
     // Roll for reward
     const roll = Math.random() * 100;
     let cumulativeChance = 0;
-    let selectedReward = null;
+    let selectedReward: AgentReward | null = null;
 
     for (const reward of config.rewards) {
       cumulativeChance += reward.chance;
@@ -184,6 +204,11 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
     // Give reward
     let rewardResult: any = {};
 
+    if (!selectedReward) {
+      await connection.rollback();
+      return res.status(500).json({ success: false, error: '보상 선택 실패' });
+    }
+
     if (selectedReward.type === 'points') {
       await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [
         selectedReward.value,
@@ -195,19 +220,20 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
       };
     } else if (selectedReward.type === 'pack') {
       // Generate card based on reward criteria
+      const packReward = selectedReward as PackReward;
       let query = `
         SELECT p.id, p.name, p.team, p.position, p.overall, p.region, p.season, p.salary
         FROM players p
         WHERE p.overall >= ?
       `;
-      const params: any[] = [selectedReward.minOverall || 80];
+      const params: any[] = [packReward.minOverall || 80];
 
-      if (selectedReward.excludeIcon) {
+      if (packReward.excludeIcon) {
         query += ' AND p.season != ?';
         params.push('ICON');
       }
 
-      if (selectedReward.iconOnly) {
+      if (packReward.iconOnly) {
         query += ' AND p.season = ?';
         params.push('ICON');
       }
@@ -222,7 +248,7 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
       }
 
       const player = availablePlayers[0];
-      const level = selectedReward.minLevel || 0;
+      const level = packReward.minLevel || 0;
 
       const [insertResult]: any = await connection.query(
         'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, ?)',

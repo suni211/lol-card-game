@@ -70,7 +70,7 @@ async function calculateDeckPower(deckId: number): Promise<number> {
     if (cardIds.length === 0) return 0;
 
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.team, p.position
+      SELECT uc.level, p.overall, p.team, p.position, p.name
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)
@@ -95,14 +95,24 @@ async function calculateDeckPower(deckId: number): Promise<number> {
       'SKT': 'T1',
     };
 
+    // ICON Peanut의 여러 팀 시너지 (활약했던 모든 팀)
+    const peanutTeams = ['T1', 'HLE', 'NS', 'GEN', 'LGD'];
+
     cards.forEach((card: any) => {
       const enhancementBonus = calculateEnhancementBonus(card.level || 0);
       let power = card.overall + enhancementBonus;
       totalPower += power;
 
-      // Map old team names to current teams for synergy calculation
-      const synergyTeam = normalizeTeamName(card.team);
-      teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+      // ICON Peanut은 여러 팀에 중복 카운트
+      if (card.name === 'ICON Peanut' || card.name === 'Peanut') {
+        peanutTeams.forEach((team: string) => {
+          teams[team] = (teams[team] || 0) + 1;
+        });
+      } else {
+        // Map old team names to current teams for synergy calculation
+        const synergyTeam = normalizeTeamName(card.team);
+        teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+      }
     });
 
     // Team synergy: same team 3 players = +1 OVR, 4 players = +3 OVR, 5 players = +5 OVR

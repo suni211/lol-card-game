@@ -86,13 +86,23 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
   const teams: { [key: string]: number } = {};
   let totalPower = 0;
 
+  // ICON Peanut의 여러 팀 시너지 (활약했던 모든 팀)
+  const peanutTeams = ['T1', 'HLE', 'NS', 'GEN', 'LGD'];
+
   slots.forEach(slot => {
     if (slot.card) {
       const power = slot.card.player.overall + slot.card.level;
       totalPower += power;
 
-      const synergyTeam = normalizeTeamName(slot.card.player.team);
-      teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+      // ICON Peanut은 여러 팀에 중복 카운트
+      if (slot.card.player.name === 'ICON Peanut' || slot.card.player.name === 'Peanut') {
+        peanutTeams.forEach(team => {
+          teams[team] = (teams[team] || 0) + 1;
+        });
+      } else {
+        const synergyTeam = normalizeTeamName(slot.card.player.team);
+        teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+      }
     }
   });
 
@@ -101,8 +111,8 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
 
   Object.entries(teams).forEach(([team, count]) => {
     let bonus = 0;
-    if (count === 5) bonus = 3;
-    else if (count === 4) bonus = 2;
+    if (count === 5) bonus = 5;
+    else if (count === 4) bonus = 3;
     else if (count === 3) bonus = 1;
 
     if (bonus > 0) {
@@ -532,7 +542,7 @@ export default function Deck() {
                   ))}
                 </div>
                 <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2 font-medium">
-                  💡 같은 팀 3명 = +1, 4명 = +3, 5명 = +5 파워 보너스
+                  💡 같은 팀 3명 = +1 OVR, 4명 = +3 OVR, 5명 = +5 OVR 보너스
                 </p>
               </div>
             </div>

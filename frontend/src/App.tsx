@@ -201,6 +201,15 @@ function App() {
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
       }
+
+      // Remove all event listeners to prevent duplicates
+      socket.off('connect');
+      socket.off('auth_success');
+      socket.off('auth_error');
+      socket.off('online_users');
+      socket.off('pointsUpdate');
+      socket.off('user_update');
+
       socket.disconnect();
     };
   }, [isAuthenticated, token, updateUser, logout, setOnlineUsers]);

@@ -72,6 +72,16 @@ export default function Spectator() {
         if (matchId) {
           socketRef.current.emit('stopSpectating', { matchId });
         }
+
+        // Remove all event listeners to prevent duplicates
+        socketRef.current.off('connect');
+        socketRef.current.off('spectateJoined');
+        socketRef.current.off('spectateError');
+        socketRef.current.off('roundResult');
+        socketRef.current.off('matchEvent');
+        socketRef.current.off('roundStart');
+        socketRef.current.off('matchComplete');
+
         socketRef.current.disconnect();
         socketRef.current = null;
       }

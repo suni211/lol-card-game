@@ -342,7 +342,22 @@ export default function Match() {
 
     return () => {
       if (socketRef.current) {
+        // Remove all event listeners to prevent duplicates
+        socketRef.current.off('connect');
+        socketRef.current.off('connect_error');
+        socketRef.current.off('disconnect');
+        socketRef.current.off('queue_update');
+        socketRef.current.off('queue_error');
+        socketRef.current.off('match_found');
+        socketRef.current.off('matchFound');
+        socketRef.current.off('roundStart');
+        socketRef.current.off('matchEvent');
+        socketRef.current.off('roundResult');
+        socketRef.current.off('matchComplete');
+        socketRef.current.off('match_error');
+
         socketRef.current.disconnect();
+        socketRef.current = null;
       }
     };
   }, [token, user, updateUser]);

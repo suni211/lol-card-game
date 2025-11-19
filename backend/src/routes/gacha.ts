@@ -7,13 +7,13 @@ import { emitPointUpdate } from '../server';
 
 const router = express.Router();
 
-// Gacha probabilities (ICON 티어는 모든 팩에서 0.0001% 확률로 등장)
+// Gacha probabilities (ICON 티어는 모든 팩에서 0.00001% 확률로 등장 - 매우 희귀)
 const GACHA_OPTIONS = {
-  free: { cost: 0, probabilities: { icon: 0.0001, legendary: 0.02, epic: 0.1, rare: 5, common: 94.8799 } },
-  basic: { cost: 500, probabilities: { icon: 0.0001, legendary: 0.06, epic: 0.5, rare: 10, common: 89.4399 } },
-  premium: { cost: 1000, probabilities: { icon: 0.0001, legendary: 0.22, epic: 3, rare: 18, common: 78.7799 } },
-  ultra: { cost: 1500, probabilities: { icon: 0.0001, legendary: 0.52, epic: 6, rare: 25, common: 68.4799 } },
-  mega: { cost: 2000, probabilities: { icon: 0.0001, legendary: 1.02, epic: 10, rare: 30, common: 58.9799 } },
+  free: { cost: 0, probabilities: { icon: 0.00001, legendary: 0.02, epic: 0.1, rare: 5, common: 94.87999 } },
+  basic: { cost: 500, probabilities: { icon: 0.00001, legendary: 0.06, epic: 0.5, rare: 10, common: 89.43999 } },
+  premium: { cost: 1000, probabilities: { icon: 0.00001, legendary: 0.22, epic: 3, rare: 18, common: 78.77999 } },
+  ultra: { cost: 1500, probabilities: { icon: 0.00001, legendary: 0.52, epic: 6, rare: 25, common: 68.47999 } },
+  mega: { cost: 2000, probabilities: { icon: 0.00001, legendary: 1.02, epic: 10, rare: 30, common: 58.97999 } },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5.01, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
   icon_test: { cost: 0, probabilities: { icon: 100, legendary: 0, epic: 0, rare: 0, common: 0 }, adminOnly: true }, // Admin-only ICON test pack
 };
@@ -21,13 +21,29 @@ const GACHA_OPTIONS = {
 function selectTierByProbability(probabilities: any): string {
   const random = Math.random() * 100;
 
-  // ICON tier (only for icon_test pack)
-  if (probabilities.icon && random < probabilities.icon) return 'ICON';
+  // ICON tier check FIRST - completely separate from other tiers
+  // This ensures ICON never overlaps with LEGENDARY
+  if (probabilities.icon && random < probabilities.icon) {
+    return 'ICON';
+  }
 
+  // For non-ICON tiers, recalculate range without ICON probability
+  // This prevents ICON range from interfering with LEGENDARY/EPIC/RARE/COMMON
   const iconProb = probabilities.icon || 0;
-  if (random < iconProb + probabilities.legendary) return 'LEGENDARY';
-  if (random < iconProb + probabilities.legendary + probabilities.epic) return 'EPIC';
-  if (random < iconProb + probabilities.legendary + probabilities.epic + probabilities.rare) return 'RARE';
+  const adjustedRandom = random - iconProb;
+
+  // Now check other tiers in order (cumulative)
+  let cumulative = 0;
+
+  cumulative += probabilities.legendary || 0;
+  if (adjustedRandom < cumulative) return 'LEGENDARY';
+
+  cumulative += probabilities.epic || 0;
+  if (adjustedRandom < cumulative) return 'EPIC';
+
+  cumulative += probabilities.rare || 0;
+  if (adjustedRandom < cumulative) return 'RARE';
+
   return 'COMMON';
 }
 
@@ -125,15 +141,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       else if (tier === 'LEGENDARY') { minOverall = 101; maxOverall = 999; }
       else if (tier === 'ICON') {
         // ICON tier: special handling - query by season = 'ICON'
+        // ICON cards ALWAYS have tier = 'ICON' regardless of overall stat
         [players] = await connection.query(
-          `SELECT *,
-           CASE
-             WHEN season = 'ICON' THEN 'ICON'
-             WHEN overall <= 80 THEN 'COMMON'
-             WHEN overall <= 90 THEN 'RARE'
-             WHEN overall <= 100 THEN 'EPIC'
-             ELSE 'LEGENDARY'
-           END as tier
+          `SELECT *, 'ICON' as tier
            FROM players WHERE season = 'ICON' ORDER BY RAND() LIMIT 1`
         );
       }

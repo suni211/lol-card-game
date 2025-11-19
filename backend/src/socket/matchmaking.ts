@@ -7,6 +7,7 @@ import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { createRealtimeMatch, setupRealtimeMatch, handlePlayerDisconnect } from './realtimeMatch';
 import { checkDeckSalaryCap } from '../utils/salaryCheck';
+import { calculateTraitBonus } from '../utils/traitBonus';
 
 // 해피아워 체크 (20:00-21:00 KST)
 function isHappyHour(): boolean {
@@ -93,35 +94,6 @@ async function calculateDeckPower(deckId: number): Promise<number> {
       'AZF': 'CJ',
       'MVP': 'GEN',
       'SKT': 'T1',
-    };
-
-    // Calculate trait bonus helper
-    const calculateTraitBonus = (card: any): number => {
-      let bonus = 0;
-
-      // Check trait1
-      if (card.trait1) {
-        switch (card.trait1) {
-          case '중국 최고 정글':
-            // Mlxg: +3 overall for jungle position
-            if (card.position === 'JUNGLE') bonus += 3;
-            break;
-          case '무작위 한타':
-            // Mystic: +10 teamfight stat (equivalent to ~3 overall)
-            bonus += 3;
-            break;
-          case '뚫고 지나가.':
-            // Ambition: +5 macro and decision_making (equivalent to ~3 overall)
-            bonus += 3;
-            break;
-          case '나도 최강이야.':
-            // Crown: +5 overall for mid position
-            if (card.position === 'MID') bonus += 5;
-            break;
-        }
-      }
-
-      return bonus;
     };
 
     cards.forEach((card: any) => {

@@ -9,6 +9,7 @@ import { addExperience, calculateExpReward } from '../utils/levelTracker';
 import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
 import { updateGuildMissionProgress } from '../utils/guildMissionTracker';
 import { checkDeckSalaryCap } from '../utils/salaryCheck';
+import { calculateTraitBonus } from '../utils/traitBonus';
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ async function calculateDeckPower(deckId: number, userId?: number): Promise<numb
     if (cardIds.length === 0) return 0;
 
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.team, p.position
+      SELECT uc.level, p.overall, p.team, p.position, p.trait1
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)
@@ -59,7 +60,7 @@ async function calculateDeckPower(deckId: number, userId?: number): Promise<numb
     } else {
       cards.forEach((card: any) => {
         const enhancementBonus = calculateEnhancementBonus(card.level || 0);
-        let power = card.overall + enhancementBonus;
+        let power = card.overall + enhancementBonus + calculateTraitBonus(card);
         totalPower += power;
       });
     }

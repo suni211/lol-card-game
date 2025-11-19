@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { checkDeckSalaryCap } from '../utils/salaryCheck';
+import { calculateTraitBonus } from '../utils/traitBonus';
 
 const router = express.Router();
 
@@ -135,7 +136,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
 
     // Calculate deck power
     const [cards]: any = await connection.query(`
-      SELECT p.overall, uc.level
+      SELECT p.overall, p.position, p.trait1, uc.level
       FROM decks d
       JOIN user_cards uc ON (
         uc.id = d.top_card_id OR
@@ -150,7 +151,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
 
     let playerPower = 0;
     cards.forEach((card: any) => {
-      playerPower += card.overall + (card.level || 0);
+      playerPower += card.overall + (card.level || 0) + calculateTraitBonus(card);
     });
 
     // Battle simulation - 3 rounds system (best of 3)

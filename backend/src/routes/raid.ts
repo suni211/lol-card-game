@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, adminMiddleware, AuthRequest } from '../middleware/auth';
+import { calculateTraitBonus } from '../utils/traitBonus';
 
 const router = express.Router();
 
@@ -37,7 +38,9 @@ async function calculateDeckPower(userId: number, connection: any): Promise<numb
   const [cards]: any = await connection.query(`
     SELECT
       uc.level,
-      p.overall
+      p.overall,
+      p.position,
+      p.trait1
     FROM user_cards uc
     JOIN players p ON uc.player_id = p.id
     WHERE uc.id IN (?)
@@ -48,7 +51,7 @@ async function calculateDeckPower(userId: number, connection: any): Promise<numb
   cards.forEach((card: any) => {
     const basePower = card.overall;
     const enhancementBonus = card.level * 2; // Each level adds 2 power
-    totalPower += basePower + enhancementBonus;
+    totalPower += basePower + enhancementBonus + calculateTraitBonus(card);
   });
 
   return totalPower;

@@ -4,6 +4,7 @@ import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { emitPointUpdate } from '../server';
 import { checkDeckSalaryCap } from '../utils/salaryCheck';
+import { calculateTraitBonus } from '../utils/traitBonus';
 
 const router = express.Router();
 
@@ -525,7 +526,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
     ].filter(Boolean);
 
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.team
+      SELECT uc.level, p.overall, p.team, p.position, p.trait1
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)
@@ -544,7 +545,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
 
     cards.forEach((card: any) => {
       const enhancementBonus = calculateEnhancementBonus(card.level || 0);
-      playerPower += card.overall + enhancementBonus;
+      playerPower += card.overall + enhancementBonus + calculateTraitBonus(card);
       teams[card.team] = (teams[card.team] || 0) + 1;
     });
 

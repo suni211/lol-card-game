@@ -620,6 +620,38 @@ export default function Enhancement() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Enhancement Button */}
+      {selectedCard && selectedMaterials.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-bounce-once">
+          <button
+            onClick={handleEnhance}
+            disabled={enhancing}
+            className={`
+              flex items-center gap-3 px-8 py-4 rounded-full
+              shadow-2xl backdrop-blur-sm
+              transition-all duration-300 transform hover:scale-105
+              ${enhancing
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-600 hover:via-orange-600 hover:to-red-600'
+              }
+              text-white font-bold text-lg
+            `}
+          >
+            {enhancing ? (
+              <>
+                <Sparkles className="w-6 h-6 animate-spin" />
+                <span>강화 중...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-6 h-6" />
+                <span>강화하기 ({selectedMaterials.length}/3)</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

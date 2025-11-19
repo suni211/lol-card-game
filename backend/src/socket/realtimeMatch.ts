@@ -5,6 +5,7 @@ import { updateEventProgress } from '../utils/eventTracker';
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
 import { checkAndAwardMatchBonuses, applyHappyHourMultiplier } from '../utils/matchBonuses';
 import { awardReferralMatchBonus } from '../utils/referralBonuses';
+import { calculateTraitBonus } from '../utils/traitBonus';
 
 // 전략 타입 정의
 type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
@@ -159,7 +160,7 @@ function calculateDeckObjectPower(
     const avgStat = totalWeight > 0 ? weightedStatSum / totalWeight : 50;
 
     // Overall 50%, weighted stat 40%
-    const cardPower = (card.overall + levelBonus) * 0.5 + avgStat * 0.4;
+    const cardPower = (card.overall + levelBonus + calculateTraitBonus(card)) * 0.5 + avgStat * 0.4;
     totalPower += cardPower;
 
     // Track teams for synergy
@@ -207,6 +208,7 @@ async function calculateDeckStatPower(
         p.overall,
         p.team,
         p.position,
+        p.trait1,
         p.cs_ability,
         p.lane_pressure,
         p.damage_dealing,
@@ -260,7 +262,7 @@ async function calculateDeckStatPower(
 
       // Overall 50% (기본 오버롤 + 강화 보너스), weighted stat 40%
       const statContribution = avgStat * 0.4;
-      const overallContribution = (card.overall + levelBonus) * 0.5;
+      const overallContribution = (card.overall + levelBonus + calculateTraitBonus(card)) * 0.5;
       totalPower += statContribution + overallContribution;
 
       // 팀 시너지 카운팅

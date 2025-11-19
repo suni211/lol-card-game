@@ -88,6 +88,24 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
 
     const stage = stages[0];
 
+    // Check if previous stage is completed (for stage_number > 1 in same region)
+    if (stage.stage_number > 1) {
+      const [prevProgress]: any = await connection.query(`
+        SELECT ucp.stars
+        FROM campaign_stages cs
+        LEFT JOIN user_campaign_progress ucp ON cs.id = ucp.stage_id AND ucp.user_id = ?
+        WHERE cs.region = ? AND cs.stage_number = ?
+      `, [userId, stage.region, stage.stage_number - 1]);
+
+      if (prevProgress.length === 0 || !prevProgress[0].stars) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          error: '이전 스테이지를 먼저 클리어해야 합니다.',
+        });
+      }
+    }
+
     // Get user's active deck
     const [decks]: any = await connection.query(
       'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',
@@ -128,6 +146,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     let playerRoundsWon = 0;
     let totalPlayerPower = 0;
     let totalStagePower = 0;
+    const roundResults = [];
 
     for (let round = 0; round < 3; round++) {
       const playerRandomFactor = 0.85 + Math.random() * 0.3;
@@ -139,9 +158,17 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       totalPlayerPower += playerRoundPower;
       totalStagePower += stageRoundPower;
 
-      if (playerRoundPower > stageRoundPower) {
+      const playerWon = playerRoundPower > stageRoundPower;
+      if (playerWon) {
         playerRoundsWon++;
       }
+
+      roundResults.push({
+        round: round + 1,
+        playerPower: Math.floor(playerRoundPower),
+        enemyPower: Math.floor(stageRoundPower),
+        playerWon,
+      });
     }
 
     const avgPlayerPower = totalPlayerPower / 3;
@@ -156,10 +183,11 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
         success: true,
         data: {
           won: false,
-          playerPower: Math.floor(avgPlayerPower),
-          stagePower: Math.floor(avgStagePower),
+          playerPower: Math.floor(playerPower), // Actual deck power without random factor
+          stagePower: Math.floor(stage.required_power), // Required power without random factor
           pointsEarned: 0,
           roundsWon: playerRoundsWon,
+          roundResults, // Round-by-round results for animation
         },
       });
     }
@@ -218,11 +246,13 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       data: {
         won: true,
         stars,
-        playerPower: Math.floor(avgPlayerPower),
-        stagePower: Math.floor(avgStagePower),
+        playerPower: Math.floor(playerPower), // Actual deck power without random factor
+        stagePower: Math.floor(stage.required_power), // Required power without random factor
         pointsEarned,
         isFirstClear,
         isFirst3Stars,
+        roundsWon: playerRoundsWon,
+        roundResults, // Round-by-round results for animation
       },
     });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Star, Sword } from 'lucide-react';
+import { Star, Sword, Lock } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -133,9 +133,13 @@ export default function Campaign() {
 
       {/* Stages Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {(stages[selectedRegion] || []).map((stage) => {
+        {(stages[selectedRegion] || []).map((stage, index) => {
           const isCleared = stage.completedAt !== null;
           const regionColor = REGION_INFO[selectedRegion].color;
+
+          // Check if stage is locked (previous stage must be cleared)
+          const isLocked = stage.stageNumber > 1 &&
+            (stages[selectedRegion][index - 1]?.completedAt === null);
 
           return (
             <motion.div
@@ -143,7 +147,9 @@ export default function Campaign() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={`relative p-4 rounded-xl border-2 ${
-                isCleared
+                isLocked
+                  ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700/50 opacity-60'
+                  : isCleared
                   ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                   : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
               }`}
@@ -191,11 +197,25 @@ export default function Campaign() {
 
               {/* Battle Button */}
               <button
-                onClick={() => handleBattle(stage.id)}
-                className="w-full py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white"
+                onClick={() => !isLocked && handleBattle(stage.id)}
+                disabled={isLocked}
+                className={`w-full py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                  isLocked
+                    ? 'bg-gray-400 dark:bg-gray-600 text-gray-200 dark:text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white'
+                }`}
               >
-                <Sword className="w-4 h-4" />
-                {isCleared ? '재도전' : '전투'}
+                {isLocked ? (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    잠김
+                  </>
+                ) : (
+                  <>
+                    <Sword className="w-4 h-4" />
+                    {isCleared ? '재도전' : '전투'}
+                  </>
+                )}
               </button>
             </motion.div>
           );

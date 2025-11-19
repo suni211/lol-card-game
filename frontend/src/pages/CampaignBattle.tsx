@@ -63,59 +63,46 @@ export default function CampaignBattle() {
     if (!stage || battling) return;
 
     setBattling(true);
-    setCurrentRound(1);
 
-    // Simulate 3 rounds
-    for (let round = 1; round <= 3; round++) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCurrentRound(round);
-
-      // Use estimated player power vs stage power
-      const playerPower = stage.requiredPower * 1.1; // Assume player is slightly stronger
-      const enemyPower = stage.requiredPower;
-
-      // Add random factor
-      const playerFinalPower = playerPower * (0.85 + Math.random() * 0.3);
-      const enemyFinalPower = enemyPower * (0.85 + Math.random() * 0.3);
-
-      const playerWon = playerFinalPower > enemyFinalPower;
-
-      // Update HP
-      const damage = 34; // ~33% per round
-      if (playerWon) {
-        setEnemyHP(prev => Math.max(0, prev - damage));
-      } else {
-        setPlayerHP(prev => Math.max(0, prev - damage));
-      }
-
-      setRoundResults(prev => [...prev, {
-        round,
-        playerPower: Math.floor(playerFinalPower),
-        enemyPower: Math.floor(enemyFinalPower),
-        playerWon
-      }]);
-
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-
-    // Final battle result
-    await executeFinalBattle();
-  };
-
-  const executeFinalBattle = async () => {
     try {
-      const response = await axios.post(`${API_URL}/campaign/battle`, { stageId: parseInt(stageId || '0') });
+      // First, get actual battle results from backend
+      const response = await axios.post(`${API_URL}/campaign/battle`, {
+        stageId: parseInt(stageId || '0')
+      });
 
       if (response.data.success) {
-        setFinalResult(response.data.data);
+        const battleData = response.data.data;
+
+        // Animate the rounds using actual backend results
+        for (let i = 0; i < battleData.roundResults.length; i++) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          setCurrentRound(i + 1);
+
+          const roundResult = battleData.roundResults[i];
+
+          // Update HP
+          const damage = 34; // ~33% per round
+          if (roundResult.playerWon) {
+            setEnemyHP(prev => Math.max(0, prev - damage));
+          } else {
+            setPlayerHP(prev => Math.max(0, prev - damage));
+          }
+
+          setRoundResults(prev => [...prev, roundResult]);
+
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        // Show final result
+        setFinalResult(battleData);
         setBattleComplete(true);
 
-        if (response.data.data.won) {
-          toast.success(`승리! ${response.data.data.pointsEarned.toLocaleString()}P 획득`);
+        if (battleData.won) {
+          toast.success(`승리! ${battleData.pointsEarned.toLocaleString()}P 획득`);
         }
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || '전투 결과 처리 실패');
+      toast.error(error.response?.data?.error || '전투 실패');
     } finally {
       setBattling(false);
     }

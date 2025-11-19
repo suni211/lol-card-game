@@ -192,6 +192,21 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
     }
 
     const currentStage = progress[0].current_stage;
+
+    // Check for duplicate completion (중복 완료 방지)
+    const [recentCompletion]: any = await connection.query(
+      'SELECT * FROM infinite_challenge_matches WHERE user_id = ? AND stage = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 SECOND)',
+      [userId, currentStage]
+    );
+
+    if (recentCompletion.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '이미 완료된 스테이지입니다. 잠시 후 다시 시도하세요.',
+      });
+    }
+
     const reward = calculateStageReward(currentStage);
 
     // Delete battle state (battle completed)
@@ -451,6 +466,20 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({
         success: false,
         error: '진행중인 도전이 없습니다.',
+      });
+    }
+
+    // Check for duplicate battle (중복 배틀 방지)
+    const [existingBattle]: any = await connection.query(
+      'SELECT * FROM infinite_challenge_battle_state WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 10 SECOND)',
+      [userId]
+    );
+
+    if (existingBattle.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '이미 진행 중인 배틀이 있습니다. 잠시 후 다시 시도하세요.',
       });
     }
 

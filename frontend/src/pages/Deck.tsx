@@ -156,6 +156,13 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
   return { totalPower, synergyBonus, synergyDetails };
 };
 
+interface EnhancementSynergy {
+  bonus: number;
+  tier: '1-4' | '5-7' | '8-10' | 'none';
+  minLevel: number;
+  description: string;
+}
+
 export default function Deck() {
   const { token } = useAuthStore();
   const [currentDeckSlot, setCurrentDeckSlot] = useState(1); // 현재 활성 덱 슬롯 (1-5)
@@ -175,6 +182,12 @@ export default function Deck() {
   const [saving, setSaving] = useState(false);
   const [seasonFilter, setSeasonFilter] = useState<string>('ALL');
   const [detailCard, setDetailCard] = useState<UserCard | null>(null);
+  const [enhancementSynergy, setEnhancementSynergy] = useState<EnhancementSynergy>({
+    bonus: 0,
+    tier: 'none',
+    minLevel: 0,
+    description: '강화 시너지 없음',
+  });
 
   const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
 
@@ -244,6 +257,11 @@ export default function Deck() {
         setLaningStrategy(deck.laningStrategy || 'SAFE');
         setTeamfightStrategy(deck.teamfightStrategy || 'ENGAGE');
         setMacroStrategy(deck.macroStrategy || 'OBJECTIVE');
+
+        // 강화 시너지 설정
+        if (deck.enhancementSynergy) {
+          setEnhancementSynergy(deck.enhancementSynergy);
+        }
       }
     } catch (error: any) {
       console.error('Fetch deck error:', error);
@@ -385,7 +403,7 @@ export default function Deck() {
           </div>
 
           {/* Deck Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 파워</p>
@@ -410,12 +428,23 @@ export default function Deck() {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">강화 시너지</p>
+                <p
+                  key={enhancementSynergy.bonus}
+                  className="text-3xl font-black bg-gradient-to-r from-orange-600 to-red-600 dark:from-orange-400 dark:to-red-400 bg-clip-text text-transparent"
+                >
+                  +{enhancementSynergy.bonus}
+                </p>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">최종 파워</p>
                 <p
-                  key={totalPower + synergyBonus}
+                  key={totalPower + synergyBonus + enhancementSynergy.bonus}
                   className="text-3xl font-black bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent"
                 >
-                  {totalPower + synergyBonus}
+                  {totalPower + synergyBonus + enhancementSynergy.bonus}
                 </p>
               </div>
             </div>
@@ -468,6 +497,41 @@ export default function Deck() {
                 </div>
                 <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2 font-medium">
                   💡 같은 팀 3명 = +1, 4명 = +3, 5명 = +5 파워 보너스
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Enhancement Synergy Details */}
+          {enhancementSynergy.tier !== 'none' && (
+            <div
+              className="mt-4 relative overflow-hidden rounded-xl p-4 shadow-lg"
+            >
+              {/* Animated gradient background */}
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-orange-100 via-red-100 to-orange-100 dark:from-orange-900/30 dark:via-red-900/30 dark:to-orange-900/30 bg-[length:200%_100%]"
+              />
+              {/* Shimmer effect */}
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+              />
+              <div className="relative z-10">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div>
+                    <Sparkles className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span className="font-bold text-orange-800 dark:text-orange-200">강화 시너지 활성</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border-2 border-orange-400 dark:border-orange-600 shadow-md">
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">{enhancementSynergy.tier}강</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
+                      (최소 +{enhancementSynergy.minLevel} = +{enhancementSynergy.bonus})
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-orange-700 dark:text-orange-300 mt-2 font-medium">
+                  🔥 {enhancementSynergy.description}
                 </p>
               </div>
             </div>

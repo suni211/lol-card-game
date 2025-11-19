@@ -40,18 +40,12 @@ CREATE TABLE IF NOT EXISTS item_usage_log (
   INDEX idx_user_expiry (user_id, effect_expires_at)
 );
 
--- 기본 상점 아이템 추가
+-- 기본 상점 아이템 추가 (4개만)
 INSERT INTO shop_items (name, description, price, item_type, effect_type, effect_value, duration_minutes) VALUES
 ('강화 하락 방지권', '강화 실패 시 레벨이 하락하지 않습니다 (1회용)', 100000, 'consumable', 'protection', 'no_downgrade', 0),
-('강화 성공률 +10%', '강화 성공률이 10% 증가합니다 (1회용)', 50000, 'consumable', 'enhancement_boost', '10', 0),
-('프리미엄 랜덤 박스', '랜덤 보상을 획득합니다 (포인트, 팩, 아이템 중 하나)', 30000, 'consumable', 'random_reward', 'premium', 0),
 ('경험치 2배 부스터', '1시간 동안 경험치 획득량이 2배가 됩니다', 20000, 'consumable', 'exp_boost', '2', 60),
 ('포인트 2배 부스터', '1시간 동안 포인트 획득량이 2배가 됩니다', 25000, 'consumable', 'points_boost', '2', 60),
-('이름 변경권', '사용자 이름을 변경할 수 있습니다', 15000, 'consumable', 'name_change', '1', 0),
-('덱 슬롯 확장권', '덱 프리셋 슬롯을 1개 추가합니다 (최대 10개)', 50000, 'permanent', 'deck_slot', '1', 0),
-('특별 칭호 팩', '랜덤 희귀 칭호 1개를 획득합니다', 40000, 'pack', 'random_title', 'rare', 0),
-('레전더리 확정 팩', 'LEGENDARY 등급 카드 1장 확정', 80000, 'pack', 'guaranteed_card', 'LEGENDARY', 0),
-('에픽 확정 팩', 'EPIC 등급 카드 1장 확정', 40000, 'pack', 'guaranteed_card', 'EPIC', 0);
+('이름 변경권', '사용자 이름을 변경할 수 있습니다', 15000, 'consumable', 'name_change', '1', 0);
 
 -- 확인
 SELECT 'Shop system tables created successfully' as status;

@@ -232,8 +232,8 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
       });
     }
 
-    // 강화 레벨 및 버프 값 증가 계산
-    const buffIncrease = materialCoaches.reduce((sum: number, c: any) => sum + c.star_rating, 0);
+    // 강화 레벨 및 버프 값 증가 계산 (star_rating / 5로 줄임)
+    const buffIncrease = materialCoaches.reduce((sum: number, c: any) => sum + Math.floor(c.star_rating / 5), 0);
     const newEnhancementLevel = Math.min(targetCoach.enhancement_level + materialCoaches.length, MAX_ENHANCEMENT_LEVEL);
     const newBuffValue = targetCoach.current_buff + buffIncrease;
 

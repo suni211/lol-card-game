@@ -11,15 +11,23 @@ async function reduceCoachBuffs() {
   try {
     console.log('Reducing coach buff values to maintain game balance...');
 
-    // Reduce all buff_value by dividing by 2 (or adjust as needed)
+    // Reduce all buff_value by dividing by 5
     // This compensates for showing buffs in overall display everywhere
     const [result] = await connection.query(`
       UPDATE coaches
-      SET buff_value = FLOOR(buff_value / 2.5)
+      SET buff_value = FLOOR(buff_value / 5)
       WHERE buff_type IN ('OVERALL', 'POSITION', 'TEAM')
     `);
 
+    // Also reduce existing enhanced coach buff values
+    const [enhancedResult] = await connection.query(`
+      UPDATE user_coaches
+      SET current_buff_value = FLOOR(current_buff_value / 5)
+      WHERE current_buff_value IS NOT NULL
+    `);
+
     console.log(`Updated ${result.affectedRows} coaches`);
+    console.log(`Updated ${enhancedResult.affectedRows} enhanced coaches`);
 
     // Show current coach values
     const [coaches] = await connection.query(`

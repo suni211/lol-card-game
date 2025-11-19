@@ -607,8 +607,16 @@ async function processRound(matchId: string, io: Server) {
 
   // 30초 후 다음 라운드 또는 매치 종료
   setTimeout(async () => {
-    // 매치 종료 확인 (3승)
-    if (match.player1.score >= 3 || match.player2.score >= 3) {
+    // 매치 종료 확인 (2승 - Best of 3)
+    if (match.player1.score >= 2 || match.player2.score >= 2) {
+      await endMatch(matchId, io);
+    } else if (match.currentRound >= 3) {
+      // 3라운드 완료 후에도 2승을 못했으면 점수 더 높은 쪽 승리
+      if (match.player1.score > match.player2.score) {
+        match.player1.score = 2;
+      } else {
+        match.player2.score = 2;
+      }
       await endMatch(matchId, io);
     } else {
       // 다음 라운드 시작

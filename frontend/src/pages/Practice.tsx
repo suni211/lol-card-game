@@ -18,6 +18,16 @@ function calculateEnhancementBonus(level: number): number {
   return 4 + 6 + (level - 7) * 4; // 8-10: +4 each (4 from 1-4, 6 from 5-7, then +4 each)
 }
 
+// Get phase name from round number
+function getPhaseName(round: number): string {
+  const phases: { [key: number]: string } = {
+    1: '라이닝 페이즈',
+    2: '팀파이트 페이즈',
+    3: '매크로 페이즈',
+  };
+  return phases[round] || `페이즈 ${round}`;
+}
+
 interface Player {
   id: number;
   name: string;
@@ -278,9 +288,9 @@ export default function Practice() {
 
       // Show round result toast
       if (data.winner === 1) {
-        toast.success(`라운드 ${data.round} 승리!`);
+        toast.success(`${getPhaseName(data.round)} 승리!`);
       } else {
-        toast.error(`라운드 ${data.round} 패배`);
+        toast.error(`${getPhaseName(data.round)} 패배`);
       }
     });
 
@@ -608,7 +618,7 @@ export default function Practice() {
                 </div>
                 <div className="text-center px-6">
                   <div className="text-xl font-bold text-gray-600 dark:text-gray-400">VS</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-500 mt-1">라운드 {currentRound}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-500 mt-1">{getPhaseName(currentRound)}</div>
                 </div>
                 <div className="text-center flex-1">
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">{opponent?.username}</div>

@@ -526,7 +526,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
     ].filter(Boolean);
 
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.team, p.position, p.trait1
+      SELECT uc.level, p.overall, p.team, p.other_teams, p.position, p.trait1
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)
@@ -546,7 +546,20 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
     cards.forEach((card: any) => {
       const enhancementBonus = calculateEnhancementBonus(card.level || 0);
       playerPower += card.overall + enhancementBonus + calculateTraitBonus(card);
-      teams[card.team] = (teams[card.team] || 0) + 1;
+
+      // 팀 시너지 계산: team과 other_teams 모두 고려
+      const synergyTeam = card.team;
+      teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+
+      // other_teams도 시너지에 포함
+      if (card.other_teams) {
+        const otherTeamsArray = card.other_teams.split(',').map((t: string) => t.trim());
+        otherTeamsArray.forEach((team: string) => {
+          if (team) {
+            teams[team] = (teams[team] || 0) + 1;
+          }
+        });
+      }
     });
 
     // Team synergy bonus

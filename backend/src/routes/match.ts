@@ -79,7 +79,7 @@ async function calculateDeckPower(connection: any, deckId: number, userId?: numb
   if (cardIds.length === 0) return 0;
 
   const [cards]: any = await connection.query(`
-    SELECT uc.id as card_id, uc.level, p.overall, p.team, p.position, p.laning, p.teamfight, p.macro, p.mental
+    SELECT uc.id as card_id, uc.level, p.overall, p.team, p.other_teams, p.position, p.laning, p.teamfight, p.macro, p.mental
     FROM user_cards uc
     JOIN players p ON uc.player_id = p.id
     WHERE uc.id IN (?)
@@ -129,9 +129,19 @@ async function calculateDeckPower(connection: any, deckId: number, userId?: numb
 
     totalPower += power;
 
-    // Normalize team names for synergy calculation (SKT and T1 are same team)
+    // 팀 시너지 계산: team과 other_teams 모두 고려 (SKT and T1 are same team)
     const synergyTeam = normalizeTeamName(card.team);
     teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+
+    // other_teams도 시너지에 포함
+    if (card.other_teams) {
+      const otherTeamsArray = card.other_teams.split(',').map((t: string) => normalizeTeamName(t.trim()));
+      otherTeamsArray.forEach((team: string) => {
+        if (team) {
+          teams[team] = (teams[team] || 0) + 1;
+        }
+      });
+    }
   });
 
   totalPower += coachBonus;

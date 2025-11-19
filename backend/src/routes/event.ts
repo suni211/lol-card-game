@@ -290,6 +290,7 @@ router.get('/rewards/cards', authMiddleware, async (req: AuthRequest, res) => {
         p.id as player_id,
         p.name,
         p.team,
+        p.other_teams,
         p.position,
         p.overall,
         CASE

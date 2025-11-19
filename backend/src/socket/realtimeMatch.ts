@@ -163,9 +163,19 @@ function calculateDeckObjectPower(
     const cardPower = (card.overall + levelBonus + calculateTraitBonus(card)) * 0.5 + avgStat * 0.4;
     totalPower += cardPower;
 
-    // Track teams for synergy
+    // 팀 시너지 계산: team과 other_teams 모두 고려
     const normalizedTeam = normalizeTeamName(card.team);
     teams[normalizedTeam] = (teams[normalizedTeam] || 0) + 1;
+
+    // other_teams도 시너지에 포함
+    if (card.other_teams) {
+      const otherTeamsArray = card.other_teams.split(',').map((t: string) => normalizeTeamName(t.trim()));
+      otherTeamsArray.forEach((team: string) => {
+        if (team) {
+          teams[team] = (teams[team] || 0) + 1;
+        }
+      });
+    }
   });
 
   // Team synergy bonus
@@ -207,6 +217,7 @@ async function calculateDeckStatPower(
         uc.level,
         p.overall,
         p.team,
+        p.other_teams,
         p.position,
         p.trait1,
         p.cs_ability,
@@ -265,9 +276,19 @@ async function calculateDeckStatPower(
       const overallContribution = (card.overall + levelBonus + calculateTraitBonus(card)) * 0.5;
       totalPower += statContribution + overallContribution;
 
-      // 팀 시너지 카운팅
+      // 팀 시너지 카운팅: team과 other_teams 모두 고려
       const synergyTeam = normalizeTeamName(card.team);
       teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+
+      // other_teams도 시너지에 포함
+      if (card.other_teams) {
+        const otherTeamsArray = card.other_teams.split(',').map((t: string) => normalizeTeamName(t.trim()));
+        otherTeamsArray.forEach((team: string) => {
+          if (team) {
+            teams[team] = (teams[team] || 0) + 1;
+          }
+        });
+      }
     });
 
     // 팀 시너지 보너스: 3명 = +30, 4명 = +80, 5명 = +150

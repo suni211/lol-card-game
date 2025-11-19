@@ -71,7 +71,7 @@ async function calculateDeckPower(deckId: number): Promise<number> {
     if (cardIds.length === 0) return 0;
 
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.team, p.position, p.name, p.trait1
+      SELECT uc.level, p.overall, p.team, p.other_teams, p.position, p.name, p.trait1
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)
@@ -102,18 +102,18 @@ async function calculateDeckPower(deckId: number): Promise<number> {
       let power = card.overall + enhancementBonus + traitBonus;
       totalPower += power;
 
-      // Check if team field contains multiple teams (comma-separated)
-      if (card.team && card.team.includes(',')) {
-        // Multiple teams (e.g., ICON Peanut with "T1,HLE,NS,GEN,LGD")
-        const multipleTeams = card.team.split(',').map((t: string) => t.trim());
-        multipleTeams.forEach((team: string) => {
-          const synergyTeam = normalizeTeamName(team);
-          teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+      // 팀 시너지 계산: team과 other_teams 모두 고려
+      const synergyTeam = normalizeTeamName(card.team);
+      teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
+
+      // other_teams도 시너지에 포함
+      if (card.other_teams) {
+        const otherTeamsArray = card.other_teams.split(',').map((t: string) => normalizeTeamName(t.trim()));
+        otherTeamsArray.forEach((team: string) => {
+          if (team) {
+            teams[team] = (teams[team] || 0) + 1;
+          }
         });
-      } else {
-        // Single team
-        const synergyTeam = normalizeTeamName(card.team);
-        teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
       }
     });
 

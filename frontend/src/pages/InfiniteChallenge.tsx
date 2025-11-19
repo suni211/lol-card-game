@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import type { InfiniteChallengeProgress, InfiniteChallengeLeaderboard } from '../types';
-import { Zap, Play, RotateCcw, Crown } from 'lucide-react';
+import { Zap, Play, RotateCcw, Crown, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const TAB_LOCK_KEY = 'infinite_challenge_tab_lock';
+const TAB_LOCK_TIMEOUT = 3000; // 3 seconds
 
 const InfiniteChallenge: React.FC = () => {
   const { user, token } = useAuthStore();
@@ -15,10 +17,77 @@ const InfiniteChallenge: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<InfiniteChallengeProgress | null>(null);
   const [leaderboard, setLeaderboard] = useState<InfiniteChallengeLeaderboard[]>([]);
+  const [isDuplicateTab, setIsDuplicateTab] = useState(false);
+  const tabIdRef = useRef<string>(Math.random().toString(36).substring(7));
+  const heartbeatIntervalRef = useRef<number | null>(null);
+
+  // Tab lock system to prevent duplicate tabs
+  useEffect(() => {
+    const tabId = tabIdRef.current;
+
+    // Check if another tab is already open
+    const checkTabLock = () => {
+      const lockData = localStorage.getItem(TAB_LOCK_KEY);
+      if (lockData) {
+        try {
+          const { tabId: existingTabId, timestamp } = JSON.parse(lockData);
+          const now = Date.now();
+
+          // If lock exists and is fresh (within timeout), and it's not this tab
+          if (now - timestamp < TAB_LOCK_TIMEOUT && existingTabId !== tabId) {
+            setIsDuplicateTab(true);
+            toast.error('무한 도전은 한 번에 하나의 탭에서만 실행할 수 있습니다!');
+            return true;
+          }
+        } catch (e) {
+          console.error('Failed to parse tab lock:', e);
+        }
+      }
+      return false;
+    };
+
+    // Set initial lock
+    if (!checkTabLock()) {
+      localStorage.setItem(TAB_LOCK_KEY, JSON.stringify({
+        tabId,
+        timestamp: Date.now(),
+      }));
+
+      // Heartbeat to keep lock alive
+      heartbeatIntervalRef.current = window.setInterval(() => {
+        localStorage.setItem(TAB_LOCK_KEY, JSON.stringify({
+          tabId,
+          timestamp: Date.now(),
+        }));
+      }, 1000);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+
+      // Only remove lock if it's this tab's lock
+      const lockData = localStorage.getItem(TAB_LOCK_KEY);
+      if (lockData) {
+        try {
+          const { tabId: existingTabId } = JSON.parse(lockData);
+          if (existingTabId === tabId) {
+            localStorage.removeItem(TAB_LOCK_KEY);
+          }
+        } catch (e) {
+          console.error('Failed to parse tab lock on cleanup:', e);
+        }
+      }
+    };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!isDuplicateTab) {
+      fetchData();
+    }
+  }, [isDuplicateTab]);
 
   const fetchData = async () => {
     if (!token) return;
@@ -78,6 +147,36 @@ const InfiniteChallenge: React.FC = () => {
   const calculateReward = (stage: number): number => {
     return Math.floor(stage * 10.5 + stage * 2.1);
   };
+
+  // Duplicate tab warning
+  if (isDuplicateTab) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-8 text-center"
+        >
+          <AlertTriangle className="w-24 h-24 text-red-500 mx-auto mb-4" />
+          <h2 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">
+            중복 탭 감지
+          </h2>
+          <p className="text-gray-700 dark:text-gray-300 mb-6">
+            무한 도전은 한 번에 하나의 탭에서만 실행할 수 있습니다.
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            다른 탭을 닫고 이 페이지를 새로고침하거나, 다른 탭에서 계속 진행하세요.
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          >
+            홈으로 돌아가기
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

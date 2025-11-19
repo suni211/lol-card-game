@@ -40,6 +40,7 @@ import coachRoutes from './routes/coach';
 import friendlyRoutes from './routes/friendly';
 import titlesRoutes from './routes/titles';
 import raidRoutes from './routes/raid';
+import match3phaseRoutes, { setSocketIOForMatch3Phase } from './routes/match3phase';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -125,6 +126,7 @@ app.use('/api/coach', coachRoutes);
 app.use('/api/friendly', friendlyRoutes);
 app.use('/api/titles', titlesRoutes);
 app.use('/api/raid', raidRoutes);
+app.use('/api/match3phase', match3phaseRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check
@@ -154,6 +156,9 @@ setSocketIOForShop(io);
 
 // Setup socket.io for coupon
 setSocketIOForCoupon(io);
+
+// Setup socket.io for match3phase
+setSocketIOForMatch3Phase(io);
 
 // NEW ONLINE USERS SYSTEM - Disconnect based only (no cleanup)
 interface OnlineUser {

@@ -809,10 +809,10 @@ router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
         query += ' ORDER BY p.overall ASC';
         break;
       case 'price_desc':
-        query += ' ORDER BY pmp.current_price DESC NULLS LAST';
+        query += ' ORDER BY pmp.current_price IS NULL, pmp.current_price DESC';
         break;
       case 'price_asc':
-        query += ' ORDER BY pmp.current_price ASC NULLS LAST';
+        query += ' ORDER BY pmp.current_price IS NULL, pmp.current_price ASC';
         break;
       case 'listing_count':
         query += ' ORDER BY listing_count DESC';

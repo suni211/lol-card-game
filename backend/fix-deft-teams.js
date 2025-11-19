@@ -6,12 +6,14 @@
  */
 
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: 'ss092888',
-  database: 'lol_card_game'
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '3306'),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'lol_card_game'
 };
 
 async function fixDeftTeams() {

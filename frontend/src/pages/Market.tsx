@@ -71,6 +71,7 @@ interface SearchPlayer {
   tier: string;
   region: string;
   season: string;
+  salary?: number;
   current_price: number;
   price_floor: number;
   price_ceiling: number;

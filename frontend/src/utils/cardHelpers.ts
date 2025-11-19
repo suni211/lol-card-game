@@ -59,6 +59,9 @@ export function getTeamColor(team: string): string {
     'TSM': 'bg-gray-800',
     '100T': 'bg-red-600',
     'FLY': 'bg-green-600',
+
+    // Special Teams
+    'ICON': 'bg-red-600', // T1 색상
   };
 
   return teamColors[team] || 'bg-gray-600';

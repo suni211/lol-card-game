@@ -184,6 +184,12 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
       });
     }
 
+    // Delete submitted cards (sacrifice them for the mission)
+    await connection.query(
+      'DELETE FROM user_cards WHERE id IN (?)',
+      [cardIds]
+    );
+
     // Roll for reward
     const roll = Math.random() * 100;
     let cumulativeChance = 0;

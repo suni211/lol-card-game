@@ -120,6 +120,7 @@ export default function Agent() {
   const [loading, setLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [userCards, setUserCards] = useState<UserCard[]>([]);
+  const [deckCardIds, setDeckCardIds] = useState<number[]>([]);
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showReward, setShowReward] = useState(false);
@@ -128,6 +129,7 @@ export default function Agent() {
   useEffect(() => {
     fetchStatus();
     fetchUserCards();
+    fetchDeckCards();
   }, []);
 
   const fetchStatus = async () => {
@@ -162,6 +164,37 @@ export default function Agent() {
       }
     } catch (error) {
       console.error('Failed to fetch cards:', error);
+    }
+  };
+
+  const fetchDeckCards = async () => {
+    if (!token) return;
+
+    try {
+      // Fetch all 5 decks and collect card IDs
+      const deckPromises = [1, 2, 3, 4, 5].map(slot =>
+        axios.get(`${API_URL}/deck/${slot}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      );
+
+      const responses = await Promise.all(deckPromises);
+      const allDeckCardIds: number[] = [];
+
+      responses.forEach(response => {
+        if (response.data.success && response.data.data) {
+          const deck = response.data.data;
+          if (deck.top_card_id) allDeckCardIds.push(deck.top_card_id);
+          if (deck.jungle_card_id) allDeckCardIds.push(deck.jungle_card_id);
+          if (deck.mid_card_id) allDeckCardIds.push(deck.mid_card_id);
+          if (deck.adc_card_id) allDeckCardIds.push(deck.adc_card_id);
+          if (deck.support_card_id) allDeckCardIds.push(deck.support_card_id);
+        }
+      });
+
+      setDeckCardIds(allDeckCardIds);
+    } catch (error) {
+      console.error('Failed to fetch deck cards:', error);
     }
   };
 
@@ -422,16 +455,21 @@ export default function Agent() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {userCards.map((card) => {
                     const isSelected = selectedCards.includes(card.id);
+                    const isInDeck = deckCardIds.includes(card.id);
                     const enhancementBonus = calculateEnhancementBonus(card.level);
                     const finalOverall = card.player.overall + enhancementBonus;
 
                     return (
                       <motion.div
                         key={card.id}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleCardToggle(card.id)}
-                        className={`relative cursor-pointer rounded-lg overflow-hidden ${
+                        whileHover={{ scale: isInDeck ? 1 : 1.05 }}
+                        whileTap={{ scale: isInDeck ? 1 : 0.95 }}
+                        onClick={() => !isInDeck && handleCardToggle(card.id)}
+                        className={`relative rounded-lg overflow-hidden ${
+                          isInDeck
+                            ? 'opacity-40 cursor-not-allowed'
+                            : 'cursor-pointer'
+                        } ${
                           isSelected ? 'ring-4 ring-yellow-400' : ''
                         }`}
                       >
@@ -457,8 +495,17 @@ export default function Agent() {
                             </div>
                           )}
 
+                          {/* In Deck Indicator */}
+                          {isInDeck && (
+                            <div className="absolute inset-0 bg-red-600/60 flex items-center justify-center">
+                              <div className="bg-black/80 px-4 py-2 rounded-lg">
+                                <p className="text-white font-bold text-sm">덱 편성 중</p>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Selected Indicator */}
-                          {isSelected && (
+                          {isSelected && !isInDeck && (
                             <div className="absolute inset-0 bg-yellow-400/20 flex items-center justify-center">
                               <CheckCircle className="w-12 h-12 text-yellow-400" />
                             </div>

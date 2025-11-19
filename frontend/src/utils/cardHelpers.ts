@@ -1,13 +1,5 @@
-// 강화 등급별 오버롤 보너스 계산
-export function calculateEnhancementBonus(level: number): number {
-  if (level <= 4) {
-    return level; // 1~4강: +1씩
-  } else if (level <= 7) {
-    return 4 + (level - 4) * 2; // 5~7강: +2씩
-  } else {
-    return 10 + (level - 7) * 4; // 8~10강: +4씩
-  }
-}
+// Re-export the canonical enhancement bonus calculation from enhancement.ts
+export { calculateEnhancementBonus } from './enhancement';
 
 // 팀 컬러 가져오기
 export function getTeamColor(team: string): string {

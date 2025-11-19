@@ -8,17 +8,10 @@ import { io, Socket } from 'socket.io-client';
 import { getPlayerImageUrl } from '../utils/playerImage';
 import PremiumButton from '../components/ui/PremiumButton';
 import PremiumCard from '../components/ui/PremiumCard';
+import { calculateEnhancementBonus } from '../utils/enhancement';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-
-// Calculate enhancement bonus (1-4강: +1/level, 5-7강: +2/level, 8-10강: +4/level)
-function calculateEnhancementBonus(level: number): number {
-  if (level === 0) return 0;
-  if (level <= 4) return level; // 1-4: +1 each
-  if (level <= 7) return 4 + (level - 4) * 2; // 5-7: +2 each (4 from 1-4, then +2 each)
-  return 4 + 6 + (level - 7) * 4; // 8-10: +4 each (4 from 1-4, 6 from 5-7, then +4 each)
-}
 
 // Get phase name from round number
 function getPhaseName(round: number): string {

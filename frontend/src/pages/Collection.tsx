@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTeamColor, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
+import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 import toast from 'react-hot-toast';
 import PremiumButton from '../components/ui/PremiumButton';
 import PremiumCard from '../components/ui/PremiumCard';
@@ -35,10 +36,18 @@ export default function Collection() {
     successRate: number;
   } | null>(null);
   const { token, user, updateUser } = useAuthStore();
+  const [coachBuff, setCoachBuff] = useState<any>(null);
 
   useEffect(() => {
     fetchCards();
+    fetchCoachBuff();
   }, []);
+
+  const fetchCoachBuff = async () => {
+    if (!token) return;
+    const buff = await getActiveCoachBuff(token);
+    setCoachBuff(buff);
+  };
 
   const fetchCards = async () => {
     try {
@@ -417,7 +426,11 @@ export default function Collection() {
                       <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
                         <div className="text-center">
                           <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                            {card.player.overall + calculateEnhancementBonus(card.level)}
+                            {(() => {
+                              const enhancementBonus = calculateEnhancementBonus(card.level);
+                              const cardData = { position: card.player.position, team: card.player.team, overall: card.player.overall, level: card.level };
+                              return calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
+                            })()}
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400">
                             Overall
@@ -426,6 +439,21 @@ export default function Collection() {
                                 ({card.player.overall}+{calculateEnhancementBonus(card.level)})
                               </span>
                             )}
+                            {coachBuff && (() => {
+                              const enhancementBonus = calculateEnhancementBonus(card.level);
+                              const baseWithEnhancement = card.player.overall + enhancementBonus;
+                              const cardData = { position: card.player.position, team: card.player.team, overall: card.player.overall, level: card.level };
+                              const totalWithCoach = calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
+                              const coachBonus = totalWithCoach - baseWithEnhancement;
+                              if (coachBonus > 0) {
+                                return (
+                                  <span className="ml-1 text-green-600 dark:text-green-400">
+                                    +{coachBonus} 코치
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                         </div>
                       </div>

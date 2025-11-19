@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
+import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -210,12 +211,20 @@ export default function Deck() {
     minLevel: 0,
     description: '강화 시너지 없음',
   });
+  const [coachBuff, setCoachBuff] = useState<any>(null);
 
   const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
 
   // Helper function to calculate card OVR with position penalty
   const calculateCardOVR = (card: UserCard, position: string) => {
-    const baseStat = card.player.overall + calculateEnhancementBonus(card.level);
+    const enhancementBonus = calculateEnhancementBonus(card.level);
+    const cardData = {
+      position: card.player.position,
+      team: card.player.team,
+      overall: card.player.overall,
+      level: card.level
+    };
+    const baseStat = calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
     const positionMatch = card.player.position === position;
     return positionMatch ? baseStat : baseStat - 10;
   };
@@ -249,7 +258,14 @@ export default function Deck() {
 
   useEffect(() => {
     fetchDeckAndCards();
+    fetchCoachBuff();
   }, []);
+
+  const fetchCoachBuff = async () => {
+    if (!token) return;
+    const buff = await getActiveCoachBuff(token);
+    setCoachBuff(buff);
+  };
 
   const fetchDeckAndCards = async () => {
     try {
@@ -696,6 +712,22 @@ export default function Deck() {
                               </span>
                             )}
                           </div>
+                          {coachBuff && (() => {
+                            const enhancementBonus = calculateEnhancementBonus(slot.card.level);
+                            const baseWithEnhancement = slot.card.player.overall + enhancementBonus;
+                            const cardData = { position: slot.card.player.position, team: slot.card.player.team, overall: slot.card.player.overall, level: slot.card.level };
+                            const totalWithCoach = calculateTotalOverall(slot.card.player.overall, enhancementBonus, cardData, coachBuff);
+                            const coachBonus = totalWithCoach - baseWithEnhancement;
+                            if (coachBonus > 0) {
+                              return (
+                                <div className="mt-1 flex items-center gap-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded px-2 py-0.5">
+                                  <Sparkles className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                  <span className="text-xs font-semibold text-green-700 dark:text-green-300">코치 +{coachBonus}</span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                           <div className="mt-2 flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded px-2 py-1">
                             <span className="text-xs font-semibold text-green-700 dark:text-green-300">급여</span>
                             <span className="text-sm font-bold text-green-900 dark:text-green-100">{slot.card.player.salary || 5}</span>
@@ -1071,8 +1103,28 @@ export default function Deck() {
                     {detailCard.player.team} • {detailCard.player.region}
                   </p>
                   <p className="text-3xl font-bold text-primary-600 dark:text-primary-400 mt-2">
-                    {detailCard.player.overall + calculateEnhancementBonus(detailCard.level)} OVR
+                    {(() => {
+                      const enhancementBonus = calculateEnhancementBonus(detailCard.level);
+                      const cardData = { position: detailCard.player.position, team: detailCard.player.team, overall: detailCard.player.overall, level: detailCard.level };
+                      return calculateTotalOverall(detailCard.player.overall, enhancementBonus, cardData, coachBuff);
+                    })()} OVR
                   </p>
+                  {coachBuff && (() => {
+                    const enhancementBonus = calculateEnhancementBonus(detailCard.level);
+                    const baseWithEnhancement = detailCard.player.overall + enhancementBonus;
+                    const cardData = { position: detailCard.player.position, team: detailCard.player.team, overall: detailCard.player.overall, level: detailCard.level };
+                    const totalWithCoach = calculateTotalOverall(detailCard.player.overall, enhancementBonus, cardData, coachBuff);
+                    const coachBonus = totalWithCoach - baseWithEnhancement;
+                    if (coachBonus > 0) {
+                      return (
+                        <div className="mt-2 inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg px-3 py-1">
+                          <Sparkles className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm font-semibold text-green-700 dark:text-green-300">코치 버프 +{coachBonus}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
               <button

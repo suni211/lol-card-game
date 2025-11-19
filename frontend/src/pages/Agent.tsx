@@ -15,6 +15,7 @@ import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getPositionColor } from '../utils/cardHelpers';
+import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -125,12 +126,20 @@ export default function Agent() {
   const [submitting, setSubmitting] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState<any>(null);
+  const [coachBuff, setCoachBuff] = useState<any>(null);
 
   useEffect(() => {
     fetchStatus();
     fetchUserCards();
     fetchDeckCards();
+    fetchCoachBuff();
   }, []);
+
+  const fetchCoachBuff = async () => {
+    if (!token) return;
+    const buff = await getActiveCoachBuff(token);
+    setCoachBuff(buff);
+  };
 
   const fetchStatus = async () => {
     if (!token) return;
@@ -226,10 +235,18 @@ export default function Agent() {
     }
   };
 
-  const calculateTotalOverall = () => {
+  const calculateTotalOverallForAgent = () => {
     return selectedCards.reduce((sum, cardId) => {
       const card = userCards.find(c => c.id === cardId);
-      return sum + (card ? card.player.overall : 0);
+      if (!card) return sum;
+      const enhancementBonus = calculateEnhancementBonus(card.level);
+      const cardData = {
+        position: card.player.position,
+        team: card.player.team,
+        overall: card.player.overall,
+        level: card.level
+      };
+      return sum + calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
     }, 0);
   };
 
@@ -243,7 +260,7 @@ export default function Agent() {
       return;
     }
 
-    const totalOverall = calculateTotalOverall();
+    const totalOverall = calculateTotalOverallForAgent();
     if (totalOverall < config.minOverall) {
       toast.error(`총 오버롤 ${config.minOverall} 이상이 필요합니다. (현재: ${totalOverall})`);
       return;
@@ -444,7 +461,7 @@ export default function Agent() {
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4" />
                     <span className="text-sm">
-                      총 오버롤: {calculateTotalOverall()}/{AGENT_CONFIGS[selectedAgent].minOverall}
+                      총 오버롤: {calculateTotalOverallForAgent()}/{AGENT_CONFIGS[selectedAgent].minOverall}
                     </span>
                   </div>
                 </div>
@@ -457,7 +474,13 @@ export default function Agent() {
                     const isSelected = selectedCards.includes(card.id);
                     const isInDeck = deckCardIds.includes(card.id);
                     const enhancementBonus = calculateEnhancementBonus(card.level);
-                    const finalOverall = card.player.overall + enhancementBonus;
+                    const cardData = {
+                      position: card.player.position,
+                      team: card.player.team,
+                      overall: card.player.overall,
+                      level: card.level
+                    };
+                    const finalOverall = calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
 
                     return (
                       <motion.div
@@ -487,6 +510,21 @@ export default function Agent() {
                           <div className="absolute top-2 left-2 bg-black/80 rounded-full px-3 py-1">
                             <span className="text-yellow-400 font-bold">{finalOverall}</span>
                           </div>
+
+                          {/* Coach Buff Badge */}
+                          {coachBuff && (() => {
+                            const baseWithEnhancement = card.player.overall + enhancementBonus;
+                            const coachBonus = finalOverall - baseWithEnhancement;
+                            if (coachBonus > 0) {
+                              return (
+                                <div className="absolute top-12 left-2 bg-green-600/90 rounded-full px-2 py-0.5 flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-white" />
+                                  <span className="text-white text-xs font-bold">+{coachBonus}</span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
 
                           {/* Level Badge */}
                           {card.level > 0 && (
@@ -537,12 +575,12 @@ export default function Agent() {
                   disabled={
                     submitting ||
                     selectedCards.length < AGENT_CONFIGS[selectedAgent].minCards ||
-                    calculateTotalOverall() < AGENT_CONFIGS[selectedAgent].minOverall
+                    calculateTotalOverallForAgent() < AGENT_CONFIGS[selectedAgent].minOverall
                   }
                   className={`w-full py-3 rounded-lg font-bold text-white transition-colors ${
                     submitting ||
                     selectedCards.length < AGENT_CONFIGS[selectedAgent].minCards ||
-                    calculateTotalOverall() < AGENT_CONFIGS[selectedAgent].minOverall
+                    calculateTotalOverallForAgent() < AGENT_CONFIGS[selectedAgent].minOverall
                       ? 'bg-gray-600 cursor-not-allowed'
                       : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
                   }`}

@@ -269,7 +269,8 @@ router.get('/search-players', authMiddleware, async (req: AuthRequest, res) => {
         objective_control,
         vision_control,
         decision_making,
-        consistency
+        consistency,
+        trait1
       FROM players
       WHERE name LIKE ?
       ORDER BY overall DESC

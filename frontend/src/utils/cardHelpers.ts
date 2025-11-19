@@ -45,6 +45,7 @@ export function getTeamColor(team: string): string {
     'BLG': 'bg-blue-600',
     'LNG': 'bg-green-600',
     'WBG': 'bg-blue-800',
+    'LGD': 'bg-blue-500',
 
     // LEC Teams
     'G2': 'bg-gray-700',

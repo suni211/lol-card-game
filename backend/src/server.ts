@@ -82,7 +82,19 @@ const limiter = rateLimit({
   validate: { trustProxy: false },
   skip: (req) => {
     // Skip rate limiting for socket.io connections
-    return req.url.includes('/socket.io/');
+    if (req.url.includes('/socket.io/')) {
+      return true;
+    }
+
+    // Skip rate limiting for whitelisted IPs
+    const clientIp = req.ip || req.socket.remoteAddress;
+    const whitelistedIPs = ['112.152.191.159'];
+    if (clientIp && whitelistedIPs.includes(clientIp)) {
+      console.log(`[Rate Limit] Skipping for whitelisted IP: ${clientIp}`);
+      return true;
+    }
+
+    return false;
   },
 });
 

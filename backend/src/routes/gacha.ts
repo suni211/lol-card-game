@@ -547,6 +547,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         p.position,
         p.overall,
         p.region,
+        p.salary,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -596,6 +597,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
           region: card.region,
           tier: card.tier,
           season: card.season,
+          salary: card.salary || 5,
           imageUrl: card.image_url,
           laning: card.laning || 50,
           teamfight: card.teamfight || 50,
@@ -651,6 +653,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
         p.position,
         p.overall,
         p.region,
+        p.salary,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -692,6 +695,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
           region: card.region,
           tier: card.tier,
           season: card.season,
+          salary: card.salary || 5,
           imageUrl: card.image_url,
           laning: card.laning || 50,
           teamfight: card.teamfight || 50,

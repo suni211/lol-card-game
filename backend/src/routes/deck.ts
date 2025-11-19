@@ -103,6 +103,7 @@ router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
               region: card.region,
               tier: card.tier,
               season: card.season,
+              salary: card.salary || 5,
               laning: card.laning || 50,
               teamfight: card.teamfight || 50,
               macro: card.macro || 50,

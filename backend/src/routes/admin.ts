@@ -294,12 +294,28 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
       else if (searchTier === 'COMMON') { minOvr = 1; maxOvr = 80; }
 
       [players] = await connection.query(
-        'SELECT id, name, overall FROM players WHERE name LIKE ? AND overall BETWEEN ? AND ?',
+        `SELECT id, name, overall, season,
+                CASE
+                  WHEN name LIKE 'ICON%' THEN 'ICON'
+                  WHEN overall <= 80 THEN 'COMMON'
+                  WHEN overall <= 90 THEN 'RARE'
+                  WHEN overall <= 100 THEN 'EPIC'
+                  ELSE 'LEGENDARY'
+                END as tier
+         FROM players WHERE name LIKE ? AND overall BETWEEN ? AND ?`,
         [`%${searchName}%`, minOvr, maxOvr]
       );
     } else {
       [players] = await connection.query(
-        'SELECT id, name, overall FROM players WHERE name LIKE ?',
+        `SELECT id, name, overall, season,
+                CASE
+                  WHEN name LIKE 'ICON%' THEN 'ICON'
+                  WHEN overall <= 80 THEN 'COMMON'
+                  WHEN overall <= 90 THEN 'RARE'
+                  WHEN overall <= 100 THEN 'EPIC'
+                  ELSE 'LEGENDARY'
+                END as tier
+         FROM players WHERE name LIKE ?`,
         [`%${searchName}%`]
       );
     }
@@ -318,8 +334,8 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
       await connection.rollback();
       return res.status(400).json({
         success: false,
-        error: `여러 선수가 검색되었습니다: ${players.map((p: any) => `${p.name} (${p.tier})`).join(', ')}`,
-        players: players.map((p: any) => ({ id: p.id, name: p.name, tier: p.tier })),
+        error: `여러 선수가 검색되었습니다: ${players.map((p: any) => `${p.name} (${p.tier}, ${p.season || '25'})`).join(', ')}`,
+        players: players.map((p: any) => ({ id: p.id, name: p.name, tier: p.tier, season: p.season })),
       });
     }
 

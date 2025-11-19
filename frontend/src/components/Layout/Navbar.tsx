@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useOnlineStore } from '../../store/onlineStore';
+import UserDisplay from '../UserDisplay';
 
 export default function Navbar() {
   const { theme, toggleTheme } = useThemeStore();
@@ -254,7 +255,7 @@ export default function Navbar() {
                         [{user.guild_tag}]
                       </span>
                     )}
-                    {user.username}
+                    <UserDisplay user={user} className="text-sm font-medium" />
                   </span>
                 </Link>
 

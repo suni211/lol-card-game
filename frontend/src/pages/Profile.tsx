@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { useLayoutStore } from '../store/layoutStore';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import UserDisplay from '../components/UserDisplay';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -229,7 +230,9 @@ export default function Profile() {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-4xl font-bold">{user.username}</h1>
+                    <h1 className="text-4xl font-bold">
+                      <UserDisplay user={user} />
+                    </h1>
                     <button
                       onClick={() => {
                         setIsEditingUsername(true);

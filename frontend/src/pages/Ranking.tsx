@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { calculateEnhancementBonus } from '../utils/cardHelpers';
 import PremiumButton from '../components/ui/PremiumButton';
 import PremiumCard from '../components/ui/PremiumCard';
+import UserDisplay from '../components/UserDisplay';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -23,6 +24,11 @@ interface RankingUser {
   winRate: number;
   totalCards: number;
   legendaryCards: number;
+  title_id?: number | null;
+  title_name?: string | null;
+  title_color?: string | null;
+  title_icon?: string | null;
+  title_rarity?: string | null;
 }
 
 interface PlayerCard {
@@ -370,7 +376,7 @@ export default function Ranking() {
                       {/* Player */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-bold text-gray-900 dark:text-white">
-                          {user.username}
+                          <UserDisplay user={user} />
                         </div>
                       </td>
 

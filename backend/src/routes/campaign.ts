@@ -124,14 +124,31 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       playerPower += card.overall + (card.level || 0);
     });
 
-    // Battle simulation
-    const playerRandomFactor = 0.9 + Math.random() * 0.2;
-    const stageRandomFactor = 0.9 + Math.random() * 0.2;
+    // Battle simulation - 3 rounds system (best of 3)
+    let playerRoundsWon = 0;
+    let totalPlayerPower = 0;
+    let totalStagePower = 0;
 
-    const playerFinalPower = playerPower * playerRandomFactor;
-    const stageFinalPower = stage.required_power * stageRandomFactor;
+    for (let round = 0; round < 3; round++) {
+      const playerRandomFactor = 0.85 + Math.random() * 0.3;
+      const stageRandomFactor = 0.85 + Math.random() * 0.3;
 
-    const won = playerFinalPower > stageFinalPower;
+      const playerRoundPower = playerPower * playerRandomFactor;
+      const stageRoundPower = stage.required_power * stageRandomFactor;
+
+      totalPlayerPower += playerRoundPower;
+      totalStagePower += stageRoundPower;
+
+      if (playerRoundPower > stageRoundPower) {
+        playerRoundsWon++;
+      }
+    }
+
+    const avgPlayerPower = totalPlayerPower / 3;
+    const avgStagePower = totalStagePower / 3;
+
+    // Win if won 2 or more rounds
+    const won = playerRoundsWon >= 2;
 
     if (!won) {
       await connection.rollback();
@@ -139,20 +156,23 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
         success: true,
         data: {
           won: false,
-          playerPower: Math.floor(playerFinalPower),
-          stagePower: Math.floor(stageFinalPower),
+          playerPower: Math.floor(avgPlayerPower),
+          stagePower: Math.floor(avgStagePower),
           pointsEarned: 0,
+          roundsWon: playerRoundsWon,
         },
       });
     }
 
-    // Calculate stars (1-3 based on power difference)
-    const powerDiff = playerFinalPower - stageFinalPower;
-    const powerRatio = powerDiff / stageFinalPower;
-
+    // Calculate stars (1-3 based on rounds won and power difference)
     let stars = 1;
-    if (powerRatio >= 0.5) stars = 3; // 150% or more = 3 stars
-    else if (powerRatio >= 0.2) stars = 2; // 120% or more = 2 stars
+    if (playerRoundsWon === 3) {
+      // Perfect victory = 3 stars
+      stars = 3;
+    } else if (avgPlayerPower >= avgStagePower * 1.2) {
+      // 2 rounds won + 20% more power = 2 stars
+      stars = 2;
+    }
 
     // Check existing progress
     const [existingProgress]: any = await connection.query(
@@ -178,17 +198,17 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       await connection.query(`
         INSERT INTO user_campaign_progress (user_id, stage_id, stars, best_score, completed_at)
         VALUES (?, ?, ?, ?, NOW())
-      `, [userId, stageId, stars, Math.floor(playerFinalPower)]);
+      `, [userId, stageId, stars, Math.floor(avgPlayerPower)]);
     } else {
       // Only update if better
-      if (stars > existingProgress[0].stars || playerFinalPower > existingProgress[0].best_score) {
+      if (stars > existingProgress[0].stars || avgPlayerPower > existingProgress[0].best_score) {
         await connection.query(`
           UPDATE user_campaign_progress
           SET stars = GREATEST(stars, ?),
               best_score = GREATEST(best_score, ?),
               completed_at = NOW()
           WHERE user_id = ? AND stage_id = ?
-        `, [stars, Math.floor(playerFinalPower), userId, stageId]);
+        `, [stars, Math.floor(avgPlayerPower), userId, stageId]);
       }
     }
 
@@ -205,8 +225,8 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       data: {
         won: true,
         stars,
-        playerPower: Math.floor(playerFinalPower),
-        stagePower: Math.floor(stageFinalPower),
+        playerPower: Math.floor(avgPlayerPower),
+        stagePower: Math.floor(avgStagePower),
         pointsEarned,
         isFirstClear,
         isFirst3Stars,

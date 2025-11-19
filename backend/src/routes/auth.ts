@@ -413,9 +413,13 @@ router.post('/google', async (req, res) => {
       { expiresIn: jwtExpire }
     );
 
-    // Get full user data
+    // Get full user data with equipped title
     const [users]: any = await pool.query(
-      'SELECT * FROM users WHERE id = ?',
+      `SELECT u.*, t.id as title_id, t.name as title_name, t.color as title_color,
+              t.icon as title_icon, t.rarity as title_rarity
+       FROM users u
+       LEFT JOIN titles t ON u.equipped_title_id = t.id
+       WHERE u.id = ?`,
       [userId]
     );
 
@@ -448,6 +452,11 @@ router.post('/google', async (req, res) => {
       guild_id: user.guild_id || null,
       guild_tag: guildInfo?.tag || null,
       guild_name: guildInfo?.name || null,
+      equipped_title_id: user.title_id || null,
+      title_name: user.title_name || null,
+      title_color: user.title_color || null,
+      title_icon: user.title_icon || null,
+      title_rarity: user.title_rarity || null,
     };
 
     res.json({
@@ -484,9 +493,13 @@ router.post('/login', async (req, res) => {
 
     const { email, password } = value;
 
-    // Get user
+    // Get user with equipped title
     const [users]: any = await pool.query(
-      'SELECT * FROM users WHERE email = ?',
+      `SELECT u.*, t.id as title_id, t.name as title_name, t.color as title_color,
+              t.icon as title_icon, t.rarity as title_rarity
+       FROM users u
+       LEFT JOIN titles t ON u.equipped_title_id = t.id
+       WHERE u.email = ?`,
       [email]
     );
 
@@ -523,6 +536,11 @@ router.post('/login', async (req, res) => {
       level: user.level || 1,
       exp: user.exp || 0,
       total_exp: user.total_exp || 0,
+      equipped_title_id: user.title_id || null,
+      title_name: user.title_name || null,
+      title_color: user.title_color || null,
+      title_icon: user.title_icon || null,
+      title_rarity: user.title_rarity || null,
     };
 
     res.json({ success: true, data: { user: userData, token } });
@@ -538,7 +556,13 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.user?.id;
 
     const [users]: any = await pool.query(
-      'SELECT id, username, email, points, tier, rating, is_admin, last_check_in, consecutive_days, created_at, level, exp, total_exp FROM users WHERE id = ?',
+      `SELECT u.id, u.username, u.email, u.points, u.tier, u.rating, u.is_admin,
+              u.last_check_in, u.consecutive_days, u.created_at, u.level, u.exp, u.total_exp,
+              u.equipped_title_id, t.id as title_id, t.name as title_name, t.color as title_color,
+              t.icon as title_icon, t.rarity as title_rarity
+       FROM users u
+       LEFT JOIN titles t ON u.equipped_title_id = t.id
+       WHERE u.id = ?`,
       [userId]
     );
 
@@ -560,6 +584,11 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
       level: users[0].level || 1,
       exp: users[0].exp || 0,
       total_exp: users[0].total_exp || 0,
+      equipped_title_id: users[0].title_id || null,
+      title_name: users[0].title_name || null,
+      title_color: users[0].title_color || null,
+      title_icon: users[0].title_icon || null,
+      title_rarity: users[0].title_rarity || null,
     };
 
     res.json({ success: true, data: user });

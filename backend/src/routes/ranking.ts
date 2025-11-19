@@ -15,6 +15,11 @@ router.get('/', async (req, res) => {
         u.username,
         u.tier,
         u.rating,
+        t.id as title_id,
+        t.name as title_name,
+        t.color as title_color,
+        t.icon as title_icon,
+        t.rarity as title_rarity,
         COALESCE(MAX(s.wins), 0) as wins,
         COALESCE(MAX(s.losses), 0) as losses,
         COALESCE(MAX(s.total_matches), 0) as total_matches,
@@ -25,8 +30,9 @@ router.get('/', async (req, res) => {
         (SELECT COUNT(*) FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.user_id = u.id AND p.name NOT LIKE 'ICON%' AND p.overall > 100) as legendary_cards
       FROM users u
       LEFT JOIN user_stats s ON u.id = s.user_id
+      LEFT JOIN titles t ON u.equipped_title_id = t.id
       WHERE u.is_admin = FALSE AND u.is_active = TRUE AND u.username NOT LIKE 'AI_%'
-      GROUP BY u.id, u.username, u.tier, u.rating
+      GROUP BY u.id, u.username, u.tier, u.rating, t.id, t.name, t.color, t.icon, t.rarity
     `;
 
     const params: any[] = [];
@@ -54,6 +60,11 @@ router.get('/', async (req, res) => {
       winRate: user.win_rate || 0,
       totalCards: user.total_cards || 0,
       legendaryCards: user.legendary_cards || 0,
+      title_id: user.title_id || null,
+      title_name: user.title_name || null,
+      title_color: user.title_color || null,
+      title_icon: user.title_icon || null,
+      title_rarity: user.title_rarity || null,
     }));
 
     res.json({ success: true, data: leaderboard });

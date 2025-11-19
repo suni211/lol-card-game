@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import UserDisplay from '../components/UserDisplay';
 import {
   Users,
   Plus,
@@ -672,7 +673,9 @@ export default function GuildPage() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
                             {getRoleIcon(member.role)}
-                            <span className="font-bold text-white">{member.username}</span>
+                            <span className="font-bold text-white">
+                              <UserDisplay user={member} />
+                            </span>
                             {member.level && (
                               <span className="text-xs px-2 py-0.5 bg-amber-500 text-white rounded">
                                 LV {member.level}
@@ -990,7 +993,9 @@ export default function GuildPage() {
                           <div className="flex items-center space-x-3">
                             <div>
                               <div className="flex items-center space-x-2 mb-1">
-                                <span className="text-xl font-bold text-white">{request.username}</span>
+                                <span className="text-xl font-bold text-white">
+                                  <UserDisplay user={request} />
+                                </span>
                                 {request.level && (
                                   <span className="text-xs px-2 py-0.5 bg-amber-500 text-white rounded">
                                     LV {request.level}

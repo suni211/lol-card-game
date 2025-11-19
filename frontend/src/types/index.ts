@@ -50,6 +50,11 @@ export interface User {
   guild_id?: number;
   guild_tag?: string;
   guild_name?: string;
+  equipped_title_id?: number | null;
+  title_name?: string | null;
+  title_color?: string | null;
+  title_icon?: string | null;
+  title_rarity?: string | null;
 }
 
 export type UserTier = 'IRON' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'MASTER' | 'CHALLENGER';

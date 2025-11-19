@@ -1,4 +1,9 @@
--- 포인트 상점 시스템 테이블 생성
+-- 포인트 상점 시스템 완전 초기화 및 재설정
+
+-- 기존 데이터 삭제 (순서 중요: 외래키 때문에 역순으로)
+DELETE FROM item_usage_log;
+DELETE FROM user_items;
+DELETE FROM shop_items;
 
 -- 상점 아이템 테이블
 CREATE TABLE IF NOT EXISTS shop_items (
@@ -40,7 +45,12 @@ CREATE TABLE IF NOT EXISTS item_usage_log (
   INDEX idx_user_expiry (user_id, effect_expires_at)
 );
 
--- 기본 상점 아이템 추가 (4개만)
+-- AUTO_INCREMENT 리셋
+ALTER TABLE shop_items AUTO_INCREMENT = 1;
+ALTER TABLE user_items AUTO_INCREMENT = 1;
+ALTER TABLE item_usage_log AUTO_INCREMENT = 1;
+
+-- 상점 아이템 추가 (4개만 깔끔하게)
 INSERT INTO shop_items (name, description, price, item_type, effect_type, effect_value, duration_minutes) VALUES
 ('강화 하락 방지권', '강화 실패 시 레벨이 하락하지 않습니다 (1회용)', 100000, 'consumable', 'protection', 'no_downgrade', 0),
 ('경험치 2배 부스터', '1시간 동안 경험치 획득량이 2배가 됩니다', 20000, 'consumable', 'exp_boost', '2', 60),

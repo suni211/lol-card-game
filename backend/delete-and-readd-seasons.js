@@ -23,7 +23,7 @@ async function deleteAndReaddSeasons() {
 
     // Delete existing PC, JM, DAE, 23AG season players
     console.log('\n=== Deleting existing season players ===');
-    const [deleteResult]: any = await connection.query(`
+    const [deleteResult] = await connection.query(`
       DELETE FROM players WHERE season IN ('PC', 'JM', 'DAE', '23AG')
     `);
     console.log(`✓ Deleted ${deleteResult.affectedRows} existing season players`);

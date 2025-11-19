@@ -4,11 +4,8 @@ async function reduceCoachBuffs() {
   const connection = await mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'qwe123',
-    database: 'lol_card_game',
-    authPlugins: {
-      mysql_native_password: () => () => Buffer.alloc(0)
-    }
+    password: '',
+    database: 'lol_card_game'
   });
 
   try {

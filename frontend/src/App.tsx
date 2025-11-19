@@ -34,8 +34,6 @@ import Enhancement from './pages/Enhancement';
 import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
 import Market from './pages/Market';
-import VSMode from './pages/VSMode';
-import VSBattle from './pages/VSBattle';
 import Coupon from './pages/Coupon';
 import AdminCoupon from './pages/AdminCoupon';
 import Packs from './pages/Packs';
@@ -399,22 +397,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <Admin />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vsmode"
-            element={
-              <ProtectedRoute>
-                <VSMode />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vsmode/battle/:stageNumber"
-            element={
-              <ProtectedRoute>
-                <VSBattle />
               </ProtectedRoute>
             }
           />

@@ -580,6 +580,43 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
         );
       }
 
+      // Check for promotion bonus
+      let promotionBonus = 0;
+      if (won && ratingChange > 0) {
+        const oldRating = userRating;
+        const newRating = userRating + ratingChange;
+
+        // Check tier promotion
+        const getTier = (rating: number) => {
+          if (rating >= 2000) return 'CHALLENGER';
+          if (rating >= 1700) return 'MASTER';
+          if (rating >= 1600) return 'DIAMOND';
+          if (rating >= 1400) return 'PLATINUM';
+          if (rating >= 1300) return 'GOLD';
+          if (rating >= 1200) return 'SILVER';
+          return 'BRONZE';
+        };
+
+        const oldTier = getTier(oldRating);
+        const newTier = getTier(newRating);
+
+        if (oldTier !== newTier) {
+          // Promotion detected - give bonus
+          switch (newTier) {
+            case 'SILVER': promotionBonus = 1000; break;
+            case 'GOLD': promotionBonus = 2000; break;
+            case 'PLATINUM': promotionBonus = 3000; break;
+            case 'DIAMOND': promotionBonus = 5000; break;
+            case 'MASTER': promotionBonus = 10000; break;
+            case 'CHALLENGER': promotionBonus = 20000; break;
+          }
+
+          if (promotionBonus > 0) {
+            pointsChange += promotionBonus;
+          }
+        }
+      }
+
       await connection.query(`
         INSERT INTO match_history (user_id, match_id, result, points_change, rating_change)
         VALUES (?, ?, ?, ?, ?)

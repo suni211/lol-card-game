@@ -23,7 +23,6 @@ import fusionRoutes from './routes/fusion';
 import achievementsRoutes from './routes/achievements';
 import adminRoutes from './routes/admin';
 import marketRoutes from './routes/market';
-import vsmodeRoutes from './routes/vsmode';
 import couponRoutes, { setSocketIOForCoupon } from './routes/coupon';
 import packsRoutes from './routes/packs';
 import shopRoutes, { setSocketIOForShop } from './routes/shop';
@@ -41,6 +40,7 @@ import friendlyRoutes from './routes/friendly';
 import titlesRoutes from './routes/titles';
 import raidRoutes from './routes/raid';
 import spectatorRoutes from './routes/spectator';
+import campaignRoutes from './routes/campaign';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -109,7 +109,6 @@ app.use('/api/market', marketRoutes);
 app.use('/api/fusion', fusionRoutes);
 app.use('/api/achievements', achievementsRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/vsmode', vsmodeRoutes);
 app.use('/api/coupon', couponRoutes);
 app.use('/api/packs', packsRoutes);
 app.use('/api/shop', shopRoutes);
@@ -127,6 +126,7 @@ app.use('/api/friendly', friendlyRoutes);
 app.use('/api/titles', titlesRoutes);
 app.use('/api/raid', raidRoutes);
 app.use('/api/spectator', spectatorRoutes);
+app.use('/api/campaign', campaignRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

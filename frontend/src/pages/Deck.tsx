@@ -73,11 +73,17 @@ const MACRO_STRATEGIES = [
   { value: 'TEMPO', label: '템포', description: '빠른 라인 이동으로 압박', counters: ['OBJECTIVE'], weakTo: ['VISION'] },
 ];
 
-// Normalize team name (SKT and T1 are treated as same team)
+// Normalize team name (SKT and T1 are treated as same team, ROX and ROX Tigers and HLE are same team)
 const normalizeTeamName = (team: string): string => {
   if (!team) return '';
   const upperTeam = team.toUpperCase();
+
+  // SKT, T1 통합
   if (upperTeam === 'SKT' || upperTeam === 'T1') return 'T1';
+
+  // ROX, ROX Tigers, HLE 통합
+  if (upperTeam === 'ROX' || upperTeam === 'ROX TIGERS' || upperTeam === 'HLE') return 'HLE';
+
   return team;
 };
 

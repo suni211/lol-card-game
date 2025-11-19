@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Package, Clock, Sparkles, Trophy, Star } from 'lucide-react';
+import { ShoppingCart, Package, Clock, Sparkles, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';

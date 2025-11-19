@@ -24,7 +24,7 @@ import achievementsRoutes from './routes/achievements';
 import adminRoutes from './routes/admin';
 import marketRoutes from './routes/market';
 import vsmodeRoutes from './routes/vsmode';
-import couponRoutes from './routes/coupon';
+import couponRoutes, { setSocketIOForCoupon } from './routes/coupon';
 import packsRoutes from './routes/packs';
 import shopRoutes, { setSocketIOForShop } from './routes/shop';
 import eventRoutes from './routes/event';
@@ -151,6 +151,9 @@ setSocketIO(io);
 
 // Setup socket.io for shop
 setSocketIOForShop(io);
+
+// Setup socket.io for coupon
+setSocketIOForCoupon(io);
 
 // NEW ONLINE USERS SYSTEM - Disconnect based only (no cleanup)
 interface OnlineUser {

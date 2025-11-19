@@ -1,8 +1,14 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { Server } from 'socket.io';
 
 const router = express.Router();
+let io: Server;
+
+export const setSocketIOForCoupon = (socketIO: Server) => {
+  io = socketIO;
+};
 
 // 쿠폰 코드 생성 함수
 function generateCouponCode(prefix: string = 'LOL'): string {
@@ -181,6 +187,19 @@ router.post('/redeem', authMiddleware, async (req: AuthRequest, res) => {
           [coupon.reward_value, userId]
         );
         rewardDetails = { points: coupon.reward_value };
+
+        // Get updated user points for real-time update
+        const [updatedUser]: any = await connection.query(
+          'SELECT points FROM users WHERE id = ?',
+          [userId]
+        );
+
+        // Send real-time update via Socket.IO
+        if (io) {
+          io.to(`user_${userId}`).emit('pointsUpdate', {
+            points: updatedUser[0].points
+          });
+        }
         break;
 
       case 'CARD':

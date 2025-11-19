@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 
 const router = express.Router();
 
@@ -8,6 +9,9 @@ const router = express.Router();
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
+
+    // Update achievements based on current stats (이미 달성한 업적 자동 반영)
+    await checkAndUpdateAchievements(userId);
 
     const [achievements]: any = await pool.query(`
       SELECT

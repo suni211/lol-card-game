@@ -297,30 +297,16 @@ router.post('/compare-players', authMiddleware, async (req: AuthRequest, res) =>
 
     // Get player 1 data with traits
     const [player1Data]: any = await pool.query(`
-      SELECT
-        p.*,
-        GROUP_CONCAT(
-          CONCAT(pt.name, '|||', pt.description, '|||', pt.effect)
-          SEPARATOR ':::'
-        ) as traits_data
+      SELECT p.*
       FROM players p
-      LEFT JOIN player_traits pt ON p.id = pt.player_id
       WHERE p.id = ?
-      GROUP BY p.id
     `, [player1Id]);
 
     // Get player 2 data with traits
     const [player2Data]: any = await pool.query(`
-      SELECT
-        p.*,
-        GROUP_CONCAT(
-          CONCAT(pt.name, '|||', pt.description, '|||', pt.effect)
-          SEPARATOR ':::'
-        ) as traits_data
+      SELECT p.*
       FROM players p
-      LEFT JOIN player_traits pt ON p.id = pt.player_id
       WHERE p.id = ?
-      GROUP BY p.id
     `, [player2Id]);
 
     if (player1Data.length === 0 || player2Data.length === 0) {
@@ -330,19 +316,39 @@ router.post('/compare-players', authMiddleware, async (req: AuthRequest, res) =>
     const player1 = player1Data[0];
     const player2 = player2Data[0];
 
-    // Parse traits
-    const parseTraits = (traitsData: string | null) => {
-      if (!traitsData) return [];
-      return traitsData.split(':::').map((trait: string) => {
-        const [name, description, effect] = trait.split('|||');
-        return { name, description, effect };
-      });
+    // Parse traits from trait1 column
+    const parseTraits = (trait1: string | null, position: string) => {
+      if (!trait1) return [];
+
+      // Map trait names to their effects
+      const traitEffects: any = {
+        '중국 최고 정글': {
+          name: '중국 최고 정글',
+          description: 'Mlxg의 야생적인 정글 플레이',
+          effect: position === 'JUNGLE' ? '+3 오버롤' : '효과 없음 (정글 전용)'
+        },
+        '무작위 한타': {
+          name: '무작위 한타',
+          description: 'Mystic의 예측 불가능한 한타 운영',
+          effect: '+3 오버롤'
+        },
+        '뚫고 지나가.': {
+          name: '뚫고 지나가.',
+          description: 'Ambition의 뛰어난 매크로와 결정력',
+          effect: '+3 오버롤'
+        },
+        '나도 최강이야.': {
+          name: '나도 최강이야.',
+          description: 'Crown의 압도적인 미드 라이너 실력',
+          effect: position === 'MID' ? '+5 오버롤' : '효과 없음 (미드 전용)'
+        }
+      };
+
+      return traitEffects[trait1] ? [traitEffects[trait1]] : [];
     };
 
-    player1.traits = parseTraits(player1.traits_data);
-    player2.traits = parseTraits(player2.traits_data);
-    delete player1.traits_data;
-    delete player2.traits_data;
+    player1.traits = parseTraits(player1.trait1, player1.position);
+    player2.traits = parseTraits(player2.trait1, player2.position);
 
     // Calculate enhanced stats
     const calculateEnhancedStats = (player: any, level: number) => {

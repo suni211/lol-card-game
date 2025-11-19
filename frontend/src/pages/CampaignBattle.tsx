@@ -7,15 +7,6 @@ import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-interface Card {
-  id: number;
-  playerName: string;
-  position: string;
-  overall: number;
-  level: number;
-  season: string;
-}
-
 interface RoundResult {
   round: number;
   playerPower: number;
@@ -30,7 +21,6 @@ export default function CampaignBattle() {
   const [loading, setLoading] = useState(true);
   const [battling, setBattling] = useState(false);
   const [stage, setStage] = useState<any>(null);
-  const [playerCards, setPlayerCards] = useState<Card[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
   const [playerHP, setPlayerHP] = useState(100);
@@ -44,13 +34,10 @@ export default function CampaignBattle() {
 
   const loadBattle = async () => {
     try {
-      // Get stage info and player deck
-      const [stageRes, deckRes] = await Promise.all([
-        axios.get(`${API_URL}/campaign/stages`),
-        axios.get(`${API_URL}/deck/active`)
-      ]);
+      // Get stage info
+      const stageRes = await axios.get(`${API_URL}/campaign/stages`);
 
-      if (stageRes.data.success && deckRes.data.success) {
+      if (stageRes.data.success) {
         // Find the specific stage
         const allStages = Object.values(stageRes.data.data).flat() as any[];
         const foundStage = allStages.find((s: any) => s.id === parseInt(stageId || '0'));
@@ -62,10 +49,10 @@ export default function CampaignBattle() {
         }
 
         setStage(foundStage);
-        setPlayerCards(deckRes.data.data.cards || []);
       }
     } catch (error: any) {
-      toast.error('전투 로드 실패');
+      console.error('Load battle error:', error);
+      toast.error('전투 로드 실패: ' + (error.response?.data?.error || error.message));
       navigate('/campaign');
     } finally {
       setLoading(false);
@@ -83,8 +70,8 @@ export default function CampaignBattle() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setCurrentRound(round);
 
-      // Calculate round power
-      const playerPower = playerCards.reduce((sum, card) => sum + card.overall + (card.level || 0), 0);
+      // Use estimated player power vs stage power
+      const playerPower = stage.requiredPower * 1.1; // Assume player is slightly stronger
       const enemyPower = stage.requiredPower;
 
       // Add random factor

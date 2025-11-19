@@ -1,14 +1,16 @@
-import { Settings as SettingsIcon, Bell, Lock, User, Palette, Save } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Lock, User, Palette, Save, Volume2, VolumeX } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useAudioStore } from '../store/audioStore';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
   const { user } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const { notifications, updateNotification } = useSettingsStore();
+  const { isMuted, toggleMute, volume, setVolume } = useAudioStore();
 
   const handleSaveSettings = () => {
     toast.success('설정이 저장되었습니다!');
@@ -114,11 +116,70 @@ export default function Settings() {
             </div>
           </motion.div>
 
+          {/* Sound Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              {isMuted ? (
+                <VolumeX className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+              ) : (
+                <Volume2 className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+              )}
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">사운드</h2>
+            </div>
+
+            <div className="space-y-6">
+              {/* Mute Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white">모든 사운드</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    BGM 및 효과음 전체 끄기
+                  </p>
+                </div>
+                <button
+                  onClick={toggleMute}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    !isMuted ? 'bg-primary-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      !isMuted ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Volume Slider */}
+              {!isMuted && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    음량: {Math.round(volume * 100)}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume}
+                    onChange={(e) => setVolume(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                  />
+                </div>
+              )}
+            </div>
+          </motion.div>
+
           {/* Notifications */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.35 }}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center space-x-3 mb-6">
@@ -166,7 +227,7 @@ export default function Settings() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.45 }}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center space-x-3 mb-6">
@@ -194,7 +255,7 @@ export default function Settings() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.55 }}
             className="flex justify-end"
           >
             <button

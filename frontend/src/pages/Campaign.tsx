@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Lock, Sword } from 'lucide-react';
+import { Trophy, Star, Sword } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -23,16 +24,6 @@ interface RegionStages {
   [region: string]: Stage[];
 }
 
-interface BattleResult {
-  won: boolean;
-  stars?: number;
-  playerPower: number;
-  stagePower: number;
-  pointsEarned: number;
-  isFirstClear?: boolean;
-  isFirst3Stars?: boolean;
-}
-
 const REGION_INFO: Record<string, { name: string; color: string; description: string }> = {
   LCP: { name: 'LCP', color: 'from-green-500 to-emerald-600', description: 'Easy - 입문자용' },
   LTA: { name: 'LTA', color: 'from-blue-500 to-cyan-600', description: 'Normal - 초보자용' },
@@ -42,12 +33,10 @@ const REGION_INFO: Record<string, { name: string; color: string; description: st
 };
 
 export default function Campaign() {
+  const navigate = useNavigate();
   const [stages, setStages] = useState<RegionStages>({});
   const [loading, setLoading] = useState(true);
-  const [battling, setBattling] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>('LCP');
-  const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
-  const [showResultModal, setShowResultModal] = useState(false);
 
   useEffect(() => {
     fetchStages();
@@ -66,30 +55,9 @@ export default function Campaign() {
     }
   };
 
-  const handleBattle = async (stageId: number) => {
-    if (battling) return;
-
-    setBattling(true);
-    try {
-      const response = await axios.post(`${API_URL}/campaign/battle`, { stageId });
-      if (response.data.success) {
-        setBattleResult(response.data.data);
-        setShowResultModal(true);
-
-        if (response.data.data.won) {
-          toast.success(`승리! ${response.data.data.pointsEarned.toLocaleString()}P 획득`);
-
-          // Refresh stages (user points updated via socket.io)
-          await fetchStages();
-        } else {
-          toast.error('패배! 더 강한 덱이 필요합니다');
-        }
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || '전투 실패');
-    } finally {
-      setBattling(false);
-    }
+  const handleBattle = (stageId: number) => {
+    // Navigate to battle screen
+    navigate(`/campaign/battle/${stageId}`);
   };
 
   const renderStars = (stars: number) => {
@@ -224,94 +192,16 @@ export default function Campaign() {
               {/* Battle Button */}
               <button
                 onClick={() => handleBattle(stage.id)}
-                disabled={battling}
-                className={`w-full py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-                  battling
-                    ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white'
-                }`}
+                className="w-full py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white"
               >
                 <Sword className="w-4 h-4" />
-                {battling ? '전투 중...' : isCleared ? '재도전' : '전투'}
+                {isCleared ? '재도전' : '전투'}
               </button>
             </motion.div>
           );
         })}
       </div>
 
-      {/* Battle Result Modal */}
-      {showResultModal && battleResult && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full"
-          >
-            <div className="text-center mb-6">
-              {battleResult.won ? (
-                <>
-                  <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-                  <h2 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-                    승리!
-                  </h2>
-                  {battleResult.isFirstClear && (
-                    <div className="inline-block px-4 py-1 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 text-sm font-bold mb-2">
-                      첫 클리어!
-                    </div>
-                  )}
-                  {battleResult.isFirst3Stars && (
-                    <div className="inline-block px-4 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-full text-yellow-600 dark:text-yellow-400 text-sm font-bold mb-2 ml-2">
-                      3성 달성!
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Lock className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                  <h2 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
-                    패배
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    더 강한 덱을 구성해보세요
-                  </p>
-                </>
-              )}
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-400">내 파워</span>
-                <span className="text-xl font-bold">{battleResult.playerPower.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-400">적 파워</span>
-                <span className="text-xl font-bold">{battleResult.stagePower.toLocaleString()}</span>
-              </div>
-              {battleResult.won && (
-                <>
-                  <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <span className="text-gray-600 dark:text-gray-400">획득 별</span>
-                    <div>{renderStars(battleResult.stars || 0)}</div>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 rounded-lg">
-                    <span className="font-bold">획득 포인트</span>
-                    <span className="text-2xl font-bold text-primary-600">
-                      +{battleResult.pointsEarned.toLocaleString()}P
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={() => setShowResultModal(false)}
-              className="w-full py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
-            >
-              확인
-            </button>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }

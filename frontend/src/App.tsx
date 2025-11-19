@@ -56,6 +56,7 @@ import Raid from './pages/Raid';
 import Shop from './pages/Shop';
 import Spectator from './pages/Spectator';
 import Campaign from './pages/Campaign';
+import CampaignBattle from './pages/CampaignBattle';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -379,6 +380,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Campaign />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/campaign/battle/:stageId"
+            element={
+              <ProtectedRoute>
+                <CampaignBattle />
               </ProtectedRoute>
             }
           />

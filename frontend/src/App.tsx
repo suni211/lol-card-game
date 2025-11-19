@@ -56,6 +56,8 @@ import Friendly from './pages/Friendly';
 import Titles from './pages/Titles';
 import Raid from './pages/Raid';
 import Shop from './pages/Shop';
+import Match3Phase from './pages/Match3Phase';
+import Spectator from './pages/Spectator';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -573,6 +575,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <Shop />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/match3phase"
+            element={
+              <ProtectedRoute>
+                <Match3Phase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/spectator"
+            element={
+              <ProtectedRoute>
+                <Spectator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/spectator/:matchId"
+            element={
+              <ProtectedRoute>
+                <Spectator />
               </ProtectedRoute>
             }
           />

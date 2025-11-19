@@ -71,7 +71,7 @@ async function calculateDeckPower(deckId: number): Promise<number> {
     if (cardIds.length === 0) return 0;
 
     const [cards]: any = await connection.query(`
-      SELECT uc.level, p.overall, p.team, p.position, p.name
+      SELECT uc.level, p.overall, p.team, p.position, p.name, p.trait1
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.id IN (?)

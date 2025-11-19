@@ -215,10 +215,28 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         [newStage, newHighest, reward, userId]
       );
 
+      // Check for active points boost
+      const [boostEffects]: any = await connection.query(`
+        SELECT si.effect_value
+        FROM item_usage_log iul
+        JOIN shop_items si ON iul.item_id = si.id
+        WHERE iul.user_id = ?
+          AND si.effect_type = 'points_boost'
+          AND iul.expires_at > NOW()
+        LIMIT 1
+      `, [userId]);
+
+      // Apply boost multiplier
+      let finalReward = reward;
+      if (boostEffects.length > 0) {
+        const multiplier = parseFloat(boostEffects[0].effect_value);
+        finalReward = Math.floor(reward * multiplier);
+      }
+
       // Award points for this stage only
       await connection.query(
         'UPDATE users SET points = points + ? WHERE id = ?',
-        [reward, userId]
+        [finalReward, userId]
       );
 
       // Get updated user data

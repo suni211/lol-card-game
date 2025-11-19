@@ -213,6 +213,23 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     // No rating change for AI battles
     const ratingChange = 0;
 
+    // Check for active points boost
+    const [boostEffects]: any = await connection.query(`
+      SELECT si.effect_value
+      FROM item_usage_log iul
+      JOIN shop_items si ON iul.item_id = si.id
+      WHERE iul.user_id = ?
+        AND si.effect_type = 'points_boost'
+        AND iul.expires_at > NOW()
+      LIMIT 1
+    `, [userId]);
+
+    // Apply boost multiplier
+    if (boostEffects.length > 0) {
+      const multiplier = parseFloat(boostEffects[0].effect_value);
+      pointsReward = Math.floor(pointsReward * multiplier);
+    }
+
     // Update user points (no rating change for AI battles)
     await connection.query(
       'UPDATE users SET points = points + ? WHERE id = ?',

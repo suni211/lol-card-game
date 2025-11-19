@@ -1,5 +1,6 @@
 -- Delete existing 2016 Worlds players
-DELETE FROM players WHERE season = '16WC' OR season = '16WC';
+DELETE FROM players WHERE season = '16WC';
+DELETE FROM players WHERE name LIKE '16WC %';
 
 -- 2016 World Championship Players (16WC prefix)
 

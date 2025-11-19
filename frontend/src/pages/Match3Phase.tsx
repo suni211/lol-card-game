@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Swords, Trophy, Users, Eye, Zap, Target, Map } from 'lucide-react';
+import { Swords, Trophy, Users, Eye, Target, Map } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -176,9 +176,10 @@ export default function Match3Phase() {
           setWaitingForOpponent(false);
         } else {
           // Update match for next phase
+          const typedNextPhase = nextPhase as Phase;
           setCurrentMatch({
             ...currentMatch,
-            current_phase: nextPhase,
+            current_phase: typedNextPhase,
             phase_score_p1: scoreP1,
             phase_score_p2: scoreP2,
           });
@@ -186,8 +187,8 @@ export default function Match3Phase() {
           setWaitingForOpponent(false);
           toast.success(
             winnerId === user?.id
-              ? `페이즈 승리! ${PHASE_LABELS[nextPhase]} 준비`
-              : `페이즈 패배. ${PHASE_LABELS[nextPhase]} 준비`
+              ? `페이즈 승리! ${PHASE_LABELS[typedNextPhase]} 준비`
+              : `페이즈 패배. ${PHASE_LABELS[typedNextPhase]} 준비`
           );
         }
       }

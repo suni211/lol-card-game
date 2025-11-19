@@ -16,8 +16,10 @@ interface LiveMatch {
   phase_score_p1: number;
   phase_score_p2: number;
   started_at: string;
+  player1_id: number;
   player1_name: string;
   player1_rating: number;
+  player2_id: number;
   player2_name: string;
   player2_rating: number;
   spectator_count: number;

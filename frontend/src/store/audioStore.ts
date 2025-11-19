@@ -41,7 +41,14 @@ export const useAudioStore = create<AudioState>()(
 
       initAudio: () => {
         const audio = new Audio();
-        audio.loop = true;
+        audio.loop = false; // 한 곡만 반복하지 않고 끝나면 다음 곡으로
+
+        // 곡이 끝나면 자동으로 다음 랜덤 곡 재생
+        audio.addEventListener('ended', () => {
+          console.log('BGM ended, playing next random track');
+          get().playRandomLobbyBGM();
+        });
+
         // localStorage에서 설정 불러오기
         const savedSettings = localStorage.getItem('audio-settings');
         if (savedSettings) {

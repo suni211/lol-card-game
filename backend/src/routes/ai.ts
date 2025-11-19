@@ -8,6 +8,7 @@ import { updateEventProgress } from '../utils/eventTracker';
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
 import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
 import { updateGuildMissionProgress } from '../utils/guildMissionTracker';
+import { checkDeckSalaryCap } from '../utils/salaryCheck';
 
 const router = express.Router();
 
@@ -156,6 +157,15 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     }
 
     const deckId = decks[0].id;
+
+    // Check salary cap
+    const salaryCheck = await checkDeckSalaryCap(connection, deckId);
+    if (!salaryCheck.valid) {
+      return res.status(400).json({
+        success: false,
+        error: salaryCheck.error
+      });
+    }
 
     // Get user stats to calculate AI difficulty
     const [stats]: any = await connection.query(

@@ -8,6 +8,7 @@ export interface Player {
   region: 'LCK' | 'LPL' | 'LEC' | 'LCS' | 'PCS' | 'VCS' | 'CBLOL' | 'LJL' | 'LLA';
   tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'ICON' | 'GR';
   season?: string; // 25WW, 25WUD, 25, etc.
+  salary?: number; // 급여 (5-26 범위, 덱 급여 한도 100)
   laning?: number; // 라인전 스탯 (0-100)
   teamfight?: number; // 한타 스탯 (0-100)
   macro?: number; // 운영 스탯 (0-100)

@@ -65,6 +65,7 @@ router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
           p.position,
           p.overall,
           p.region,
+          p.salary,
           CASE
             WHEN p.season = 'ICON' THEN 'ICON'
             WHEN p.overall <= 80 THEN 'COMMON'
@@ -289,7 +290,10 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
 
     if (cardIds.length > 0) {
       const [userCards]: any = await connection.query(
-        'SELECT id, player_id FROM user_cards WHERE id IN (?) AND user_id = ?',
+        `SELECT uc.id, uc.player_id, p.salary
+         FROM user_cards uc
+         JOIN players p ON uc.player_id = p.id
+         WHERE uc.id IN (?) AND uc.user_id = ?`,
         [cardIds, userId]
       );
 
@@ -305,6 +309,16 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
       if (playerIds.length !== uniquePlayerIds.size) {
         await connection.rollback();
         return res.status(400).json({ success: false, error: '같은 선수를 여러 포지션에 배치할 수 없습니다.' });
+      }
+
+      // Check total salary (salary cap = 100)
+      const totalSalary = userCards.reduce((sum: number, card: any) => sum + (card.salary || 0), 0);
+      if (totalSalary > 100) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          error: `급여 한도 초과 (${totalSalary}/100). 급여가 더 낮은 선수를 배치하세요.`
+        });
       }
     }
 

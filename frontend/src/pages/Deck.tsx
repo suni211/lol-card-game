@@ -17,6 +17,7 @@ interface Player {
   region: string;
   tier: string;
   season?: string;
+  salary?: number;
   // 기존 4개 스탯
   laning?: number;
   teamfight?: number;
@@ -215,6 +216,16 @@ export default function Deck() {
       });
   }, [myCards, selectedPosition, deckSlots, seasonFilter]);
 
+  // Calculate total salary
+  const totalSalary = useMemo(() => {
+    return deckSlots.reduce((sum, slot) => {
+      return sum + (slot.card?.player?.salary || 0);
+    }, 0);
+  }, [deckSlots]);
+
+  const SALARY_CAP = 100;
+  const isOverSalaryCap = totalSalary > SALARY_CAP;
+
   useEffect(() => {
     fetchDeckAndCards();
   }, []);
@@ -391,6 +402,31 @@ export default function Deck() {
               <p className="text-lg text-gray-600 dark:text-gray-400">
                 최강의 5인 로스터와 전략을 구성하세요
               </p>
+              {/* Salary Display */}
+              <div className={`mt-3 px-4 py-2 rounded-lg inline-block ${
+                isOverSalaryCap
+                  ? 'bg-red-100 dark:bg-red-900/30 border border-red-500'
+                  : totalSalary >= SALARY_CAP * 0.9
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500'
+                  : 'bg-green-100 dark:bg-green-900/30 border border-green-500'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold text-lg ${
+                    isOverSalaryCap
+                      ? 'text-red-700 dark:text-red-300'
+                      : totalSalary >= SALARY_CAP * 0.9
+                      ? 'text-yellow-700 dark:text-yellow-300'
+                      : 'text-green-700 dark:text-green-300'
+                  }`}>
+                    급여: {totalSalary}/{SALARY_CAP}
+                  </span>
+                  {isOverSalaryCap && (
+                    <span className="text-sm text-red-600 dark:text-red-400">
+                      (한도 초과!)
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
             <button
               onClick={handleSaveDeck}

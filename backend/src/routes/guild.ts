@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { syncCompletedMissions } from '../utils/guildMissionTracker';
 
 const router = express.Router();
 
@@ -631,6 +632,9 @@ router.get('/missions/weekly', authMiddleware, async (req: AuthRequest, res) => 
 
         await connection.commit();
 
+        // 이미 완료한 업적 반영
+        await syncCompletedMissions(guildId);
+
         // 다시 조회
         const [newMissions]: any = await pool.query(
           `SELECT gwm.id as weekly_mission_id, gwm.current_progress, gwm.is_completed, gwm.completed_at,
@@ -653,6 +657,28 @@ router.get('/missions/weekly', authMiddleware, async (req: AuthRequest, res) => 
       } finally {
         connection.release();
       }
+    }
+
+    // 이미 완료한 업적 반영 (미션이 있을 때도)
+    if (missions.length > 0) {
+      await syncCompletedMissions(guildId);
+
+      // 업데이트 후 다시 조회
+      const [updatedMissions]: any = await pool.query(
+        `SELECT gwm.id as weekly_mission_id, gwm.current_progress, gwm.is_completed, gwm.completed_at,
+                gmp.id as mission_id, gmp.title, gmp.description, gmp.requirement,
+                gmp.mission_type, gmp.reward_points, gmp.difficulty
+         FROM guild_weekly_missions gwm
+         JOIN guild_mission_pool gmp ON gwm.mission_id = gmp.id
+         WHERE gwm.guild_id = ? AND gwm.week_start = ?
+         ORDER BY gwm.is_completed ASC, gmp.difficulty ASC`,
+        [guildId, weekStartStr]
+      );
+
+      return res.json({
+        success: true,
+        data: updatedMissions,
+      });
     }
 
     res.json({

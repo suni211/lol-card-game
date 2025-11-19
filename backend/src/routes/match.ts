@@ -3,6 +3,7 @@ import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { normalizeTeamName } from '../utils/teamUtils';
 import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
+import { updateGuildMissionProgress } from '../utils/guildMissionTracker';
 
 const router = express.Router();
 
@@ -511,7 +512,7 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
 
       // Update match history
       const won = winnerId === userId;
-      let pointsChange = won ? 20 : 0;
+      let pointsChange = won ? 40 : 0;
       const ratingChange = won ? 25 : -15;
 
       // Get current win streak for bonus calculation
@@ -535,9 +536,9 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
           winStreak = ladderStats[0].current_win_streak + 1;
 
           // Calculate streak bonus
-          if (winStreak >= 5) streakBonus = 50;
-          else if (winStreak >= 3) streakBonus = 20;
-          else if (winStreak >= 2) streakBonus = 10;
+          if (winStreak >= 5) streakBonus = 100;
+          else if (winStreak >= 3) streakBonus = 40;
+          else if (winStreak >= 2) streakBonus = 20;
 
           // Update ladder stats
           await connection.query(`
@@ -599,10 +600,39 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
       );
       if (ladderStats.length > 0) {
         finalWinStreak = ladderStats[0].current_win_streak;
-        if (finalWinStreak >= 5) finalStreakBonus = 50;
-        else if (finalWinStreak >= 3) finalStreakBonus = 20;
-        else if (finalWinStreak >= 2) finalStreakBonus = 10;
+        if (finalWinStreak >= 5) finalStreakBonus = 100;
+        else if (finalWinStreak >= 3) finalStreakBonus = 40;
+        else if (finalWinStreak >= 2) finalStreakBonus = 20;
       }
+    }
+
+    // Update guild missions (실시간 반영)
+    try {
+      // 경기 참여
+      await updateGuildMissionProgress(userId, 'MATCH', 1);
+
+      // 승리 시
+      if (won) {
+        await updateGuildMissionProgress(userId, 'WIN', 1);
+
+        // 3:0 승리 (퍼펙트)
+        if (player1Score === 3 && player2Score === 0) {
+          await updateGuildMissionProgress(userId, 'PERFECT', 1);
+        }
+
+        // 0:2 → 3:2 역전승 (컴백)
+        if (player1Score === 3 && player2Score === 2 && matchSimulation.phases[0].winner === 2 && matchSimulation.phases[1].winner === 2) {
+          await updateGuildMissionProgress(userId, 'COMEBACK', 1);
+        }
+
+        // 연승
+        if (finalWinStreak >= 3) {
+          await updateGuildMissionProgress(userId, 'STREAK', 1);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update guild missions:', error);
+      // 길드 미션 업데이트 실패는 무시 (경기 결과에 영향 없음)
     }
 
     res.json({
@@ -612,7 +642,7 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
         won,
         myScore: player1Score,
         opponentScore: player2Score,
-        pointsChange: opponent.id === 0 ? (won ? 100 : 50) : (won ? 20 + finalStreakBonus : 0),
+        pointsChange: opponent.id === 0 ? (won ? 200 : 100) : (won ? 40 + finalStreakBonus : 0),
         ratingChange: won ? 25 : -15,
         phases: matchSimulation.phases,
         winStreak: finalWinStreak,

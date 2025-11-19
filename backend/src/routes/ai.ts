@@ -7,6 +7,7 @@ import { normalizeTeamName } from '../utils/teamUtils';
 import { updateEventProgress } from '../utils/eventTracker';
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
 import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
+import { updateGuildMissionProgress } from '../utils/guildMissionTracker';
 
 const router = express.Router();
 
@@ -94,16 +95,16 @@ function calculateAIDifficulty(aiWins: number, aiLosses: number): number {
 
 // Calculate points reward based on difficulty
 function calculatePointsReward(aiPower: number, playerPower: number, won: boolean): number {
-  if (!won) return 30; // Loss gives small reward
+  if (!won) return 60; // Loss gives small reward
 
   const difficultyRatio = aiPower / playerPower;
 
   // Base reward
-  let reward = 60;
+  let reward = 120;
 
-  if (difficultyRatio >= 1.5) reward = 150; // Very hard AI
-  else if (difficultyRatio >= 1.2) reward = 100; // Hard AI
-  else if (difficultyRatio >= 0.9) reward = 80; // Normal AI
+  if (difficultyRatio >= 1.5) reward = 300; // Very hard AI
+  else if (difficultyRatio >= 1.2) reward = 200; // Hard AI
+  else if (difficultyRatio >= 0.9) reward = 160; // Normal AI
 
   return reward;
 }
@@ -264,6 +265,19 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     updateEventProgress(userId, 'AI_MATCH', 1).catch(err =>
       console.error('Event update error:', err)
     );
+
+    // Update guild missions
+    updateGuildMissionProgress(userId, 'MATCH', 1).catch(err =>
+      console.error('Guild mission update error:', err)
+    );
+    if (won) {
+      updateGuildMissionProgress(userId, 'WIN', 1).catch(err =>
+        console.error('Guild mission update error:', err)
+      );
+      updateGuildMissionProgress(userId, 'AI', 1).catch(err =>
+        console.error('Guild mission update error:', err)
+      );
+    }
 
     // Add experience
     const expGained = calculateExpReward('AI', won);
@@ -511,6 +525,19 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
     updateEventProgress(userId, 'AI_MATCH', count).catch(err =>
       console.error('Event update error:', err)
     );
+
+    // Update guild missions for all battles
+    updateGuildMissionProgress(userId, 'MATCH', count).catch(err =>
+      console.error('Guild mission update error:', err)
+    );
+    if (totalWins > 0) {
+      updateGuildMissionProgress(userId, 'WIN', totalWins).catch(err =>
+        console.error('Guild mission update error:', err)
+      );
+      updateGuildMissionProgress(userId, 'AI', totalWins).catch(err =>
+        console.error('Guild mission update error:', err)
+      );
+    }
 
     // Add experience for all battles
     const totalExp = results.reduce((sum, result) => {

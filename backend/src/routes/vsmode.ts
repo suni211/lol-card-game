@@ -3,6 +3,7 @@ import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { normalizeTeamName, isSameTeam, getTierByOverall } from '../utils/teamUtils';
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
+import { updateGuildMissionProgress } from '../utils/guildMissionTracker';
 
 const router = express.Router();
 
@@ -430,6 +431,19 @@ router.post('/battle/:stageNumber/complete', authMiddleware, async (req: AuthReq
     const expGained = calculateExpReward('VS', isVictory);
     addExperience(userId, expGained).catch(err =>
       console.error('Exp update error:', err)
+    );
+
+    // Update guild missions (VS 모드 클리어)
+    if (isVictory) {
+      updateGuildMissionProgress(userId, 'VS', 1).catch(err =>
+        console.error('Guild mission update error:', err)
+      );
+      updateGuildMissionProgress(userId, 'WIN', 1).catch(err =>
+        console.error('Guild mission update error:', err)
+      );
+    }
+    updateGuildMissionProgress(userId, 'MATCH', 1).catch(err =>
+      console.error('Guild mission update error:', err)
     );
 
     res.json({

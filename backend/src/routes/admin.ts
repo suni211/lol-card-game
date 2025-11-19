@@ -186,6 +186,48 @@ router.post('/deduct-points', authMiddleware, adminMiddleware, async (req: AuthR
   }
 });
 
+// 선수 검색 (자동완성용)
+router.get('/search-players', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const query = req.query.q as string;
+
+    if (!query || query.length < 2) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // 선수 검색 (이름만, 최대 20개)
+    const [players]: any = await pool.query(
+      `SELECT id, name, team, position, overall, region, season,
+              CASE
+                WHEN name LIKE 'ICON%' THEN 'ICON'
+                WHEN overall <= 80 THEN 'COMMON'
+                WHEN overall <= 90 THEN 'RARE'
+                WHEN overall <= 100 THEN 'EPIC'
+                ELSE 'LEGENDARY'
+              END as tier
+       FROM players
+       WHERE name LIKE ?
+       ORDER BY overall DESC
+       LIMIT 20`,
+      [`%${query}%`]
+    );
+
+    res.json({
+      success: true,
+      data: players,
+    });
+  } catch (error: any) {
+    console.error('Search players error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  }
+});
+
 // 카드 지급
 router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();
@@ -193,12 +235,21 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
   try {
     await connection.beginTransaction();
 
-    const { username, playerName, reason } = req.body;
+    const { username, playerName, level, reason } = req.body;
 
     if (!username || !playerName) {
       return res.status(400).json({
         success: false,
         error: '유저명과 선수명을 입력해주세요.',
+      });
+    }
+
+    // 강화 등급 검증
+    const enhancementLevel = parseInt(level) || 0;
+    if (enhancementLevel < 0 || enhancementLevel > 10) {
+      return res.status(400).json({
+        success: false,
+        error: '강화 등급은 0~10 사이로 입력해주세요.',
       });
     }
 
@@ -276,25 +327,26 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
 
     // 카드 지급
     await connection.query(
-      'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
-      [targetUser.id, player.id]
+      'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, ?)',
+      [targetUser.id, player.id, enhancementLevel]
     );
 
     // 관리자 로그 기록
     await connection.query(
       'INSERT INTO admin_logs (admin_id, action, target_user_id, details) VALUES (?, ?, ?, ?)',
-      [req.user!.id, 'GIVE_CARD', targetUser.id, JSON.stringify({ playerName: player.name, playerId: player.id, tier: player.tier, reason: reason || '없음' })]
+      [req.user!.id, 'GIVE_CARD', targetUser.id, JSON.stringify({ playerName: player.name, playerId: player.id, tier: player.tier, level: enhancementLevel, reason: reason || '없음' })]
     );
 
     await connection.commit();
 
     res.json({
       success: true,
-      message: `${username}님에게 ${player.name} 카드를 지급했습니다.`,
+      message: `${username}님에게 ${player.name} (강화 +${enhancementLevel}) 카드를 지급했습니다.`,
       data: {
         username: targetUser.username,
         playerName: player.name,
         tier: player.tier,
+        level: enhancementLevel,
       },
     });
 

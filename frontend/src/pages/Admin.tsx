@@ -16,15 +16,29 @@ interface AdminLog {
   created_at: string;
 }
 
+interface Player {
+  id: number;
+  name: string;
+  team: string;
+  position: string;
+  overall: number;
+  tier: string;
+  region: string;
+  season: string;
+}
+
 export default function Admin() {
   const { token } = useAuthStore();
   const [username, setUsername] = useState('');
   const [points, setPoints] = useState('');
   const [reason, setReason] = useState('');
   const [playerName, setPlayerName] = useState('');
+  const [enhancementLevel, setEnhancementLevel] = useState('0');
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [playerSuggestions, setPlayerSuggestions] = useState<Player[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     fetchLogs();
@@ -133,9 +147,46 @@ export default function Admin() {
     }
   };
 
+  const searchPlayers = async (query: string) => {
+    if (query.length < 2) {
+      setPlayerSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_URL}/admin/search-players?q=${encodeURIComponent(query)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        setPlayerSuggestions(response.data.data);
+        setShowSuggestions(true);
+      }
+    } catch (error: any) {
+      console.error('Player search error:', error);
+    }
+  };
+
+  const handlePlayerNameChange = (value: string) => {
+    setPlayerName(value);
+    searchPlayers(value);
+  };
+
+  const selectPlayer = (player: Player) => {
+    setPlayerName(player.name);
+    setShowSuggestions(false);
+  };
+
   const handleGiveCard = async () => {
     if (!username || !playerName) {
       toast.error('유저명과 선수명을 입력해주세요.');
+      return;
+    }
+
+    const level = parseInt(enhancementLevel) || 0;
+    if (level < 0 || level > 10) {
+      toast.error('강화 등급은 0~10 사이로 입력해주세요.');
       return;
     }
 
@@ -143,7 +194,7 @@ export default function Admin() {
       setLoading(true);
       const response = await axios.post(
         `${API_URL}/admin/give-card`,
-        { username, playerName, reason },
+        { username, playerName, level, reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -151,7 +202,9 @@ export default function Admin() {
         toast.success(response.data.message);
         setUsername('');
         setPlayerName('');
+        setEnhancementLevel('0');
         setReason('');
+        setPlayerSuggestions([]);
         fetchLogs();
       }
     } catch (error: any) {
@@ -326,15 +379,64 @@ export default function Admin() {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   선수명
                 </label>
                 <input
                   type="text"
                   value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder="선수명 입력 (예: ICON Uzi, Faker)"
+                  onChange={(e) => handlePlayerNameChange(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  onFocus={() => playerSuggestions.length > 0 && setShowSuggestions(true)}
+                  placeholder="선수명 입력 (2글자 이상)"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+
+                {/* 자동완성 드롭다운 */}
+                {showSuggestions && playerSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {playerSuggestions.map((player) => (
+                      <button
+                        key={player.id}
+                        type="button"
+                        onClick={() => selectPlayer(player)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
+                      >
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {player.name}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {player.team} • {player.position} • OVR {player.overall}
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                          player.tier === 'ICON' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400' :
+                          player.tier === 'LEGENDARY' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                          player.tier === 'EPIC' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                          player.tier === 'RARE' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                        }`}>
+                          {player.tier}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  강화 등급
+                </label>
+                <input
+                  type="number"
+                  value={enhancementLevel}
+                  onChange={(e) => setEnhancementLevel(e.target.value)}
+                  placeholder="0~10"
+                  min="0"
+                  max="10"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -369,10 +471,9 @@ export default function Admin() {
                 <div className="text-sm text-blue-800 dark:text-blue-200">
                   <p className="font-semibold mb-1">안내</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>선수명은 부분 일치로 검색됩니다</li>
-                    <li>"ICON Uzi" 형태로 티어를 지정할 수 있습니다</li>
-                    <li>여러 선수가 검색되면 티어를 함께 입력하세요</li>
-                    <li>카드는 레벨 0으로 지급됩니다</li>
+                    <li>선수명 2글자 이상 입력 시 자동 검색됩니다</li>
+                    <li>드롭다운에서 선수를 직접 선택할 수 있습니다</li>
+                    <li>강화 등급 0~10까지 설정 가능합니다</li>
                     <li>모든 작업은 로그에 기록됩니다</li>
                   </ul>
                 </div>
@@ -463,6 +564,11 @@ export default function Admin() {
                             {details.tier && (
                               <span className="ml-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-xs">
                                 {details.tier}
+                              </span>
+                            )}
+                            {details.level !== undefined && details.level > 0 && (
+                              <span className="ml-2 px-2 py-0.5 bg-orange-200 dark:bg-orange-600 rounded text-xs font-bold">
+                                +{details.level}강
                               </span>
                             )}
                           </p>

@@ -91,10 +91,14 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
       const power = slot.card.player.overall + slot.card.level;
       totalPower += power;
 
+      // Debug: Log team info
+      console.log(`[Synergy Debug] ${slot.card.player.name}: team="${slot.card.player.team}"`);
+
       // Check if team field contains multiple teams (comma-separated)
       if (slot.card.player.team && slot.card.player.team.includes(',')) {
         // Multiple teams (e.g., ICON Peanut with "T1,HLE,NS,GEN,LGD")
         const multipleTeams = slot.card.player.team.split(',').map(t => t.trim());
+        console.log(`[Synergy Debug] Multiple teams detected:`, multipleTeams);
         multipleTeams.forEach(team => {
           const synergyTeam = normalizeTeamName(team);
           teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;

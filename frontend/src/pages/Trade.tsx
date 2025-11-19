@@ -29,12 +29,14 @@ interface Trade {
   sender_player_overall: number;
   sender_player_tier: string;
   sender_card_level: number;
+  sender_player_salary?: number;
   receiver_player_name: string;
   receiver_player_team: string;
   receiver_player_position: string;
   receiver_player_overall: number;
   receiver_player_tier: string;
   receiver_card_level: number;
+  receiver_player_salary?: number;
 }
 
 export default function Trade() {
@@ -289,6 +291,12 @@ export default function Trade() {
             <div className="text-lg font-bold text-primary-600 dark:text-primary-400 mt-1">
               {card.player.overall + card.level}
             </div>
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded px-1.5 py-1 mt-1">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-xs font-semibold text-green-700 dark:text-green-300">급여</span>
+                <span className="text-xs font-bold text-green-900 dark:text-green-100">{card.player.salary || 5}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -303,6 +311,7 @@ export default function Trade() {
       player_overall: trade.sender_player_overall,
       player_tier: trade.sender_player_tier,
       card_level: trade.sender_card_level,
+      player_salary: trade.sender_player_salary,
     };
 
     const receiverCard = {
@@ -312,6 +321,7 @@ export default function Trade() {
       player_overall: trade.receiver_player_overall,
       player_tier: trade.receiver_player_tier,
       card_level: trade.receiver_card_level,
+      player_salary: trade.receiver_player_salary,
     };
 
     return (
@@ -359,6 +369,12 @@ export default function Trade() {
                   <div className="text-xl font-bold text-primary-600 dark:text-primary-400 mt-2">
                     {senderCard.player_overall + senderCard.card_level}
                   </div>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded px-2 py-1 mt-2">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-semibold text-green-700 dark:text-green-300">급여</span>
+                      <span className="text-xs font-bold text-green-900 dark:text-green-100">{senderCard.player_salary || 5}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -396,6 +412,12 @@ export default function Trade() {
                   </div>
                   <div className="text-xl font-bold text-primary-600 dark:text-primary-400 mt-2">
                     {receiverCard.player_overall + receiverCard.card_level}
+                  </div>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded px-2 py-1 mt-2">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-semibold text-green-700 dark:text-green-300">급여</span>
+                      <span className="text-xs font-bold text-green-900 dark:text-green-100">{receiverCard.player_salary || 5}</span>
+                    </div>
                   </div>
                 </div>
               </div>

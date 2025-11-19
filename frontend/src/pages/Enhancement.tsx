@@ -271,7 +271,7 @@ export default function Enhancement() {
               {card.player.team} • {card.player.position}
             </p>
 
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-gray-600 dark:text-gray-400">OVR</span>
               <span className="font-bold text-gray-900 dark:text-white">
                 {cardOverall}
@@ -281,6 +281,13 @@ export default function Enhancement() {
                   </span>
                 )}
               </span>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded p-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-green-700 dark:text-green-300">급여</span>
+                <span className="text-xs font-bold text-green-900 dark:text-green-100">{card.player.salary || 5}</span>
+              </div>
             </div>
           </div>
         </div>

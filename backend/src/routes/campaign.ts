@@ -189,8 +189,37 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     // Win if won 2 or more rounds
     const won = playerRoundsWon >= 2;
 
+    // Calculate stars based on rounds won (1승=1별, 2승=2별, 3승=3별)
+    // 1승만 해도 별 1개는 받을 수 있음
+    const stars = playerRoundsWon;
+
     if (!won) {
-      await connection.rollback();
+      // 패배했지만 1승은 했다면 별 1개 저장
+      if (playerRoundsWon >= 1) {
+        const [existingProgress]: any = await connection.query(
+          'SELECT * FROM user_campaign_progress WHERE user_id = ? AND stage_id = ?',
+          [userId, stageId]
+        );
+
+        // 기존 기록이 없거나 별이 더 많으면 저장
+        if (existingProgress.length === 0) {
+          await connection.query(`
+            INSERT INTO user_campaign_progress (user_id, stage_id, stars, best_score, completed_at)
+            VALUES (?, ?, ?, ?, NOW())
+          `, [userId, stageId, stars, Math.floor(avgPlayerPower)]);
+        } else if (stars > existingProgress[0].stars) {
+          await connection.query(`
+            UPDATE user_campaign_progress
+            SET stars = ?, best_score = GREATEST(best_score, ?), completed_at = NOW()
+            WHERE user_id = ? AND stage_id = ?
+          `, [stars, Math.floor(avgPlayerPower), userId, stageId]);
+        }
+
+        await connection.commit();
+      } else {
+        await connection.rollback();
+      }
+
       return res.json({
         success: true,
         data: {
@@ -200,12 +229,10 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
           pointsEarned: 0,
           roundsWon: playerRoundsWon,
           roundResults, // Round-by-round results for animation
+          stars: playerRoundsWon >= 1 ? stars : 0, // 1승 이상이면 별 개수 반환
         },
       });
     }
-
-    // Calculate stars based on rounds won (1승=1별, 2승=2별, 3승=3별)
-    const stars = playerRoundsWon;
 
     // Check existing progress
     const [existingProgress]: any = await connection.query(

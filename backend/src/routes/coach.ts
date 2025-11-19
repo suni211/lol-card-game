@@ -63,7 +63,9 @@ router.get('/active', authMiddleware, async (req: AuthRequest, res) => {
         c.buff_value,
         c.buff_target,
         c.description,
-        c.image_url
+        c.image_url,
+        COALESCE(uc.current_buff_value, c.buff_value) as current_buff_value,
+        COALESCE(uc.enhancement_level, 0) as enhancement_level
       FROM user_coaches uc
       JOIN coaches c ON uc.coach_id = c.id
       WHERE uc.user_id = ? AND uc.is_active = TRUE

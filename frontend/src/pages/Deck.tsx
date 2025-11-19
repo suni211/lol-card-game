@@ -547,7 +547,7 @@ export default function Deck() {
                   ))}
                 </div>
                 <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2 font-medium">
-                  💡 같은 팀 3명 = +1 OVR, 4명 = +3 OVR, 5명 = +5 OVR 보너스
+                  💡 같은 팀 3명 = +1 OVR, 4명 = +2 OVR, 5명 = +3 OVR 보너스
                 </p>
               </div>
             </div>

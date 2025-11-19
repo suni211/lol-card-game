@@ -14,7 +14,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import { getPlayerImageUrl } from '../utils/playerImage';
-import { calculateEnhancementBonus, getTierColor, getPositionColor } from '../utils/cardHelpers';
+import { calculateEnhancementBonus, getPositionColor } from '../utils/cardHelpers';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 

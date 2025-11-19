@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { calculateEnhancementSynergy, getEnhancementSynergyDescription } from '../utils/enhancementSynergy';
 
 const router = express.Router();
 
@@ -111,6 +112,10 @@ router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
       });
     }
 
+    // Calculate enhancement synergy
+    const levels = Object.values(cards).map((card: any) => card.level || 0);
+    const enhancementSynergy = calculateEnhancementSynergy(levels);
+
     res.json({
       success: true,
       data: {
@@ -127,6 +132,12 @@ router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
         macroStrategy: deck.macro_strategy,
         isActive: deck.is_active,
         isDefault: deck.is_default,
+        enhancementSynergy: {
+          bonus: enhancementSynergy.bonus,
+          tier: enhancementSynergy.tier,
+          minLevel: enhancementSynergy.minLevel,
+          description: getEnhancementSynergyDescription(enhancementSynergy.tier),
+        },
       },
     });
   } catch (error: any) {
@@ -218,6 +229,10 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       });
     }
 
+    // Calculate enhancement synergy
+    const levels = Object.values(cards).map((card: any) => card.level || 0);
+    const enhancementSynergy = calculateEnhancementSynergy(levels);
+
     res.json({
       success: true,
       data: {
@@ -233,6 +248,12 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
         teamfightStrategy: deck.teamfight_strategy,
         macroStrategy: deck.macro_strategy,
         isActive: true,
+        enhancementSynergy: {
+          bonus: enhancementSynergy.bonus,
+          tier: enhancementSynergy.tier,
+          minLevel: enhancementSynergy.minLevel,
+          description: getEnhancementSynergyDescription(enhancementSynergy.tier),
+        },
       },
     });
   } catch (error: any) {

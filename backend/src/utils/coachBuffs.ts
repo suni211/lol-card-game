@@ -1,4 +1,5 @@
 import pool from '../config/database';
+import { normalizeTeamName } from './teamUtils';
 
 interface CoachBuff {
   buff_type: 'OVERALL' | 'POSITION' | 'TEAM' | 'STRATEGY';
@@ -60,9 +61,14 @@ export function applyCoachBuffToCard(
       return basePower;
 
     case 'TEAM':
-      // Applies only to specific team (e.g., 'T1', 'GEN', 'DK')
-      if (coachBuff.buff_target && card.team.toUpperCase() === coachBuff.buff_target.toUpperCase()) {
-        return basePower + buffValue;
+      // Applies only to specific team (e.g., 'T1', 'GEN', 'DK', 'HLE')
+      // Normalize team names to handle SKT=T1, ROX=ROX Tigers=HLE
+      if (coachBuff.buff_target) {
+        const normalizedCardTeam = normalizeTeamName(card.team);
+        const normalizedTargetTeam = normalizeTeamName(coachBuff.buff_target);
+        if (normalizedCardTeam === normalizedTargetTeam) {
+          return basePower + buffValue;
+        }
       }
       return basePower;
 

@@ -22,8 +22,8 @@ router.get('/all', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-// Get specific deck by slot
-router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
+// Get deck by slot helper function
+const getDeckBySlot = async (req: AuthRequest, res: express.Response) => {
   try {
     const userId = req.user!.id;
     const deckSlot = parseInt(req.params.slot);
@@ -103,7 +103,7 @@ router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
               region: card.region,
               tier: card.tier,
               season: card.season,
-              salary: card.salary || 5,
+              salary: card.salary,
               laning: card.laning || 50,
               teamfight: card.teamfight || 50,
               macro: card.macro || 50,
@@ -144,6 +144,43 @@ router.get('/slot/:slot', authMiddleware, async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     console.error('Get deck by slot error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
+
+// Route handlers
+router.get('/slot/:slot', authMiddleware, getDeckBySlot);
+router.get('/:slot', authMiddleware, getDeckBySlot); // Alias for compatibility
+
+// Get all user cards
+router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [cards]: any = await pool.query(
+      `SELECT
+        uc.id,
+        uc.user_id,
+        uc.player_id,
+        uc.level,
+        p.name,
+        p.team,
+        p.position,
+        p.overall,
+        p.region,
+        p.tier,
+        p.season,
+        p.salary
+      FROM user_cards uc
+      JOIN players p ON uc.player_id = p.id
+      WHERE uc.user_id = ?
+      ORDER BY p.overall DESC, p.name ASC`,
+      [userId]
+    );
+
+    res.json({ success: true, data: cards });
+  } catch (error: any) {
+    console.error('Get user cards error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });

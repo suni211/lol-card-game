@@ -222,7 +222,7 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         JOIN shop_items si ON iul.item_id = si.id
         WHERE iul.user_id = ?
           AND si.effect_type = 'points_boost'
-          AND iul.expires_at > NOW()
+          AND iul.effect_expires_at > NOW()
         LIMIT 1
       `, [userId]);
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Sword } from 'lucide-react';
+import { Star, Sword } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 

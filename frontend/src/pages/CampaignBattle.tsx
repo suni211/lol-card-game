@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Swords, Trophy, Star, ArrowLeft, Zap } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { getPlayerImageUrl } from '../utils/playerImage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 

@@ -61,7 +61,7 @@ export default function Navbar() {
         { path: '/spectator', label: '관전' },
         { path: '/friendly', label: '친선전' },
         { path: '/ai-battle', label: 'AI 배틀' },
-        { path: '/vsmode', label: 'VS 모드' },
+        { path: '/campaign', label: '캠페인' },
         { path: '/infinite-challenge', label: '무한도전' },
       ]
     },

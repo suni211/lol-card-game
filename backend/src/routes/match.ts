@@ -512,7 +512,25 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
 
       // Update match history
       const won = winnerId === userId;
-      let pointsChange = won ? 40 : 0;
+
+      // Get user's current rating for MMR bonus calculation
+      const [currentUser]: any = await connection.query(
+        'SELECT rating FROM users WHERE id = ?',
+        [userId]
+      );
+      const userRating = currentUser[0]?.rating || 1000;
+
+      // Base reward: 120P (3x increased from 40P)
+      let pointsChange = won ? 120 : 0;
+
+      // MMR-based bonus: +1P per 10 MMR above 1000
+      // Examples: 1500 MMR = +50P, 2000 MMR = +100P, 2500 MMR = +150P
+      let mmrBonus = 0;
+      if (won && userRating > 1000) {
+        mmrBonus = Math.floor((userRating - 1000) / 10);
+        pointsChange += mmrBonus;
+      }
+
       const ratingChange = won ? 25 : -15;
 
       // Get current win streak for bonus calculation
@@ -535,10 +553,10 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
         } else {
           winStreak = ladderStats[0].current_win_streak + 1;
 
-          // Calculate streak bonus
-          if (winStreak >= 5) streakBonus = 100;
-          else if (winStreak >= 3) streakBonus = 40;
-          else if (winStreak >= 2) streakBonus = 20;
+          // Calculate streak bonus (3x increased)
+          if (winStreak >= 5) streakBonus = 300;
+          else if (winStreak >= 3) streakBonus = 120;
+          else if (winStreak >= 2) streakBonus = 60;
 
           // Update ladder stats
           await connection.query(`
@@ -600,9 +618,9 @@ router.post('/find', authMiddleware, async (req: AuthRequest, res) => {
       );
       if (ladderStats.length > 0) {
         finalWinStreak = ladderStats[0].current_win_streak;
-        if (finalWinStreak >= 5) finalStreakBonus = 100;
-        else if (finalWinStreak >= 3) finalStreakBonus = 40;
-        else if (finalWinStreak >= 2) finalStreakBonus = 20;
+        if (finalWinStreak >= 5) finalStreakBonus = 300;
+        else if (finalWinStreak >= 3) finalStreakBonus = 120;
+        else if (finalWinStreak >= 2) finalStreakBonus = 60;
       }
     }
 

@@ -94,7 +94,7 @@ function calculateAIDifficulty(aiWins: number, aiLosses: number): number {
 }
 
 // Calculate points reward based on difficulty
-function calculatePointsReward(aiPower: number, playerPower: number, won: boolean): number {
+function calculatePointsReward(aiPower: number, playerPower: number, won: boolean, userRating: number = 1000): number {
   if (!won) return 60; // Loss gives small reward
 
   const difficultyRatio = aiPower / playerPower;
@@ -105,6 +105,12 @@ function calculatePointsReward(aiPower: number, playerPower: number, won: boolea
   if (difficultyRatio >= 1.5) reward = 300; // Very hard AI
   else if (difficultyRatio >= 1.2) reward = 200; // Hard AI
   else if (difficultyRatio >= 0.9) reward = 160; // Normal AI
+
+  // MMR-based bonus: +1P per 10 MMR above 1000
+  if (userRating > 1000) {
+    const mmrBonus = Math.floor((userRating - 1000) / 10);
+    reward += mmrBonus;
+  }
 
   return reward;
 }
@@ -160,6 +166,13 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     const aiWins = stats.length > 0 ? (stats[0].ai_wins || 0) : 0;
     const aiLosses = stats.length > 0 ? (stats[0].ai_losses || 0) : 0;
 
+    // Get user rating for MMR bonus
+    const [user]: any = await connection.query(
+      'SELECT rating FROM users WHERE id = ?',
+      [userId]
+    );
+    const userRating = user[0]?.rating || 1000;
+
     // Calculate powers (with coach buffs)
     const playerPower = await calculateDeckPower(deckId, userId);
     const aiBasePower = calculateAIDifficulty(aiWins, aiLosses);
@@ -202,7 +215,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     }
 
     // Calculate rewards
-    let pointsReward = calculatePointsReward(aiPower, playerPower, won);
+    let pointsReward = calculatePointsReward(aiPower, playerPower, won, userRating);
 
     // Win streak bonus: +5P per streak level (max 50P at 10 streak)
     let streakBonus = 0;
@@ -437,6 +450,13 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
     let currentStreak = stats.length > 0 ? (stats[0].current_streak || 0) : 0;
     let longestWinStreak = stats.length > 0 ? (stats[0].longest_win_streak || 0) : 0;
 
+    // Get user rating for MMR bonus
+    const [user]: any = await connection.query(
+      'SELECT rating FROM users WHERE id = ?',
+      [userId]
+    );
+    const userRating = user[0]?.rating || 1000;
+
     // Calculate player power once (with coach buffs)
     const playerPower = await calculateDeckPower(deckId, userId);
 
@@ -458,7 +478,7 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
       const aiFinalPower = aiPower * aiRandomFactor;
 
       const won = playerFinalPower > aiFinalPower;
-      let pointsReward = calculatePointsReward(aiPower, playerPower, won);
+      let pointsReward = calculatePointsReward(aiPower, playerPower, won, userRating);
 
       // Update streak
       let streakBonus = 0;

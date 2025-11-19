@@ -833,7 +833,9 @@ router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
     res.json({ success: true, data: players });
   } catch (error: any) {
     console.error('Search players error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 });
 

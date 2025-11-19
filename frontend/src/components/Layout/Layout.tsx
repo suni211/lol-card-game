@@ -148,7 +148,7 @@ export default function Layout() {
 
       <ChatPopup />
       <Toaster
-        position="top-right"
+        position={window.innerWidth < 768 ? "bottom-left" : "top-right"}
         toastOptions={{
           className: 'dark:bg-gray-800 dark:text-white',
           duration: 3000,

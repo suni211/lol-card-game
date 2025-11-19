@@ -86,7 +86,7 @@ async function initCampaignSystem() {
     console.log('📍 LEC (Hard - 보통) - 30 stages');
     const lecStages = [];
     for (let i = 1; i <= 30; i++) {
-      const power = 800 + (i - 1) * 30;
+      const power = 600 + (i - 1) * 30;
       const reward = 300 + (i - 1) * 20;
       const firstBonus = 600 + (i - 1) * 40;
       const starBonus = 300 + (i - 1) * 20;
@@ -101,7 +101,7 @@ async function initCampaignSystem() {
     console.log('📍 LPL (Hell - 좋게) - 30 stages');
     const lplStages = [];
     for (let i = 1; i <= 30; i++) {
-      const power = 1100 + (i - 1) * 40;
+      const power = 650 + (i - 1) * 40;
       const reward = 700 + (i - 1) * 30;
       const firstBonus = 1500 + (i - 1) * 80;
       const starBonus = 700 + (i - 1) * 30;
@@ -134,8 +134,8 @@ async function initCampaignSystem() {
     console.log('   - 5 regions created (LCP, LTA, LEC, LPL, LCK)');
     console.log('   - 150 total stages (30 per region)');
     console.log('   - Difficulty progression: EASY → NORMAL → HARD → HELL');
-    console.log('   - Reward progression: 짜게 → 보통 → 좋게');
-    console.log('   - LCK starts at 700 power (easier entry)\n');
+    console.log('   - Power requirements: LCP(300) < LTA(550) < LEC(600) < LPL(650) < LCK(700)');
+    console.log('   - Reward progression: 짜게 → 보통 → 좋게 → 최고(LCK)\n');
 
   } catch (error) {
     await connection.rollback();

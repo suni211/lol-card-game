@@ -15,6 +15,7 @@ interface Card {
   team: string;
   overall: number;
   level?: number;
+  other_teams?: string | null;
 }
 
 /**
@@ -74,12 +75,22 @@ export function applyCoachBuffToCard(
       return baseOverall;
 
     case 'TEAM':
-      // Applies only to specific team (with normalization)
+      // Applies only to specific team (with normalization and other_teams support)
       if (coachBuff.buff_target) {
         const normalizedCardTeam = normalizeTeamName(card.team);
         const normalizedTargetTeam = normalizeTeamName(coachBuff.buff_target);
+
+        // Check main team
         if (normalizedCardTeam === normalizedTargetTeam) {
           return baseOverall + buffValue;
+        }
+
+        // Check other_teams
+        if (card.other_teams) {
+          const otherTeamsArray = card.other_teams.split(',').map(t => normalizeTeamName(t.trim()));
+          if (otherTeamsArray.includes(normalizedTargetTeam)) {
+            return baseOverall + buffValue;
+          }
         }
       }
       return baseOverall;

@@ -42,7 +42,7 @@ export async function getActiveCoachBuffs(userId: number): Promise<CoachBuff | n
  */
 export function applyCoachBuffToCard(
   basePower: number,
-  card: { position: string; team: string },
+  card: { position: string; team: string; other_teams?: string | null },
   coachBuff: CoachBuff | null
 ): number {
   if (!coachBuff) return basePower;
@@ -63,12 +63,22 @@ export function applyCoachBuffToCard(
 
     case 'TEAM':
       // Applies only to specific team (e.g., 'T1', 'GEN', 'DK', 'HLE')
-      // Normalize team names to handle SKT=T1, ROX=ROX Tigers=HLE
+      // Normalize team names and check other_teams as well
       if (coachBuff.buff_target) {
         const normalizedCardTeam = normalizeTeamName(card.team);
         const normalizedTargetTeam = normalizeTeamName(coachBuff.buff_target);
+
+        // Check main team
         if (normalizedCardTeam === normalizedTargetTeam) {
           return basePower + buffValue;
+        }
+
+        // Check other_teams
+        if (card.other_teams) {
+          const otherTeamsArray = card.other_teams.split(',').map(t => normalizeTeamName(t.trim()));
+          if (otherTeamsArray.includes(normalizedTargetTeam)) {
+            return basePower + buffValue;
+          }
         }
       }
       return basePower;
@@ -87,7 +97,7 @@ export function applyCoachBuffToCard(
  */
 export async function calculateDeckPowerWithCoachBuffs(
   userId: number,
-  cards: Array<{ level: number; overall: number; position: string; team: string }>
+  cards: Array<{ level: number; overall: number; position: string; team: string; other_teams?: string | null }>
 ): Promise<{ totalPower: number; coachBonus: number }> {
   const coachBuff = await getActiveCoachBuffs(userId);
 

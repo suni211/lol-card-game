@@ -9,25 +9,25 @@ export function calculateTier(rating: number): string {
   return 'BRONZE';
 }
 
-// 티어 색상
+// 티어 색상 (그라데이션)
 export function getRankTierColor(tier: string): string {
   switch (tier) {
     case 'CHALLENGER':
-      return 'from-cyan-400 via-blue-500 to-purple-600';
+      return 'from-cyan-300 via-blue-400 to-purple-500'; // 더 밝고 화려한 챌린저
     case 'MASTER':
-      return 'from-purple-500 via-pink-500 to-red-500';
+      return 'from-purple-400 via-pink-500 to-rose-500'; // 더 선명한 마스터
     case 'DIAMOND':
-      return 'from-blue-400 via-cyan-400 to-blue-500';
+      return 'from-sky-400 via-blue-400 to-indigo-500'; // 더 다이아몬드 느낌
     case 'PLATINUM':
-      return 'from-teal-400 via-cyan-500 to-teal-600';
+      return 'from-emerald-400 via-teal-400 to-cyan-500'; // 더 플래티넘 느낌
     case 'GOLD':
-      return 'from-yellow-400 via-yellow-500 to-yellow-600';
+      return 'from-amber-400 via-yellow-500 to-orange-400'; // 더 금빛
     case 'SILVER':
-      return 'from-gray-300 via-gray-400 to-gray-500';
+      return 'from-slate-300 via-gray-300 to-zinc-400'; // 더 은빛
     case 'BRONZE':
-      return 'from-orange-600 via-orange-700 to-orange-800';
+      return 'from-orange-700 via-amber-800 to-yellow-900'; // 더 청동빛
     default:
-      return 'from-gray-400 to-gray-500';
+      return 'from-gray-500 to-gray-600'; // 언랭크
   }
 }
 

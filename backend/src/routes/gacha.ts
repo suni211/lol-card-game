@@ -995,6 +995,17 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     let levelDowngraded = false;
     let levelLost = 0;
     let newLevel = targetCard.level;
+    let protectionUsed = false;
+
+    // Check for active enhancement protection effect
+    const [protectionEffects]: any = await connection.query(`
+      SELECT iul.id
+      FROM item_usage_log iul
+      JOIN shop_items si ON iul.item_id = si.id
+      WHERE iul.user_id = ? AND si.effect_type = 'protection' AND si.effect_value = 'no_downgrade'
+      ORDER BY iul.used_at DESC
+      LIMIT 1
+    `, [userId]);
 
     // Update target card level if success
     if (isSuccess) {
@@ -1014,14 +1025,28 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
       const shouldDowngrade = Math.random() * 100 < downgradeChance;
 
       if (shouldDowngrade && targetCard.level > 0) {
-        levelDowngraded = true;
-        levelLost = 1;
-        newLevel = targetCard.level - 1;
+        // Check if protection is active
+        if (protectionEffects.length > 0) {
+          // Protection active - prevent downgrade and consume protection
+          protectionUsed = true;
+          newLevel = targetCard.level; // Keep current level
 
-        await connection.query(
-          'UPDATE user_cards SET level = ? WHERE id = ?',
-          [newLevel, targetCardId]
-        );
+          // Remove the protection effect (it's consumed)
+          await connection.query(
+            'DELETE FROM item_usage_log WHERE id = ?',
+            [protectionEffects[0].id]
+          );
+        } else {
+          // No protection - apply downgrade
+          levelDowngraded = true;
+          levelLost = 1;
+          newLevel = targetCard.level - 1;
+
+          await connection.query(
+            'UPDATE user_cards SET level = ? WHERE id = ?',
+            [newLevel, targetCardId]
+          );
+        }
       }
     }
 
@@ -1040,6 +1065,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         materialCardNames: materialCards.map((c: any) => c.player_name),
         levelDowngraded,
         levelLost,
+        protectionUsed,
         coach: coachDropped,
       },
     });

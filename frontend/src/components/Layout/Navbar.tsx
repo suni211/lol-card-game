@@ -66,6 +66,7 @@ export default function Navbar() {
     },
     { path: '/market', label: '이적시장' },
     { path: '/raid', label: '레이드' },
+    { path: '/shop', label: '포인트 상점' },
     { path: '/titles', label: '칭호' },
     { path: '/ranking', label: '랭킹' },
     { path: '/strategy-stats', label: '전략 통계' },

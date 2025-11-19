@@ -55,6 +55,7 @@ import Settings from './pages/Settings';
 import Friendly from './pages/Friendly';
 import Titles from './pages/Titles';
 import Raid from './pages/Raid';
+import Shop from './pages/Shop';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -564,6 +565,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Raid />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/shop"
+            element={
+              <ProtectedRoute>
+                <Shop />
               </ProtectedRoute>
             }
           />

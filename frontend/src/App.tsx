@@ -87,12 +87,33 @@ function App() {
   const { token, isAuthenticated, updateUser, logout } = useAuthStore();
   const { setOnlineUsers } = useOnlineStore();
 
+  // Setup axios request interceptor to add token to headers
+  useEffect(() => {
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+    };
+  }, [token]);
+
   // Setup axios interceptor for 401 errors (invalid token)
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401 && isAuthenticated) {
+        // Don't logout on login/register endpoints
+        const isAuthEndpoint = error.config?.url?.includes('/auth/login') ||
+                               error.config?.url?.includes('/auth/register');
+
+        if (error.response?.status === 401 && isAuthenticated && !isAuthEndpoint) {
           console.log('[Auth] Token invalid (401), logging out...');
           toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
           logout();

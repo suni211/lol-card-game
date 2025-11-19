@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Target, Trophy, Calendar, CheckCircle, Clock } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { useSettingsStore } from '../store/settingsStore';
 import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -21,6 +22,7 @@ interface Mission {
 
 export default function Missions() {
   const { token, user, updateUser } = useAuthStore();
+  const { notifications } = useSettingsStore();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<number | null>(null);
@@ -66,7 +68,11 @@ export default function Missions() {
 
       if (response.data.success) {
         const reward = response.data.data.reward;
-        toast.success(`보상 ${reward}P 획득!`);
+
+        // Only show notification if enabled in settings
+        if (notifications.missionCompleted) {
+          toast.success(`보상 ${reward}P 획득!`);
+        }
 
         // Update user points
         if (user) {

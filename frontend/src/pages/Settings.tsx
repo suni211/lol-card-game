@@ -1,22 +1,17 @@
-import { useState } from 'react';
 import { Settings as SettingsIcon, Bell, Lock, User, Palette, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { useSettingsStore } from '../store/settingsStore';
+import toast from 'react-hot-toast';
 
 export default function Settings() {
   const { user } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
-  const [notifications, setNotifications] = useState({
-    matchResults: true,
-    guildActivities: true,
-    missionCompleted: true,
-    tradeOffers: true,
-  });
+  const { notifications, updateNotification } = useSettingsStore();
 
   const handleSaveSettings = () => {
-    // Save settings logic here
-    alert('설정이 저장되었습니다!');
+    toast.success('설정이 저장되었습니다!');
   };
 
   return (
@@ -150,7 +145,7 @@ export default function Settings() {
                   </div>
                   <button
                     onClick={() =>
-                      setNotifications(prev => ({ ...prev, [key]: !value }))
+                      updateNotification(key as keyof typeof notifications, !value)
                     }
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       value ? 'bg-primary-600' : 'bg-gray-300'

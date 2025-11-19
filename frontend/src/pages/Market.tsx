@@ -482,7 +482,7 @@ export default function Market() {
   };
 
   const teams = ['ALL', 'T1', 'GENG', 'HLE', 'KT', 'DK', 'DRX', 'BRO', 'NS', 'FOX', 'KDF'];
-  const seasons = ['ALL', '25', 'RE', '25HW', '25MSI', 'GR', 'T1', '22WC', '19WC', '18WC', '16WC', 'ICON', '19G2'];
+  const seasons = ['ALL', '25', 'RE', '25HW', '25MSI', 'GR', 'T1', '22WC', '19WC', '18WC', '17WC', '16WC', 'ICON', '19G2'];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">

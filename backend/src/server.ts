@@ -40,6 +40,7 @@ import coachRoutes from './routes/coach';
 import friendlyRoutes from './routes/friendly';
 import titlesRoutes from './routes/titles';
 import raidRoutes from './routes/raid';
+import spectatorRoutes from './routes/spectator';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -125,6 +126,7 @@ app.use('/api/coach', coachRoutes);
 app.use('/api/friendly', friendlyRoutes);
 app.use('/api/titles', titlesRoutes);
 app.use('/api/raid', raidRoutes);
+app.use('/api/spectator', spectatorRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

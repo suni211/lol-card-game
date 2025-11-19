@@ -74,6 +74,10 @@ interface RoundResult {
     player1: number;
     player2: number;
   };
+  details?: {
+    player1?: Record<string, { name: string; power: number }>;
+    player2?: Record<string, { name: string; power: number }>;
+  };
 }
 
 export default function Match() {
@@ -747,9 +751,26 @@ export default function Match() {
                   </button>
                 </div>
 
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <div className="text-sm text-blue-900 dark:text-blue-300 text-center">
-                    <strong>가위바위보 상성:</strong> 공격형 {">"} 한타형 {">"} 수비형 {">"} 공격형
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-700">
+                  <div className="text-sm text-gray-800 dark:text-gray-200">
+                    <div className="font-bold text-center mb-2 text-lg">📊 전략 효과</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                      <div className="bg-white/50 dark:bg-gray-800/50 p-2 rounded">
+                        <div className="font-semibold text-yellow-600 dark:text-yellow-400">⚡ 공격형</div>
+                        <div>초반 압박, 빠른 성장</div>
+                      </div>
+                      <div className="bg-white/50 dark:bg-gray-800/50 p-2 rounded">
+                        <div className="font-semibold text-blue-600 dark:text-blue-400">🛡️ 한타형</div>
+                        <div>협동 플레이, 한타 승률</div>
+                      </div>
+                      <div className="bg-white/50 dark:bg-gray-800/50 p-2 rounded">
+                        <div className="font-semibold text-green-600 dark:text-green-400">🎯 수비형</div>
+                        <div>전략적 운영, 안정성</div>
+                      </div>
+                    </div>
+                    <div className="text-center mt-2 text-xs opacity-75">
+                      각 페이즈마다 사용되는 스탯이 다릅니다!
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -868,20 +889,21 @@ export default function Match() {
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700"
               >
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">라운드 기록</h3>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {roundHistory.map((round, idx) => (
                     <div
                       key={idx}
-                      className={`p-4 rounded-lg border-2 ${
+                      className={`p-6 rounded-lg border-2 ${
                         round.winner === 1
                           ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
                           : 'bg-red-50 dark:bg-red-900/20 border-red-500'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                            R{round.round}
+                          <div className="text-lg font-bold text-gray-900 dark:text-white">
+                            {getPhaseName(round.round)}
                           </div>
                           <div className={`px-3 py-1 rounded-lg bg-gradient-to-r ${getStrategyColor(round.player1Strategy)} text-white text-sm font-bold`}>
                             {getStrategyName(round.player1Strategy)}
@@ -899,9 +921,47 @@ export default function Match() {
                           {round.winner === 1 ? '승리' : '패배'}
                         </div>
                       </div>
-                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center">
-                        파워: {round.player1Power} vs {round.player2Power}
+
+                      {/* Total Power */}
+                      <div className="flex items-center justify-center gap-6 mb-4 p-3 bg-white/50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">YOU</div>
+                          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{round.player1Power}</div>
+                        </div>
+                        <div className="text-2xl font-bold text-gray-400">VS</div>
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">{opponent?.username}</div>
+                          <div className="text-3xl font-bold text-red-600 dark:text-red-400">{round.player2Power}</div>
+                        </div>
                       </div>
+
+                      {/* Position Breakdown */}
+                      {round.details && (
+                        <div className="space-y-2">
+                          <div className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">포지션별 세부 정보:</div>
+                          {['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'].map((position) => {
+                            const p1Detail = round.details?.player1?.[position.toLowerCase()];
+                            const p2Detail = round.details?.player2?.[position.toLowerCase()];
+                            if (!p1Detail || !p2Detail) return null;
+
+                            return (
+                              <div key={position} className="grid grid-cols-3 gap-2 p-2 bg-white/30 dark:bg-gray-800/30 rounded">
+                                <div className="text-xs">
+                                  <div className="font-semibold text-blue-600 dark:text-blue-400">{p1Detail.name}</div>
+                                  <div className="text-gray-600 dark:text-gray-400">파워: {p1Detail.power}</div>
+                                </div>
+                                <div className="text-center text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center justify-center">
+                                  {position}
+                                </div>
+                                <div className="text-right text-xs">
+                                  <div className="font-semibold text-red-600 dark:text-red-400">{p2Detail.name}</div>
+                                  <div className="text-gray-600 dark:text-gray-400">파워: {p2Detail.power}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

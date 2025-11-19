@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, adminMiddleware, AuthRequest } from '../middleware/auth';
 import { calculateTraitBonus } from '../utils/traitBonus';
+import { calculateEnhancementBonus } from '../utils/enhancement';
 
 const router = express.Router();
 
@@ -50,7 +51,7 @@ async function calculateDeckPower(userId: number, connection: any): Promise<numb
   let totalPower = 0;
   cards.forEach((card: any) => {
     const basePower = card.overall;
-    const enhancementBonus = card.level * 2; // Each level adds 2 power
+    const enhancementBonus = calculateEnhancementBonus(card.level || 0);
     totalPower += basePower + enhancementBonus + calculateTraitBonus(card);
   });
 

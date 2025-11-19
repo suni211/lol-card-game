@@ -4,6 +4,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { normalizeTeamName } from '../utils/teamUtils';
 import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
 import { updateGuildMissionProgress } from '../utils/guildMissionTracker';
+import { calculateEnhancementBonus } from '../utils/enhancement';
 
 const router = express.Router();
 
@@ -97,15 +98,6 @@ async function calculateDeckPower(connection: any, deckId: number, userId?: numb
     [deckData.support_card_id]: 'SUPPORT',
   };
 
-  // Calculate enhancement bonus (대폭 하향)
-  const calculateEnhancementBonus = (level: number, overall: number): number => {
-    // 강화 레벨에 따른 보너스 (오버롤, 스탯 전부 동일 적용)
-    if (level <= 0) return 0;
-    if (level <= 4) return level; // 1~4강: +1씩
-    if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
-    return 10 + (level - 7) * 5; // 8~10강: +5씩
-  };
-
   // Apply coach buffs if userId is provided
   if (userId) {
     const { coachBonus: calculatedCoachBonus } = await calculateDeckPowerWithCoachBuffs(userId, cards);
@@ -113,7 +105,7 @@ async function calculateDeckPower(connection: any, deckId: number, userId?: numb
   }
 
   cards.forEach((card: any) => {
-    const enhancementBonus = calculateEnhancementBonus(card.level, card.overall);
+    const enhancementBonus = calculateEnhancementBonus(card.level || 0);
     let power = card.overall + enhancementBonus;
 
     // Wrong position penalty

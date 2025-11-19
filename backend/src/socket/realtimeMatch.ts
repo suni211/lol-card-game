@@ -6,6 +6,7 @@ import { addExperience, calculateExpReward } from '../utils/levelTracker';
 import { checkAndAwardMatchBonuses, applyHappyHourMultiplier } from '../utils/matchBonuses';
 import { awardReferralMatchBonus } from '../utils/referralBonuses';
 import { calculateTraitBonus } from '../utils/traitBonus';
+import { calculateEnhancementBonus } from '../utils/enhancement';
 
 // 전략 타입 정의
 type Strategy = 'AGGRESSIVE' | 'TEAMFIGHT' | 'DEFENSIVE';
@@ -132,14 +133,7 @@ function calculateDeckObjectPower(
 
     // Calculate level bonus
     const level = card.level || 0;
-    let levelBonus = 0;
-    if (level <= 4) {
-      levelBonus = level; // 1~4강: +1씩
-    } else if (level <= 7) {
-      levelBonus = 4 + (level - 4) * 2; // 5~7강: +2씩
-    } else {
-      levelBonus = 10 + (level - 7) * 5; // 8~10강: +5씩
-    }
+    const levelBonus = calculateEnhancementBonus(level);
 
     // 포지션별 가중치 적용한 스탯 평균 계산
     const position = pos.toUpperCase();
@@ -245,14 +239,7 @@ async function calculateDeckStatPower(
     let totalPower = 0;
     cards.forEach((card: any, index: number) => {
       // 강화 등급별 오버롤 보너스 계산
-      let levelBonus = 0;
-      if (card.level <= 4) {
-        levelBonus = card.level; // 1~4강: +1씩
-      } else if (card.level <= 7) {
-        levelBonus = 4 + (card.level - 4) * 2; // 5~7강: +2씩 (4 + 2,4,6)
-      } else {
-        levelBonus = 10 + (card.level - 7) * 4; // 8~10강: +4씩 (10 + 4,8,12)
-      }
+      const levelBonus = calculateEnhancementBonus(card.level || 0);
 
       // 포지션별 가중치 적용한 스탯 평균 계산
       const positionWeights = POSITION_WEIGHTS[card.position] || POSITION_WEIGHTS.MID;

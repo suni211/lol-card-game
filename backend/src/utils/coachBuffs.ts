@@ -1,5 +1,6 @@
 import pool from '../config/database';
 import { normalizeTeamName } from './teamUtils';
+import { calculateEnhancementBonus } from './enhancement';
 
 interface CoachBuff {
   buff_type: 'OVERALL' | 'POSITION' | 'TEAM' | 'STRATEGY';
@@ -89,14 +90,6 @@ export async function calculateDeckPowerWithCoachBuffs(
   cards: Array<{ level: number; overall: number; position: string; team: string }>
 ): Promise<{ totalPower: number; coachBonus: number }> {
   const coachBuff = await getActiveCoachBuffs(userId);
-
-  // Calculate enhancement bonus helper
-  const calculateEnhancementBonus = (level: number): number => {
-    if (level <= 0) return 0;
-    if (level <= 4) return level; // 1~4강: +1씩
-    if (level <= 7) return 4 + (level - 4) * 2; // 5~7강: +2씩
-    return 10 + (level - 7) * 5; // 8~10강: +5씩
-  };
 
   let totalPower = 0;
   let coachBonus = 0;

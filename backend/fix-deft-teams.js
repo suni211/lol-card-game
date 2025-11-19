@@ -23,6 +23,22 @@ async function fixDeftTeams() {
     connection = await mysql.createConnection(dbConfig);
     console.log('Connected to database');
 
+    // First, check if other_teams column exists
+    const [columns] = await connection.query(`
+      SHOW COLUMNS FROM players LIKE 'other_teams'
+    `);
+
+    if (columns.length === 0) {
+      console.log('Adding other_teams column to players table...');
+      await connection.query(`
+        ALTER TABLE players
+        ADD COLUMN other_teams VARCHAR(255) DEFAULT NULL AFTER team
+      `);
+      console.log('✓ other_teams column added');
+    } else {
+      console.log('✓ other_teams column already exists');
+    }
+
     // ICON Deft (DRX as main team)
     await connection.query(`
       UPDATE players

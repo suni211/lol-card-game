@@ -91,7 +91,7 @@ router.post('/claim', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
 
-    if (!level || level < 2 || level > 30) {
+    if (!level || level < 2 || level > 60) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Invalid level' });
     }

@@ -6,6 +6,7 @@ import { calculateTier, canMatchTiers, UserTier } from '../utils/tierCalculator'
 import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { createRealtimeMatch, setupRealtimeMatch, handlePlayerDisconnect } from './realtimeMatch';
+import { checkDeckSalaryCap } from '../utils/salaryCheck';
 
 // 해피아워 체크 (20:00-21:00 KST)
 function isHappyHour(): boolean {
@@ -588,6 +589,13 @@ export function setupMatchmaking(io: Server) {
 
         if (!user.deck_id) {
           socket.emit('queue_error', { error: 'No active deck found' });
+          return;
+        }
+
+        // Check salary cap
+        const salaryCheck = await checkDeckSalaryCap(pool, user.deck_id);
+        if (!salaryCheck.valid) {
+          socket.emit('queue_error', { error: salaryCheck.error });
           return;
         }
 

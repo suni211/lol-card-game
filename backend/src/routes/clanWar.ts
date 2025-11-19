@@ -2,6 +2,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { checkDeckSalaryCap } from '../utils/salaryCheck';
 
 const router = express.Router();
 
@@ -152,6 +153,30 @@ router.post('/matchmaking/start', authMiddleware, async (req: AuthRequest, res) 
     }
 
     const userGuildId = user[0].guild_id;
+
+    // Get user's active deck and check salary cap
+    const [userDeck]: any = await connection.query(
+      'SELECT id FROM decks WHERE user_id = ? AND is_active = TRUE',
+      [userId]
+    );
+
+    if (userDeck.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '활성 덱이 없습니다.',
+      });
+    }
+
+    // Check salary cap
+    const salaryCheck = await checkDeckSalaryCap(connection, userDeck[0].id);
+    if (!salaryCheck.valid) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: salaryCheck.error,
+      });
+    }
 
     // Get current season
     const [seasons]: any = await connection.query(

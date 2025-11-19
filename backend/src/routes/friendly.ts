@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { checkDeckSalaryCap } from '../utils/salaryCheck';
 
 const router = express.Router();
 
@@ -185,6 +186,19 @@ router.post('/accept/:id', authMiddleware, async (req: AuthRequest, res) => {
     if (player1Deck.length === 0 || player2Deck.length === 0) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: '한 명 이상의 플레이어가 활성 덱이 없습니다.' });
+    }
+
+    // Check salary cap for both players
+    const player1SalaryCheck = await checkDeckSalaryCap(connection, player1Deck[0].id);
+    if (!player1SalaryCheck.valid) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: `상대방: ${player1SalaryCheck.error}` });
+    }
+
+    const player2SalaryCheck = await checkDeckSalaryCap(connection, player2Deck[0].id);
+    if (!player2SalaryCheck.valid) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: player2SalaryCheck.error });
     }
 
     // Create match

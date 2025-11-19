@@ -3,6 +3,7 @@ import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { emitPointUpdate } from '../server';
+import { checkDeckSalaryCap } from '../utils/salaryCheck';
 
 const router = express.Router();
 
@@ -501,6 +502,16 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const deckId = decks[0].id;
+
+    // Check salary cap
+    const salaryCheck = await checkDeckSalaryCap(connection, deckId);
+    if (!salaryCheck.valid) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: salaryCheck.error,
+      });
+    }
 
     // Calculate deck power
     const [deck]: any = await connection.query('SELECT * FROM decks WHERE id = ?', [deckId]);

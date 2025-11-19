@@ -236,18 +236,23 @@ export default function Agent() {
   };
 
   const calculateTotalOverallForAgent = () => {
-    return selectedCards.reduce((sum, cardId) => {
-      const card = userCards.find(c => c.id === cardId);
-      if (!card) return sum;
-      const enhancementBonus = calculateEnhancementBonus(card.level);
-      const cardData = {
-        position: card.player.position,
-        team: card.player.team,
-        overall: card.player.overall,
-        level: card.level
-      };
-      return sum + calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
-    }, 0);
+    try {
+      return selectedCards.reduce((sum, cardId) => {
+        const card = userCards.find(c => c.id === cardId);
+        if (!card) return sum;
+        const enhancementBonus = calculateEnhancementBonus(card.level);
+        const cardData = {
+          position: card.player.position,
+          team: card.player.team,
+          overall: card.player.overall,
+          level: card.level
+        };
+        return sum + calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
+      }, 0);
+    } catch (error) {
+      console.error('Calculate total overall error:', error);
+      return 0;
+    }
   };
 
   const handleSubmit = async () => {

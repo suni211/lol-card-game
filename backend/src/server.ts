@@ -21,7 +21,7 @@ import aiRoutes from './routes/ai';
 import suggestionsRoutes from './routes/suggestions';
 import fusionRoutes from './routes/fusion';
 import achievementsRoutes from './routes/achievements';
-import adminRoutes from './routes/admin';
+import adminRoutes, { setSocketIOForAdmin } from './routes/admin';
 import marketRoutes from './routes/market';
 import couponRoutes, { setSocketIOForCoupon } from './routes/coupon';
 import packsRoutes from './routes/packs';
@@ -156,6 +156,9 @@ setSocketIOForShop(io);
 
 // Setup socket.io for coupon
 setSocketIOForCoupon(io);
+
+// Setup socket.io for admin
+setSocketIOForAdmin(io);
 
 // NEW ONLINE USERS SYSTEM - Disconnect based only (no cleanup)
 interface OnlineUser {

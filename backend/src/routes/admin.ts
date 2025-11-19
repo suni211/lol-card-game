@@ -1,8 +1,14 @@
 import express, { Response } from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { Server } from 'socket.io';
 
 const router = express.Router();
+let io: Server;
+
+export const setSocketIOForAdmin = (socketIO: Server) => {
+  io = socketIO;
+};
 
 // Admin middleware - 특정 사용자만 관리자 권한 부여
 const adminMiddleware = async (req: AuthRequest, res: Response, next: any) => {
@@ -85,6 +91,19 @@ router.post('/give-points', authMiddleware, adminMiddleware, async (req: AuthReq
 
     await connection.commit();
 
+    // Get updated user points for real-time update
+    const [updatedUser]: any = await connection.query(
+      'SELECT points FROM users WHERE id = ?',
+      [targetUser.id]
+    );
+
+    // Send real-time update via Socket.IO
+    if (io) {
+      io.to(`user_${targetUser.id}`).emit('pointsUpdate', {
+        points: updatedUser[0].points
+      });
+    }
+
     res.json({
       success: true,
       message: `${username}님에게 ${points}P를 지급했습니다.`,
@@ -162,6 +181,19 @@ router.post('/deduct-points', authMiddleware, adminMiddleware, async (req: AuthR
     await connection.commit();
 
     const newPoints = Math.max(0, targetUser.points - points);
+
+    // Get updated user points for real-time update
+    const [updatedUser]: any = await connection.query(
+      'SELECT points FROM users WHERE id = ?',
+      [targetUser.id]
+    );
+
+    // Send real-time update via Socket.IO
+    if (io) {
+      io.to(`user_${targetUser.id}`).emit('pointsUpdate', {
+        points: updatedUser[0].points
+      });
+    }
 
     res.json({
       success: true,

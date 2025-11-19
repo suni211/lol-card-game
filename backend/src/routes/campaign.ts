@@ -164,15 +164,8 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
       });
     }
 
-    // Calculate stars (1-3 based on rounds won and power difference)
-    let stars = 1;
-    if (playerRoundsWon === 3) {
-      // Perfect victory = 3 stars
-      stars = 3;
-    } else if (avgPlayerPower >= avgStagePower * 1.2) {
-      // 2 rounds won + 20% more power = 2 stars
-      stars = 2;
-    }
+    // Calculate stars based on rounds won (1승=1별, 2승=2별, 3승=3별)
+    const stars = playerRoundsWon;
 
     // Check existing progress
     const [existingProgress]: any = await connection.query(

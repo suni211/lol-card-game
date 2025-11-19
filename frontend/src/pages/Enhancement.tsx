@@ -622,7 +622,7 @@ export default function Enhancement() {
       </AnimatePresence>
 
       {/* Floating Enhancement Button */}
-      {selectedCard && selectedMaterials.length > 0 && (
+      {targetCard && materialCards.length > 0 && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-bounce-once">
           <button
             onClick={handleEnhance}
@@ -646,7 +646,7 @@ export default function Enhancement() {
             ) : (
               <>
                 <Zap className="w-6 h-6" />
-                <span>강화하기 ({selectedMaterials.length}/3)</span>
+                <span>강화하기 ({materialCards.length}/3)</span>
               </>
             )}
           </button>

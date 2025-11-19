@@ -86,20 +86,21 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
   const teams: { [key: string]: number } = {};
   let totalPower = 0;
 
-  // ICON Peanut의 여러 팀 시너지 (활약했던 모든 팀)
-  const peanutTeams = ['T1', 'HLE', 'NS', 'GEN', 'LGD'];
-
   slots.forEach(slot => {
     if (slot.card) {
       const power = slot.card.player.overall + slot.card.level;
       totalPower += power;
 
-      // ICON Peanut은 여러 팀에 중복 카운트
-      if (slot.card.player.name === 'ICON Peanut' || slot.card.player.name === 'Peanut') {
-        peanutTeams.forEach(team => {
-          teams[team] = (teams[team] || 0) + 1;
+      // Check if team field contains multiple teams (comma-separated)
+      if (slot.card.player.team && slot.card.player.team.includes(',')) {
+        // Multiple teams (e.g., ICON Peanut with "T1,HLE,NS,GEN,LGD")
+        const multipleTeams = slot.card.player.team.split(',').map(t => t.trim());
+        multipleTeams.forEach(team => {
+          const synergyTeam = normalizeTeamName(team);
+          teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
         });
       } else {
+        // Single team
         const synergyTeam = normalizeTeamName(slot.card.player.team);
         teams[synergyTeam] = (teams[synergyTeam] || 0) + 1;
       }

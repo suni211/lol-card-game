@@ -84,6 +84,7 @@ export default function Navbar() {
       items: [
         { path: '/missions', label: '미션' },
         { path: '/achievements', label: '업적' },
+        { path: '/agent', label: '에이전트' },
       ]
     },
     {

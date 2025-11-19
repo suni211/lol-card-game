@@ -726,6 +726,7 @@ router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
+        p.salary,
         p.region,
         p.season,
         CASE

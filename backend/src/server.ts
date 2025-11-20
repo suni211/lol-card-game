@@ -47,6 +47,7 @@ import lotteryRoutes from './routes/lottery';
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
 import { setupRealtimeMatch } from './socket/realtimeMatch';
+import { setupMobaMatch } from './socket/mobaMatch';
 import jwt from 'jsonwebtoken';
 
 dotenv.config();
@@ -219,6 +220,9 @@ io.on('connection', (socket) => {
 
       // Setup realtime match event handlers
       setupRealtimeMatch(io, socket, decoded);
+
+      // Setup MOBA match event handlers
+      setupMobaMatch(io, socket, decoded);
     } catch (error) {
       console.error('[Auth] Authentication error:', error);
       socket.emit('auth_error', { message: 'Invalid token' });

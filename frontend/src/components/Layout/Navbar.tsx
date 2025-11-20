@@ -57,6 +57,7 @@ export default function Navbar() {
     {
       label: '경기',
       items: [
+        { path: '/match-select', label: 'MOBA 대전' },
         { path: '/match', label: '랭크전' },
         { path: '/practice', label: '일반전' },
         { path: '/spectator', label: '관전' },

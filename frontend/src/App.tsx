@@ -59,6 +59,8 @@ import Campaign from './pages/Campaign';
 import CampaignBattle from './pages/CampaignBattle';
 import Agent from './pages/Agent';
 import Lottery from './pages/Lottery';
+import MobaMatch from './pages/MobaMatch';
+import MatchSelect from './pages/MatchSelect';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -638,6 +640,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Lottery />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/match-select"
+            element={
+              <ProtectedRoute>
+                <MatchSelect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/moba-match"
+            element={
+              <ProtectedRoute>
+                <MobaMatch />
               </ProtectedRoute>
             }
           />

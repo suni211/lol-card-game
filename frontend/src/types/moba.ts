@@ -126,6 +126,7 @@ export interface Item {
   effects: any;
   buildsFrom?: string[];
   description: string;
+  icon?: string;
 }
 
 // Action options per position

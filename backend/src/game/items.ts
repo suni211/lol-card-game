@@ -12,6 +12,7 @@ export const ITEMS: Record<string, Item> = {
       health: 10, // 10% heal on use
     },
     description: '체력을 10% 회복합니다.',
+    icon: '/items/health_potion.png',
   },
   control_ward: {
     id: 'control_ward',
@@ -21,6 +22,7 @@ export const ITEMS: Record<string, Item> = {
     restriction: 'NONE',
     effects: {},
     description: '상대방의 라인 한 곳을 1턴 동안 감시합니다.',
+    icon: '/items/control_ward.png',
   },
 
   // ========== BASIC ITEMS (300 Gold) ==========
@@ -35,6 +37,7 @@ export const ITEMS: Record<string, Item> = {
       skillHaste: 0.2,
     },
     description: '공격력 +2, 공격 시 스킬 턴 0.2 단축',
+    icon: '/items/dorans_ring.png',
   },
   dorans_blade: {
     id: 'dorans_blade',
@@ -47,6 +50,7 @@ export const ITEMS: Record<string, Item> = {
       lifeSteal: 1,
     },
     description: '공격력 +2, 공격 피해 비례 피 회복 1%',
+    icon: '/items/dorans_blade.png',
   },
   cloth_armor: {
     id: 'cloth_armor',
@@ -58,6 +62,7 @@ export const ITEMS: Record<string, Item> = {
       defense: 3,
     },
     description: '방어력 +3',
+    icon: '/items/cloth_armor.png',
   },
   broken_stopwatch: {
     id: 'broken_stopwatch',
@@ -69,6 +74,7 @@ export const ITEMS: Record<string, Item> = {
       evasion: 2,
     },
     description: '회피력 +2',
+    icon: '/items/broken_stopwatch.png',
   },
 
   // ========== INTERMEDIATE ITEMS (1000 Gold) ==========
@@ -82,6 +88,7 @@ export const ITEMS: Record<string, Item> = {
       speed: 3,
     },
     description: '이속 +3 (먼저 공격할 가능성 증가)',
+    icon: '/items/boots.png',
   },
   executioners_calling: {
     id: 'executioners_calling',
@@ -94,6 +101,7 @@ export const ITEMS: Record<string, Item> = {
       healReduction: 20,
     },
     description: '공격력 +5, 상대방 피 회복 20% 감소',
+    icon: '/items/executioners_calling.png',
   },
   vampiric_scepter: {
     id: 'vampiric_scepter',
@@ -106,6 +114,7 @@ export const ITEMS: Record<string, Item> = {
       lifeSteal: 10,
     },
     description: '공격력 +3, 피해의 10% 회복',
+    icon: '/items/vampiric_scepter.png',
   },
   glowing_sword: {
     id: 'glowing_sword',
@@ -118,6 +127,7 @@ export const ITEMS: Record<string, Item> = {
       skillHaste: 1,
     },
     description: '공격력 +5, 스킬 1턴 단축',
+    icon: '/items/glowing_sword.png',
   },
   caulfields_warhammer: {
     id: 'caulfields_warhammer',
@@ -130,6 +140,7 @@ export const ITEMS: Record<string, Item> = {
       skillHaste: 1.5,
     },
     description: '공격력 +3, 스킬 1.5턴 단축',
+    icon: '/items/caulfields_warhammer.png',
   },
   tunneler: {
     id: 'tunneler',
@@ -142,6 +153,7 @@ export const ITEMS: Record<string, Item> = {
       health: 50,
     },
     description: '공격력 +3, 체력 +50',
+    icon: '/items/tunneler.png',
   },
   tiamat: {
     id: 'tiamat',
@@ -154,6 +166,7 @@ export const ITEMS: Record<string, Item> = {
       aoePercent: 10,
     },
     description: '공격력 +5, 한타 시 여러 선수에게 10% 딜',
+    icon: '/items/tiamat.png',
   },
   hexdrinker: {
     id: 'hexdrinker',
@@ -166,6 +179,7 @@ export const ITEMS: Record<string, Item> = {
       shieldPercent: 5,
     },
     description: '공격력 +6, 체력의 5% 보호막 생성',
+    icon: '/items/hexdrinker.png',
   },
 
   // ADC INTERMEDIATE (1000 Gold)
@@ -180,6 +194,7 @@ export const ITEMS: Record<string, Item> = {
       speed: 2,
     },
     description: '공격력 +5, 이속 +2',
+    icon: '/items/hearthbound_axe.png',
   },
   zeal: {
     id: 'zeal',
@@ -193,6 +208,7 @@ export const ITEMS: Record<string, Item> = {
       critChance: 1,
     },
     description: '공격력 +3, 이속 +3, 치명타 1%',
+    icon: '/items/zeal.png',
   },
   recurve_bow: {
     id: 'recurve_bow',
@@ -206,6 +222,7 @@ export const ITEMS: Record<string, Item> = {
       evasion: 1,
     },
     description: '공격력 +1, 이속 +5, 회피력 +1',
+    icon: '/items/recurve_bow.png',
   },
   noonquiver: {
     id: 'noonquiver',
@@ -219,6 +236,7 @@ export const ITEMS: Record<string, Item> = {
       critChance: 5,
     },
     description: '공격력 +2, 이속 +3, 치명타 5%',
+    icon: '/items/noonquiver.png',
   },
   kircheis_shard: {
     id: 'kircheis_shard',
@@ -231,6 +249,7 @@ export const ITEMS: Record<string, Item> = {
       onHitDamage: 5,
     },
     description: '공격력 +3, 1턴마다 추가 피해 5%',
+    icon: '/items/kircheis_shard.png',
   },
   pickaxe: {
     id: 'pickaxe',
@@ -242,6 +261,7 @@ export const ITEMS: Record<string, Item> = {
       attack: 7,
     },
     description: '공격력 +7',
+    icon: '/items/pickaxe.png',
   },
 
   // SUPPORT INTERMEDIATE (1000 Gold)
@@ -256,6 +276,7 @@ export const ITEMS: Record<string, Item> = {
       skillHaste: 0.25,
     },
     description: '모든 팀원 이속 +1, 자신의 스킬 0.25턴 단축',
+    icon: '/items/minjun_necklace.png',
   },
   dorans_diamond: {
     id: 'dorans_diamond',
@@ -268,6 +289,7 @@ export const ITEMS: Record<string, Item> = {
       adcShieldPercent: 30,
     },
     description: 'ADC 피해 시 자신의 체력 비례 30% 보호막 부여',
+    icon: '/items/dorans_diamond.png',
   },
 
   // ========== LEGENDARY ITEMS (3000 Gold) ==========
@@ -286,6 +308,7 @@ export const ITEMS: Record<string, Item> = {
       weakenOnHit: true,
     },
     description: '공격력 +13, 체력 +33, 이속 +3, 스킬 가속 0.3, 공격 시 나약함 부여 (방어력 -10%)',
+    icon: '/items/trinity_force.png',
   },
   blade_of_ruined_king: {
     id: 'blade_of_ruined_king',
@@ -300,6 +323,7 @@ export const ITEMS: Record<string, Item> = {
       weakenOnHit: true,
     },
     description: '공격력 +15, 피해의 15% 회복, 나약함 부여',
+    icon: '/items/blade_of_ruined_king.png',
   },
   minjun_boots: {
     id: 'minjun_boots',
@@ -314,6 +338,7 @@ export const ITEMS: Record<string, Item> = {
       ignoreWeaken: true,
     },
     description: '이속 +10, 공격력 +5, 나약함 무시',
+    icon: '/items/minjun_boots.png',
   },
   sorcerers_final: {
     id: 'sorcerers_final',
@@ -327,6 +352,7 @@ export const ITEMS: Record<string, Item> = {
       ignoreWeaken: true,
     },
     description: '이속 +15, 나약함 무시',
+    icon: '/items/sorcerers_final.png',
   },
   eclipse: {
     id: 'eclipse',
@@ -341,6 +367,7 @@ export const ITEMS: Record<string, Item> = {
       shieldPercent: 10,
     },
     description: '공격력 +25, 스킬 가속 0.2, 1턴마다 공격력 비례 보호막',
+    icon: '/items/eclipse.png',
   },
   muramana: {
     id: 'muramana',
@@ -355,6 +382,7 @@ export const ITEMS: Record<string, Item> = {
       maxStacks: 17, // Max +51 attack
     },
     description: '공격력 +3, 스킬 가속 0.5, 1턴마다 공격력 +3 (최대 +51)',
+    icon: '/items/muramana.png',
   },
   chempunk_chainsword: {
     id: 'chempunk_chainsword',
@@ -369,6 +397,7 @@ export const ITEMS: Record<string, Item> = {
       healReduction: 30,
     },
     description: '공격력 +10, 스킬 가속 0.3, 체력 +100, 상대 회복 30% 방해',
+    icon: '/items/chempunk_chainsword.png',
   },
   spear_of_shojin: {
     id: 'spear_of_shojin',
@@ -384,6 +413,7 @@ export const ITEMS: Record<string, Item> = {
       maxStacks: 3,
     },
     description: '공격력 +20, 공격 시 스킬 가속 0.5턴, 공격당 +10% 딜 (최대 3중첩)',
+    icon: '/items/spear_of_shojin.png',
   },
   shattered_sky: {
     id: 'shattered_sky',
@@ -400,6 +430,7 @@ export const ITEMS: Record<string, Item> = {
       lifeSteal: 6, // Based on lost health
     },
     description: '공격력 +25, 체력 +100, 항상 치명타, 턴당 +5% 딜, 잃은 체력 6% 회복',
+    icon: '/items/shattered_sky.png',
   },
   ravenous_hydra: {
     id: 'ravenous_hydra',
@@ -414,6 +445,7 @@ export const ITEMS: Record<string, Item> = {
       aoePercent: 10,
     },
     description: '공격력 +20, 생명력 흡수 10%, 여러명에게 10% 딜',
+    icon: '/items/ravenous_hydra.png',
   },
   titanic_hydra: {
     id: 'titanic_hydra',
@@ -428,6 +460,7 @@ export const ITEMS: Record<string, Item> = {
       aoePercent: 10,
     },
     description: '공격력 +20, 체력 +300, 여러명에게 10% 딜',
+    icon: '/items/titanic_hydra.png',
   },
   warmogs_armor: {
     id: 'warmogs_armor',
@@ -440,6 +473,7 @@ export const ITEMS: Record<string, Item> = {
       // Special: 30% heal on defend
     },
     description: '체력 +500, 방어 시 체력 30% 회복',
+    icon: '/items/warmogs_armor.png',
   },
 
   // ADC LEGENDARY (3000 Gold)
@@ -455,6 +489,7 @@ export const ITEMS: Record<string, Item> = {
       critChance: 20,
     },
     description: '공격력 +30, 치명타 확률 20%',
+    icon: '/items/essence_reaver.png',
   },
   the_collector: {
     id: 'the_collector',
@@ -469,6 +504,7 @@ export const ITEMS: Record<string, Item> = {
       executeThreshold: 5, // Execute below 5% HP, gives 100 gold
     },
     description: '공격력 +50, 치명타 25%, 방관 5, 5% 미만 적 처형 (100골드)',
+    icon: '/items/the_collector.png',
   },
   yun_tal_wildarrows: {
     id: 'yun_tal_wildarrows',
@@ -482,6 +518,7 @@ export const ITEMS: Record<string, Item> = {
       speed: 10,
     },
     description: '공격력 +55, 이속 +10',
+    icon: '/items/yun_tal_wildarrows.png',
   },
   kraken_slayer: {
     id: 'kraken_slayer',
@@ -494,6 +531,7 @@ export const ITEMS: Record<string, Item> = {
       onHitDamage: 10, // Every 2 turns
     },
     description: '공격력 +30, 2턴마다 공격력 비례 10% 고정피해',
+    icon: '/items/kraken_slayer.png',
   },
   phantom_dancer: {
     id: 'phantom_dancer',
@@ -507,6 +545,7 @@ export const ITEMS: Record<string, Item> = {
       speed: 20,
     },
     description: '공격력 +55, 공격 시 이속 +20',
+    icon: '/items/phantom_dancer.png',
   },
 
   // SUPPORT LEGENDARY (3000 Gold)
@@ -523,6 +562,7 @@ export const ITEMS: Record<string, Item> = {
       // Special: 10% heal per turn
     },
     description: '체력 +200, 방어력 20, 이속 10, 턴마다 체력 회복 10%',
+    icon: '/items/knights_vow.png',
   },
   locket_of_solari: {
     id: 'locket_of_solari',
@@ -537,6 +577,7 @@ export const ITEMS: Record<string, Item> = {
       teamShieldPercent: 5,
     },
     description: '체력 +200, 방어력 20, 이속 3, 턴마다 팀원에게 5% 보호막',
+    icon: '/items/locket_of_solari.png',
   },
   ardent_censer: {
     id: 'ardent_censer',
@@ -550,6 +591,7 @@ export const ITEMS: Record<string, Item> = {
       // Special: Shield amount +10%
     },
     description: '체력 +100, 공격력 +10, 보호막 양 10% 증가',
+    icon: '/items/ardent_censer.png',
   },
   staff_of_flowing_water: {
     id: 'staff_of_flowing_water',
@@ -563,6 +605,7 @@ export const ITEMS: Record<string, Item> = {
       // Special: +10 attack when healing ally
     },
     description: '공격력 +5, ADC 회복 3%, 회복 시 공격력 +10',
+    icon: '/items/staff_of_flowing_water.png',
   },
   redemption: {
     id: 'redemption',
@@ -574,6 +617,7 @@ export const ITEMS: Record<string, Item> = {
       // Special: 10% team heal per turn
     },
     description: '1턴마다 모든 팀원 체력 10% 회복',
+    icon: '/items/redemption.png',
   },
 };
 

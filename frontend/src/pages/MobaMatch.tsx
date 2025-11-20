@@ -835,14 +835,20 @@ function PlayerCard({
           {player.items.map((itemId, idx) => {
             const itemInfo = allItems?.find(i => i.id === itemId);
             const itemName = itemInfo?.name || itemId.replace(/_/g, ' ');
+            const itemIcon = itemInfo?.icon || `/items/${itemId}.png`;
             return (
               <div
                 key={idx}
                 className="relative group"
               >
-                <div className="w-6 h-6 rounded bg-gray-700 border border-gray-600 flex items-center justify-center text-xs text-gray-300 cursor-help">
-                  {itemName.substring(0, 2)}
-                </div>
+                <img
+                  src={itemIcon}
+                  alt={itemName}
+                  className="w-6 h-6 rounded border border-gray-600 cursor-help"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/items/default.svg';
+                  }}
+                />
                 {/* Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-black/90 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                   {itemName}

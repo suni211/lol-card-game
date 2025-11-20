@@ -573,7 +573,7 @@ export default function MobaMatch() {
                           alt={item.name}
                           className="w-8 h-8 rounded"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/items/default.png';
+                            (e.target as HTMLImageElement).src = '/items/default.svg';
                           }}
                         />
                         <div>

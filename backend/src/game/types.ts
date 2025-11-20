@@ -217,6 +217,8 @@ export interface MatchState {
 
   // Ban/Pick phase
   bannedChampions: number[]; // Champion IDs that are banned
+  team1Picks: number[];
+  team2Picks: number[];
   banPickPhase?: number; // Current phase (1-7)
   // Phase order: 1팀1개 -> 2팀2개 -> 1팀2개 -> 2팀1개 -> 1팀1개 -> 2팀2개 -> 1팀1개
 

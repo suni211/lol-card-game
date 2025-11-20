@@ -4,489 +4,77 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
-// Get user collection with filters
-router.get('/', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.user!.id;
-    const { tier, season, team, position, search } = req.query;
+// Preview cards to be culled
+router.post('/cull-cards/preview', authMiddleware, async (req: AuthRequest, res) => {
+  const { overallThreshold } = req.body;
+  const userId = req.user?.id;
 
-    let query = `
-      SELECT
-        p.*,
-        ucc.first_obtained_at,
-        ucc.total_obtained,
-        ucc.reward_claimed,
-        IF(ucc.id IS NOT NULL, TRUE, FALSE) as collected
-      FROM players p
-      LEFT JOIN user_collected_cards ucc ON p.id = ucc.player_id AND ucc.user_id = ?
-      WHERE 1=1
-    `;
-
-    const params: any[] = [userId];
-
-    if (tier) {
-      // Calculate tier from overall rating
-      if (tier === 'ICON') {
-        query += " AND p.name LIKE 'ICON%'";
-      } else if (tier === 'COMMON') {
-        query += " AND p.name NOT LIKE 'ICON%' AND p.overall <= 80";
-      } else if (tier === 'RARE') {
-        query += " AND p.name NOT LIKE 'ICON%' AND p.overall > 80 AND p.overall <= 90";
-      } else if (tier === 'EPIC') {
-        query += " AND p.name NOT LIKE 'ICON%' AND p.overall > 90 AND p.overall <= 100";
-      } else if (tier === 'LEGENDARY') {
-        query += " AND p.name NOT LIKE 'ICON%' AND p.overall > 100";
-      }
-    }
-
-    if (season) {
-      query += ' AND p.season = ?';
-      params.push(season);
-    }
-
-    if (team) {
-      query += ' AND p.team = ?';
-      params.push(team);
-    }
-
-    if (position) {
-      query += ' AND p.position = ?';
-      params.push(position);
-    }
-
-    if (search) {
-      query += ' AND p.name LIKE ?';
-      params.push(`%${search}%`);
-    }
-
-    query += ' ORDER BY p.overall DESC, p.name ASC';
-
-    const [cards]: any = await pool.query(query, params);
-
-    // Get collection stats
-    const [stats]: any = await pool.query(
-      `SELECT
-        COUNT(DISTINCT ucc.player_id) as collected_count,
-        (SELECT COUNT(*) FROM players) as total_count
-       FROM user_collected_cards ucc
-       WHERE ucc.user_id = ?`,
-      [userId]
-    );
-
-    res.json({
-      success: true,
-      data: {
-        cards,
-        stats: stats[0],
-      },
-    });
-  } catch (error: any) {
-    console.error('Get collection error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
-});
-
-// Get collection progress
-router.get('/progress', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.user!.id;
-
-    // Get overall progress
-    const [progress]: any = await pool.query(
-      'SELECT * FROM user_collection_progress WHERE user_id = ?',
-      [userId]
-    );
-
-    // Get tier-wise progress
-    const [tierProgress]: any = await pool.query(
-      `SELECT
-        CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
-          WHEN p.overall <= 80 THEN 'COMMON'
-          WHEN p.overall <= 90 THEN 'RARE'
-          WHEN p.overall <= 100 THEN 'EPIC'
-          ELSE 'LEGENDARY'
-        END as tier,
-        COUNT(DISTINCT ucc.player_id) as collected,
-        COUNT(DISTINCT p.id) as total
-       FROM players p
-       LEFT JOIN user_collected_cards ucc ON p.id = ucc.player_id AND ucc.user_id = ?
-       GROUP BY tier`,
-      [userId]
-    );
-
-    // Get season-wise progress
-    const [seasonProgress]: any = await pool.query(
-      `SELECT
-        p.season,
-        COUNT(DISTINCT ucc.player_id) as collected,
-        COUNT(DISTINCT p.id) as total
-       FROM players p
-       LEFT JOIN user_collected_cards ucc ON p.id = ucc.player_id AND ucc.user_id = ?
-       GROUP BY p.season`,
-      [userId]
-    );
-
-    // Get team-wise progress
-    const [teamProgress]: any = await pool.query(
-      `SELECT
-        p.team,
-        COUNT(DISTINCT ucc.player_id) as collected,
-        COUNT(DISTINCT p.id) as total
-       FROM players p
-       LEFT JOIN user_collected_cards ucc ON p.id = ucc.player_id AND ucc.user_id = ?
-       GROUP BY p.team
-       ORDER BY collected DESC
-       LIMIT 20`,
-      [userId]
-    );
-
-    res.json({
-      success: true,
-      data: {
-        progress: progress[0] || { total_cards_collected: 0, total_reward_points: 0 },
-        tierProgress,
-        seasonProgress,
-        teamProgress,
-      },
-    });
-  } catch (error: any) {
-    console.error('Get progress error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+  if (typeof overallThreshold !== 'number' || overallThreshold < 0) {
+    return res.status(400).json({ success: false, error: 'Invalid overall threshold' });
   }
-});
-
-// Get milestones
-router.get('/milestones', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.user!.id;
-
-    const [milestones]: any = await pool.query(
-      `SELECT
-        cm.*,
-        IF(ucm.id IS NOT NULL, TRUE, FALSE) as claimed
-       FROM collection_milestones cm
-       LEFT JOIN user_collection_milestones ucm ON cm.id = ucm.milestone_id AND ucm.user_id = ?
-       ORDER BY cm.milestone_type, cm.required_cards`,
-      [userId]
-    );
-
-    res.json({ success: true, data: milestones });
-  } catch (error: any) {
-    console.error('Get milestones error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
-
-// Claim milestone reward
-router.post('/milestones/claim', authMiddleware, async (req: AuthRequest, res) => {
-  const connection = await pool.getConnection();
 
   try {
-    await connection.beginTransaction();
-
-    const userId = req.user!.id;
-    const { milestoneId } = req.body;
-
-    // Get milestone info
-    const [milestones]: any = await connection.query(
-      'SELECT * FROM collection_milestones WHERE id = ?',
-      [milestoneId]
-    );
-
-    if (milestones.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({
-        success: false,
-        error: '마일스톤을 찾을 수 없습니다.',
-      });
-    }
-
-    const milestone = milestones[0];
-
-    // Check if already claimed
-    const [claimed]: any = await connection.query(
-      'SELECT id FROM user_collection_milestones WHERE user_id = ? AND milestone_id = ?',
-      [userId, milestoneId]
-    );
-
-    if (claimed.length > 0) {
-      await connection.rollback();
-      return res.status(400).json({
-        success: false,
-        error: '이미 받은 보상입니다.',
-      });
-    }
-
-    // Check if user meets requirements
-    let meetsRequirement = false;
-    let collectedCount = 0;
-
-    if (milestone.milestone_type === 'TOTAL') {
-      const [count]: any = await connection.query(
-        'SELECT COUNT(DISTINCT player_id) as count FROM user_collected_cards WHERE user_id = ?',
-        [userId]
-      );
-      collectedCount = count[0].count;
-      meetsRequirement = collectedCount >= milestone.required_cards;
-    } else if (milestone.milestone_type === 'TIER') {
-      let tierCondition = '';
-      if (milestone.filter_value === 'ICON') {
-        tierCondition = "p.name LIKE 'ICON%'";
-      } else if (milestone.filter_value === 'COMMON') {
-        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall <= 80";
-      } else if (milestone.filter_value === 'RARE') {
-        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall > 80 AND p.overall <= 90";
-      } else if (milestone.filter_value === 'EPIC') {
-        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall > 90 AND p.overall <= 100";
-      } else if (milestone.filter_value === 'LEGENDARY') {
-        tierCondition = "p.name NOT LIKE 'ICON%' AND p.overall > 100";
-      }
-
-      const [count]: any = await connection.query(
-        `SELECT COUNT(DISTINCT ucc.player_id) as count
-         FROM user_collected_cards ucc
-         JOIN players p ON ucc.player_id = p.id
-         WHERE ucc.user_id = ? AND ${tierCondition}`,
-        [userId]
-      );
-      collectedCount = count[0].count;
-      meetsRequirement = collectedCount >= milestone.required_cards;
-    } else if (milestone.milestone_type === 'SEASON') {
-      const [count]: any = await connection.query(
-        `SELECT COUNT(DISTINCT ucc.player_id) as count
-         FROM user_collected_cards ucc
-         JOIN players p ON ucc.player_id = p.id
-         WHERE ucc.user_id = ? AND p.season = ?`,
-        [userId, milestone.filter_value]
-      );
-      collectedCount = count[0].count;
-      meetsRequirement = collectedCount >= milestone.required_cards;
-    } else if (milestone.milestone_type === 'TEAM') {
-      const [count]: any = await connection.query(
-        `SELECT COUNT(DISTINCT ucc.player_id) as count
-         FROM user_collected_cards ucc
-         JOIN players p ON ucc.player_id = p.id
-         WHERE ucc.user_id = ? AND p.team = ?`,
-        [userId, milestone.filter_value]
-      );
-      collectedCount = count[0].count;
-      meetsRequirement = collectedCount >= milestone.required_cards;
-    }
-
-    if (!meetsRequirement) {
-      await connection.rollback();
-      return res.status(400).json({
-        success: false,
-        error: `${milestone.required_cards}장이 필요합니다. (현재: ${collectedCount}장)`,
-      });
-    }
-
-    // Give reward
-    await connection.query(
-      'UPDATE users SET points = points + ? WHERE id = ?',
-      [milestone.reward_points, userId]
-    );
-
-    // Mark as claimed
-    await connection.query(
-      'INSERT INTO user_collection_milestones (user_id, milestone_id) VALUES (?, ?)',
-      [userId, milestoneId]
-    );
-
-    // Update progress
-    await connection.query(
-      `INSERT INTO user_collection_progress (user_id, total_reward_points)
-       VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE total_reward_points = total_reward_points + ?`,
-      [userId, milestone.reward_points, milestone.reward_points]
-    );
-
-    await connection.commit();
-
-    res.json({
-      success: true,
-      message: `${milestone.reward_points}P 획득!`,
-      data: { reward: milestone.reward_points },
-    });
-  } catch (error: any) {
-    await connection.rollback();
-    console.error('Claim milestone error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  } finally {
-    connection.release();
-  }
-});
-
-// Delete cards below overall threshold
-router.post('/delete-below-overall', authMiddleware, async (req: AuthRequest, res) => {
-  const connection = await pool.getConnection();
-
-  try {
-    await connection.beginTransaction();
-
-    const userId = req.user!.id;
-    const { threshold } = req.body;
-
-    if (!threshold || threshold < 1 || threshold > 150) {
-      await connection.rollback();
-      return res.status(400).json({
-        success: false,
-        error: '유효한 오버롤 기준값을 입력하세요 (1-150)',
-      });
-    }
-
-    // Find cards to delete (not locked, not in deck, below threshold)
-    const [cardsToDelete]: any = await connection.query(
-      `SELECT uc.id, uc.player_id, p.name, p.overall
-       FROM user_cards uc
+    const [cardsToCull]: any = await pool.query(
+      `SELECT COUNT(*) as count FROM user_cards uc
        JOIN players p ON uc.player_id = p.id
-       WHERE uc.user_id = ?
-         AND uc.is_locked = FALSE
-         AND p.overall < ?
-         AND uc.id NOT IN (
-           SELECT top_card_id FROM decks WHERE user_id = ? AND top_card_id IS NOT NULL
-           UNION SELECT jungle_card_id FROM decks WHERE user_id = ? AND jungle_card_id IS NOT NULL
-           UNION SELECT mid_card_id FROM decks WHERE user_id = ? AND mid_card_id IS NOT NULL
-           UNION SELECT adc_card_id FROM decks WHERE user_id = ? AND adc_card_id IS NOT NULL
-           UNION SELECT support_card_id FROM decks WHERE user_id = ? AND support_card_id IS NOT NULL
-         )`,
-      [userId, threshold, userId, userId, userId, userId, userId]
+       WHERE uc.user_id = ? AND p.overall < ?`,
+      [userId, overallThreshold]
     );
 
-    if (cardsToDelete.length === 0) {
-      await connection.rollback();
-      return res.json({
-        success: true,
-        message: '삭제할 카드가 없습니다.',
-        data: { deletedCount: 0, pointsGained: 0 },
-      });
-    }
+    res.json({ success: true, data: { count: cardsToCull[0].count } });
+  } catch (error) {
+    console.error('Error previewing cards to cull:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
 
-    // Calculate points to give (10 points per card)
-    const pointsPerCard = 10;
-    const totalPoints = cardsToDelete.length * pointsPerCard;
+// Confirm and cull cards
+router.post('/cull-cards/confirm', authMiddleware, async (req: AuthRequest, res) => {
+  const { overallThreshold } = req.body;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  if (typeof overallThreshold !== 'number' || overallThreshold < 0) {
+    return res.status(400).json({ success: false, error: 'Invalid overall threshold' });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Get cards to be culled (for logging or potential refunds)
+    const [culledCards]: any = await connection.query(
+      `SELECT uc.id, p.name, p.overall FROM user_cards uc
+       JOIN players p ON uc.player_id = p.id
+       WHERE uc.user_id = ? AND p.overall < ?`,
+      [userId, overallThreshold]
+    );
+
+    if (culledCards.length === 0) {
+      await connection.rollback();
+      return res.json({ success: true, data: { count: 0, message: 'No cards to cull.' } });
+    }
 
     // Delete the cards
-    const cardIds = cardsToDelete.map((c: any) => c.id);
+    const cardIdsToDelete = culledCards.map((card: any) => card.id);
     await connection.query(
       `DELETE FROM user_cards WHERE id IN (?) AND user_id = ?`,
-      [cardIds, userId]
-    );
-
-    // Give points to user
-    await connection.query(
-      'UPDATE users SET points = points + ? WHERE id = ?',
-      [totalPoints, userId]
+      [cardIdsToDelete, userId]
     );
 
     await connection.commit();
-
-    res.json({
-      success: true,
-      message: `${cardsToDelete.length}장의 카드를 삭제하고 ${totalPoints}P를 획득했습니다.`,
-      data: {
-        deletedCount: cardsToDelete.length,
-        pointsGained: totalPoints,
-        deletedCards: cardsToDelete.map((c: any) => ({
-          name: c.name,
-          overall: c.overall,
-        })),
-      },
-    });
-  } catch (error: any) {
+    res.json({ success: true, data: { count: culledCards.length, message: `${culledCards.length} cards culled successfully.` } });
+  } catch (error) {
     await connection.rollback();
-    console.error('Delete below overall error:', error);
+    console.error('Error culling cards:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   } finally {
     connection.release();
-  }
-});
-
-// Preview cards to delete (without actually deleting)
-router.get('/delete-below-overall/preview', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.user!.id;
-    const threshold = parseInt(req.query.threshold as string) || 0;
-
-    if (!threshold || threshold < 1 || threshold > 150) {
-      return res.status(400).json({
-        success: false,
-        error: '유효한 오버롤 기준값을 입력하세요 (1-150)',
-      });
-    }
-
-    // Find cards that would be deleted
-    const [cards]: any = await pool.query(
-      `SELECT uc.id, p.name, p.overall, p.team, p.position
-       FROM user_cards uc
-       JOIN players p ON uc.player_id = p.id
-       WHERE uc.user_id = ?
-         AND uc.is_locked = FALSE
-         AND p.overall < ?
-         AND uc.id NOT IN (
-           SELECT top_card_id FROM decks WHERE user_id = ? AND top_card_id IS NOT NULL
-           UNION SELECT jungle_card_id FROM decks WHERE user_id = ? AND jungle_card_id IS NOT NULL
-           UNION SELECT mid_card_id FROM decks WHERE user_id = ? AND mid_card_id IS NOT NULL
-           UNION SELECT adc_card_id FROM decks WHERE user_id = ? AND adc_card_id IS NOT NULL
-           UNION SELECT support_card_id FROM decks WHERE user_id = ? AND support_card_id IS NOT NULL
-         )
-       ORDER BY p.overall ASC`,
-      [userId, threshold, userId, userId, userId, userId, userId]
-    );
-
-    const pointsPerCard = 10;
-    const totalPoints = cards.length * pointsPerCard;
-
-    res.json({
-      success: true,
-      data: {
-        count: cards.length,
-        pointsToGain: totalPoints,
-        cards: cards,
-      },
-    });
-  } catch (error: any) {
-    console.error('Preview delete error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
-
-// Toggle card lock status
-router.post('/lock/:userCardId', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.user!.id;
-    const userCardId = parseInt(req.params.userCardId);
-
-    // Check if card belongs to user
-    const [cards]: any = await pool.query(
-      'SELECT id, is_locked FROM user_cards WHERE id = ? AND user_id = ?',
-      [userCardId, userId]
-    );
-
-    if (cards.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: '카드를 찾을 수 없습니다.',
-      });
-    }
-
-    const newLockStatus = !cards[0].is_locked;
-
-    // Toggle lock status
-    await pool.query(
-      'UPDATE user_cards SET is_locked = ? WHERE id = ?',
-      [newLockStatus, userCardId]
-    );
-
-    res.json({
-      success: true,
-      message: newLockStatus ? '카드가 잠금되었습니다.' : '카드 잠금이 해제되었습니다.',
-      data: { is_locked: newLockStatus },
-    });
-  } catch (error: any) {
-    console.error('Toggle lock error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 

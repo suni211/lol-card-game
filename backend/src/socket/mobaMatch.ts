@@ -29,14 +29,41 @@ interface QueuePlayer {
 
 interface BanPickState {
   matchId: string;
-  phase: number; // 1-7: Phase number
-  currentTeam: 1 | 2;
-  picksPerPhase: number; // How many picks in current phase
-  team1Picks: number[]; // Champion IDs picked by team 1
-  team2Picks: number[]; // Champion IDs picked by team 2
-  bannedChampions: number[]; // All banned champions
+  phase: 'BAN_1' | 'PICK_1' | 'BAN_2' | 'PICK_2' | 'COMPLETE';
+  turn: number; // 1-20 overall turn
+  team1Picks: number[];
+  team2Picks: number[];
+  bannedChampions: number[];
   timer?: NodeJS.Timeout;
 }
+
+// Standard 5v5 draft phase configuration
+const phaseConfig: { phase: BanPickState['phase']; turn: number; team: 1 | 2; type: 'BAN' | 'PICK' }[] = [
+  // Ban Phase 1
+  { phase: 'BAN_1', turn: 1, team: 1, type: 'BAN' },
+  { phase: 'BAN_1', turn: 2, team: 2, type: 'BAN' },
+  { phase: 'BAN_1', turn: 3, team: 1, type: 'BAN' },
+  { phase: 'BAN_1', turn: 4, team: 2, type: 'BAN' },
+  { phase: 'BAN_1', turn: 5, team: 1, type: 'BAN' },
+  { phase: 'BAN_1', turn: 6, team: 2, type: 'BAN' },
+  // Pick Phase 1
+  { phase: 'PICK_1', turn: 7, team: 1, type: 'PICK' },
+  { phase: 'PICK_1', turn: 8, team: 2, type: 'PICK' },
+  { phase: 'PICK_1', turn: 9, team: 2, type: 'PICK' },
+  { phase: 'PICK_1', turn: 10, team: 1, type: 'PICK' },
+  { phase: 'PICK_1', turn: 11, team: 1, type: 'PICK' },
+  { phase: 'PICK_1', turn: 12, team: 2, type: 'PICK' },
+  // Ban Phase 2
+  { phase: 'BAN_2', turn: 13, team: 2, type: 'BAN' },
+  { phase: 'BAN_2', turn: 14, team: 1, type: 'BAN' },
+  { phase: 'BAN_2', turn: 15, team: 2, type: 'BAN' },
+  { phase: 'BAN_2', turn: 16, team: 1, type: 'BAN' },
+  // Pick Phase 2
+  { phase: 'PICK_2', turn: 17, team: 2, type: 'PICK' },
+  { phase: 'PICK_2', turn: 18, team: 1, type: 'PICK' },
+  { phase: 'PICK_2', turn: 19, team: 2, type: 'PICK' },
+  { phase: 'PICK_2', turn: 20, team: 1, type: 'PICK' },
+];
 
 const rankedQueue: QueuePlayer[] = [];
 const normalQueue: QueuePlayer[] = [];
@@ -189,99 +216,101 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
     socket.emit('moba_champions_list', { champions: championList });
   });
 
-  // Ban/Pick: Pick a champion
-  socket.on('moba_pick_champion', (data: { matchId: string; championId: number; position: string }) => {
+  // Ban/Pick: Ban a champion
+  socket.on('moba_ban_champion', (data: { matchId: string; championId: number }) => {
     const banPickState = banPickStates.get(data.matchId);
-    if (!banPickState) {
-      socket.emit('moba_error', { message: '밴/픽 상태를 찾을 수 없습니다.' });
-      return;
-    }
+    if (!banPickState) return;
 
-    const engine = activeMatches.get(data.matchId);
-    if (!engine) {
-      socket.emit('moba_error', { message: '매치를 찾을 수 없습니다.' });
-      return;
-    }
+    const currentPhase = phaseConfig.find(p => p.turn === banPickState.turn);
+    if (!currentPhase || currentPhase.type !== 'BAN') return;
 
-    const state = engine.getState();
+    const state = activeMatches.get(data.matchId)!.getState();
     const teamNumber = state.team1.oderId === oderId ? 1 : 2;
 
-    // Check if it's this team's turn
-    if (banPickState.currentTeam !== teamNumber) {
-      socket.emit('moba_error', { message: '당신의 차례가 아닙니다.' });
-      return;
+    if (currentPhase.team !== teamNumber) {
+      return socket.emit('moba_error', { message: '밴할 차례가 아닙니다.' });
     }
 
-    // Check if champion is available
-    const allPicked = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
-    if (allPicked.includes(data.championId)) {
-      socket.emit('moba_error', { message: '이미 선택되었거나 밴된 챔피언입니다.' });
-      return;
+    const allPickedOrBanned = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
+    if (allPickedOrBanned.includes(data.championId)) {
+      return socket.emit('moba_error', { message: '이미 선택되거나 밴된 챔피언입니다.' });
     }
 
-    // Add pick
+    banPickState.bannedChampions.push(data.championId);
+
+    io.to(data.matchId).emit('moba_champion_banned', {
+      championId: data.championId,
+      teamNumber,
+    });
+
+    advanceBanPick(io, data.matchId, banPickState);
+  });
+
+  // Ban/Pick: Pick a champion
+  socket.on('moba_pick_champion', (data: { matchId: string; championId: number }) => {
+    const banPickState = banPickStates.get(data.matchId);
+    if (!banPickState) return;
+
+    const currentPhase = phaseConfig.find(p => p.turn === banPickState.turn);
+    if (!currentPhase || currentPhase.type !== 'PICK') return;
+
+    const state = activeMatches.get(data.matchId)!.getState();
+    const teamNumber = state.team1.oderId === oderId ? 1 : 2;
+
+    if (currentPhase.team !== teamNumber) {
+      return socket.emit('moba_error', { message: '선택할 차례가 아닙니다.' });
+    }
+
+    const allPickedOrBanned = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
+    if (allPickedOrBanned.includes(data.championId)) {
+      return socket.emit('moba_error', { message: '이미 선택되었거나 밴된 챔피언입니다.' });
+    }
+
     if (teamNumber === 1) {
       banPickState.team1Picks.push(data.championId);
     } else {
       banPickState.team2Picks.push(data.championId);
     }
 
-    // Clear timer
-    if (banPickState.timer) {
-      clearTimeout(banPickState.timer);
-    }
-
-    // Notify all players
     io.to(data.matchId).emit('moba_champion_picked', {
-      teamNumber,
       championId: data.championId,
-      position: data.position,
-      championName: CHAMPIONS[data.championId]?.name || 'Unknown',
+      teamNumber,
     });
 
-    // Advance to next phase
-    advanceBanPickPhase(io, data.matchId, banPickState);
+    advanceBanPick(io, data.matchId, banPickState);
   });
 
-  // Skip ban/pick turn (auto-pick random)
-  socket.on('moba_skip_pick', (data: { matchId: string }) => {
+  // Skip ban/pick turn (auto-pick/ban random)
+  socket.on('moba_skip_turn', (data: { matchId: string }) => {
     const banPickState = banPickStates.get(data.matchId);
     if (!banPickState) return;
 
-    const engine = activeMatches.get(data.matchId);
-    if (!engine) return;
-
-    const state = engine.getState();
+    const currentPhase = phaseConfig.find(p => p.turn === banPickState.turn);
+    if (!currentPhase) return;
+    
+    const state = activeMatches.get(data.matchId)!.getState();
     const teamNumber = state.team1.oderId === oderId ? 1 : 2;
 
-    if (banPickState.currentTeam !== teamNumber) return;
+    if (currentPhase.team !== teamNumber) return;
 
-    // Auto pick random available champion
-    const allPicked = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
-    const availableChampions = Object.keys(CHAMPIONS).map(Number).filter(id => !allPicked.includes(id));
+    // Auto pick/ban random available champion
+    const allPickedOrBanned = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
+    const availableChampions = Object.keys(CHAMPIONS).map(Number).filter(id => !allPickedOrBanned.includes(id));
+    const randomChampion = availableChampions[Math.floor(Math.random() * availableChampions.length)];
 
-    if (availableChampions.length > 0) {
-      const randomChampion = availableChampions[Math.floor(Math.random() * availableChampions.length)];
-
+    if (currentPhase.type === 'BAN') {
+      banPickState.bannedChampions.push(randomChampion);
+      io.to(data.matchId).emit('moba_champion_banned', { championId: randomChampion, teamNumber, isAuto: true });
+    } else {
       if (teamNumber === 1) {
         banPickState.team1Picks.push(randomChampion);
       } else {
         banPickState.team2Picks.push(randomChampion);
       }
-
-      io.to(data.matchId).emit('moba_champion_picked', {
-        teamNumber,
-        championId: randomChampion,
-        position: 'AUTO',
-        championName: CHAMPIONS[randomChampion]?.name || 'Unknown',
-      });
+      io.to(data.matchId).emit('moba_champion_picked', { championId: randomChampion, teamNumber, isAuto: true });
     }
-
-    if (banPickState.timer) {
-      clearTimeout(banPickState.timer);
-    }
-
-    advanceBanPickPhase(io, data.matchId, banPickState);
+    
+    advanceBanPick(io, data.matchId, banPickState);
   });
 
   // Get match state
@@ -492,12 +521,10 @@ function tryMatchPlayers(io: Server, queue: QueuePlayer[], matchType: 'RANKED' |
   const state = engine.getState();
 
   // Initialize ban/pick state
-  // Phase order: 1팀1개 -> 2팀2개 -> 1팀2개 -> 2팀1개 -> 1팀1개 -> 2팀2개 -> 1팀1개
   const banPickState: BanPickState = {
     matchId,
-    phase: 1,
-    currentTeam: 1,
-    picksPerPhase: 1,
+    phase: 'BAN_1',
+    turn: 1,
     team1Picks: [],
     team2Picks: [],
     bannedChampions: [],
@@ -506,7 +533,6 @@ function tryMatchPlayers(io: Server, queue: QueuePlayer[], matchType: 'RANKED' |
 
   // Update game state to BAN_PICK
   state.status = 'BAN_PICK';
-  state.banPickPhase = 1;
 
   // Get all champions for picking
   const championList = Object.values(CHAMPIONS).map(c => ({
@@ -543,175 +569,103 @@ function tryMatchPlayers(io: Server, queue: QueuePlayer[], matchType: 'RANKED' |
   }
 
   // Start ban/pick phase
-  startBanPickTimer(io, matchId, banPickState);
+  advanceBanPick(io, matchId, banPickState);
 }
 
 // Ban/Pick phase management
-function startBanPickTimer(io: Server, matchId: string, banPickState: BanPickState) {
-  // Clear existing timer
+function advanceBanPick(io: Server, matchId: string, banPickState: BanPickState) {
   if (banPickState.timer) {
     clearTimeout(banPickState.timer);
   }
 
+  // Check if complete
+  if (banPickState.turn > phaseConfig.length) {
+    finishBanPick(io, matchId, banPickState);
+    return;
+  }
+
+  const currentPhaseInfo = phaseConfig.find(p => p.turn === banPickState.turn);
+  if (!currentPhaseInfo) {
+    // Should not happen
+    finishBanPick(io, matchId, banPickState);
+    return;
+  }
+
+  banPickState.phase = currentPhaseInfo.phase;
+
   // Notify players of current phase
   io.to(matchId).emit('moba_ban_pick_phase', {
-    phase: banPickState.phase,
-    currentTeam: banPickState.currentTeam,
-    picksNeeded: getPicksForPhase(banPickState.phase),
+    ...currentPhaseInfo,
     team1Picks: banPickState.team1Picks,
     team2Picks: banPickState.team2Picks,
     bannedChampions: banPickState.bannedChampions,
     timeLimit: BAN_PICK_TIME,
   });
 
-  // Set timeout for auto-pick
+  // Set timeout for auto-action
   banPickState.timer = setTimeout(() => {
-    // Auto-pick random champion for current team
-    const allPicked = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
-    const availableChampions = Object.keys(CHAMPIONS).map(Number).filter(id => !allPicked.includes(id));
+    const allPickedOrBanned = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
+    const availableChampions = Object.keys(CHAMPIONS).map(Number).filter(id => !allPickedOrBanned.includes(id));
+    const randomChampion = availableChampions[Math.floor(Math.random() * availableChampions.length)];
 
-    if (availableChampions.length > 0) {
-      const randomChampion = availableChampions[Math.floor(Math.random() * availableChampions.length)];
-
-      if (banPickState.currentTeam === 1) {
+    if (currentPhaseInfo.type === 'BAN') {
+      banPickState.bannedChampions.push(randomChampion);
+      io.to(matchId).emit('moba_champion_banned', { championId: randomChampion, teamNumber: currentPhaseInfo.team, isAuto: true });
+    } else { // PICK
+      if (currentPhaseInfo.team === 1) {
         banPickState.team1Picks.push(randomChampion);
       } else {
         banPickState.team2Picks.push(randomChampion);
       }
-
-      io.to(matchId).emit('moba_champion_picked', {
-        teamNumber: banPickState.currentTeam,
-        championId: randomChampion,
-        position: 'AUTO',
-        championName: CHAMPIONS[randomChampion]?.name || 'Unknown',
-        isAutoPick: true,
-      });
+      io.to(matchId).emit('moba_champion_picked', { championId: randomChampion, teamNumber: currentPhaseInfo.team, isAuto: true });
     }
-
-    advanceBanPickPhase(io, matchId, banPickState);
+    
+    banPickState.turn++;
+    advanceBanPick(io, matchId, banPickState);
   }, BAN_PICK_TIME);
-}
 
-function getPicksForPhase(phase: number): number {
-  // Phase order: 1팀1개 -> 2팀2개 -> 1팀2개 -> 2팀1개 -> 1팀1개 -> 2팀2개 -> 1팀1개
-  switch (phase) {
-    case 1: return 1; // Team 1: 1 pick
-    case 2: return 2; // Team 2: 2 picks
-    case 3: return 2; // Team 1: 2 picks
-    case 4: return 1; // Team 2: 1 pick
-    case 5: return 1; // Team 1: 1 pick
-    case 6: return 2; // Team 2: 2 picks
-    case 7: return 1; // Team 1: 1 pick (final)
-    default: return 0;
-  }
-}
-
-function getTeamForPhase(phase: number): 1 | 2 {
-  switch (phase) {
-    case 1: return 1;
-    case 2: return 2;
-    case 3: return 1;
-    case 4: return 2;
-    case 5: return 1;
-    case 6: return 2;
-    case 7: return 1;
-    default: return 1;
-  }
-}
-
-function advanceBanPickPhase(io: Server, matchId: string, banPickState: BanPickState) {
-  const currentPicksNeeded = getPicksForPhase(banPickState.phase);
-  const currentTeamPicks = banPickState.currentTeam === 1 ? banPickState.team1Picks : banPickState.team2Picks;
-
-  // Check how many picks were made in this phase
-  const previousPhasePicks = banPickState.phase === 1 ? 0 :
-    getTotalPicksBeforePhase(banPickState.phase, banPickState.currentTeam);
-  const currentPhasePicks = currentTeamPicks.length - previousPhasePicks;
-
-  if (currentPhasePicks < currentPicksNeeded) {
-    // Still need more picks in this phase
-    startBanPickTimer(io, matchId, banPickState);
-    return;
-  }
-
-  // Move to next phase
-  banPickState.phase++;
-
-  // Check if ban/pick is complete (total 5 picks per team)
-  if (banPickState.team1Picks.length >= 5 && banPickState.team2Picks.length >= 5) {
-    // Ban/pick complete, start game
-    finishBanPick(io, matchId, banPickState);
-    return;
-  }
-
-  // Set next team
-  banPickState.currentTeam = getTeamForPhase(banPickState.phase);
-
-  // Continue ban/pick
-  startBanPickTimer(io, matchId, banPickState);
-}
-
-function getTotalPicksBeforePhase(phase: number, team: 1 | 2): number {
-  let total = 0;
-  for (let i = 1; i < phase; i++) {
-    if (getTeamForPhase(i) === team) {
-      total += getPicksForPhase(i);
-    }
-  }
-  return total;
+  banPickState.turn++;
 }
 
 function finishBanPick(io: Server, matchId: string, banPickState: BanPickState) {
   const engine = activeMatches.get(matchId);
   if (!engine) return;
 
-  // Assign champions to players
-  const state = engine.getState();
-
-  // Assign team 1 champions (5 picks for 5 positions)
-  const positions: ('TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT')[] = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
-  for (let i = 0; i < 5; i++) {
-    const player = state.team1.players.find(p => p.position === positions[i]);
-    if (player && banPickState.team1Picks[i]) {
-      player.championId = banPickState.team1Picks[i];
-      player.skill = {
-        championId: banPickState.team1Picks[i],
-        currentCooldown: 0,
-        hasBeenUsed: false,
-        skillLevel: 0,
-      };
-    }
+  if (banPickState.timer) {
+    clearTimeout(banPickState.timer);
   }
 
-  // Assign team 2 champions
+  // Assign champions to players
+  const state = engine.getState();
+  const positions: ('TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT')[] = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
+  
   for (let i = 0; i < 5; i++) {
-    const player = state.team2.players.find(p => p.position === positions[i]);
-    if (player && banPickState.team2Picks[i]) {
-      player.championId = banPickState.team2Picks[i];
-      player.skill = {
-        championId: banPickState.team2Picks[i],
-        currentCooldown: 0,
-        hasBeenUsed: false,
-        skillLevel: 0,
-      };
+    const team1Player = state.team1.players.find(p => p.position === positions[i]);
+    if (team1Player && banPickState.team1Picks[i]) {
+      team1Player.championId = banPickState.team1Picks[i];
+    }
+    const team2Player = state.team2.players.find(p => p.position === positions[i]);
+    if (team2Player && banPickState.team2Picks[i]) {
+      team2Player.championId = banPickState.team2Picks[i];
     }
   }
 
   // Update state
   state.status = 'IN_PROGRESS';
   state.bannedChampions = banPickState.bannedChampions;
+  state.team1Picks = banPickState.team1Picks;
+  state.team2Picks = banPickState.team2Picks;
+  engine.initializePlayersWithChampions(); // Make sure skills etc are initialized
 
   // Clean up ban/pick state
-  if (banPickState.timer) {
-    clearTimeout(banPickState.timer);
-  }
   banPickStates.delete(matchId);
 
   // Notify players
   io.to(matchId).emit('moba_ban_pick_complete', {
     team1Picks: banPickState.team1Picks,
     team2Picks: banPickState.team2Picks,
-    state: getVisibleState(state, 1),
+    bannedChampions: banPickState.bannedChampions,
+    state: engine.getState(), // Send the final, initialized state
   });
 
   // Start game timer
@@ -836,6 +790,9 @@ async function processMatchRewards(io: Server, state: MatchState) {
     ratingChange = 0;
   }
 
+  // Update champion stats
+  await updateChampionStats(state, winner);
+
   // Update winner
   await pool.query(
     `UPDATE users SET
@@ -943,6 +900,52 @@ async function processMatchRewards(io: Server, state: MatchState) {
   } catch (itemError) {
     console.error('Error saving item stats:', itemError);
     // Don't fail the whole process if item stats fail
+  }
+}
+
+async function updateChampionStats(state: MatchState, winner: 1 | 2) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // This query is not needed here as it's already in processMatchRewards
+    // await connection.query('INSERT INTO moba_match_history (match_id) VALUES (?)', [state.matchId]);
+
+    // Update ban counts
+    for (const championId of state.bannedChampions) {
+      await connection.query(
+        `INSERT INTO moba_champion_stats (champion_id, ban_count) VALUES (?, 1)
+         ON DUPLICATE KEY UPDATE ban_count = ban_count + 1`,
+        [championId]
+      );
+    }
+
+    // Update pick and win counts for Team 1
+    for (const championId of state.team1Picks) {
+      const isWinner = winner === 1;
+      await connection.query(
+        `INSERT INTO moba_champion_stats (champion_id, pick_count, win_count) VALUES (?, 1, ?)
+         ON DUPLICATE KEY UPDATE pick_count = pick_count + 1, win_count = win_count + ?`,
+        [championId, isWinner ? 1 : 0, isWinner ? 1 : 0]
+      );
+    }
+
+    // Update pick and win counts for Team 2
+    for (const championId of state.team2Picks) {
+      const isWinner = winner === 2;
+      await connection.query(
+        `INSERT INTO moba_champion_stats (champion_id, pick_count, win_count) VALUES (?, 1, ?)
+         ON DUPLICATE KEY UPDATE pick_count = pick_count + 1, win_count = win_count + ?`,
+        [championId, isWinner ? 1 : 0, isWinner ? 1 : 0]
+      );
+    }
+
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error updating champion stats:', error);
+  } finally {
+    connection.release();
   }
 }
 

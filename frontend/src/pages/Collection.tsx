@@ -37,6 +37,9 @@ export default function Collection() {
   } | null>(null);
   const { token, user, updateUser } = useAuthStore();
   const [coachBuff, setCoachBuff] = useState<any>(null);
+  const [showCullModal, setShowCullModal] = useState(false);
+  const [cullThreshold, setCullThreshold] = useState(0);
+  const [cullCount, setCullCount] = useState(0);
 
   useEffect(() => {
     fetchCards();
@@ -237,8 +240,17 @@ export default function Collection() {
             variant={enhancementMode ? "danger" : "gold"}
             size="lg"
             icon={<Zap className="w-5 h-5" />}
+            className="mr-2"
           >
             {enhancementMode ? '강화 모드 종료' : '카드 강화'}
+          </PremiumButton>
+          <PremiumButton
+            onClick={() => setShowCullModal(true)}
+            variant="danger"
+            size="lg"
+            icon={<Trash2 className="w-5 h-5" />}
+          >
+            카드 정리
           </PremiumButton>
         </motion.div>
 
@@ -883,6 +895,99 @@ export default function Collection() {
                     </PremiumButton>
                   </>
                 )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Cull Cards Modal */}
+        <AnimatePresence>
+          {showCullModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+              onClick={() => setShowCullModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                    카드 정리
+                  </h2>
+                  <button
+                    onClick={() => setShowCullModal(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    지정한 오버롤 미만의 모든 카드를 삭제합니다. 이 작업은 되돌릴 수 없습니다.
+                  </p>
+                  <label htmlFor="cullThreshold" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    오버롤 임계값 (이 값 미만의 카드 삭제)
+                  </label>
+                  <input
+                    type="number"
+                    id="cullThreshold"
+                    value={cullThreshold}
+                    onChange={(e) => setCullThreshold(parseInt(e.target.value))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    min="0"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <PremiumButton
+                    onClick={async () => {
+                      try {
+                        const response = await axios.post(`${API_URL}/collection/cull-cards/preview`, { overallThreshold: cullThreshold }, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        setCullCount(response.data.data.count);
+                        toast.success(`${response.data.data.count}장의 카드가 삭제될 예정입니다.`);
+                      } catch (error: any) {
+                        toast.error(error.response?.data?.error || '미리보기 실패');
+                      }
+                    }}
+                    variant="blue"
+                    size="lg"
+                    className="w-full"
+                  >
+                    삭제 미리보기 ({cullCount}장)
+                  </PremiumButton>
+
+                  <PremiumButton
+                    onClick={async () => {
+                      if (!window.confirm(`${cullCount}장의 카드를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+                      try {
+                        const response = await axios.post(`${API_URL}/collection/cull-cards/confirm`, { overallThreshold: cullThreshold }, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        toast.success(`${response.data.data.count}장의 카드를 성공적으로 삭제했습니다.`);
+                        setShowCullModal(false);
+                        fetchCards(); // Refresh cards
+                      } catch (error: any) {
+                        toast.error(error.response?.data?.error || '카드 삭제 실패');
+                      }
+                    }}
+                    disabled={cullCount === 0}
+                    variant="danger"
+                    size="lg"
+                    className="w-full"
+                  >
+                    {cullCount > 0 ? `${cullCount}장 카드 삭제 확정` : '삭제할 카드 없음'}
+                  </PremiumButton>
+                </div>
               </motion.div>
             </motion.div>
           )}

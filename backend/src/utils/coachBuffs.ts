@@ -7,6 +7,7 @@ interface CoachBuff {
   buff_value: number;
   current_buff_value: number;
   buff_target: string | null;
+  team_restriction: string | null; // New field for team-specific buffs
 }
 
 /**
@@ -21,7 +22,8 @@ export async function getActiveCoachBuffs(userId: number): Promise<CoachBuff | n
         c.buff_type,
         c.buff_value,
         COALESCE(uc.current_buff_value, c.buff_value) as current_buff_value,
-        c.buff_target
+        c.buff_target,
+        c.team_restriction
       FROM user_coaches uc
       JOIN coaches c ON uc.coach_id = c.id
       WHERE uc.user_id = ? AND uc.is_active = TRUE
@@ -67,6 +69,14 @@ export function applyCoachBuffToCard(
       if (coachBuff.buff_target) {
         const normalizedCardTeam = normalizeTeamName(card.team);
         const normalizedTargetTeam = normalizeTeamName(coachBuff.buff_target);
+
+        // If there's a team restriction, check if the card's team matches it
+        if (coachBuff.team_restriction) {
+          const normalizedRestriction = normalizeTeamName(coachBuff.team_restriction);
+          if (normalizedCardTeam !== normalizedRestriction) {
+            return basePower; // Card's team does not match the restriction
+          }
+        }
 
         // Check main team
         if (normalizedCardTeam === normalizedTargetTeam) {

@@ -67,6 +67,8 @@ export class GameEngine {
       team2Ready: false,
       status: 'IN_PROGRESS',
       bannedChampions: [],
+      team1Picks: [],
+      team2Picks: [],
       logs: [],
     };
   }
@@ -164,6 +166,23 @@ export class GameEngine {
 
   getState(): MatchState {
     return this.state;
+  }
+
+  initializePlayersWithChampions() {
+    const allPlayers = [...this.state.team1.players, ...this.state.team2.players];
+    for (const player of allPlayers) {
+      if (player.championId) {
+        const champion = CHAMPIONS[player.championId];
+        if (champion) {
+          player.skill = {
+            championId: player.championId,
+            currentCooldown: 0,
+            hasBeenUsed: false,
+            skillLevel: 0, // Will be updated based on level
+          };
+        }
+      }
+    }
   }
 
   // Get upcoming event for the next turn (for notification)

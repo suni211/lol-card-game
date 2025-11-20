@@ -8,6 +8,7 @@ interface CoachBuff {
   current_buff_value: number;
   buff_target: string | null;
   enhancement_level: number;
+  team_restriction: string | null; // New field for team-specific buffs
 }
 
 interface Card {
@@ -79,6 +80,14 @@ export function applyCoachBuffToCard(
       if (coachBuff.buff_target) {
         const normalizedCardTeam = normalizeTeamName(card.team);
         const normalizedTargetTeam = normalizeTeamName(coachBuff.buff_target);
+
+        // If there's a team restriction, check if the card's team matches it
+        if (coachBuff.team_restriction) {
+          const normalizedRestriction = normalizeTeamName(coachBuff.team_restriction);
+          if (normalizedCardTeam !== normalizedRestriction) {
+            return baseOverall; // Card's team does not match the restriction
+          }
+        }
 
         // Check main team
         if (normalizedCardTeam === normalizedTargetTeam) {

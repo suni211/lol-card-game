@@ -14,6 +14,7 @@ import {
   Check,
   X,
   Trophy,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -26,28 +27,28 @@ import type {
   PlayerAction,
   Lane,
   Champion,
-  BanPickPhaseData,
 } from '../types/moba';
 import {
   POSITION_ACTIONS,
   EVENT_INFO,
 } from '../types/moba';
+import BanPickTutorial from '../components/Moba/BanPickTutorial';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export default function MobaMatch() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token } = useAuthStore();
+  const { user } = useAuthStore();
   const matchType = (searchParams.get('type') as 'RANKED' | 'NORMAL') || 'NORMAL';
   const deckSlot = parseInt(searchParams.get('deck') || '1');
 
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [status, setStatus] = useState<'connecting' | 'queuing' | 'matched' | 'ban_pick' | 'playing' | 'ended'>('connecting');
+  const [status, setStatus] = useState<'connecting' | 'queuing' | 'ban_pick' | 'playing' | 'ended'>('connecting');
   const [matchState, setMatchState] = useState<MatchState | null>(null);
   const [teamNumber, setTeamNumber] = useState<1 | 2>(1);
   const [actions, setActions] = useState<Map<number, TurnAction>>(new Map());
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(30);
   const [turnResult, setTurnResult] = useState<TurnResult | null>(null);
   const [showShop, setShowShop] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerState | null>(null);
@@ -68,10 +69,9 @@ export default function MobaMatch() {
 
   // Ban/Pick state
   const [champions, setChampions] = useState<Champion[]>([]);
-  const [banPickPhase, setBanPickPhase] = useState<BanPickPhaseData | null>(null);
+  const [banPickData, setBanPickData] = useState<any | null>(null);
   const [selectedChampion, setSelectedChampion] = useState<number | null>(null);
-  const [myPicks, setMyPicks] = useState<number[]>([]);
-  const [enemyPicks, setEnemyPicks] = useState<number[]>([]);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Skill usage state (for future target selection feature)
   const [, setSkillTargetSelection] = useState<{
@@ -108,11 +108,10 @@ export default function MobaMatch() {
       setTeamNumber(data.teamNumber);
       setOpponentName(data.opponent?.username || '상대방');
 
-      // Check if ban/pick phase
       if (data.banPickPhase) {
         setChampions(data.champions || []);
         setStatus('ban_pick');
-        toast.success('매치 시작! 챔피언을 선택하세요.');
+        toast.success('매치 시작! 밴픽을 진행합니다.');
       } else {
         setStatus('playing');
         toast.success('매치 시작!');
@@ -120,30 +119,43 @@ export default function MobaMatch() {
     });
 
     // Ban/Pick events
-    newSocket.on('moba_ban_pick_phase', (data: BanPickPhaseData) => {
+    newSocket.on('moba_ban_pick_phase', (data) => {
       console.log('[MobaMatch] Ban/Pick phase:', data);
-      setBanPickPhase(data);
+      setBanPickData(data);
       setTimeLeft(Math.floor(data.timeLimit / 1000));
+      setSelectedChampion(null);
+    });
 
-      if (teamNumber === 1) {
-        setMyPicks(data.team1Picks);
-        setEnemyPicks(data.team2Picks);
-      } else {
-        setMyPicks(data.team2Picks);
-        setEnemyPicks(data.team1Picks);
-      }
+    newSocket.on('moba_champion_banned', (data) => {
+      console.log('[MobaMatch] Champion banned:', data);
+      setBanPickData((prev: any) => ({
+        ...prev,
+        bannedChampions: [...(prev?.bannedChampions || []), data.championId],
+      }));
+      toast(`챔피언이 밴되었습니다.`, { icon: '🚫' });
     });
 
     newSocket.on('moba_champion_picked', (data) => {
       console.log('[MobaMatch] Champion picked:', data);
-      toast(`${data.championName} 선택됨`, { icon: '🎮' });
-      setSelectedChampion(null);
+      setBanPickData((prev: any) => {
+        const newPicks = {
+          team1Picks: prev.team1Picks,
+          team2Picks: prev.team2Picks,
+        };
+        if (data.teamNumber === 1) {
+          newPicks.team1Picks = [...newPicks.team1Picks, data.championId];
+        } else {
+          newPicks.team2Picks = [...newPicks.team2Picks, data.championId];
+        }
+        return { ...prev, ...newPicks };
+      });
+      toast(`챔피언이 선택되었습니다.`, { icon: '🎮' });
     });
 
     newSocket.on('moba_ban_pick_complete', (data) => {
       console.log('[MobaMatch] Ban/Pick complete:', data);
       setMatchState(data.state);
-      setBanPickPhase(null);
+      setBanPickData(null);
       setStatus('playing');
       toast.success('챔피언 선택 완료! 게임을 시작합니다.');
     });
@@ -227,21 +239,24 @@ export default function MobaMatch() {
 
   // Timer countdown
   useEffect(() => {
-    if (status !== 'playing') return;
+    if (status !== 'playing' && status !== 'ban_pick') return;
 
     const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          // Auto-submit when timer reaches 0
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
     return () => clearInterval(interval);
   }, [status]);
 
+  // Auto-skip ban/pick turn
+  useEffect(() => {
+    if (timeLeft === 0 && status === 'ban_pick' && socket && banPickData) {
+      if (banPickData.team === teamNumber) {
+        socket.emit('moba_skip_turn', { matchId: matchState?.matchId });
+      }
+    }
+  }, [timeLeft, status, socket, banPickData, teamNumber, matchState]);
+  
   // Auto-submit when timer reaches 0
   useEffect(() => {
     if (timeLeft === 0 && status === 'playing' && socket && matchState && !hasSubmitted) {
@@ -321,15 +336,25 @@ export default function MobaMatch() {
     setShowSurrender(false);
   }, [socket, matchState]);
 
-  // Pick champion during ban/pick phase
+  // Ban/Pick actions
+  const banChampion = useCallback((championId: number) => {
+    if (!socket || !matchState) return;
+    socket.emit('moba_ban_champion', { matchId: matchState.matchId, championId });
+  }, [socket, matchState]);
+
   const pickChampion = useCallback((championId: number) => {
     if (!socket || !matchState) return;
-    socket.emit('moba_pick_champion', {
-      matchId: matchState.matchId,
-      championId,
-      position: 'AUTO', // Position will be auto-assigned
-    });
+    socket.emit('moba_pick_champion', { matchId: matchState.matchId, championId });
   }, [socket, matchState]);
+
+  const confirmBanPick = () => {
+    if (!selectedChampion || !banPickData) return;
+    if (banPickData.type === 'BAN') {
+      banChampion(selectedChampion);
+    } else {
+      pickChampion(selectedChampion);
+    }
+  };
 
   // Use skill
   const useSkill = useCallback((player: PlayerState, targetId?: number) => {
@@ -412,184 +437,125 @@ export default function MobaMatch() {
   }
 
   // Ban/Pick Phase UI
-  if (status === 'ban_pick' && banPickPhase) {
-    const isMyTurn = banPickPhase.currentTeam === teamNumber;
-    const allPicked = [...banPickPhase.team1Picks, ...banPickPhase.team2Picks, ...banPickPhase.bannedChampions];
+  if (status === 'ban_pick' && banPickData) {
+    const isMyTurn = banPickData.team === teamNumber;
+    const currentAction = banPickData.type === 'BAN' ? '밴' : '픽';
+    const turnText = isMyTurn ? `아군 ${currentAction}` : `적군 ${currentAction}`;
+
+    const myTeamName = user?.username || '아군';
+    const enemyTeamName = opponentName || '적군';
+
+    const team1Name = teamNumber === 1 ? myTeamName : enemyTeamName;
+    const team2Name = teamNumber === 2 ? myTeamName : enemyTeamName;
+
+    const allSelectedChamps = [...(banPickData.team1Picks || []), ...(banPickData.team2Picks || []), ...(banPickData.bannedChampions || [])];
 
     return (
-      <div className="min-h-screen bg-gray-900 p-4">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">챔피언 선택</h1>
-          <div className="flex items-center justify-center gap-4">
-            <span className={`px-4 py-2 rounded-lg font-bold ${
-              isMyTurn ? 'bg-green-600 text-white animate-pulse' : 'bg-gray-700 text-gray-400'
-            }`}>
-              {isMyTurn ? '내 차례!' : '상대방 차례'}
-            </span>
-            <span className="text-white">
-              <Clock className="inline w-5 h-5 mr-1" />
-              {timeLeft}초
-            </span>
+      <div className="min-h-screen bg-gray-900 text-white flex flex-col p-4">
+        {showTutorial && <BanPickTutorial onClose={() => setShowTutorial(false)} />}
+        {/* Top Bar: Teams & Turn Info */}
+        <div className="flex justify-between items-center bg-gray-800 p-2 rounded-lg mb-4">
+          {/* Team 1 */}
+          <div className="w-1/3 text-left">
+            <h2 className="text-lg font-bold text-blue-400">{team1Name}</h2>
+            <div className="flex gap-1 mt-1">
+              {[...Array(3)].map((_, i) => (
+                <div key={`t1-ban-${i}`} className="w-8 h-8 bg-gray-700 rounded-sm flex items-center justify-center text-red-500 font-bold">
+                  {banPickData.bannedChampions[i*2] ? 'B' : ''}
+                </div>
+              ))}
+              {[...Array(2)].map((_, i) => (
+                <div key={`t1-ban2-${i}`} className="w-8 h-8 bg-gray-700 rounded-sm flex items-center justify-center text-red-500 font-bold">
+                  {banPickData.bannedChampions[6 + i*2 + 1] ? 'B' : ''}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Center Info */}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">{turnText}</h1>
+            <div className="text-xl font-mono">{timeLeft}</div>
+          </div>
+
+          {/* Team 2 */}
+          <div className="w-1/3 text-right">
+            <h2 className="text-lg font-bold text-red-400">{team2Name}</h2>
+            <div className="flex gap-1 mt-1 justify-end">
+              {[...Array(3)].map((_, i) => (
+                <div key={`t2-ban-${i}`} className="w-8 h-8 bg-gray-700 rounded-sm flex items-center justify-center text-red-500 font-bold">
+                  {banPickData.bannedChampions[i*2 + 1] ? 'B' : ''}
+                </div>
+              ))}
+              {[...Array(2)].map((_, i) => (
+                <div key={`t2-ban2-${i}`} className="w-8 h-8 bg-gray-700 rounded-sm flex items-center justify-center text-red-500 font-bold">
+                  {banPickData.bannedChampions[6 + i*2] ? 'B' : ''}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Pick Status */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {/* My Team Picks */}
-          <div className="bg-blue-900/30 rounded-lg p-4">
-            <h3 className="text-blue-400 font-bold mb-3">내 팀 ({myPicks.length}/5)</h3>
-            <div className="flex gap-2 flex-wrap">
-              {[0, 1, 2, 3, 4].map(i => {
-                const championId = myPicks[i];
-                const champion = champions.find(c => c.id === championId);
+        {/* Main Content: Picks & Champion Grid */}
+        <div className="flex-grow flex gap-4">
+          {/* Team 1 Picks */}
+          <div className="w-1/5 flex flex-col gap-2">
+            {banPickData.team1Picks.map((champId: number, i: number) => (
+              <div key={`t1-pick-${i}`} className="bg-blue-800 p-2 rounded h-16 flex items-center gap-2">
+                <div className="text-sm font-bold">{champions.find(c => c.id === champId)?.name}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Center: Champion Grid */}
+          <div className="w-3/5 flex flex-col">
+            <div className="grid grid-cols-8 gap-1 flex-grow overflow-y-auto p-2 bg-gray-800 rounded-lg">
+              {champions.map(champion => {
+                const isSelected = allSelectedChamps.includes(champion.id);
                 return (
                   <div
-                    key={i}
-                    className={`w-16 h-16 rounded-lg flex items-center justify-center ${
-                      champion ? 'bg-blue-600' : 'bg-gray-700 border-2 border-dashed border-gray-500'
-                    }`}
+                    key={champion.id}
+                    onClick={() => isMyTurn && !isSelected && setSelectedChampion(champion.id)}
+                    className={`
+                      p-1 rounded text-center cursor-pointer transition-all
+                      ${isSelected ? 'opacity-30 grayscale' : ''}
+                      ${selectedChampion === champion.id ? 'ring-2 ring-yellow-400' : ''}
+                      ${isMyTurn && !isSelected ? 'hover:bg-gray-700' : ''}
+                    `}
                   >
-                    {champion ? (
-                      <div className="text-center">
-                        <div className="text-xs text-white font-bold truncate w-14">
-                          {champion.name}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-500 text-2xl">?</span>
-                    )}
+                    <div className="text-xs truncate">{champion.name}</div>
                   </div>
                 );
               })}
             </div>
-          </div>
-
-          {/* Enemy Team Picks */}
-          <div className="bg-red-900/30 rounded-lg p-4">
-            <h3 className="text-red-400 font-bold mb-3">{opponentName} ({enemyPicks.length}/5)</h3>
-            <div className="flex gap-2 flex-wrap">
-              {[0, 1, 2, 3, 4].map(i => {
-                const championId = enemyPicks[i];
-                const champion = champions.find(c => c.id === championId);
-                return (
-                  <div
-                    key={i}
-                    className={`w-16 h-16 rounded-lg flex items-center justify-center ${
-                      champion ? 'bg-red-600' : 'bg-gray-700 border-2 border-dashed border-gray-500'
-                    }`}
-                  >
-                    {champion ? (
-                      <div className="text-center">
-                        <div className="text-xs text-white font-bold truncate w-14">
-                          {champion.name}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-500 text-2xl">?</span>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowTutorial(true)}
+                className="mt-4 px-4 py-3 bg-gray-600 text-white font-bold rounded-lg"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </button>
+              {isMyTurn && (
+                <button
+                  onClick={confirmBanPick}
+                  disabled={!selectedChampion}
+                  className="mt-4 w-full py-3 bg-yellow-600 text-black font-bold rounded-lg disabled:opacity-50"
+                >
+                  {currentAction} 확정
+                </button>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Champion Grid */}
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h3 className="text-white font-bold mb-4">챔피언 목록</h3>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-[400px] overflow-y-auto">
-            {champions.map(champion => {
-              const isPicked = allPicked.includes(champion.id);
-              const isSelected = selectedChampion === champion.id;
-
-              return (
-                <motion.div
-                  key={champion.id}
-                  whileHover={!isPicked && isMyTurn ? { scale: 1.05 } : {}}
-                  whileTap={!isPicked && isMyTurn ? { scale: 0.95 } : {}}
-                  onClick={() => {
-                    if (!isPicked && isMyTurn) {
-                      setSelectedChampion(champion.id);
-                    }
-                  }}
-                  className={`p-2 rounded-lg cursor-pointer transition-all ${
-                    isPicked
-                      ? 'bg-gray-700 opacity-30 cursor-not-allowed'
-                      : isSelected
-                      ? 'bg-primary-600 ring-2 ring-primary-400'
-                      : isMyTurn
-                      ? 'bg-gray-700 hover:bg-gray-600'
-                      : 'bg-gray-700 opacity-50 cursor-not-allowed'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="w-10 h-10 mx-auto mb-1 rounded-full bg-gray-600 flex items-center justify-center">
-                      <span className="text-lg">
-                        {champion.scalingType === 'AD' ? '⚔️' : '✨'}
-                      </span>
-                    </div>
-                    <div className="text-xs text-white font-bold truncate">
-                      {champion.name}
-                    </div>
-                    <div className="text-[10px] text-gray-400 truncate">
-                      {champion.skillName}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+          {/* Team 2 Picks */}
+          <div className="w-1/5 flex flex-col gap-2">
+            {banPickData.team2Picks.map((champId: number, i: number) => (
+              <div key={`t2-pick-${i}`} className="bg-red-800 p-2 rounded h-16 flex items-center gap-2">
+                <div className="text-sm font-bold">{champions.find(c => c.id === champId)?.name}</div>
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* Selected Champion Info & Confirm */}
-        {selectedChampion && isMyTurn && (
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4"
-          >
-            <div className="max-w-4xl mx-auto flex items-center justify-between">
-              <div>
-                {(() => {
-                  const champion = champions.find(c => c.id === selectedChampion);
-                  if (!champion) return null;
-                  return (
-                    <div>
-                      <h4 className="text-xl font-bold text-white">{champion.name}</h4>
-                      <p className="text-sm text-primary-400">{champion.skillName}</p>
-                      <p className="text-xs text-gray-400">{champion.skillDescription}</p>
-                      <div className="flex gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          champion.scalingType === 'AD' ? 'bg-red-600' : 'bg-purple-600'
-                        }`}>
-                          {champion.scalingType}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-gray-600">
-                          쿨타임: {champion.cooldown}턴
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedChampion(null)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={() => pickChampion(selectedChampion)}
-                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-bold"
-                >
-                  선택 확정
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
       </div>
     );
   }

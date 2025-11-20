@@ -356,6 +356,9 @@ export default function Agent() {
         <p className="text-gray-400">
           선수 카드를 파견하여 보상을 획득하세요!
         </p>
+        <p className="text-red-400 text-sm mt-2">
+          ⚠️ 파견한 카드는 소멸됩니다
+        </p>
       </motion.div>
 
       {/* Agent Types Grid */}
@@ -590,7 +593,7 @@ export default function Agent() {
                       : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
                   }`}
                 >
-                  {submitting ? '제출 중...' : '미션 시작'}
+                  {submitting ? '제출 중...' : '미션 시작 (선택한 카드 소멸)'}
                 </button>
               </div>
             </motion.div>

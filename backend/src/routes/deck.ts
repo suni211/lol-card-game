@@ -28,7 +28,7 @@ const getDeckBySlot = async (req: AuthRequest, res: express.Response) => {
     const userId = req.user!.id;
     const deckSlot = parseInt(req.params.slot);
 
-    if (deckSlot < 1 || deckSlot > 5) {
+    if (isNaN(deckSlot) || deckSlot < 1 || deckSlot > 5) {
       return res.status(400).json({ success: false, error: '덱 슬롯은 1-5 사이여야 합니다.' });
     }
 
@@ -148,11 +148,7 @@ const getDeckBySlot = async (req: AuthRequest, res: express.Response) => {
   }
 };
 
-// Route handlers
-router.get('/slot/:slot', authMiddleware, getDeckBySlot);
-router.get('/:slot', authMiddleware, getDeckBySlot); // Alias for compatibility
-
-// Get all user cards
+// Get all user cards (must be before /:slot to avoid route conflict)
 router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
@@ -184,6 +180,10 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });
+
+// Route handlers for slot-based access (must be after /cards)
+router.get('/slot/:slot', authMiddleware, getDeckBySlot);
+router.get('/:slot', authMiddleware, getDeckBySlot); // Alias for compatibility
 
 // Get active deck (for backward compatibility)
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {

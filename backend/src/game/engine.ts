@@ -564,7 +564,7 @@ export class GameEngine {
     const result: PlayerState[] = [];
 
     for (const player of team.players) {
-      if (player.isDead) continue;
+      if (player.isDead || player.isRecalling) continue;
 
       const action = actions.get(player.oderId);
       if (!action) continue;

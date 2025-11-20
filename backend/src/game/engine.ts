@@ -195,7 +195,7 @@ export class GameEngine {
 
   // Get upcoming event for the next turn (for notification)
   getUpcomingEvent(): ObjectiveEvent | undefined {
-    return this.getEventForTurn(this.state.currentTurn);
+    return this.determineObjectiveSpawn(this.state.currentTurn);
   }
 
   // Submit actions for a team

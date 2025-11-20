@@ -52,7 +52,8 @@ export type ObjectiveEvent =
   | 'VOIDGRUB' // Turn 4 - Voidgrub objective
   | 'DRAGON' // Dragon objective
   | 'BARON' // Baron objective
-  | 'ELDER'; // Elder Dragon objective
+  | 'ELDER' // Elder Dragon objective
+  | 'DRAGON_AND_VOIDGRUB'; // Special combined event for turn 4
 
 export type ItemTier = 'CONSUMABLE' | 'BASIC' | 'INTERMEDIATE' | 'LEGENDARY';
 export type ItemRestriction = 'NONE' | 'ADC_ONLY' | 'SUPPORT_ONLY' | 'MID_ONLY' | 'MID_SUPPORT';

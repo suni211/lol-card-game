@@ -66,6 +66,7 @@ export default function Sidebar() {
     { path: '/titles', label: '칭호' },
     { path: '/ranking', label: '랭킹' },
     { path: '/strategy-stats', label: '전략 통계' },
+    { path: '/champions', label: '챔피언 소개' },
     {
       label: '길드',
       items: [

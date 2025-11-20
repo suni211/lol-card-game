@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { CHAMPIONS } from '../game/skills';
 
 const router = express.Router();
 
@@ -560,6 +561,145 @@ router.get('/item-stats/:itemId', authMiddleware, async (req: AuthRequest, res) 
     });
   } catch (error: any) {
     console.error('Get item detail stats error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+});
+
+// 챔피언 목록 조회
+router.get('/champions', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const championList = Object.values(CHAMPIONS).map(c => ({
+      id: c.id,
+      name: c.name,
+      skillName: c.skillName,
+      skillDescription: c.skillDescription,
+      cooldown: c.cooldown,
+      scalingType: c.scalingType,
+      championClass: c.championClass,
+      valueLevel1: c.valueLevel1,
+      valueLevel2: c.valueLevel2,
+      valueLevel3: c.valueLevel3,
+      extraParam1: c.extraParam1,
+      extraParam2: c.extraParam2,
+      extraParam3: c.extraParam3,
+      isOneTime: c.isOneTime,
+    }));
+
+    res.json({
+      success: true,
+      data: championList,
+    });
+  } catch (error: any) {
+    console.error('Get champions error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// 챔피언 상세 정보
+router.get('/champions/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const championId = parseInt(req.params.id);
+    const champion = CHAMPIONS[championId];
+
+    if (!champion) {
+      return res.status(404).json({ success: false, error: '챔피언을 찾을 수 없습니다.' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: champion.id,
+        name: champion.name,
+        skillName: champion.skillName,
+        skillDescription: champion.skillDescription,
+        cooldown: champion.cooldown,
+        scalingType: champion.scalingType,
+        championClass: champion.championClass,
+        valueLevel1: champion.valueLevel1,
+        valueLevel2: champion.valueLevel2,
+        valueLevel3: champion.valueLevel3,
+        extraParam1: champion.extraParam1,
+        extraParam2: champion.extraParam2,
+        extraParam3: champion.extraParam3,
+        isOneTime: champion.isOneTime,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get champion detail error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// 챔피언 픽률/밴률 통계 (매치 데이터 기반)
+router.get('/champion-stats', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    // moba_champion_stats 테이블에서 통계 조회
+    const [stats]: any = await pool.query(`
+      SELECT
+        champion_id,
+        SUM(pick_count) as total_picks,
+        SUM(ban_count) as total_bans,
+        SUM(win_count) as total_wins,
+        ROUND(SUM(win_count) * 100.0 / NULLIF(SUM(pick_count), 0), 2) as win_rate
+      FROM moba_champion_stats
+      GROUP BY champion_id
+      ORDER BY total_picks DESC
+    `);
+
+    // 전체 매치 수 계산
+    const [matchCount]: any = await pool.query(`
+      SELECT COUNT(*) as total FROM moba_match_history
+    `);
+
+    const totalMatches = matchCount[0]?.total || 0;
+
+    // 챔피언 정보와 통계 합치기
+    const championStats = stats.map((stat: any) => {
+      const champion = CHAMPIONS[stat.champion_id];
+      return {
+        championId: stat.champion_id,
+        name: champion?.name || 'Unknown',
+        skillName: champion?.skillName || '',
+        championClass: champion?.championClass || '',
+        scalingType: champion?.scalingType || '',
+        pickCount: parseInt(stat.total_picks) || 0,
+        banCount: parseInt(stat.total_bans) || 0,
+        winCount: parseInt(stat.total_wins) || 0,
+        winRate: parseFloat(stat.win_rate) || 0,
+        pickRate: totalMatches > 0 ? Math.round((parseInt(stat.total_picks) / (totalMatches * 10)) * 10000) / 100 : 0,
+        banRate: totalMatches > 0 ? Math.round((parseInt(stat.total_bans) / (totalMatches * 10)) * 10000) / 100 : 0,
+      };
+    });
+
+    // 픽되지 않은 챔피언도 추가
+    const pickedChampionIds = new Set(stats.map((s: any) => s.champion_id));
+    Object.values(CHAMPIONS).forEach(champion => {
+      if (!pickedChampionIds.has(champion.id)) {
+        championStats.push({
+          championId: champion.id,
+          name: champion.name,
+          skillName: champion.skillName,
+          championClass: champion.championClass,
+          scalingType: champion.scalingType,
+          pickCount: 0,
+          banCount: 0,
+          winCount: 0,
+          winRate: 0,
+          pickRate: 0,
+          banRate: 0,
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalMatches,
+        champions: championStats,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get champion stats error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 });

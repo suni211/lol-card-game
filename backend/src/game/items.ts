@@ -31,7 +31,7 @@ export const ITEMS: Record<string, Item> = {
     name: '증폭의 서',
     cost: 300,
     tier: 'BASIC',
-    restriction: 'MID_SUPPORT',
+    restriction: 'NONE',
     effects: {
       abilityPower: 20,
     },
@@ -43,7 +43,7 @@ export const ITEMS: Record<string, Item> = {
     name: '도란의 반지',
     cost: 300,
     tier: 'BASIC',
-    restriction: 'MID_SUPPORT',
+    restriction: 'NONE',
     effects: {
       abilityPower: 15,
       skillHaste: 0.2,
@@ -107,7 +107,7 @@ export const ITEMS: Record<string, Item> = {
     name: '폭발 마법봉',
     cost: 1000,
     tier: 'INTERMEDIATE',
-    restriction: 'MID_SUPPORT',
+    restriction: 'NONE',
     effects: {
       abilityPower: 40,
     },
@@ -119,7 +119,7 @@ export const ITEMS: Record<string, Item> = {
     name: '잃어버린 챕터',
     cost: 1000,
     tier: 'INTERMEDIATE',
-    restriction: 'MID_SUPPORT',
+    restriction: 'NONE',
     buildsFrom: ['amplifying_tome'],
     effects: {
       abilityPower: 35,
@@ -133,7 +133,7 @@ export const ITEMS: Record<string, Item> = {
     name: '사악한 고서',
     cost: 1000,
     tier: 'INTERMEDIATE',
-    restriction: 'MID_SUPPORT',
+    restriction: 'NONE',
     effects: {
       abilityPower: 30,
       skillHaste: 1,
@@ -390,7 +390,7 @@ export const ITEMS: Record<string, Item> = {
     name: '라바돈의 죽음모자',
     cost: 3000,
     tier: 'LEGENDARY',
-    restriction: 'MID_SUPPORT',
+    restriction: 'NONE',
     buildsFrom: ['blasting_wand', 'blasting_wand'],
     effects: {
       abilityPower: 120,
@@ -404,7 +404,7 @@ export const ITEMS: Record<string, Item> = {
     name: '루덴의 폭풍',
     cost: 3000,
     tier: 'LEGENDARY',
-    restriction: 'MID_ONLY',
+    restriction: 'NONE',
     buildsFrom: ['lost_chapter'],
     effects: {
       abilityPower: 80,
@@ -419,7 +419,7 @@ export const ITEMS: Record<string, Item> = {
     name: '암흑불꽃',
     cost: 3000,
     tier: 'LEGENDARY',
-    restriction: 'MID_ONLY',
+    restriction: 'NONE',
     buildsFrom: ['blasting_wand', 'amplifying_tome'],
     effects: {
       abilityPower: 100,
@@ -433,7 +433,7 @@ export const ITEMS: Record<string, Item> = {
     name: '지평선의 초점',
     cost: 3000,
     tier: 'LEGENDARY',
-    restriction: 'MID_ONLY',
+    restriction: 'NONE',
     buildsFrom: ['fiendish_codex', 'blasting_wand'],
     effects: {
       abilityPower: 85,
@@ -448,7 +448,7 @@ export const ITEMS: Record<string, Item> = {
     name: '달빛 재생',
     cost: 3000,
     tier: 'LEGENDARY',
-    restriction: 'SUPPORT_ONLY',
+    restriction: 'NONE',
     buildsFrom: ['fiendish_codex'],
     effects: {
       abilityPower: 60,

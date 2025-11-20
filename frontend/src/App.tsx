@@ -47,6 +47,7 @@ import InfiniteChallengeBattle from './pages/InfiniteChallengeBattle';
 import Coach from './pages/Coach';
 import CoachEnhancement from './pages/CoachEnhancement';
 import CardCollection from './pages/CardCollection';
+import Champions from './pages/Champions';
 import Settings from './pages/Settings';
 import Friendly from './pages/Friendly';
 import Titles from './pages/Titles';
@@ -550,6 +551,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CardCollection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/champions"
+            element={
+              <ProtectedRoute>
+                <Champions />
               </ProtectedRoute>
             }
           />

@@ -81,6 +81,21 @@ interface ItemStats {
   }[];
 }
 
+interface ChampionStat {
+  championId: number;
+  name: string;
+  pickCount: number;
+  banCount: number;
+  winRate: number;
+  pickRate: number;
+  banRate: number;
+}
+
+interface ChampionStatsData {
+  totalMatches: number;
+  champions: ChampionStat[];
+}
+
 export default function StrategyStats() {
   const { token, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -91,6 +106,8 @@ export default function StrategyStats() {
   const [balance, setBalance] = useState<StrategyBalance[]>([]);
   const [itemStats, setItemStats] = useState<ItemStats | null>(null);
   const [showItemStats, setShowItemStats] = useState(false);
+  const [championStats, setChampionStats] = useState<ChampionStatsData | null>(null);
+  const [showChampionStats, setShowChampionStats] = useState(false);
 
   // Player comparison states
   const [showComparison, setShowComparison] = useState(false);
@@ -151,6 +168,22 @@ export default function StrategyStats() {
       }
     } catch (error: any) {
       console.error('Failed to fetch item stats:', error);
+    }
+  };
+
+  const fetchChampionStats = async () => {
+    if (!token) return;
+
+    try {
+      const response = await axios.get(`${API_URL}/strategy-stats/champion-stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        setChampionStats(response.data.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch champion stats:', error);
     }
   };
 
@@ -416,6 +449,17 @@ export default function StrategyStats() {
           >
             <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>아이템 통계</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowChampionStats(!showChampionStats);
+              if (!championStats) fetchChampionStats();
+            }}
+            className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 text-sm sm:text-base"
+          >
+            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>챔피언 통계</span>
           </button>
 
           {user?.isAdmin && (
@@ -832,6 +876,77 @@ export default function StrategyStats() {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Champion Stats Section */}
+        <AnimatePresence>
+          {showChampionStats && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6 sm:mb-8"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    챔피언 픽/밴 통계
+                  </h2>
+                  <button
+                    onClick={() => setShowChampionStats(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                {!championStats ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">로딩 중...</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300">#</th>
+                          <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300">챔피언</th>
+                          <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">픽률</th>
+                          <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">밴률</th>
+                          <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">승률</th>
+                          <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">픽 횟수</th>
+                          <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">밴 횟수</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {championStats.champions
+                          .sort((a, b) => b.pickCount - a.pickCount)
+                          .map((champ, index) => (
+                          <tr key={champ.championId} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                            <td className="py-2 px-3 text-gray-500 dark:text-gray-400">{index + 1}</td>
+                            <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{champ.name}</td>
+                            <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{champ.pickRate.toFixed(2)}%</td>
+                            <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{champ.banRate.toFixed(2)}%</td>
+                            <td className={`py-2 px-3 text-right font-semibold ${
+                              champ.winRate > 52 ? 'text-green-600 dark:text-green-400' :
+                              champ.winRate < 48 && champ.winRate > 0 ? 'text-red-600 dark:text-red-400' :
+                              'text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {champ.winRate > 0 ? `${champ.winRate.toFixed(1)}%` : '-'}
+                            </td>
+                            <td className="py-2 px-3 text-right text-gray-500 dark:text-gray-400">{champ.pickCount}</td>
+                            <td className="py-2 px-3 text-right text-gray-500 dark:text-gray-400">{champ.banCount}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

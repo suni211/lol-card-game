@@ -175,21 +175,40 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
   });
 
   // Handle disconnect
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     removeFromQueue(oderId);
 
-    // Handle in-match disconnect
+    // Handle in-match disconnect - player who disconnects loses
     const matchId = playerToMatch.get(oderId);
     if (matchId) {
       const engine = activeMatches.get(matchId);
       if (engine) {
-        // Auto-submit empty actions if disconnected
         const state = engine.getState();
-        const teamNumber = state.team1.oderId === oderId ? 1 : 2;
-        engine.submitActions(teamNumber, []);
 
-        if (engine.areBothTeamsReady()) {
-          processTurn(io, matchId);
+        // Only process if match is still in progress
+        if (state.status === 'IN_PROGRESS') {
+          const teamNumber = state.team1.oderId === oderId ? 1 : 2;
+          const winner = teamNumber === 1 ? 2 : 1;
+
+          // Update state to show disconnected team lost
+          if (teamNumber === 1) {
+            state.status = 'TEAM2_WINS';
+          } else {
+            state.status = 'TEAM1_WINS';
+          }
+
+          // Notify remaining player of victory
+          io.to(matchId).emit('moba_game_end', {
+            winner,
+            reason: '상대방 연결 끊김',
+            finalState: state,
+          });
+
+          // Process rewards
+          await processMatchRewards(state);
+
+          // Cleanup
+          cleanupMatch(matchId);
         }
       }
     }

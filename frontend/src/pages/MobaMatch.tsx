@@ -444,6 +444,7 @@ export default function MobaMatch() {
                 action={actions.get(player.oderId)?.action}
                 onActionChange={(action) => setPlayerAction(player.oderId, action)}
                 onOpenShop={() => openShop(player)}
+                allItems={items}
               />
             ))}
           </div>
@@ -571,6 +572,7 @@ export default function MobaMatch() {
                 key={player.oderId}
                 player={player}
                 isMyTeam={false}
+                allItems={items}
               />
             ))}
           </div>
@@ -689,12 +691,14 @@ function PlayerCard({
   action,
   onActionChange,
   onOpenShop,
+  allItems,
 }: {
   player: PlayerState;
   isMyTeam: boolean;
   action?: PlayerAction;
   onActionChange?: (action: PlayerAction) => void;
   onOpenShop?: () => void;
+  allItems?: Item[];
 }) {
   const healthPercent = (player.currentHealth / player.maxHealth) * 100;
   const actions = POSITION_ACTIONS[player.position];
@@ -777,20 +781,24 @@ function PlayerCard({
       {/* Items */}
       {player.items.length > 0 && (
         <div className="flex gap-1 mb-2 flex-wrap">
-          {player.items.map((itemId, idx) => (
-            <div
-              key={idx}
-              className="relative group"
-            >
-              <div className="w-6 h-6 rounded bg-gray-700 border border-gray-600 flex items-center justify-center text-xs text-gray-300 cursor-help">
-                {itemId.substring(0, 2).toUpperCase()}
+          {player.items.map((itemId, idx) => {
+            const itemInfo = allItems?.find(i => i.id === itemId);
+            const itemName = itemInfo?.name || itemId.replace(/_/g, ' ');
+            return (
+              <div
+                key={idx}
+                className="relative group"
+              >
+                <div className="w-6 h-6 rounded bg-gray-700 border border-gray-600 flex items-center justify-center text-xs text-gray-300 cursor-help">
+                  {itemName.substring(0, 2)}
+                </div>
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-black/90 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  {itemName}
+                </div>
               </div>
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-black/90 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                {itemId.replace(/_/g, ' ')}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {/* Empty items placeholder */}

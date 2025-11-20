@@ -8,109 +8,92 @@ INSERT INTO players (
   laning, teamfight, macro, mental,
   cs_ability, lane_pressure, damage_dealing, survivability,
   objective_control, vision_control, decision_making, consistency,
-  market_price, salary
+  salary
 ) VALUES
 -- SSG IMP - ADC - 109 (2014 Worlds Pentakill)
 ('WCP IMP', 'SSG', 'ADC', 109, 'LCK', 'WCP',
   100, 108, 102, 105,
-  105, 100, 110, 98, 102, 95, 100, 104,
-  250000, 25),
+  105, 100, 110, 98, 102, 95, 100, 104, 25),
 
 -- FNC Rekkles - ADC - 108 (2017 Worlds Pentakill)
 ('WCP Rekkles', 'FNC', 'ADC', 108, 'LEC', 'WCP',
   102, 107, 105, 110,
-  108, 98, 105, 108, 100, 96, 105, 110,
-  240000, 24),
+  108, 98, 105, 108, 100, 96, 105, 110, 24),
 
 -- C9 Balls - TOP - 105 (2015 Worlds Pentakill)
 ('WCP Balls', 'C9', 'TOP', 105, 'LCS', 'WCP',
   98, 106, 100, 102,
-  100, 102, 105, 100, 98, 90, 98, 102,
-  200000, 22),
+  100, 102, 105, 100, 98, 90, 98, 102, 22),
 
 -- FW NL - ADC - 93 (2015 Worlds Pentakill)
 ('WCP NL', 'FW', 'ADC', 93, 'PCS', 'WCP',
   88, 95, 85, 90,
-  90, 85, 95, 88, 82, 80, 88, 85,
-  85000, 17),
+  90, 85, 95, 88, 82, 80, 88, 85, 17),
 
 -- OG sOAZ - TOP - 101 (2015 Worlds Pentakill)
 ('WCP sOAZ', 'OG', 'TOP', 101, 'LEC', 'WCP',
   96, 100, 98, 95,
-  95, 98, 98, 95, 95, 88, 96, 92,
-  150000, 20),
+  95, 98, 98, 95, 95, 88, 96, 92, 20),
 
 -- LYON WhiteLotus - ADC - 92 (2017 Worlds Pentakill)
 ('WCP WhiteLotus', 'LYON', 'ADC', 92, 'LATAM', 'WCP',
   85, 94, 82, 88,
-  88, 82, 95, 85, 80, 78, 85, 82,
-  80000, 17),
+  88, 82, 95, 85, 80, 78, 85, 82, 17),
 
 -- FB Padden - ADC - 90 (2017 Worlds Pentakill)
 ('WCP Padden', 'FB', 'ADC', 90, 'LEC', 'WCP',
   82, 92, 80, 85,
-  85, 80, 92, 82, 78, 75, 82, 80,
-  70000, 16),
+  85, 80, 92, 82, 78, 75, 82, 80, 16),
 
 -- INF Renyu - ADC - 88 (2018 Worlds Pentakill)
 ('WCP Renyu', 'INF', 'ADC', 88, 'LATAM', 'WCP',
   80, 90, 78, 82,
-  82, 78, 90, 80, 76, 72, 80, 78,
-  60000, 15),
+  82, 78, 90, 80, 76, 72, 80, 78, 15),
 
 -- SUP Zeitnot - ADC - 80 (2019 Worlds Pentakill)
 ('WCP Zeitnot', 'SUP', 'ADC', 80, 'LEC', 'WCP',
   70, 82, 72, 75,
-  75, 68, 82, 72, 68, 65, 72, 70,
-  40000, 12),
+  75, 68, 82, 72, 68, 65, 72, 70, 12),
 
 -- GRF Viper - ADC - 100 (2019 Worlds Pentakill)
 ('WCP Viper', 'GRF', 'ADC', 100, 'LCK', 'WCP',
   95, 100, 96, 98,
-  98, 92, 102, 95, 92, 88, 95, 96,
-  145000, 20),
+  98, 92, 102, 95, 92, 88, 95, 96, 20),
 
 -- SN Bin - TOP - 105 (2020 Worlds Pentakill)
 ('WCP Bin', 'SN', 'TOP', 105, 'LPL', 'WCP',
   100, 105, 95, 100,
-  98, 105, 102, 95, 95, 85, 98, 95,
-  200000, 22),
+  98, 105, 102, 95, 95, 85, 98, 95, 22),
 
 -- DK Khan - TOP - 111 (2021 Worlds Pentakill)
 ('WCP Khan', 'DK', 'TOP', 111, 'LCK', 'WCP',
   105, 108, 105, 108,
-  108, 108, 105, 105, 105, 95, 108, 105,
-  280000, 26),
+  108, 108, 105, 105, 105, 95, 108, 105, 26),
 
 -- FNC Upset - ADC - 103 (2022 Worlds Pentakill)
 ('WCP Upset', 'FNC', 'ADC', 103, 'LEC', 'WCP',
   98, 102, 95, 100,
-  100, 95, 105, 98, 92, 88, 98, 100,
-  180000, 22),
+  100, 95, 105, 98, 92, 88, 98, 100, 22),
 
 -- SGB Shogun - ADC - 93 (2022 Worlds Pentakill)
 ('WCP Shogun', 'SGB', 'ADC', 93, 'VCS', 'WCP',
   85, 95, 85, 90,
-  90, 82, 96, 88, 82, 78, 88, 85,
-  85000, 17),
+  90, 82, 96, 88, 82, 78, 88, 85, 17),
 
 -- LOUD Route - ADC - 93 (2022 Worlds Pentakill)
 ('WCP Route', 'LOUD', 'ADC', 93, 'CBLOL', 'WCP',
   86, 94, 86, 88,
-  88, 84, 95, 86, 80, 76, 86, 84,
-  85000, 18),
+  88, 84, 95, 86, 80, 76, 86, 84, 18),
 
 -- GAM Slayder - ADC - 90 (2023 Worlds Pentakill)
 ('WCP Slayder', 'GAM', 'ADC', 90, 'VCS', 'WCP',
   82, 92, 80, 85,
-  85, 80, 92, 82, 78, 75, 82, 80,
-  70000, 17),
+  85, 80, 92, 82, 78, 75, 82, 80, 17),
 
 -- BDS Crownie - ADC - 102 (2024 Worlds Pentakill)
 ('WCP Crownie', 'BDS', 'ADC', 102, 'LEC', 'WCP',
   96, 100, 95, 98,
-  98, 94, 102, 96, 90, 86, 95, 98,
-  170000, 20);
+  98, 94, 102, 96, 90, 86, 95, 98, 20);
 
 
 -- Add WCP Pentakill trait to all WCP cards
@@ -204,25 +187,3 @@ FROM players WHERE name = 'WCP Slayder';
 INSERT INTO player_traits (player_id, name, description, effect)
 SELECT id, '클러치 플레이어', '결정적 순간의 영웅', '+10 한타'
 FROM players WHERE name = 'WCP Crownie';
-
-
--- Set market prices for WCP cards in market table
-INSERT INTO market_player_prices (player_id, base_price, current_price)
-SELECT id,
-  CASE
-    WHEN overall >= 105 THEN overall * 2500
-    WHEN overall >= 95 THEN overall * 1000
-    WHEN overall >= 85 THEN overall * 700
-    ELSE overall * 500
-  END as base_price,
-  CASE
-    WHEN overall >= 105 THEN overall * 2500
-    WHEN overall >= 95 THEN overall * 1000
-    WHEN overall >= 85 THEN overall * 700
-    ELSE overall * 500
-  END as current_price
-FROM players
-WHERE name LIKE 'WCP %'
-ON DUPLICATE KEY UPDATE
-  base_price = VALUES(base_price),
-  current_price = VALUES(current_price);

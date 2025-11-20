@@ -189,33 +189,41 @@ SELECT id, '클러치 플레이어', '결정적 순간의 영웅', '+10 한타'
 FROM players WHERE name = 'WCP Crownie';
 
 
--- Add WCP cards to market
+-- Add WCP cards to market (높은 가격 - 레전드 티어급 희귀 카드)
 INSERT INTO player_market_prices (player_id, base_price, current_price, price_floor, price_ceiling)
 SELECT
   id,
   CASE
-    WHEN overall >= 105 THEN 2500
-    WHEN overall >= 95 THEN 1500
-    WHEN overall >= 85 THEN 800
-    ELSE 500
+    WHEN overall >= 110 THEN 8000
+    WHEN overall >= 105 THEN 6000
+    WHEN overall >= 100 THEN 4500
+    WHEN overall >= 95 THEN 3500
+    WHEN overall >= 90 THEN 2500
+    ELSE 1800
   END as base_price,
   CASE
-    WHEN overall >= 105 THEN 2500
-    WHEN overall >= 95 THEN 1500
-    WHEN overall >= 85 THEN 800
-    ELSE 500
+    WHEN overall >= 110 THEN 8000
+    WHEN overall >= 105 THEN 6000
+    WHEN overall >= 100 THEN 4500
+    WHEN overall >= 95 THEN 3500
+    WHEN overall >= 90 THEN 2500
+    ELSE 1800
   END as current_price,
   CASE
-    WHEN overall >= 105 THEN 2000
-    WHEN overall >= 95 THEN 1200
-    WHEN overall >= 85 THEN 600
-    ELSE 400
+    WHEN overall >= 110 THEN 6000
+    WHEN overall >= 105 THEN 4500
+    WHEN overall >= 100 THEN 3500
+    WHEN overall >= 95 THEN 2500
+    WHEN overall >= 90 THEN 1800
+    ELSE 1200
   END as price_floor,
   CASE
-    WHEN overall >= 105 THEN 3000
-    WHEN overall >= 95 THEN 1800
-    WHEN overall >= 85 THEN 1000
-    ELSE 600
+    WHEN overall >= 110 THEN 12000
+    WHEN overall >= 105 THEN 9000
+    WHEN overall >= 100 THEN 6500
+    WHEN overall >= 95 THEN 5000
+    WHEN overall >= 90 THEN 3500
+    ELSE 2500
   END as price_ceiling
 FROM players
 WHERE name LIKE 'WCP %'

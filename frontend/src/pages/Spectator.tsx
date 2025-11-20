@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Trophy, ArrowLeft, Users, Zap, Shield, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Eye, Trophy, ArrowLeft, Users, Zap, Shield } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';

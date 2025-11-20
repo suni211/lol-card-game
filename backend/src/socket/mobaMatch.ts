@@ -219,16 +219,26 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
   // Ban/Pick: Ban a champion
   socket.on('moba_ban_champion', (data: { matchId: string; championId: number }) => {
     const banPickState = banPickStates.get(data.matchId);
-    if (!banPickState) return;
+    if (!banPickState) {
+      console.log(`[moba_ban_champion] No banPickState for matchId: ${data.matchId}`);
+      return;
+    }
 
     const currentPhase = phaseConfig.find(p => p.turn === banPickState.turn);
-    if (!currentPhase || currentPhase.type !== 'BAN') return;
+    if (!currentPhase || currentPhase.type !== 'BAN') {
+      console.log(`[moba_ban_champion] Not a ban phase or no currentPhase for turn ${banPickState.turn}`);
+      return;
+    }
 
     const state = activeMatches.get(data.matchId)!.getState();
     const teamNumber = state.team1.oderId === oderId ? 1 : 2;
 
+    console.log(`[moba_ban_champion] Received ban request from team ${teamNumber} (user ${oderId}) for champion ${data.championId}. Current turn: ${banPickState.turn}, Expected team: ${currentPhase.team}`);
+
     if (currentPhase.team !== teamNumber) {
-      return socket.emit('moba_error', { message: '밴할 차례가 아닙니다.' });
+      socket.emit('moba_error', { message: '밴할 차례가 아닙니다.' });
+      console.log(`[moba_ban_champion] ERROR: Team ${teamNumber} tried to ban, but it's team ${currentPhase.team}'s turn.`);
+      return;
     }
 
     const allPickedOrBanned = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];
@@ -249,16 +259,26 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
   // Ban/Pick: Pick a champion
   socket.on('moba_pick_champion', (data: { matchId: string; championId: number }) => {
     const banPickState = banPickStates.get(data.matchId);
-    if (!banPickState) return;
+    if (!banPickState) {
+      console.log(`[moba_pick_champion] No banPickState for matchId: ${data.matchId}`);
+      return;
+    }
 
     const currentPhase = phaseConfig.find(p => p.turn === banPickState.turn);
-    if (!currentPhase || currentPhase.type !== 'PICK') return;
+    if (!currentPhase || currentPhase.type !== 'PICK') {
+      console.log(`[moba_pick_champion] Not a pick phase or no currentPhase for turn ${banPickState.turn}`);
+      return;
+    }
 
     const state = activeMatches.get(data.matchId)!.getState();
     const teamNumber = state.team1.oderId === oderId ? 1 : 2;
 
+    console.log(`[moba_pick_champion] Received pick request from team ${teamNumber} (user ${oderId}) for champion ${data.championId}. Current turn: ${banPickState.turn}, Expected team: ${currentPhase.team}`);
+
     if (currentPhase.team !== teamNumber) {
-      return socket.emit('moba_error', { message: '선택할 차례가 아닙니다.' });
+      socket.emit('moba_error', { message: '선택할 차례가 아닙니다.' });
+      console.log(`[moba_pick_champion] ERROR: Team ${teamNumber} tried to pick, but it's team ${currentPhase.team}'s turn.`);
+      return;
     }
 
     const allPickedOrBanned = [...banPickState.team1Picks, ...banPickState.team2Picks, ...banPickState.bannedChampions];

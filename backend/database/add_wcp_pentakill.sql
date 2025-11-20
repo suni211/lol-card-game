@@ -36,7 +36,7 @@ INSERT INTO players (
   95, 98, 98, 95, 95, 88, 96, 92, 20),
 
 -- LYON WhiteLotus - ADC - 92 (2017 Worlds Pentakill)
-('WCP WhiteLotus', 'LYON', 'ADC', 92, 'LATAM', 'WCP',
+('WCP WhiteLotus', 'LYON', 'ADC', 92, 'LTA', 'WCP',
   85, 94, 82, 88,
   88, 82, 95, 85, 80, 78, 85, 82, 17),
 
@@ -46,7 +46,7 @@ INSERT INTO players (
   85, 80, 92, 82, 78, 75, 82, 80, 16),
 
 -- INF Renyu - ADC - 88 (2018 Worlds Pentakill)
-('WCP Renyu', 'INF', 'ADC', 88, 'LATAM', 'WCP',
+('WCP Renyu', 'INF', 'ADC', 88, 'LTA', 'WCP',
   80, 90, 78, 82,
   82, 78, 90, 80, 76, 72, 80, 78, 15),
 

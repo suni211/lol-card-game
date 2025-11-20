@@ -32,6 +32,9 @@ export interface PlayerState {
   respawnTurn: number;
   gold: number;
   items: string[];
+  level: number;
+  kills: number;
+  deaths: number;
 }
 
 export interface TowerState {

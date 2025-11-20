@@ -93,6 +93,9 @@ export interface PlayerState {
   respawnTurn: number; // Turn when player respawns
   gold: number;
   items: string[]; // Item IDs
+  level: number; // 1-18, increases when not recalling
+  kills: number; // Number of kills
+  deaths: number; // Number of deaths
 
   // Buffs/Debuffs
   buffs: Buff[];
@@ -133,7 +136,9 @@ export interface TeamState {
   grubBuff: boolean; // Tower/Nexus damage increase
   dragonStacks: number; // Each stack = player damage increase
   baronBuff: boolean; // Tower damage + stat buff
-  elderBuff: boolean; // Chance to wipe enemy team
+  baronBuffTurn?: number; // Turn when baron buff was obtained (expires after 1 turn)
+  elderBuff: boolean; // Execute enemies below 10% HP
+  elderBuffTurn?: number; // Turn when elder buff was obtained (expires after 1 turn)
 }
 
 export interface TurnAction {
@@ -176,7 +181,7 @@ export interface MatchState {
 export interface MatchLog {
   turn: number;
   timestamp: number;
-  type: 'ACTION' | 'COMBAT' | 'EVENT' | 'TOWER' | 'KILL' | 'ITEM' | 'OBJECTIVE' | 'GAME_END';
+  type: 'ACTION' | 'COMBAT' | 'EVENT' | 'TOWER' | 'KILL' | 'ITEM' | 'OBJECTIVE' | 'GAME_END' | 'LEVEL_UP';
   message: string;
   data?: any;
 }

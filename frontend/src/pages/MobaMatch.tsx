@@ -136,13 +136,46 @@ export default function MobaMatch() {
 
     const interval = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 0) return 0;
+        if (prev <= 1) {
+          // Auto-submit when timer reaches 0
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
   }, [status]);
+
+  // Auto-submit when timer reaches 0
+  useEffect(() => {
+    if (timeLeft === 0 && status === 'playing' && socket && matchState) {
+      // Set default actions for players without actions
+      const myTeamPlayers = teamNumber === 1 ? matchState.team1.players : matchState.team2.players;
+      const updatedActions = new Map(actions);
+
+      for (const player of myTeamPlayers) {
+        if (player.isDead) continue;
+        if (!updatedActions.has(player.oderId)) {
+          // Set default action based on position
+          let defaultAction: PlayerAction = 'FIGHT';
+          if (player.position === 'JUNGLE') {
+            defaultAction = 'FARM';
+          }
+          updatedActions.set(player.oderId, { oderId: player.oderId, action: defaultAction });
+        }
+      }
+
+      // Submit actions
+      const actionArray = Array.from(updatedActions.values());
+      socket.emit('moba_submit_actions', {
+        matchId: matchState.matchId,
+        actions: actionArray,
+      });
+
+      toast('시간 초과! 행동이 자동으로 제출되었습니다.', { icon: '⏰' });
+    }
+  }, [timeLeft, status, socket, matchState, teamNumber, actions]);
 
   // Set action for player
   const setPlayerAction = useCallback((oderId: number, action: PlayerAction) => {
@@ -628,9 +661,22 @@ function PlayerCard({
       }`}
     >
       <div className="flex items-center justify-between mb-2">
-        <div>
-          <span className="text-xs text-gray-400">{player.position}</span>
-          <div className="text-white font-bold">{player.name}</div>
+        <div className="flex items-center gap-2">
+          {/* Level Badge */}
+          <div className="relative">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
+              player.level >= 18 ? 'bg-yellow-500 border-yellow-300 text-black' :
+              player.level >= 11 ? 'bg-purple-600 border-purple-400 text-white' :
+              player.level >= 6 ? 'bg-blue-600 border-blue-400 text-white' :
+              'bg-gray-600 border-gray-400 text-white'
+            }`}>
+              {player.level}
+            </div>
+          </div>
+          <div>
+            <span className="text-xs text-gray-400">{player.position}</span>
+            <div className="text-white font-bold text-sm">{player.name}</div>
+          </div>
         </div>
         {isMyTeam && !player.isDead && onOpenShop && (
           <button
@@ -661,7 +707,7 @@ function PlayerCard({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-1 text-xs mb-2">
+      <div className="grid grid-cols-4 gap-1 text-xs mb-2">
         <div className="flex items-center gap-1">
           <Zap className="w-3 h-3 text-red-400" />
           <span className="text-white">{Math.floor(player.attack)}</span>
@@ -673,6 +719,10 @@ function PlayerCard({
         <div className="flex items-center gap-1">
           <Target className="w-3 h-3 text-yellow-400" />
           <span className="text-white">{player.gold}G</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Swords className="w-3 h-3 text-green-400" />
+          <span className="text-white">{player.kills}/{player.deaths}</span>
         </div>
       </div>
 

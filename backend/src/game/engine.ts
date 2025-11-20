@@ -22,6 +22,7 @@ const TURN_GOLD = 300;
 const EVENT_WIN_GOLD = 1000;
 const BASE_HEALTH_PER_OVERALL = 10; // Health = overall * 10
 const BASE_ATTACK_MULTIPLIER = 1;
+const ELDER_EXECUTE_THRESHOLD = 0.1; // Execute enemies below 10% HP
 
 // Event schedule
 const EVENT_SCHEDULE: Record<number, ObjectiveEvent> = {
@@ -118,6 +119,9 @@ export class GameEngine {
       respawnTurn: 0,
       gold: 500, // Starting gold
       items: [],
+      level: 1, // Starting level
+      kills: 0, // Starting kills
+      deaths: 0, // Starting deaths
       buffs: [],
       debuffs: [],
     };
@@ -169,6 +173,10 @@ export class GameEngine {
     const events: MatchLog[] = [];
     const combatResults: CombatResult[] = [];
 
+    // 0. Expire buffs from previous turns
+    this.expireBuffs(this.state.team1, turn, events);
+    this.expireBuffs(this.state.team2, turn, events);
+
     // 1. Give gold for new turn
     this.giveTeamGold(this.state.team1, TURN_GOLD);
     this.giveTeamGold(this.state.team2, TURN_GOLD);
@@ -204,6 +212,10 @@ export class GameEngine {
     // 9. Process recalls
     this.processRecalls(this.state.team1, team1Actions, events);
     this.processRecalls(this.state.team2, team2Actions, events);
+
+    // 9.5. Level up players who didn't recall (max level 18)
+    this.processLevelUp(this.state.team1, team1Actions, events);
+    this.processLevelUp(this.state.team2, team2Actions, events);
 
     // 10. Apply support/item effects
     this.applyTurnEndEffects(this.state.team1, events);
@@ -268,6 +280,32 @@ export class GameEngine {
     }
   }
 
+  private expireBuffs(team: TeamState, currentTurn: number, events: MatchLog[]) {
+    // Baron buff expires after 1 turn
+    if (team.baronBuff && team.baronBuffTurn !== undefined && currentTurn > team.baronBuffTurn) {
+      team.baronBuff = false;
+      team.baronBuffTurn = undefined;
+      events.push({
+        turn: currentTurn,
+        timestamp: Date.now(),
+        type: 'OBJECTIVE',
+        message: `팀의 바론 버프가 만료되었습니다.`,
+      });
+    }
+
+    // Elder buff expires after 1 turn
+    if (team.elderBuff && team.elderBuffTurn !== undefined && currentTurn > team.elderBuffTurn) {
+      team.elderBuff = false;
+      team.elderBuffTurn = undefined;
+      events.push({
+        turn: currentTurn,
+        timestamp: Date.now(),
+        type: 'OBJECTIVE',
+        message: `팀의 장로 버프가 만료되었습니다.`,
+      });
+    }
+  }
+
   private processItemActions(team: TeamState, actions: TurnAction[], events: MatchLog[]) {
     for (const action of actions) {
       const player = team.players.find(p => p.oderId === action.oderId);
@@ -294,7 +332,19 @@ export class GameEngine {
         const item = ITEMS[action.targetItemId];
         if (item) {
           const cost = calculateItemCost(action.targetItemId, player.items);
-          if (player.gold >= cost) {
+
+          // Calculate final item count after purchase
+          let finalItemCount = player.items.length + 1;
+          if (item.buildsFrom) {
+            for (const subItemId of item.buildsFrom) {
+              if (player.items.includes(subItemId)) {
+                finalItemCount--; // Sub-item will be removed
+              }
+            }
+          }
+
+          // Check 6 item limit
+          if (player.gold >= cost && finalItemCount <= 6) {
             // Remove sub-items if upgrading
             if (item.buildsFrom) {
               for (const subItemId of item.buildsFrom) {
@@ -313,6 +363,13 @@ export class GameEngine {
               timestamp: Date.now(),
               type: 'ITEM',
               message: `${player.name}이(가) ${item.name}을(를) 구매했습니다. (-${cost}G)`,
+            });
+          } else if (finalItemCount > 6) {
+            events.push({
+              turn: this.state.currentTurn,
+              timestamp: Date.now(),
+              type: 'ITEM',
+              message: `${player.name}: 아이템이 가득 찼습니다! (최대 6개)`,
             });
           }
         }
@@ -522,6 +579,7 @@ export class GameEngine {
 
       // Find targets
       const targets = attacker.team === 1 ? team2Players : team1Players;
+      const attackerTeam = attacker.team === 1 ? team1 : team2;
       const aliveTargets = targets.filter(t => !t.isDead);
       if (aliveTargets.length === 0) continue;
 
@@ -529,7 +587,7 @@ export class GameEngine {
       const target = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
 
       // Calculate damage
-      let damage = this.calculateDamage(attacker.player, target);
+      let damage = this.calculateDamage(attacker.player, target, attackerTeam);
 
       // Check crit
       const isCrit = Math.random() * 100 < attacker.player.critChance;
@@ -550,6 +608,13 @@ export class GameEngine {
         );
       }
 
+      // Check elder execute (10% HP threshold)
+      let isExecute = false;
+      if (target.currentHealth > 0 && this.checkElderExecute(target, attackerTeam)) {
+        target.currentHealth = 0;
+        isExecute = true;
+      }
+
       // Check kill
       const isKill = target.currentHealth <= 0;
       if (isKill) {
@@ -557,15 +622,28 @@ export class GameEngine {
         target.respawnTurn = this.state.currentTurn + 2; // Respawn in 2 turns
         target.currentHealth = 0;
 
+        // Update kill/death stats
+        attacker.player.kills++;
+        target.deaths++;
+
         // Give gold for kill
         attacker.player.gold += KILL_GOLD;
 
-        events.push({
-          turn: this.state.currentTurn,
-          timestamp: Date.now(),
-          type: 'KILL',
-          message: `${attacker.player.name}이(가) ${target.name}을(를) 처치했습니다! (+${KILL_GOLD}G)`,
-        });
+        if (isExecute) {
+          events.push({
+            turn: this.state.currentTurn,
+            timestamp: Date.now(),
+            type: 'KILL',
+            message: `${attacker.player.name}이(가) ${target.name}을(를) 장로 처형했습니다! (+${KILL_GOLD}G)`,
+          });
+        } else {
+          events.push({
+            turn: this.state.currentTurn,
+            timestamp: Date.now(),
+            type: 'KILL',
+            message: `${attacker.player.name}이(가) ${target.name}을(를) 처치했습니다! (+${KILL_GOLD}G)`,
+          });
+        }
       }
 
       combatResults.push({
@@ -586,12 +664,18 @@ export class GameEngine {
     });
   }
 
-  private calculateDamage(attacker: PlayerState, defender: PlayerState): number {
-    let damage = attacker.attack;
+  private calculateDamage(attacker: PlayerState, defender: PlayerState, attackerTeam?: TeamState): number {
+    // Base damage is attack * 2 for more impactful combat
+    let damage = attacker.attack * 2;
 
-    // Apply defense
-    const defenseReduction = defender.defense / (defender.defense + 100);
+    // Apply defense reduction (less impactful formula)
+    // Old: defense / (defense + 100) was too harsh
+    // New: defense / (defense + 300) for lighter reduction
+    const defenseReduction = defender.defense / (defender.defense + 300);
     damage *= 1 - defenseReduction;
+
+    // Minimum damage is 10% of attack
+    damage = Math.max(damage, attacker.attack * 0.1);
 
     // Check evasion
     if (Math.random() * 100 < defender.evasion) {
@@ -599,6 +683,14 @@ export class GameEngine {
     }
 
     return Math.floor(damage);
+  }
+
+  // Check if target should be executed by elder buff
+  private checkElderExecute(target: PlayerState, attackerTeam: TeamState): boolean {
+    if (!attackerTeam.elderBuff) return false;
+
+    const healthPercent = target.currentHealth / target.maxHealth;
+    return healthPercent < ELDER_EXECUTE_THRESHOLD;
   }
 
   private processJungleActions(
@@ -709,6 +801,34 @@ export class GameEngine {
     }
   }
 
+  private processLevelUp(team: TeamState, actions: Map<number, PlayerAction>, events: MatchLog[]) {
+    const MAX_LEVEL = 18;
+    const LEVEL_ATTACK_BONUS = 2; // Attack bonus per level
+    const LEVEL_HEALTH_BONUS = 20; // Health bonus per level
+
+    for (const player of team.players) {
+      if (player.isDead) continue;
+
+      const action = actions.get(player.oderId);
+      // Level up if not recalling and not at max level
+      if (action !== 'RECALL' && player.level < MAX_LEVEL) {
+        player.level++;
+
+        // Apply level bonuses
+        player.attack += LEVEL_ATTACK_BONUS;
+        player.maxHealth += LEVEL_HEALTH_BONUS;
+        player.currentHealth = Math.min(player.currentHealth + LEVEL_HEALTH_BONUS, player.maxHealth);
+
+        events.push({
+          turn: this.state.currentTurn,
+          timestamp: Date.now(),
+          type: 'LEVEL_UP',
+          message: `${player.name}이(가) 레벨 ${player.level}로 상승했습니다!`,
+        });
+      }
+    }
+  }
+
   private applyTurnEndEffects(team: TeamState, events: MatchLog[]) {
     // Support item effects
     for (const player of team.players) {
@@ -762,19 +882,127 @@ export class GameEngine {
     team2Actions: Map<number, PlayerAction>,
     events: MatchLog[]
   ): { event: ObjectiveEvent; winner: 1 | 2; effect: string } {
-    // Calculate team power for objective fight
-    const team1Power = this.calculateObjectivePower(this.state.team1, team1Actions);
-    const team2Power = this.calculateObjectivePower(this.state.team2, team2Actions);
+    // TEAMFIGHT: All alive players from both teams fight together!
+    const team1Fighters = this.state.team1.players.filter(p => !p.isDead);
+    const team2Fighters = this.state.team2.players.filter(p => !p.isDead);
+
+    // Calculate team power for objective fight (all players contribute)
+    let team1Power = 0;
+    for (const player of team1Fighters) {
+      team1Power += player.attack + player.currentHealth / 10;
+    }
+    let team2Power = 0;
+    for (const player of team2Fighters) {
+      team2Power += player.attack + player.currentHealth / 10;
+    }
+
+    // Apply team buffs to power
+    if (this.state.team1.dragonStacks > 0) {
+      team1Power *= 1 + this.state.team1.dragonStacks * 0.05;
+    }
+    if (this.state.team1.baronBuff) {
+      team1Power *= 1.2;
+    }
+    if (this.state.team2.dragonStacks > 0) {
+      team2Power *= 1 + this.state.team2.dragonStacks * 0.05;
+    }
+    if (this.state.team2.baronBuff) {
+      team2Power *= 1.2;
+    }
 
     // Determine winner (with some randomness)
     const total = team1Power + team2Power;
-    const team1Chance = team1Power / total;
+    const team1Chance = total > 0 ? team1Power / total : 0.5;
     const winner = Math.random() < team1Chance ? 1 : 2;
 
     const winningTeam = winner === 1 ? this.state.team1 : this.state.team2;
     const losingTeam = winner === 1 ? this.state.team2 : this.state.team1;
+    const winningFighters = winner === 1 ? team1Fighters : team2Fighters;
+    const losingFighters = winner === 1 ? team2Fighters : team1Fighters;
 
-    // Give gold
+    // TEAMFIGHT CASUALTIES: Both teams take heavy damage
+    // Power difference determines how devastating the fight is
+    const powerRatio = winner === 1
+      ? (team2Power / (team1Power || 1))
+      : (team1Power / (team2Power || 1));
+
+    // Losing team: most/all players die or get heavily damaged
+    for (const player of losingFighters) {
+      // Higher chance to die if team was weaker
+      const deathChance = 0.5 + (1 - powerRatio) * 0.3; // 50-80% base death chance
+      if (Math.random() < deathChance) {
+        player.isDead = true;
+        player.currentHealth = 0;
+        player.respawnTurn = this.state.currentTurn + 2;
+        player.deaths++;
+
+        // Random enemy gets the kill credit
+        const aliveWinners = winningFighters.filter(p => !p.isDead);
+        if (aliveWinners.length > 0) {
+          const killer = aliveWinners[Math.floor(Math.random() * aliveWinners.length)];
+          killer.kills++;
+          killer.gold += KILL_GOLD;
+          events.push({
+            turn: this.state.currentTurn,
+            timestamp: Date.now(),
+            type: 'KILL',
+            message: `${killer.name}이(가) ${player.name}을(를) 한타에서 처치했습니다! (+${KILL_GOLD}G)`,
+          });
+        } else {
+          events.push({
+            turn: this.state.currentTurn,
+            timestamp: Date.now(),
+            type: 'KILL',
+            message: `${player.name}이(가) 한타에서 사망했습니다!`,
+          });
+        }
+      } else {
+        // Survived but heavily damaged (10-40% HP remaining)
+        player.currentHealth = Math.floor(player.maxHealth * (0.1 + Math.random() * 0.3));
+      }
+    }
+
+    // Winning team: some casualties too if it was close
+    for (const player of winningFighters) {
+      // Death chance based on how close the fight was
+      const deathChance = powerRatio * 0.4; // 0-40% death chance based on enemy power
+      if (Math.random() < deathChance) {
+        player.isDead = true;
+        player.currentHealth = 0;
+        player.respawnTurn = this.state.currentTurn + 2;
+        player.deaths++;
+
+        // Random enemy gets the kill credit
+        const aliveLosers = losingFighters.filter(p => !p.isDead);
+        if (aliveLosers.length > 0) {
+          const killer = aliveLosers[Math.floor(Math.random() * aliveLosers.length)];
+          killer.kills++;
+          killer.gold += KILL_GOLD;
+          events.push({
+            turn: this.state.currentTurn,
+            timestamp: Date.now(),
+            type: 'KILL',
+            message: `${killer.name}이(가) ${player.name}을(를) 한타에서 처치했습니다! (+${KILL_GOLD}G)`,
+          });
+        } else {
+          events.push({
+            turn: this.state.currentTurn,
+            timestamp: Date.now(),
+            type: 'KILL',
+            message: `${player.name}이(가) 한타에서 사망했습니다!`,
+          });
+        }
+      } else {
+        // Survivors take some damage (30-80% HP remaining)
+        const remainingHpPercent = 0.3 + Math.random() * 0.5;
+        player.currentHealth = Math.min(
+          player.currentHealth,
+          Math.floor(player.maxHealth * remainingHpPercent)
+        );
+      }
+    }
+
+    // Give gold to winners
     this.giveTeamGold(winningTeam, EVENT_WIN_GOLD);
 
     let effect = '';
@@ -795,6 +1023,8 @@ export class GameEngine {
             tower.isDestroyed = true;
             tower.health = 0;
             effect = `${tower.lane} ${tower.position}차 포탑 파괴`;
+          } else {
+            effect = '전령 획득 (파괴할 포탑 없음)';
           }
         } else {
           effect = '전령 실패';
@@ -802,32 +1032,24 @@ export class GameEngine {
         break;
       case 'BARON':
         winningTeam.baronBuff = true;
+        winningTeam.baronBuffTurn = this.state.currentTurn; // Track when buff was obtained
         if (Math.random() < 0.5) {
           const tower = losingTeam.towers.find(t => !t.isDestroyed);
           if (tower) {
             tower.isDestroyed = true;
             tower.health = 0;
-            effect = `바론 버프 + ${tower.lane} ${tower.position}차 포탑 파괴`;
+            effect = `바론 버프 (1턴) + ${tower.lane} ${tower.position}차 포탑 파괴`;
           } else {
-            effect = '바론 버프 (포탑/넥서스 데미지 +20%)';
+            effect = '바론 버프 (1턴, 데미지 +20%)';
           }
         } else {
-          effect = '바론 버프 (포탑/넥서스 데미지 +20%)';
+          effect = '바론 버프 (1턴, 데미지 +20%)';
         }
         break;
       case 'ELDER':
-        if (Math.random() < 0.5) {
-          // Wipe enemy team
-          for (const player of losingTeam.players) {
-            player.isDead = true;
-            player.currentHealth = 0;
-            player.respawnTurn = this.state.currentTurn + 2;
-          }
-          effect = '장로 처형! 적 팀 전멸!';
-        } else {
-          winningTeam.elderBuff = true;
-          effect = '장로 버프 획득';
-        }
+        winningTeam.elderBuff = true;
+        winningTeam.elderBuffTurn = this.state.currentTurn; // Track when buff was obtained
+        effect = '장로 버프 획득 (1턴, 10% 미만 체력 적 처형)';
         break;
     }
 

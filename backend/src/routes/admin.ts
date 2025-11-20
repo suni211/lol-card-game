@@ -314,7 +314,7 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
       searchName = tierMatch[2];
     }
 
-    // 선수 검색 (tier는 overall 기반으로 계산)
+    // 선수 검색 (정확히 일치하는 이름만)
     let players: any;
     if (searchTier) {
       // Tier별 overall 범위 계산
@@ -328,27 +328,27 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
       [players] = await connection.query(
         `SELECT id, name, overall, season,
                 CASE
-                  WHEN name LIKE 'ICON%' THEN 'ICON'
+                  WHEN season = 'ICON' THEN 'ICON'
                   WHEN overall <= 80 THEN 'COMMON'
                   WHEN overall <= 90 THEN 'RARE'
                   WHEN overall <= 100 THEN 'EPIC'
                   ELSE 'LEGENDARY'
                 END as tier
-         FROM players WHERE name LIKE ? AND overall BETWEEN ? AND ?`,
-        [`%${searchName}%`, minOvr, maxOvr]
+         FROM players WHERE name = ? AND overall BETWEEN ? AND ?`,
+        [searchName, minOvr, maxOvr]
       );
     } else {
       [players] = await connection.query(
         `SELECT id, name, overall, season,
                 CASE
-                  WHEN name LIKE 'ICON%' THEN 'ICON'
+                  WHEN season = 'ICON' THEN 'ICON'
                   WHEN overall <= 80 THEN 'COMMON'
                   WHEN overall <= 90 THEN 'RARE'
                   WHEN overall <= 100 THEN 'EPIC'
                   ELSE 'LEGENDARY'
                 END as tier
-         FROM players WHERE name LIKE ?`,
-        [`%${searchName}%`]
+         FROM players WHERE name = ?`,
+        [searchName]
       );
     }
 

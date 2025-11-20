@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { BookOpen, Lightbulb, Trophy, Swords, Shield, Gem, Users, MapPin } from 'lucide-react';
 import PremiumCard from '../components/ui/PremiumCard';
 
@@ -85,10 +84,7 @@ export default function HowToPlay() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="max-w-4xl mx-auto"
       >
         <h1 className="text-5xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 mb-12">
@@ -98,10 +94,7 @@ export default function HowToPlay() {
         <div className="space-y-12">
           {sections.map((section, index) => (
             <PremiumCard key={index} gradient="blue" glow hover3D>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
+              <div
                 className="p-8 rounded-xl shadow-lg"
               >
                 <div className="flex items-center mb-6">
@@ -112,25 +105,22 @@ export default function HowToPlay() {
                 </div>
                 <ul className="space-y-3 text-lg text-gray-700 dark:text-gray-300">
                   {section.content.map((item, itemIndex) => (
-                    <motion.li
+                    <li
                       key={itemIndex}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 + itemIndex * 0.05, duration: 0.3 }}
                       className="flex items-start"
                     >
                       <span className="mr-3 text-primary-500 dark:text-primary-300 text-xl">
                         •
                       </span>
                       <span>{item}</span>
-                    </motion.li>
+                    </li>
                   ))}
                 </ul>
-              </motion.div>
+              </div>
             </PremiumCard>
           ))}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

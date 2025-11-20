@@ -5,6 +5,86 @@ import { calculateEnhancementBonus } from '../utils/enhancement';
 
 const router = express.Router();
 
+// 자동 가격 계산 함수
+function calculateAutoPrice(overall: number, season: string): { floor: number; ceiling: number; current: number } {
+  let basePrice = 0;
+
+  // 오버롤 기반 기본 가격
+  if (overall >= 115) {
+    basePrice = 500000;
+  } else if (overall >= 110) {
+    basePrice = 200000;
+  } else if (overall >= 105) {
+    basePrice = 80000;
+  } else if (overall >= 100) {
+    basePrice = 30000;
+  } else if (overall >= 95) {
+    basePrice = 10000;
+  } else if (overall >= 90) {
+    basePrice = 5000;
+  } else if (overall >= 85) {
+    basePrice = 2000;
+  } else if (overall >= 80) {
+    basePrice = 1000;
+  } else {
+    basePrice = 500;
+  }
+
+  // ICON 시즌은 가격 3배
+  if (season === 'ICON') {
+    basePrice *= 3;
+  }
+
+  // 가격 범위 설정 (±50%)
+  const floor = Math.floor(basePrice * 0.5);
+  const ceiling = Math.floor(basePrice * 1.5);
+
+  return {
+    floor,
+    ceiling,
+    current: basePrice
+  };
+}
+
+// 선수의 시세 정보 가져오기 (없으면 자동 생성)
+async function getOrCreatePlayerPrice(connection: any, playerId: number): Promise<{ price_floor: number; price_ceiling: number; current_price: number }> {
+  // 기존 시세 정보 확인
+  const [existing]: any = await connection.query(
+    'SELECT price_floor, price_ceiling, current_price FROM player_market_prices WHERE player_id = ?',
+    [playerId]
+  );
+
+  if (existing.length > 0) {
+    return existing[0];
+  }
+
+  // 선수 정보 가져오기
+  const [players]: any = await connection.query(
+    'SELECT overall, season FROM players WHERE id = ?',
+    [playerId]
+  );
+
+  if (players.length === 0) {
+    throw new Error('Player not found');
+  }
+
+  const player = players[0];
+  const autoPrice = calculateAutoPrice(player.overall, player.season);
+
+  // 시세 정보 자동 생성
+  await connection.query(
+    `INSERT INTO player_market_prices (player_id, price_floor, price_ceiling, current_price, total_volume)
+     VALUES (?, ?, ?, ?, 0)`,
+    [playerId, autoPrice.floor, autoPrice.ceiling, autoPrice.current]
+  );
+
+  return {
+    price_floor: autoPrice.floor,
+    price_ceiling: autoPrice.ceiling,
+    current_price: autoPrice.current
+  };
+}
+
 // Get market listings
 router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -93,34 +173,50 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
 
 // Get player market info
 router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
   try {
     const { playerId } = req.params;
     const level = parseInt(req.query.level as string) || 0;
 
-    // Get player price info
-    const [priceInfo]: any = await pool.query(
+    // 선수 정보 가져오기
+    const [players]: any = await connection.query(
       `SELECT
-        pmp.*,
+        p.id,
         p.name,
+        p.team,
+        p.position,
+        p.overall,
+        p.season,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
           ELSE 'LEGENDARY'
-        END as tier,
-        p.team,
-        p.position,
-        p.overall
-      FROM player_market_prices pmp
-      JOIN players p ON pmp.player_id = p.id
-      WHERE pmp.player_id = ?`,
+        END as tier
+      FROM players p
+      WHERE p.id = ?`,
       [playerId]
     );
 
-    if (priceInfo.length === 0) {
+    if (players.length === 0) {
       return res.status(404).json({ success: false, error: 'Player not found' });
     }
+
+    const player = players[0];
+
+    // 시세 정보 가져오기 (없으면 자동 생성)
+    const priceData = await getOrCreatePlayerPrice(connection, parseInt(playerId));
+
+    const priceInfo = [{
+      ...priceData,
+      name: player.name,
+      tier: player.tier,
+      team: player.team,
+      position: player.position,
+      overall: player.overall
+    }];
 
     // Adjust price range based on enhancement level
     const enhancementBonus = calculateEnhancementBonus(level);
@@ -165,6 +261,8 @@ router.get('/player/:playerId', authMiddleware, async (req: AuthRequest, res) =>
   } catch (error: any) {
     console.error('Get player market info error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
   }
 });
 
@@ -213,19 +311,8 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     const card = cards[0];
 
-    // Get price limits
-    const [priceInfo]: any = await connection.query(
-      'SELECT price_floor, price_ceiling FROM player_market_prices WHERE player_id = ?',
-      [card.player_id]
-    );
-
-    if (priceInfo.length === 0) {
-      await connection.rollback();
-      return res.status(400).json({
-        success: false,
-        error: '시세 정보를 찾을 수 없습니다.',
-      });
-    }
+    // Get price limits (자동 생성 포함)
+    const priceInfo = await getOrCreatePlayerPrice(connection, card.player_id);
 
     // Adjust price range based on enhancement level
     const enhancementBonus = calculateEnhancementBonus(card.level);
@@ -233,8 +320,8 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     const enhancedOverall = baseOverall + enhancementBonus;
     const priceMultiplier = enhancedOverall / baseOverall;
 
-    const price_floor = Math.floor(priceInfo[0].price_floor * priceMultiplier);
-    const price_ceiling = Math.floor(priceInfo[0].price_ceiling * priceMultiplier);
+    const price_floor = Math.floor(priceInfo.price_floor * priceMultiplier);
+    const price_ceiling = Math.floor(priceInfo.price_ceiling * priceMultiplier);
 
     // Validate price range
     if (price < price_floor || price > price_ceiling) {

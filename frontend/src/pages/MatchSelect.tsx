@@ -17,7 +17,7 @@ interface DeckInfo {
 
 export default function MatchSelect() {
   const navigate = useNavigate();
-  const { token, user } = useAuthStore();
+  const { token } = useAuthStore();
   const [decks, setDecks] = useState<DeckInfo[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<number>(1);
   const [loading, setLoading] = useState(true);

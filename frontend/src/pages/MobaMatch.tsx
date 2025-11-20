@@ -5,10 +5,8 @@ import { io, Socket } from 'socket.io-client';
 import {
   Swords,
   Shield,
-  Home,
   ShoppingBag,
   Clock,
-  Heart,
   Zap,
   Target,
   Flag,
@@ -18,18 +16,18 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-import {
+import type {
   MatchState,
-  TeamState,
   PlayerState,
   TurnAction,
   TurnResult,
   Item,
+  PlayerAction,
+  Lane,
+} from '../types/moba';
+import {
   POSITION_ACTIONS,
   EVENT_INFO,
-  PlayerAction,
-  Position,
-  Lane,
 } from '../types/moba';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -37,7 +35,7 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 export default function MobaMatch() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, user } = useAuthStore();
+  const { token } = useAuthStore();
   const matchType = (searchParams.get('type') as 'RANKED' | 'NORMAL') || 'NORMAL';
   const deckSlot = parseInt(searchParams.get('deck') || '1');
 

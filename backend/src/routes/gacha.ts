@@ -919,6 +919,26 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'Cannot use locked card as material' });
     }
 
+    // Check if any material cards are in active decks
+    const [decksWithMaterials]: any = await connection.query(
+      `SELECT d.deck_slot, uc.id as card_id
+       FROM decks d
+       JOIN user_cards uc ON (
+         d.top_card_id = uc.id OR
+         d.jungle_card_id = uc.id OR
+         d.mid_card_id = uc.id OR
+         d.adc_card_id = uc.id OR
+         d.support_card_id = uc.id
+       )
+       WHERE d.user_id = ? AND uc.id IN (?)`,
+      [userId, materialCardIds]
+    );
+
+    if (decksWithMaterials.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '덱에 편성된 카드는 강화 재료로 사용할 수 없습니다.' });
+    }
+
     // Check max level
     if (targetCard.level >= MAX_ENHANCEMENT_LEVEL) {
       await connection.rollback();
@@ -1165,6 +1185,24 @@ router.delete('/dismantle/:cardId', authMiddleware, async (req: AuthRequest, res
     if (card.is_locked) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Cannot dismantle locked card' });
+    }
+
+    // Check if card is in active deck
+    const [decksWithCard]: any = await connection.query(
+      `SELECT deck_slot FROM decks
+       WHERE user_id = ? AND (
+         top_card_id = ? OR
+         jungle_card_id = ? OR
+         mid_card_id = ? OR
+         adc_card_id = ? OR
+         support_card_id = ?
+       )`,
+      [userId, cardId, cardId, cardId, cardId, cardId]
+    );
+
+    if (decksWithCard.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '덱에 편성된 카드는 분해할 수 없습니다.' });
     }
 
     // Calculate refund based on tier

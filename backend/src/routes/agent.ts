@@ -174,6 +174,29 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
       return res.status(400).json({ success: false, error: '보유하지 않은 카드가 포함되어 있습니다.' });
     }
 
+    // Check if any cards are in active decks
+    const [decksWithCards]: any = await connection.query(
+      `SELECT d.deck_slot, uc.id as card_id
+       FROM decks d
+       JOIN user_cards uc ON (
+         d.top_card_id = uc.id OR
+         d.jungle_card_id = uc.id OR
+         d.mid_card_id = uc.id OR
+         d.adc_card_id = uc.id OR
+         d.support_card_id = uc.id
+       )
+       WHERE d.user_id = ? AND uc.id IN (?)`,
+      [userId, cardIds]
+    );
+
+    if (decksWithCards.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '덱에 편성된 카드는 에이전트 미션에 사용할 수 없습니다.',
+      });
+    }
+
     // Check total overall
     const totalOverall = cards.reduce((sum: number, card: any) => sum + card.overall, 0);
     if (totalOverall < config.minOverall) {

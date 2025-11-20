@@ -232,12 +232,11 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
       });
     }
 
-    // 강화 레벨당 버프 증가량 계산 (1강당 +1씩 증가)
+    // 강화 레벨당 버프 증가량 계산 (버프 = 강화 레벨)
     const levelsGained = Math.min(materialCoaches.length, MAX_ENHANCEMENT_LEVEL - targetCoach.enhancement_level);
-    const buffIncreasePerLevel = 1; // 1강당 +1
-    const buffIncrease = levelsGained * buffIncreasePerLevel;
     const newEnhancementLevel = targetCoach.enhancement_level + levelsGained;
-    const newBuffValue = targetCoach.current_buff + buffIncrease;
+    const newBuffValue = newEnhancementLevel; // 버프 = 강화 레벨
+    const buffIncrease = newBuffValue - targetCoach.current_buff;
 
     // 대상 코치의 강화 레벨 및 버프 값 업데이트
     await connection.query(

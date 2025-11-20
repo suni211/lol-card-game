@@ -90,9 +90,7 @@ export default function Navbar() {
     {
       label: '이벤트',
       items: [
-        { path: '/event', label: '퀘스트' },
-        { path: '/event/milestones', label: '마일스톤' },
-        { path: '/event/rewards', label: '보상 인벤토리' },
+        { path: '/lottery', label: '럭키 드로우' },
       ]
     },
     { path: '/trade', label: '트레이드' },

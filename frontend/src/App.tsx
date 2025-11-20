@@ -58,6 +58,7 @@ import Spectator from './pages/Spectator';
 import Campaign from './pages/Campaign';
 import CampaignBattle from './pages/CampaignBattle';
 import Agent from './pages/Agent';
+import Lottery from './pages/Lottery';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -629,6 +630,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Agent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lottery"
+            element={
+              <ProtectedRoute>
+                <Lottery />
               </ProtectedRoute>
             }
           />

@@ -42,6 +42,7 @@ import raidRoutes from './routes/raid';
 import spectatorRoutes from './routes/spectator';
 import campaignRoutes from './routes/campaign';
 import agentRoutes from './routes/agent';
+import lotteryRoutes from './routes/lottery';
 
 // Import matchmaking
 import { setupMatchmaking } from './socket/matchmaking';
@@ -141,6 +142,7 @@ app.use('/api/raid', raidRoutes);
 app.use('/api/spectator', spectatorRoutes);
 app.use('/api/campaign', campaignRoutes);
 app.use('/api/agent', agentRoutes);
+app.use('/api/lottery', lotteryRoutes);
 // Practice matchmaking now uses Socket.io only (no REST API)
 
 // Health check

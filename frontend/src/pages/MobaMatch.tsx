@@ -376,13 +376,26 @@ export default function MobaMatch() {
                 style={{ width: `${(myTeam.nexusHealth / myTeam.maxNexusHealth) * 100}%` }}
               />
             </div>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+            <div className="mt-3 space-y-2">
               {(['TOP', 'MID', 'BOT'] as Lane[]).map(lane => {
-                const towers = myTeam.towers.filter(t => t.lane === lane && !t.isDestroyed);
+                const laneTowers = myTeam.towers.filter(t => t.lane === lane);
                 return (
-                  <div key={lane} className="text-center">
-                    <div className="text-gray-400">{lane}</div>
-                    <div className="text-white">{towers.length}/3</div>
+                  <div key={lane} className="flex items-center gap-2">
+                    <span className="text-gray-400 text-xs w-8">{lane}</span>
+                    <div className="flex gap-1 flex-1">
+                      {laneTowers.map(tower => (
+                        <div key={`${tower.lane}-${tower.position}`} className="flex-1">
+                          <div className={`h-2 rounded ${tower.isDestroyed ? 'bg-gray-600' : 'bg-gray-500'}`}>
+                            {!tower.isDestroyed && (
+                              <div
+                                className="h-2 rounded bg-blue-500 transition-all"
+                                style={{ width: `${(tower.health / tower.maxHealth) * 100}%` }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -390,7 +403,7 @@ export default function MobaMatch() {
           </div>
 
           {/* Buffs */}
-          {(myTeam.grubBuff || myTeam.dragonStacks > 0 || myTeam.baronBuff) && (
+          {(myTeam.grubBuff || myTeam.dragonStacks > 0 || myTeam.baronBuff || myTeam.elderBuff) && (
             <div className="mb-4 flex gap-2 flex-wrap">
               {myTeam.grubBuff && (
                 <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">유충</span>
@@ -402,6 +415,9 @@ export default function MobaMatch() {
               )}
               {myTeam.baronBuff && (
                 <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded">바론</span>
+              )}
+              {myTeam.elderBuff && (
+                <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded">장로</span>
               )}
             </div>
           )}
@@ -485,13 +501,26 @@ export default function MobaMatch() {
                 style={{ width: `${(enemyTeam.nexusHealth / enemyTeam.maxNexusHealth) * 100}%` }}
               />
             </div>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+            <div className="mt-3 space-y-2">
               {(['TOP', 'MID', 'BOT'] as Lane[]).map(lane => {
-                const towers = enemyTeam.towers.filter(t => t.lane === lane && !t.isDestroyed);
+                const laneTowers = enemyTeam.towers.filter(t => t.lane === lane);
                 return (
-                  <div key={lane} className="text-center">
-                    <div className="text-gray-400">{lane}</div>
-                    <div className="text-white">{towers.length}/3</div>
+                  <div key={lane} className="flex items-center gap-2">
+                    <span className="text-gray-400 text-xs w-8">{lane}</span>
+                    <div className="flex gap-1 flex-1">
+                      {laneTowers.map(tower => (
+                        <div key={`${tower.lane}-${tower.position}`} className="flex-1">
+                          <div className={`h-2 rounded ${tower.isDestroyed ? 'bg-gray-600' : 'bg-gray-500'}`}>
+                            {!tower.isDestroyed && (
+                              <div
+                                className="h-2 rounded bg-red-500 transition-all"
+                                style={{ width: `${(tower.health / tower.maxHealth) * 100}%` }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -499,7 +528,7 @@ export default function MobaMatch() {
           </div>
 
           {/* Enemy Buffs */}
-          {(enemyTeam.grubBuff || enemyTeam.dragonStacks > 0 || enemyTeam.baronBuff) && (
+          {(enemyTeam.grubBuff || enemyTeam.dragonStacks > 0 || enemyTeam.baronBuff || enemyTeam.elderBuff) && (
             <div className="mb-4 flex gap-2 flex-wrap">
               {enemyTeam.grubBuff && (
                 <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">유충</span>
@@ -511,6 +540,9 @@ export default function MobaMatch() {
               )}
               {enemyTeam.baronBuff && (
                 <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded">바론</span>
+              )}
+              {enemyTeam.elderBuff && (
+                <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded">장로</span>
               )}
             </div>
           )}

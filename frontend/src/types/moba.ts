@@ -54,7 +54,9 @@ export interface TeamState {
   grubBuff: boolean;
   dragonStacks: number;
   baronBuff: boolean;
+  baronBuffTurn?: number;
   elderBuff: boolean;
+  elderBuffTurn?: number;
 }
 
 export interface MatchState {

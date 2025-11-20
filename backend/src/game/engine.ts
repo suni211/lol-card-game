@@ -16,7 +16,7 @@ import { ITEMS, calculateItemCost } from './items';
 
 // Constants
 const TOWER_HEALTH = 500; // Reduced from 1000 for faster games
-const NEXUS_HEALTH = 1500; // Reduced from 3000 for faster games
+const NEXUS_HEALTH = 3000; // Fixed nexus health
 const KILL_GOLD = 300;
 const TURN_GOLD = 300;
 const EVENT_WIN_GOLD = 1000;

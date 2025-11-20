@@ -814,8 +814,8 @@ async function processMatchRewards(state: MatchState) {
   let winnerPoints, loserPoints, ratingChange;
 
   if (state.matchType === 'RANKED') {
-    winnerPoints = 5000;
-    loserPoints = 1000;
+    winnerPoints = 15000;
+    loserPoints = 10000;
     ratingChange = 25;
   } else {
     winnerPoints = 1500;

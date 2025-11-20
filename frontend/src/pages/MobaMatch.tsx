@@ -39,7 +39,7 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 export default function MobaMatch() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const matchType = (searchParams.get('type') as 'RANKED' | 'NORMAL') || 'NORMAL';
   const deckSlot = parseInt(searchParams.get('deck') || '1');
 

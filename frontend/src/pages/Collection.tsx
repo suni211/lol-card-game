@@ -959,7 +959,7 @@ export default function Collection() {
                         toast.error(error.response?.data?.error || '미리보기 실패');
                       }
                     }}
-                    variant="blue"
+                    variant="primary"
                     size="lg"
                     className="w-full"
                   >

@@ -271,6 +271,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
           region: player.region,
           tier: player.tier, // Use tier calculated in SQL
           season: player.season,
+          salary: player.salary,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,
           macro: player.macro || 50,
@@ -454,6 +455,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           region: player.region,
           tier: player.tier, // Use tier calculated in SQL
           season: player.season,
+          salary: player.salary,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,
           macro: player.macro || 50,

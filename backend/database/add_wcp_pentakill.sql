@@ -187,3 +187,40 @@ FROM players WHERE name = 'WCP Slayder';
 INSERT INTO player_traits (player_id, name, description, effect)
 SELECT id, '클러치 플레이어', '결정적 순간의 영웅', '+10 한타'
 FROM players WHERE name = 'WCP Crownie';
+
+
+-- Add WCP cards to market
+INSERT INTO player_market_prices (player_id, base_price, current_price, price_floor, price_ceiling)
+SELECT
+  id,
+  CASE
+    WHEN overall >= 105 THEN 2500
+    WHEN overall >= 95 THEN 1500
+    WHEN overall >= 85 THEN 800
+    ELSE 500
+  END as base_price,
+  CASE
+    WHEN overall >= 105 THEN 2500
+    WHEN overall >= 95 THEN 1500
+    WHEN overall >= 85 THEN 800
+    ELSE 500
+  END as current_price,
+  CASE
+    WHEN overall >= 105 THEN 2000
+    WHEN overall >= 95 THEN 1200
+    WHEN overall >= 85 THEN 600
+    ELSE 400
+  END as price_floor,
+  CASE
+    WHEN overall >= 105 THEN 3000
+    WHEN overall >= 95 THEN 1800
+    WHEN overall >= 85 THEN 1000
+    ELSE 600
+  END as price_ceiling
+FROM players
+WHERE name LIKE 'WCP %'
+ON DUPLICATE KEY UPDATE
+  base_price = VALUES(base_price),
+  current_price = VALUES(current_price),
+  price_floor = VALUES(price_floor),
+  price_ceiling = VALUES(price_ceiling);

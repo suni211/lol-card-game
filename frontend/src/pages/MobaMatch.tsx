@@ -52,6 +52,7 @@ export default function MobaMatch() {
   const [showSurrender, setShowSurrender] = useState(false);
   const [winner, setWinner] = useState<1 | 2 | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [opponentName, setOpponentName] = useState<string>('');
 
   // Connect to socket
   useEffect(() => {
@@ -80,6 +81,7 @@ export default function MobaMatch() {
       console.log('[MobaMatch] Match found!', data);
       setMatchState(data.state);
       setTeamNumber(data.teamNumber);
+      setOpponentName(data.opponent?.username || '상대방');
       setStatus('playing');
       toast.success('매치 시작!');
     });
@@ -495,7 +497,7 @@ export default function MobaMatch() {
 
         {/* Enemy Team */}
         <div className="bg-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-bold text-red-400 mb-4">적 팀</h3>
+          <h3 className="text-lg font-bold text-red-400 mb-4">{opponentName || '적 팀'}</h3>
 
           {/* Nexus & Towers */}
           <div className="mb-4 p-3 bg-gray-700 rounded-lg">

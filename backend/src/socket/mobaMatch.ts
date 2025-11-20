@@ -19,6 +19,7 @@ interface QueuePlayer {
   deckData: any;
   rating: number;
   matchType: 'RANKED' | 'NORMAL';
+  username: string;
 }
 
 const rankedQueue: QueuePlayer[] = [];
@@ -37,9 +38,10 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
         return;
       }
 
-      // Get user rating
-      const [users]: any = await pool.query('SELECT rating FROM users WHERE id = ?', [oderId]);
+      // Get user rating and username
+      const [users]: any = await pool.query('SELECT rating, username FROM users WHERE id = ?', [oderId]);
       const rating = users[0]?.rating || 1000;
+      const username = users[0]?.username || `Player ${oderId}`;
 
       const queuePlayer: QueuePlayer = {
         oderId,
@@ -47,6 +49,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
         deckData,
         rating,
         matchType: data.matchType,
+        username,
       };
 
       // Add to queue
@@ -290,7 +293,7 @@ function tryMatchPlayers(io: Server, queue: QueuePlayer[], matchType: 'RANKED' |
       matchId,
       teamNumber: 1,
       state: getVisibleState(state, 1),
-      opponent: { username: 'Player 2' }, // TODO: Get actual username
+      opponent: { username: player2.username, oderId: player2.oderId },
     });
   }
 
@@ -299,7 +302,7 @@ function tryMatchPlayers(io: Server, queue: QueuePlayer[], matchType: 'RANKED' |
       matchId,
       teamNumber: 2,
       state: getVisibleState(state, 2),
-      opponent: { username: 'Player 1' },
+      opponent: { username: player1.username, oderId: player1.oderId },
     });
   }
 

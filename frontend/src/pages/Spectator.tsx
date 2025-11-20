@@ -348,36 +348,33 @@ export default function Spectator() {
             <div className="bg-gray-800 rounded-lg p-4">
               <h3 className="text-lg font-bold text-white mb-4">전투 로그</h3>
 
-              <div className="h-[500px] overflow-y-auto space-y-2">
-                {turnResult?.events.map((event, idx) => (
+              <div className="h-[500px] overflow-y-auto space-y-2 flex flex-col-reverse">
+                {/* Show all logs in reverse order (newest first) */}
+                {[...spectatingMatch.logs].reverse().slice(0, 50).map((log, idx) => (
                   <motion.div
-                    key={idx}
-                    initial={{ x: -20, opacity: 0 }}
+                    key={`log-${spectatingMatch.logs.length - idx}`}
+                    initial={idx < 10 ? { x: -20, opacity: 0 } : false}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: idx * 0.05 }}
+                    transition={{ delay: idx < 10 ? idx * 0.03 : 0 }}
                     className={`p-2 rounded text-sm ${
-                      event.type === 'KILL'
+                      log.type === 'KILL'
                         ? 'bg-red-900/50 text-red-300'
-                        : event.type === 'TOWER'
+                        : log.type === 'TOWER'
                         ? 'bg-orange-900/50 text-orange-300'
-                        : event.type === 'OBJECTIVE'
+                        : log.type === 'OBJECTIVE'
                         ? 'bg-purple-900/50 text-purple-300'
-                        : event.type === 'LEVEL_UP'
+                        : log.type === 'LEVEL_UP'
                         ? 'bg-green-900/50 text-green-300'
+                        : log.type === 'ITEM'
+                        ? 'bg-yellow-900/50 text-yellow-300'
+                        : log.type === 'GAME_END'
+                        ? 'bg-blue-900/50 text-blue-300'
                         : 'bg-gray-700 text-gray-300'
                     }`}
                   >
-                    {event.message}
+                    <span className="text-gray-500 text-xs mr-1">[{log.turn}턴]</span>
+                    {log.message}
                   </motion.div>
-                ))}
-
-                {spectatingMatch.logs.slice(-20).map((log, idx) => (
-                  <div
-                    key={`log-${idx}`}
-                    className="p-2 bg-gray-700/50 rounded text-sm text-gray-400"
-                  >
-                    [{log.turn}턴] {log.message}
-                  </div>
                 ))}
               </div>
             </div>

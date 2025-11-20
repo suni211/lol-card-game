@@ -18,7 +18,36 @@ router.get('/all', authMiddleware, async (req: AuthRequest, res) => {
       [userId]
     );
 
-    res.json({ success: true, data: decks });
+    // Calculate total_overall for each deck
+    const decksWithOverall = await Promise.all(decks.map(async (deck: any) => {
+      const cardIds = [
+        deck.top_card_id,
+        deck.jungle_card_id,
+        deck.mid_card_id,
+        deck.adc_card_id,
+        deck.support_card_id,
+      ].filter(Boolean);
+
+      let total_overall = 0;
+
+      if (cardIds.length > 0) {
+        const [cards]: any = await pool.query(`
+          SELECT SUM(p.overall + (uc.level * 2)) as total
+          FROM user_cards uc
+          JOIN players p ON uc.player_id = p.id
+          WHERE uc.id IN (?)
+        `, [cardIds]);
+
+        total_overall = cards[0]?.total || 0;
+      }
+
+      return {
+        ...deck,
+        total_overall,
+      };
+    }));
+
+    res.json({ success: true, data: decksWithOverall });
   } catch (error: any) {
     console.error('Get all decks error:', error);
     res.status(500).json({ success: false, error: 'Server error' });

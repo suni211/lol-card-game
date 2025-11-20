@@ -51,7 +51,6 @@ export default function Spectator() {
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
   const [spectatingMatch, setSpectatingMatch] = useState<SpectateMatchState | null>(null);
   const [spectatorCount, setSpectatorCount] = useState(0);
-  const [turnResult, setTurnResult] = useState<TurnResult | null>(null);
 
   // Load live matches list
   useEffect(() => {
@@ -143,7 +142,6 @@ export default function Spectator() {
 
       socket.on('moba_turn_start', (data: { turn: number; timeLimit: number }) => {
         console.log('[Spectator] Turn start:', data);
-        setTurnResult(null);
         setSpectatingMatch(prev => {
           if (!prev) return prev;
           return { ...prev, currentTurn: data.turn };
@@ -152,7 +150,6 @@ export default function Spectator() {
 
       socket.on('moba_turn_result', (result: TurnResult) => {
         console.log('[Spectator] Turn result:', result);
-        setTurnResult(result);
         setSpectatingMatch(prev => {
           if (!prev) return prev;
           return {

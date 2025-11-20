@@ -5,7 +5,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 const router = express.Router();
 
 // Lottery configuration
-const TICKET_COST = 100000; // 10만 포인트
+const TICKET_COST = 25000; // 2만 5천 포인트
 const TOTAL_NUMBERS = 49;
 
 // Grade probabilities (must sum to 100)

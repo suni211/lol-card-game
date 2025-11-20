@@ -10,11 +10,39 @@ export type PlayerAction =
   | 'ROAM_MID' // Roam to mid
   | 'ROAM_BOT' // Roam to bot
   | 'ROAM_JUNGLE' // Help jungle
-  | 'RECALL' // Go back to base (heal but tower takes damage)
+  | 'RECALL' // Go back to base (heal but can't participate in teamfight)
   | 'FARM' // Jungle only - gain 1% attack
   | 'GANK_TOP' // Jungle only
   | 'GANK_MID' // Jungle only
-  | 'GANK_BOT'; // Jungle only
+  | 'GANK_BOT' // Jungle only
+  | 'USE_SKILL'; // Use champion skill
+
+export type ChampionClass = 'TANK' | 'BRUISER' | 'ASSASSIN' | 'DEALER' | 'RANGED_DEALER' | 'RANGED_AP' | 'SUPPORT';
+export type ScalingType = 'AD' | 'AP';
+
+export interface Champion {
+  id: number;
+  name: string;
+  skillName: string;
+  skillDescription: string;
+  cooldown: number;
+  scalingType: ScalingType;
+  championClass: ChampionClass;
+  valueLevel1: number;
+  valueLevel2: number;
+  valueLevel3: number;
+  extraParam1: number;
+  extraParam2: number;
+  extraParam3: number;
+  isOneTime: boolean;
+}
+
+export interface SkillState {
+  championId: number;
+  currentCooldown: number; // 0 = ready to use
+  hasBeenUsed: boolean; // For one-time skills
+  skillLevel: 0 | 1 | 2 | 3; // 0 = not unlocked, 1 = level 6, 2 = level 12, 3 = level 18
+}
 
 export type ObjectiveEvent =
   | 'GRUB' // Turn 3 - Tower/Nexus damage buff
@@ -109,6 +137,11 @@ export interface PlayerState {
 
   // Ward
   wardPlaced?: Lane; // Which lane is being watched
+
+  // Champion skill
+  championId?: number;
+  skill?: SkillState;
+  isRecalling?: boolean; // Can't participate in teamfight when recalling
 }
 
 export interface Buff {
@@ -153,6 +186,8 @@ export interface TurnAction {
   targetItemId?: string; // For buying items
   sellItemId?: string; // For selling items
   useItemTarget?: Lane; // For control ward
+  useSkill?: boolean; // Whether to use skill this turn
+  skillTargetId?: number; // Target player ID for skill (if applicable)
 }
 
 export interface MatchState {
@@ -177,8 +212,13 @@ export interface MatchState {
   eventWinner?: 1 | 2;
 
   // Game status
-  status: 'WAITING' | 'IN_PROGRESS' | 'TEAM1_WINS' | 'TEAM2_WINS' | 'SURRENDERED';
+  status: 'BAN_PICK' | 'WAITING' | 'IN_PROGRESS' | 'TEAM1_WINS' | 'TEAM2_WINS' | 'SURRENDERED';
   surrenderedBy?: 1 | 2;
+
+  // Ban/Pick phase
+  bannedChampions: number[]; // Champion IDs that are banned
+  banPickPhase?: number; // Current phase (1-7)
+  // Phase order: 1팀1개 -> 2팀2개 -> 1팀2개 -> 2팀1개 -> 1팀1개 -> 2팀2개 -> 1팀1개
 
   // Match log
   logs: MatchLog[];

@@ -18,6 +18,7 @@ import { ITEMS, calculateItemCost } from './items';
 const TOWER_HEALTH = 500; // Reduced from 1000 for faster games
 const NEXUS_HEALTH = 3000; // Fixed nexus health
 const KILL_GOLD = 300;
+const ASSIST_GOLD = 150;
 const TURN_GOLD = 300;
 const EVENT_WIN_GOLD = 1000;
 const BASE_HEALTH_PER_OVERALL = 10; // Health = overall * 10
@@ -126,6 +127,8 @@ export class GameEngine {
       level: 1, // Starting level
       kills: 0, // Starting kills
       deaths: 0, // Starting deaths
+      assists: 0, // Starting assists
+      lastDamagedBy: [], // Track damage sources for assists
       buffs: [],
       debuffs: [],
     };
@@ -647,6 +650,16 @@ export class GameEngine {
       // Apply damage
       target.currentHealth -= damage;
 
+      // Track damage source for assists (keep last 3 attackers)
+      if (damage > 0) {
+        if (!target.lastDamagedBy.includes(attacker.player.oderId)) {
+          target.lastDamagedBy.push(attacker.player.oderId);
+          if (target.lastDamagedBy.length > 3) {
+            target.lastDamagedBy.shift();
+          }
+        }
+      }
+
       // Life steal
       let healAmount = 0;
       if (attacker.player.lifeSteal > 0) {
@@ -678,19 +691,38 @@ export class GameEngine {
         // Give gold for kill
         attacker.player.gold += KILL_GOLD;
 
+        // Process assists
+        const assisters: string[] = [];
+        for (const oderId of target.lastDamagedBy) {
+          if (oderId !== attacker.player.oderId) {
+            // Find the assister in the attacking team
+            const assister = attackerTeam.players.find(p => p.oderId === oderId);
+            if (assister) {
+              assister.assists++;
+              assister.gold += ASSIST_GOLD;
+              assisters.push(assister.name);
+            }
+          }
+        }
+
+        // Clear damage tracking
+        target.lastDamagedBy = [];
+
         if (isExecute) {
+          const assistText = assisters.length > 0 ? ` (어시스트: ${assisters.join(', ')})` : '';
           events.push({
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'KILL',
-            message: `${attacker.player.name}이(가) ${target.name}을(를) 장로 처형했습니다! (+${KILL_GOLD}G)`,
+            message: `${attacker.player.name}이(가) ${target.name}을(를) 장로 처형했습니다! (+${KILL_GOLD}G)${assistText}`,
           });
         } else {
+          const assistText = assisters.length > 0 ? ` (어시스트: ${assisters.join(', ')})` : '';
           events.push({
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'KILL',
-            message: `${attacker.player.name}이(가) ${target.name}을(를) 처치했습니다! (+${KILL_GOLD}G)`,
+            message: `${attacker.player.name}이(가) ${target.name}을(를) 처치했습니다! (+${KILL_GOLD}G)${assistText}`,
           });
         }
       }

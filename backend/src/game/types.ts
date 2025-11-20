@@ -96,6 +96,8 @@ export interface PlayerState {
   level: number; // 1-18, increases when not recalling
   kills: number; // Number of kills
   deaths: number; // Number of deaths
+  assists: number; // Number of assists
+  lastDamagedBy: number[]; // Track who damaged this player (for assists)
 
   // Buffs/Debuffs
   buffs: Buff[];

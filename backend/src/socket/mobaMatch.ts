@@ -3,11 +3,13 @@ import { GameEngine } from '../game/engine';
 import { MatchState, TurnAction, TurnResult } from '../game/types';
 import { ITEMS, getAvailableItems } from '../game/items';
 import pool from '../config/database';
+import { spectatorCounts } from '../routes/spectator';
 
 // Active matches - exported for spectator
 export const activeMatches = new Map<string, GameEngine>();
 const playerToMatch = new Map<number, string>(); // oderId -> matchId
 const matchTimers = new Map<string, NodeJS.Timeout>();
+const spectatorSockets = new Map<string, Set<string>>(); // matchId -> Set of socket IDs
 
 // Constants
 const TURN_TIME = 60000; // 60 seconds
@@ -169,20 +171,85 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
   });
 
   // Spectate match
-  socket.on('moba_spectate', (data: { matchId: string }) => {
+  socket.on('moba_spectate', async (data: { matchId: string }) => {
     const engine = activeMatches.get(data.matchId);
     if (!engine) {
       socket.emit('moba_error', { message: '매치를 찾을 수 없습니다.' });
       return;
     }
 
+    const state = engine.getState();
+
+    // Only allow spectating ranked matches
+    if (state.matchType === 'NORMAL') {
+      socket.emit('moba_error', { message: '일반전은 관전할 수 없습니다.' });
+      return;
+    }
+
+    // Join spectator room
     socket.join(data.matchId);
-    socket.emit('moba_spectate_joined', { state: engine.getState() });
+    socket.join(`${data.matchId}_spectators`);
+
+    // Track spectator
+    if (!spectatorSockets.has(data.matchId)) {
+      spectatorSockets.set(data.matchId, new Set());
+    }
+    spectatorSockets.get(data.matchId)!.add(socket.id);
+
+    // Update spectator count
+    const count = spectatorSockets.get(data.matchId)!.size;
+    spectatorCounts.set(data.matchId, count);
+
+    // Get usernames for both players
+    const [users]: any = await pool.query(
+      'SELECT id, username FROM users WHERE id IN (?, ?)',
+      [state.team1.oderId, state.team2.oderId]
+    );
+
+    const user1 = users.find((u: any) => u.id === state.team1.oderId);
+    const user2 = users.find((u: any) => u.id === state.team2.oderId);
+
+    socket.emit('moba_spectate_joined', {
+      state: {
+        ...state,
+        team1: {
+          ...state.team1,
+          username: user1?.username || `Player ${state.team1.oderId}`,
+        },
+        team2: {
+          ...state.team2,
+          username: user2?.username || `Player ${state.team2.oderId}`,
+        },
+      },
+      spectatorCount: count,
+    });
+
+    // Notify others of spectator count update
+    io.to(data.matchId).emit('moba_spectator_count', { count });
+  });
+
+  // Leave spectate
+  socket.on('moba_spectate_leave', (data: { matchId: string }) => {
+    removeSpectator(socket, data.matchId);
   });
 
   // Handle disconnect
   socket.on('disconnect', async () => {
     removeFromQueue(oderId);
+
+    // Remove from any spectator rooms
+    for (const [matchId, sockets] of spectatorSockets.entries()) {
+      if (sockets.has(socket.id)) {
+        sockets.delete(socket.id);
+        const count = sockets.size;
+        spectatorCounts.set(matchId, count);
+        io.to(matchId).emit('moba_spectator_count', { count });
+        if (count === 0) {
+          spectatorSockets.delete(matchId);
+          spectatorCounts.delete(matchId);
+        }
+      }
+    }
 
     // Handle in-match disconnect - player who disconnects loses
     const matchId = playerToMatch.get(oderId);
@@ -483,6 +550,26 @@ function removeFromQueue(oderId: number) {
   }
 }
 
+function removeSpectator(socket: Socket, matchId: string) {
+  const sockets = spectatorSockets.get(matchId);
+  if (sockets) {
+    sockets.delete(socket.id);
+    const count = sockets.size;
+    spectatorCounts.set(matchId, count);
+    socket.leave(matchId);
+    socket.leave(`${matchId}_spectators`);
+
+    // Broadcast updated count
+    const io = socket.nsp;
+    io.to(matchId).emit('moba_spectator_count', { count });
+
+    if (count === 0) {
+      spectatorSockets.delete(matchId);
+      spectatorCounts.delete(matchId);
+    }
+  }
+}
+
 function cleanupMatch(matchId: string) {
   const engine = activeMatches.get(matchId);
   if (engine) {
@@ -498,6 +585,10 @@ function cleanupMatch(matchId: string) {
     clearTimeout(timer);
     matchTimers.delete(matchId);
   }
+
+  // Cleanup spectator data
+  spectatorSockets.delete(matchId);
+  spectatorCounts.delete(matchId);
 }
 
 // Get active matches for spectating

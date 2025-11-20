@@ -35,6 +35,7 @@ export interface PlayerState {
   level: number;
   kills: number;
   deaths: number;
+  assists: number;
 }
 
 export interface TowerState {

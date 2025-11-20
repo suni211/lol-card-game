@@ -726,7 +726,7 @@ function PlayerCard({
             <span className="text-xs text-gray-400">{player.position}</span>
             <div className="flex items-center gap-2">
               <span className="text-white font-bold text-sm">{player.name}</span>
-              <span className="text-xs text-green-400">{player.kills}/{player.deaths}</span>
+              <span className="text-xs text-green-400">{player.kills}/{player.deaths}/{player.assists}</span>
             </div>
           </div>
         </div>

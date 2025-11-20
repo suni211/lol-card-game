@@ -406,4 +406,162 @@ router.post('/compare-players', authMiddleware, async (req: AuthRequest, res) =>
   }
 });
 
+// 아이템 사용 통계 조회
+router.get('/item-stats', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    // 전체 아이템 사용 통계
+    const [overallStats]: any = await pool.query(`
+      SELECT
+        item_id,
+        item_name,
+        COUNT(*) as usage_count,
+        SUM(gold_spent) as total_gold_spent,
+        ROUND(AVG(gold_spent), 0) as avg_gold_spent,
+        ROUND(SUM(CASE WHEN is_winner THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as win_rate
+      FROM moba_item_stats
+      GROUP BY item_id, item_name
+      ORDER BY usage_count DESC
+      LIMIT 30
+    `);
+
+    // 포지션별 인기 아이템
+    const [positionStats]: any = await pool.query(`
+      SELECT
+        player_position,
+        item_id,
+        item_name,
+        COUNT(*) as usage_count,
+        ROUND(SUM(CASE WHEN is_winner THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as win_rate
+      FROM moba_item_stats
+      GROUP BY player_position, item_id, item_name
+      ORDER BY player_position, usage_count DESC
+    `);
+
+    // 포지션별로 그룹화
+    const positionItemStats: Record<string, any[]> = {};
+    for (const stat of positionStats) {
+      if (!positionItemStats[stat.player_position]) {
+        positionItemStats[stat.player_position] = [];
+      }
+      if (positionItemStats[stat.player_position].length < 5) {
+        positionItemStats[stat.player_position].push(stat);
+      }
+    }
+
+    // 최근 7일간 아이템 트렌드
+    const [recentTrends]: any = await pool.query(`
+      SELECT
+        item_id,
+        item_name,
+        COUNT(*) as usage_count,
+        ROUND(SUM(CASE WHEN is_winner THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as win_rate
+      FROM moba_item_stats
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      GROUP BY item_id, item_name
+      ORDER BY usage_count DESC
+      LIMIT 10
+    `);
+
+    // 총 골드 사용량 통계
+    const [goldStats]: any = await pool.query(`
+      SELECT
+        COUNT(DISTINCT match_id) as total_matches,
+        SUM(gold_spent) as total_gold_spent,
+        ROUND(AVG(gold_spent), 0) as avg_gold_per_item
+      FROM moba_item_stats
+    `);
+
+    // 티어별 아이템 사용 (비용 기준으로 티어 구분)
+    const [tierStats]: any = await pool.query(`
+      SELECT
+        CASE
+          WHEN gold_spent <= 500 THEN 'BASIC'
+          WHEN gold_spent <= 1500 THEN 'TIER1'
+          WHEN gold_spent <= 2500 THEN 'TIER2'
+          ELSE 'TIER3'
+        END as item_tier,
+        COUNT(*) as usage_count,
+        SUM(gold_spent) as total_gold
+      FROM moba_item_stats
+      GROUP BY item_tier
+      ORDER BY total_gold DESC
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        overall: overallStats || [],
+        byPosition: positionItemStats,
+        recentTrends: recentTrends || [],
+        goldStats: goldStats[0] || { total_matches: 0, total_gold_spent: 0, avg_gold_per_item: 0 },
+        tierStats: tierStats || [],
+      },
+    });
+  } catch (error: any) {
+    console.error('Get item stats error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+});
+
+// 특정 아이템 상세 통계
+router.get('/item-stats/:itemId', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { itemId } = req.params;
+
+    // 아이템 기본 통계
+    const [basicStats]: any = await pool.query(`
+      SELECT
+        item_id,
+        item_name,
+        COUNT(*) as usage_count,
+        SUM(gold_spent) as total_gold_spent,
+        ROUND(SUM(CASE WHEN is_winner THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as win_rate,
+        SUM(CASE WHEN match_type = 'RANKED' THEN 1 ELSE 0 END) as ranked_usage,
+        SUM(CASE WHEN match_type = 'NORMAL' THEN 1 ELSE 0 END) as normal_usage
+      FROM moba_item_stats
+      WHERE item_id = ?
+      GROUP BY item_id, item_name
+    `, [itemId]);
+
+    // 포지션별 사용 통계
+    const [positionUsage]: any = await pool.query(`
+      SELECT
+        player_position,
+        COUNT(*) as usage_count,
+        ROUND(SUM(CASE WHEN is_winner THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as win_rate
+      FROM moba_item_stats
+      WHERE item_id = ?
+      GROUP BY player_position
+      ORDER BY usage_count DESC
+    `, [itemId]);
+
+    // 일별 사용 추이 (최근 14일)
+    const [dailyTrend]: any = await pool.query(`
+      SELECT
+        DATE(created_at) as date,
+        COUNT(*) as usage_count
+      FROM moba_item_stats
+      WHERE item_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `, [itemId]);
+
+    if (basicStats.length === 0) {
+      return res.status(404).json({ success: false, error: 'Item not found in stats' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        basic: basicStats[0],
+        byPosition: positionUsage,
+        dailyTrend: dailyTrend,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get item detail stats error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+});
+
 export default router;

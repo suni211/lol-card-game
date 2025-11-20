@@ -545,6 +545,40 @@ async function processMatchRewards(state: MatchState) {
       JSON.stringify(state.logs),
     ]
   );
+
+  // Save item statistics for both teams
+  const saveTeamItemStats = async (team: typeof state.team1, isWinner: boolean) => {
+    for (const player of team.players) {
+      for (const itemId of player.items) {
+        const item = ITEMS[itemId];
+        if (item) {
+          await pool.query(
+            `INSERT INTO moba_item_stats
+              (match_id, user_id, player_position, item_id, item_name, gold_spent, is_winner, match_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              state.matchId,
+              team.oderId,
+              player.position,
+              itemId,
+              item.name,
+              item.cost,
+              isWinner,
+              state.matchType,
+            ]
+          );
+        }
+      }
+    }
+  };
+
+  try {
+    await saveTeamItemStats(state.team1, winner === 1);
+    await saveTeamItemStats(state.team2, winner === 2);
+  } catch (itemError) {
+    console.error('Error saving item stats:', itemError);
+    // Don't fail the whole process if item stats fail
+  }
 }
 
 function getVisibleState(state: MatchState, teamNumber: 1 | 2): any {

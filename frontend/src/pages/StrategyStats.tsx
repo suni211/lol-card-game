@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Users, Search, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Users, Search, X, ShoppingBag, Coins } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -56,6 +56,31 @@ interface PlayerComparison {
   };
 }
 
+interface ItemStat {
+  item_id: string;
+  item_name: string;
+  usage_count: number;
+  total_gold_spent: number;
+  avg_gold_spent: number;
+  win_rate: number;
+}
+
+interface ItemStats {
+  overall: ItemStat[];
+  byPosition: Record<string, ItemStat[]>;
+  recentTrends: ItemStat[];
+  goldStats: {
+    total_matches: number;
+    total_gold_spent: number;
+    avg_gold_per_item: number;
+  };
+  tierStats: {
+    item_tier: string;
+    usage_count: number;
+    total_gold: number;
+  }[];
+}
+
 export default function StrategyStats() {
   const { token, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -64,6 +89,8 @@ export default function StrategyStats() {
   const [teamfight, setTeamfight] = useState<StrategyUsage[]>([]);
   const [macro, setMacro] = useState<StrategyUsage[]>([]);
   const [balance, setBalance] = useState<StrategyBalance[]>([]);
+  const [itemStats, setItemStats] = useState<ItemStats | null>(null);
+  const [showItemStats, setShowItemStats] = useState(false);
 
   // Player comparison states
   const [showComparison, setShowComparison] = useState(false);
@@ -108,6 +135,22 @@ export default function StrategyStats() {
       toast.error(error.response?.data?.error || '통계 불러오기 실패');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchItemStats = async () => {
+    if (!token) return;
+
+    try {
+      const response = await axios.get(`${API_URL}/strategy-stats/item-stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        setItemStats(response.data.data);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch item stats:', error);
     }
   };
 
@@ -362,6 +405,17 @@ export default function StrategyStats() {
           >
             <Users className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>선수 비교</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowItemStats(!showItemStats);
+              if (!itemStats) fetchItemStats();
+            }}
+            className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 text-sm sm:text-base"
+          >
+            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>아이템 통계</span>
           </button>
 
           {user?.isAdmin && (
@@ -641,6 +695,144 @@ export default function StrategyStats() {
                       </div>
                     </div>
                   </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Item Stats Section */}
+        <AnimatePresence>
+          {showItemStats && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6 sm:mb-8"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <ShoppingBag className="w-5 h-5" />
+                    아이템 사용 통계
+                  </h2>
+                  <button
+                    onClick={() => setShowItemStats(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                {!itemStats ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">로딩 중...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Gold Stats Summary */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">총 매치 수</div>
+                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                          {itemStats.goldStats.total_matches?.toLocaleString() || 0}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">총 골드 사용량</div>
+                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <Coins className="w-5 h-5" />
+                          {itemStats.goldStats.total_gold_spent?.toLocaleString() || 0}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-700">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">아이템당 평균 골드</div>
+                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                          {itemStats.goldStats.avg_gold_per_item?.toLocaleString() || 0}G
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Top Items */}
+                    <div>
+                      <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">인기 아이템 TOP 10</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-200 dark:border-gray-700">
+                              <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300">#</th>
+                              <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300">아이템</th>
+                              <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">사용 횟수</th>
+                              <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">총 골드</th>
+                              <th className="text-right py-2 px-3 text-gray-700 dark:text-gray-300">승률</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {itemStats.overall.slice(0, 10).map((item, index) => (
+                              <tr key={item.item_id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                <td className="py-2 px-3 text-gray-500 dark:text-gray-400">{index + 1}</td>
+                                <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{item.item_name}</td>
+                                <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{item.usage_count}</td>
+                                <td className="py-2 px-3 text-right text-amber-600 dark:text-amber-400">{Number(item.total_gold_spent).toLocaleString()}G</td>
+                                <td className={`py-2 px-3 text-right font-semibold ${
+                                  Number(item.win_rate) > 52 ? 'text-green-600 dark:text-green-400' :
+                                  Number(item.win_rate) < 48 ? 'text-red-600 dark:text-red-400' :
+                                  'text-gray-600 dark:text-gray-400'
+                                }`}>
+                                  {Number(item.win_rate).toFixed(1)}%
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Position Stats */}
+                    <div>
+                      <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">포지션별 인기 아이템</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'].map(position => (
+                          <div key={position} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2">{position}</h4>
+                            <div className="space-y-1">
+                              {(itemStats.byPosition[position] || []).slice(0, 3).map((item, idx) => (
+                                <div key={item.item_id} className="text-xs flex justify-between">
+                                  <span className="text-gray-700 dark:text-gray-300 truncate">{idx + 1}. {item.item_name}</span>
+                                  <span className={`ml-1 ${
+                                    Number(item.win_rate) > 52 ? 'text-green-600 dark:text-green-400' :
+                                    Number(item.win_rate) < 48 ? 'text-red-600 dark:text-red-400' :
+                                    'text-gray-500 dark:text-gray-400'
+                                  }`}>
+                                    {Number(item.win_rate).toFixed(0)}%
+                                  </span>
+                                </div>
+                              ))}
+                              {(!itemStats.byPosition[position] || itemStats.byPosition[position].length === 0) && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">데이터 없음</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recent Trends */}
+                    {itemStats.recentTrends.length > 0 && (
+                      <div>
+                        <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">최근 7일 트렌드</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {itemStats.recentTrends.slice(0, 5).map(item => (
+                            <div key={item.item_id} className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-sm">
+                              <span className="font-medium text-gray-900 dark:text-white">{item.item_name}</span>
+                              <span className="text-gray-500 dark:text-gray-400 ml-2">({item.usage_count}회)</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </motion.div>

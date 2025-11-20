@@ -80,16 +80,18 @@ router.post('/fuse', authMiddleware, async (req: AuthRequest, res) => {
     // Get random player of that tier
     let tierCondition = '';
     if (resultTier === 'ICON') {
-      tierCondition = "name LIKE 'ICON%'";
+      tierCondition = "(season = 'ICON' OR name LIKE 'ICON%')";
     } else if (resultTier === 'COMMON') {
-      tierCondition = "name NOT LIKE 'ICON%' AND overall <= 80";
+      tierCondition = "season != 'ICON' AND name NOT LIKE 'ICON%' AND overall <= 80";
     } else if (resultTier === 'RARE') {
-      tierCondition = "name NOT LIKE 'ICON%' AND overall > 80 AND overall <= 90";
+      tierCondition = "season != 'ICON' AND name NOT LIKE 'ICON%' AND overall > 80 AND overall <= 90";
     } else if (resultTier === 'EPIC') {
-      tierCondition = "name NOT LIKE 'ICON%' AND overall > 90 AND overall < 100";
+      tierCondition = "season != 'ICON' AND name NOT LIKE 'ICON%' AND overall > 90 AND overall <= 100";
     } else if (resultTier === 'LEGENDARY') {
-      tierCondition = "name NOT LIKE 'ICON%' AND overall = 100";
+      tierCondition = "season != 'ICON' AND name NOT LIKE 'ICON%' AND overall > 100";
     }
+
+    console.log(`[Fusion] Total Overall: ${totalOverall}, Result Tier: ${resultTier}, Condition: ${tierCondition}`);
 
     const [players]: any = await connection.query(
       `SELECT * FROM players WHERE ${tierCondition} ORDER BY RAND() LIMIT 1`

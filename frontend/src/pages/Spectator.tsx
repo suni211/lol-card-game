@@ -627,6 +627,24 @@ function SpectatorPlayerCard({ player, teamColor }: { player: PlayerState; teamC
         <span className="text-yellow-400">{player.gold}G</span>
       </div>
 
+      {/* Items */}
+      {player.items && player.items.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {player.items.map((itemId, idx) => (
+            <img
+              key={idx}
+              src={`/items/${itemId}.png`}
+              alt={itemId}
+              className="w-5 h-5 rounded border border-gray-600"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+              title={itemId}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Dead indicator */}
       {player.isDead && (
         <div className="text-center text-red-400 text-xs mt-1">

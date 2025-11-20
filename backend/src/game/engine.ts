@@ -359,9 +359,14 @@ export class GameEngine {
         const item = ITEMS[action.targetItemId];
         if (item) {
           const cost = calculateItemCost(action.targetItemId, player.items);
+          const isConsumable = item.tier === 'CONSUMABLE';
 
-          // Calculate final item count after purchase
-          let finalItemCount = player.items.length + 1;
+          // Calculate final item count after purchase (excluding consumables from limit)
+          let finalItemCount = player.items.filter(id => ITEMS[id]?.tier !== 'CONSUMABLE').length;
+          if (!isConsumable) {
+            finalItemCount += 1; // Only add if not consumable
+          }
+
           if (item.buildsFrom) {
             for (const subItemId of item.buildsFrom) {
               if (player.items.includes(subItemId)) {
@@ -370,8 +375,10 @@ export class GameEngine {
             }
           }
 
-          // Check 6 item limit
-          if (player.gold >= cost && finalItemCount <= 6) {
+          // Check 6 item limit (consumables bypass this limit)
+          const canBuy = player.gold >= cost && (isConsumable || finalItemCount <= 6);
+
+          if (canBuy) {
             // Remove sub-items if upgrading
             if (item.buildsFrom) {
               for (const subItemId of item.buildsFrom) {
@@ -391,7 +398,7 @@ export class GameEngine {
               type: 'ITEM',
               message: `${player.name}이(가) ${item.name}을(를) 구매했습니다. (-${cost}G)`,
             });
-          } else if (finalItemCount > 6) {
+          } else if (!isConsumable && finalItemCount > 6) {
             events.push({
               turn: this.state.currentTurn,
               timestamp: Date.now(),

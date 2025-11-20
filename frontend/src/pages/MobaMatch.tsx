@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Check,
   X,
+  Trophy,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -57,6 +58,10 @@ export default function MobaMatch() {
     event: string;
     eventName: string;
     message: string;
+  } | null>(null);
+  const [gameEndPopup, setGameEndPopup] = useState<{
+    winner: 1 | 2;
+    reason: string;
   } | null>(null);
 
   // Connect to socket
@@ -134,8 +139,19 @@ export default function MobaMatch() {
     newSocket.on('moba_game_end', (data) => {
       console.log('[MobaMatch] Game ended:', data);
       setWinner(data.winner);
-      setStatus('ended');
       setMatchState(data.finalState);
+
+      // Show game end popup first
+      setGameEndPopup({
+        winner: data.winner,
+        reason: data.reason,
+      });
+
+      // Transition to end screen after popup
+      setTimeout(() => {
+        setGameEndPopup(null);
+        setStatus('ended');
+      }, 3000);
     });
 
     newSocket.on('moba_items_list', (data) => {
@@ -396,6 +412,57 @@ export default function MobaMatch() {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Game End Popup */}
+      <AnimatePresence>
+        {gameEndPopup && (() => {
+          const isWin = gameEndPopup.winner === teamNumber;
+          return (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="fixed inset-0 flex items-center justify-center z-50 bg-black/70"
+            >
+              <motion.div
+                initial={{ y: -50 }}
+                animate={{ y: 0 }}
+                className={`p-2 rounded-2xl ${isWin
+                  ? 'bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500'
+                  : 'bg-gradient-to-r from-red-600 via-red-500 to-red-600'}`}
+              >
+                <div className="bg-gray-900 rounded-xl p-12 text-center min-w-[400px]">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      rotate: isWin ? [0, 5, -5, 0] : [0, -3, 3, 0]
+                    }}
+                    transition={{ duration: 0.5, repeat: 3 }}
+                    className="mb-6"
+                  >
+                    {isWin ? (
+                      <Trophy className="w-24 h-24 text-yellow-500 mx-auto" />
+                    ) : (
+                      <Swords className="w-24 h-24 text-red-500 mx-auto" />
+                    )}
+                  </motion.div>
+                  <h2 className={`text-5xl font-black mb-4 ${
+                    isWin ? 'text-yellow-500' : 'text-red-500'
+                  }`}>
+                    {isWin ? '승리!' : '패배'}
+                  </h2>
+                  <p className="text-xl text-gray-300 mb-2">
+                    {gameEndPopup.reason}
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    잠시 후 결과 화면으로 이동합니다...
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* Event Banner */}

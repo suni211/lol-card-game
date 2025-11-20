@@ -108,6 +108,12 @@ function getPackConfig(packType: string) {
       cardCount: 1,
       iconOnly: true,
     },
+    EPIC: {
+      cardCount: 5,
+      minOverall: 85,
+      maxOverall: 105,
+      guaranteedEpic: true,
+    },
   };
 
   return configs[packType] || configs.STANDARD;

@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { Server } from 'socket.io';
+import { triggerHotTimeEvent } from '../scheduler/hotTimeEvent';
 
 const router = express.Router();
 let io: Server;
@@ -396,6 +397,52 @@ router.get('/logs', authMiddleware, adminMiddleware, async (req: AuthRequest, re
 
   } catch (error: any) {
     console.error('Get admin logs error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  }
+});
+
+// 핫타임 이벤트 수동 트리거 (관리자 전용)
+router.post('/hot-time/trigger', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    console.log('[Admin] Hot time event manual trigger by user:', req.user!.id);
+
+    await triggerHotTimeEvent();
+
+    res.json({
+      success: true,
+      message: '핫타임 이벤트가 실행되었습니다.',
+    });
+  } catch (error: any) {
+    console.error('Trigger hot time event error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+    });
+  }
+});
+
+// 핫타임 이벤트 로그 조회 (관리자 전용)
+router.get('/hot-time/logs', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const [logs]: any = await pool.query(`
+      SELECT
+        htl.*,
+        u.username as jackpot_username
+      FROM hot_time_logs htl
+      JOIN users u ON htl.jackpot_user_id = u.id
+      ORDER BY htl.created_at DESC
+      LIMIT 50
+    `);
+
+    res.json({
+      success: true,
+      data: logs,
+    });
+  } catch (error: any) {
+    console.error('Get hot time logs error:', error);
     res.status(500).json({
       success: false,
       error: 'Server error',

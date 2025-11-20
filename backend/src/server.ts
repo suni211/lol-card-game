@@ -47,6 +47,9 @@ import lotteryRoutes from './routes/lottery';
 import { setupMobaMatch } from './socket/mobaMatch';
 import jwt from 'jsonwebtoken';
 
+// Import scheduler
+import { startHotTimeScheduler, setSocketIOForHotTime } from './scheduler/hotTimeEvent';
+
 dotenv.config();
 
 const app = express();
@@ -169,6 +172,10 @@ setSocketIOForCoupon(io);
 
 // Setup socket.io for admin
 setSocketIOForAdmin(io);
+
+// Setup socket.io for hot time event and start scheduler
+setSocketIOForHotTime(io);
+startHotTimeScheduler();
 
 // NEW ONLINE USERS SYSTEM - Disconnect based only (no cleanup)
 interface OnlineUser {

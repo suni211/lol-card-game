@@ -154,6 +154,18 @@ router.post('/deactivate', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Get base buff from star rating
+function getBaseBuffFromStar(starRating: number): number {
+  switch (starRating) {
+    case 1: return 0;
+    case 2: return 1;
+    case 3: return 2;
+    case 4: return 3;
+    case 5: return 5;
+    default: return 0;
+  }
+}
+
 // Enhance coach (코치 강화)
 router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
@@ -232,10 +244,12 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
       });
     }
 
-    // 강화 레벨당 버프 증가량 계산 (버프 = 강화 레벨)
+    // 강화 레벨당 버프 증가량 계산 (버프 = 기본버프 + 강화레벨)
+    // 기본버프: 1성=0, 2성=1, 3성=2, 4성=3, 5성=5
     const levelsGained = Math.min(materialCoaches.length, MAX_ENHANCEMENT_LEVEL - targetCoach.enhancement_level);
     const newEnhancementLevel = targetCoach.enhancement_level + levelsGained;
-    const newBuffValue = newEnhancementLevel; // 버프 = 강화 레벨
+    const baseBuff = getBaseBuffFromStar(targetCoach.star_rating);
+    const newBuffValue = baseBuff + newEnhancementLevel;
     const buffIncrease = newBuffValue - targetCoach.current_buff;
 
     // 대상 코치의 강화 레벨 및 버프 값 업데이트

@@ -43,6 +43,18 @@ const buffTypeNames = {
   STRATEGY: '전략 버프',
 };
 
+// Get base buff from star rating
+function getBaseBuffFromStar(starRating: number): number {
+  switch (starRating) {
+    case 1: return 0;
+    case 2: return 1;
+    case 3: return 2;
+    case 4: return 3;
+    case 5: return 5;
+    default: return 0;
+  }
+}
+
 export default function CoachEnhancement() {
   const { token } = useAuthStore();
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -138,12 +150,13 @@ export default function CoachEnhancement() {
     if (!targetCoach || selectedMaterials.length === 0) return null;
 
     const materialCoaches = getSelectedMaterialCoaches();
-    const buffIncrease = materialCoaches.reduce((sum, c) => sum + c.star_rating, 0);
     const newLevel = Math.min(
       targetCoach.enhancement_level + materialCoaches.length,
       MAX_ENHANCEMENT_LEVEL
     );
-    const newBuffValue = targetCoach.current_buff_value + buffIncrease;
+    const baseBuff = getBaseBuffFromStar(targetCoach.star_rating);
+    const newBuffValue = baseBuff + newLevel;
+    const buffIncrease = newBuffValue - targetCoach.current_buff_value;
 
     return {
       buffIncrease,
@@ -236,7 +249,7 @@ export default function CoachEnhancement() {
           코치 강화
         </h1>
         <p className="text-white/60">
-          다른 코치를 재료로 사용하여 코치를 강화할 수 있습니다. 재료 코치의 성급만큼 버프가 증가합니다.
+          다른 코치를 재료로 사용하여 코치를 강화할 수 있습니다. 버프 = 기본버프 + 강화레벨 (1성:0, 2성:1, 3성:2, 4성:3, 5성:5)
         </p>
       </div>
 

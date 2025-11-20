@@ -15,14 +15,15 @@ import {
 import { ITEMS, calculateItemCost } from './items';
 
 // Constants
-const TOWER_HEALTH = 1000;
-const NEXUS_HEALTH = 3000;
+const TOWER_HEALTH = 500; // Reduced from 1000 for faster games
+const NEXUS_HEALTH = 1500; // Reduced from 3000 for faster games
 const KILL_GOLD = 300;
 const TURN_GOLD = 300;
 const EVENT_WIN_GOLD = 1000;
 const BASE_HEALTH_PER_OVERALL = 10; // Health = overall * 10
 const BASE_ATTACK_MULTIPLIER = 1;
 const ELDER_EXECUTE_THRESHOLD = 0.1; // Execute enemies below 10% HP
+const TOWER_DAMAGE_MULTIPLIER = 2.5; // Increased tower damage multiplier
 
 // Event schedule
 const EVENT_SCHEDULE: Record<number, ObjectiveEvent> = {
@@ -600,7 +601,7 @@ export class GameEngine {
       if (aliveTargets.length === 0) {
         const tower = enemyTeam.towers.find(t => t.lane === lane && !t.isDestroyed);
         if (tower) {
-          const towerDamage = Math.floor(attacker.player.attack * 1.5);
+          const towerDamage = Math.floor(attacker.player.attack * TOWER_DAMAGE_MULTIPLIER);
           tower.health -= towerDamage;
           if (tower.health <= 0) {
             tower.isDestroyed = true;
@@ -614,7 +615,7 @@ export class GameEngine {
           }
         } else {
           // All towers destroyed, attack nexus
-          const nexusDamage = Math.floor(attacker.player.attack * 2);
+          const nexusDamage = Math.floor(attacker.player.attack * TOWER_DAMAGE_MULTIPLIER);
           enemyTeam.nexusHealth -= nexusDamage;
           events.push({
             turn: this.state.currentTurn,
@@ -791,7 +792,7 @@ export class GameEngine {
         // Calculate total attack power
         let totalDamage = 0;
         for (const attacker of attackers) {
-          totalDamage += Math.floor(attacker.attack * 1.5);
+          totalDamage += Math.floor(attacker.attack * TOWER_DAMAGE_MULTIPLIER);
         }
 
         // Apply grub buff

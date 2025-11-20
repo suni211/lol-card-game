@@ -368,6 +368,29 @@ router.post('/login', async (req, res) => {
 
     const user = users[0];
 
+    // Check if user is banned
+    if (user.is_banned) {
+      let banMessage = '계정이 정지되었습니다.';
+      if (user.ban_until) {
+        const banDate = new Date(user.ban_until);
+        if (banDate > new Date()) {
+          banMessage = `계정이 ${banDate.toLocaleDateString('ko-KR')}까지 정지되었습니다.`;
+          if (user.ban_reason) {
+            banMessage += ` 사유: ${user.ban_reason}`;
+          }
+        } else {
+          // Ban expired, unban the user
+          await pool.query('UPDATE users SET is_banned = FALSE, ban_until = NULL, ban_reason = NULL WHERE id = ?', [user.id]);
+        }
+      } else if (user.ban_reason) {
+        banMessage += ` 사유: ${user.ban_reason}`;
+      }
+
+      if (user.is_banned && (!user.ban_until || new Date(user.ban_until) > new Date())) {
+        return res.status(403).json({ success: false, error: banMessage });
+      }
+    }
+
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {

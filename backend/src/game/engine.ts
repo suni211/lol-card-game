@@ -159,6 +159,19 @@ export class GameEngine {
       this.state.team2Ready = true;
     }
 
+    // Auto-ready teams with all dead players
+    const team1AllDead = this.state.team1.players.every(p => p.isDead);
+    const team2AllDead = this.state.team2.players.every(p => p.isDead);
+
+    if (team1AllDead && !this.state.team1Ready) {
+      this.state.team1Actions = [];
+      this.state.team1Ready = true;
+    }
+    if (team2AllDead && !this.state.team2Ready) {
+      this.state.team2Actions = [];
+      this.state.team2Ready = true;
+    }
+
     return true;
   }
 

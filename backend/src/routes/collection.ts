@@ -318,6 +318,140 @@ router.post('/milestones/claim', authMiddleware, async (req: AuthRequest, res) =
   }
 });
 
+// Delete cards below overall threshold
+router.post('/delete-below-overall', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+    const { threshold } = req.body;
+
+    if (!threshold || threshold < 1 || threshold > 150) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '유효한 오버롤 기준값을 입력하세요 (1-150)',
+      });
+    }
+
+    // Find cards to delete (not locked, not in deck, below threshold)
+    const [cardsToDelete]: any = await connection.query(
+      `SELECT uc.id, uc.player_id, p.name, p.overall
+       FROM user_cards uc
+       JOIN players p ON uc.player_id = p.id
+       WHERE uc.user_id = ?
+         AND uc.is_locked = FALSE
+         AND p.overall < ?
+         AND uc.id NOT IN (
+           SELECT top_card_id FROM decks WHERE user_id = ? AND top_card_id IS NOT NULL
+           UNION SELECT jungle_card_id FROM decks WHERE user_id = ? AND jungle_card_id IS NOT NULL
+           UNION SELECT mid_card_id FROM decks WHERE user_id = ? AND mid_card_id IS NOT NULL
+           UNION SELECT adc_card_id FROM decks WHERE user_id = ? AND adc_card_id IS NOT NULL
+           UNION SELECT support_card_id FROM decks WHERE user_id = ? AND support_card_id IS NOT NULL
+         )`,
+      [userId, threshold, userId, userId, userId, userId, userId]
+    );
+
+    if (cardsToDelete.length === 0) {
+      await connection.rollback();
+      return res.json({
+        success: true,
+        message: '삭제할 카드가 없습니다.',
+        data: { deletedCount: 0, pointsGained: 0 },
+      });
+    }
+
+    // Calculate points to give (10 points per card)
+    const pointsPerCard = 10;
+    const totalPoints = cardsToDelete.length * pointsPerCard;
+
+    // Delete the cards
+    const cardIds = cardsToDelete.map((c: any) => c.id);
+    await connection.query(
+      `DELETE FROM user_cards WHERE id IN (?) AND user_id = ?`,
+      [cardIds, userId]
+    );
+
+    // Give points to user
+    await connection.query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
+      [totalPoints, userId]
+    );
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: `${cardsToDelete.length}장의 카드를 삭제하고 ${totalPoints}P를 획득했습니다.`,
+      data: {
+        deletedCount: cardsToDelete.length,
+        pointsGained: totalPoints,
+        deletedCards: cardsToDelete.map((c: any) => ({
+          name: c.name,
+          overall: c.overall,
+        })),
+      },
+    });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Delete below overall error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+// Preview cards to delete (without actually deleting)
+router.get('/delete-below-overall/preview', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const threshold = parseInt(req.query.threshold as string) || 0;
+
+    if (!threshold || threshold < 1 || threshold > 150) {
+      return res.status(400).json({
+        success: false,
+        error: '유효한 오버롤 기준값을 입력하세요 (1-150)',
+      });
+    }
+
+    // Find cards that would be deleted
+    const [cards]: any = await pool.query(
+      `SELECT uc.id, p.name, p.overall, p.team, p.position
+       FROM user_cards uc
+       JOIN players p ON uc.player_id = p.id
+       WHERE uc.user_id = ?
+         AND uc.is_locked = FALSE
+         AND p.overall < ?
+         AND uc.id NOT IN (
+           SELECT top_card_id FROM decks WHERE user_id = ? AND top_card_id IS NOT NULL
+           UNION SELECT jungle_card_id FROM decks WHERE user_id = ? AND jungle_card_id IS NOT NULL
+           UNION SELECT mid_card_id FROM decks WHERE user_id = ? AND mid_card_id IS NOT NULL
+           UNION SELECT adc_card_id FROM decks WHERE user_id = ? AND adc_card_id IS NOT NULL
+           UNION SELECT support_card_id FROM decks WHERE user_id = ? AND support_card_id IS NOT NULL
+         )
+       ORDER BY p.overall ASC`,
+      [userId, threshold, userId, userId, userId, userId, userId]
+    );
+
+    const pointsPerCard = 10;
+    const totalPoints = cards.length * pointsPerCard;
+
+    res.json({
+      success: true,
+      data: {
+        count: cards.length,
+        pointsToGain: totalPoints,
+        cards: cards,
+      },
+    });
+  } catch (error: any) {
+    console.error('Preview delete error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 // Toggle card lock status
 router.post('/lock/:userCardId', authMiddleware, async (req: AuthRequest, res) => {
   try {

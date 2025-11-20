@@ -57,7 +57,6 @@ export default function MobaMatch() {
   const [selectedWardLane, setSelectedWardLane] = useState<Lane | null>(null); // For Control Ward
   const [showSurrender, setShowSurrender] = useState(false);
   const [winner, setWinner] = useState<1 | 2 | null>(null);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isReady, setIsReady] = useState(false); // New state for Ready/Not Ready
   const [opponentName, setOpponentName] = useState<string>('');
   const [teamfightAlert, setTeamfightAlert] = useState<{
@@ -172,7 +171,6 @@ export default function MobaMatch() {
       setTimeLeft(Math.floor(data.timeLimit / 1000));
       setTurnResult(null);
       setActions(new Map());
-      setHasSubmitted(false);
       setIsReady(false); // Reset ready state at turn start
       setTeamfightAlert(null);
     });
@@ -265,7 +263,6 @@ export default function MobaMatch() {
   useEffect(() => {
     if (timeLeft === 0 && status === 'playing' && socket && matchState && !isReady) {
       setIsReady(true);
-      setHasSubmitted(true);
 
       // Set default actions for players without actions
       const myTeamPlayers = teamNumber === 1 ? matchState.team1.players : matchState.team2.players;
@@ -312,7 +309,6 @@ export default function MobaMatch() {
     // Toggle ready state
     const newReadyState = !isReady;
     setIsReady(newReadyState);
-    setHasSubmitted(newReadyState); // If ready, actions are considered submitted
 
     socket.emit('moba_set_ready', {
       matchId: matchState.matchId,
@@ -345,7 +341,7 @@ export default function MobaMatch() {
       newActions.set(selectedPlayer.oderId, {
         ...existing,
         targetItemId: itemId,
-        useItemTarget: itemToBuy.id === 'control_ward' ? selectedWardLane : undefined,
+        useItemTarget: itemToBuy.id === 'control_ward' ? (selectedWardLane ?? undefined) : undefined,
       });
       return newActions;
     });
@@ -1055,7 +1051,7 @@ export default function MobaMatch() {
                   const isConsumable = item.tier === 'CONSUMABLE';
                   const currentCost = item.buildsFrom && selectedPlayer.items
                     ? item.cost - item.buildsFrom.reduce((acc, subId) => {
-                        return selectedPlayer.items.includes(subId) ? acc + (allItems?.find(i => i.id === subId)?.cost || 0) : acc;
+                        return selectedPlayer.items.includes(subId) ? acc + (items?.find((i: Item) => i.id === subId)?.cost || 0) : acc;
                       }, 0)
                     : item.cost;
 
@@ -1094,7 +1090,7 @@ export default function MobaMatch() {
                       <p className="text-gray-400 text-xs">{item.description}</p>
                       {item.buildsFrom && item.buildsFrom.length > 0 && (
                         <div className="mt-2 text-xs text-gray-500">
-                          조합식: {item.buildsFrom.map(subId => allItems?.find(i => i.id === subId)?.name || subId).join(', ')}
+                          조합식: {item.buildsFrom.map(subId => items?.find((i: Item) => i.id === subId)?.name || subId).join(', ')}
                         </div>
                       )}
                     </div>
@@ -1368,9 +1364,9 @@ function PlayerCard({
       )}
 
       {/* Action Selection (only for my team) */}
-      {isMyTeam && !player.isDead && onActionChange && actions && (
+      {isMyTeam && !player.isDead && onActionChange && availableActions && (
         <div className="flex flex-wrap gap-1">
-          {actions.map(({ action: actionType, label }) => (
+          {availableActions.map(({ action: actionType, label }: { action: PlayerAction; label: string }) => (
             <button
               key={actionType}
               onClick={() => onActionChange(actionType)}

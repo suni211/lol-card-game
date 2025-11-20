@@ -414,6 +414,81 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
     removeSpectator(socket, data.matchId);
   });
 
+
+  // Request to swap champions between two players on the same team
+  socket.on('moba_request_swap', (data: { matchId: string; player1OderId: number; player2OderId: number; champion1Id: number; champion2Id: number }) => {
+    const banPickState = banPickStates.get(data.matchId);
+    if (!banPickState) {
+      socket.emit('moba_error', { message: '매치를 찾을 수 없습니다.' });
+      return;
+    }
+
+    const engine = activeMatches.get(data.matchId);
+    if (!engine) {
+      socket.emit('moba_error', { message: '매치를 찾을 수 없습니다.' });
+      return;
+    }
+
+    // Ensure swapping is allowed only after all picks have been made (turn > phaseConfig.length for picks)
+    // and before the game officially starts (match status not IN_PROGRESS)
+    if (banPickState.turn <= phaseConfig.length || engine.getState().status === 'IN_PROGRESS') {
+        socket.emit('moba_error', { message: '지금은 챔피언을 스왑할 수 없습니다. 밴/픽 단계가 완료된 후 게임 시작 전에 스왑 가능합니다.' });
+        return;
+    }
+
+    const state = engine.getState();
+    const team1 = state.team1;
+    const team2 = state.team2;
+
+    let teamNumber: 1 | 2 | undefined;
+    let player1IndexInTeam: number = -1;
+    let player2IndexInTeam: number = -1;
+
+    // Determine team and find player indices based on oderId
+    const findPlayerInTeam = (teamPlayers: any[], oderIdToFind: number) => teamPlayers.findIndex(p => p.oderId === oderIdToFind);
+
+    player1IndexInTeam = findPlayerInTeam(team1.players, data.player1OderId);
+    player2IndexInTeam = findPlayerInTeam(team1.players, data.player2OderId);
+
+    if (player1IndexInTeam !== -1 && player2IndexInTeam !== -1) {
+      teamNumber = 1;
+    } else {
+      player1IndexInTeam = findPlayerInTeam(team2.players, data.player1OderId);
+      player2IndexInTeam = findPlayerInTeam(team2.players, data.player2OderId);
+      if (player1IndexInTeam !== -1 && player2IndexInTeam !== -1) {
+        teamNumber = 2;
+      } else {
+        socket.emit('moba_error', { message: '스왑 요청 플레이어가 같은 팀에 속해 있지 않거나 매치에 없습니다.' });
+        return;
+      }
+    }
+
+    const teamPlayers = teamNumber === 1 ? team1.players : team2.players;
+    const player1 = teamPlayers[player1IndexInTeam];
+    const player2 = teamPlayers[player2IndexInTeam];
+
+    // Ensure the champions specified in the request match the current champion assignments for these players
+    if (player1.championId !== data.champion1Id || player2.championId !== data.champion2Id) {
+      socket.emit('moba_error', { message: '스왑하려는 챔피언 정보가 현재 플레이어의 챔피언과 일치하지 않습니다.' });
+      return;
+    }
+    
+    // Perform the swap in the GameEngine's state
+    const tempChampionId = player1.championId;
+    player1.championId = player2.championId;
+    player2.championId = tempChampionId;
+
+    engine.initializePlayersWithChampions(); // Re-initialize skills based on new champion assignments
+
+    io.to(data.matchId).emit('moba_champion_swapped', {
+      teamNumber,
+      player1OderId: data.player1OderId,
+      player2OderId: data.player2OderId,
+      player1NewChampionId: player1.championId, // Send new champion for player1
+      player2NewChampionId: player2.championId, // Send new champion for player2
+    });
+  });
+
   // Handle disconnect
   socket.on('disconnect', async () => {
     const disconnectedUserId = [...userIdToSocketId.entries()]
@@ -704,13 +779,21 @@ function startTurnTimer(io: Server, matchId: string) {
     const engine = activeMatches.get(matchId);
     if (!engine) return;
 
-    // Auto-submit empty actions for players who didn't submit
+    // Auto-submit default actions for players who didn't submit
     const state = engine.getState();
     if (!state.team1Ready) {
-      engine.submitActions(1, []);
+      const defaultActionsTeam1: TurnAction[] = state.team1.players.map(p => ({
+        oderId: p.oderId,
+        action: 'FIGHT', // Default to fight
+      }));
+      engine.submitActions(1, defaultActionsTeam1);
     }
     if (!state.team2Ready) {
-      engine.submitActions(2, []);
+      const defaultActionsTeam2: TurnAction[] = state.team2.players.map(p => ({
+        oderId: p.oderId,
+        action: 'FIGHT', // Default to fight
+      }));
+      engine.submitActions(2, defaultActionsTeam2);
     }
 
     // Check auto-ready for dead teams

@@ -263,6 +263,9 @@ export class GameEngine {
     const team1Actions = this.mapActionsToPlayers(this.state.team1, this.state.team1Actions);
     const team2Actions = this.mapActionsToPlayers(this.state.team2, this.state.team2Actions);
 
+    console.log(`[GameEngine.processTurn] Turn ${turn}: Team 1 Actions: ${JSON.stringify(Array.from(team1Actions.entries()))}`);
+    console.log(`[GameEngine.processTurn] Turn ${turn}: Team 2 Actions: ${JSON.stringify(Array.from(team2Actions.entries()))}`);
+
     // 6. Resolve combat in each lane
     this.resolveLaneCombat('TOP', team1Actions, team2Actions, combatResults, events);
     this.resolveLaneCombat('MID', team1Actions, team2Actions, combatResults, events);
@@ -1176,6 +1179,19 @@ export class GameEngine {
     const currentTurn = this.state.currentTurn;
     let winner: 1 | 2 | undefined;
     let effect = '';
+
+    // --- NEW VALIDATION ---
+    const actualUpcomingEvent = this.determineObjectiveSpawn(currentTurn);
+    if (actualUpcomingEvent !== event && !(actualUpcomingEvent === 'DRAGON_AND_VOIDGRUB' && (event === 'DRAGON' || event === 'VOIDGRUB'))) {
+      events.push({
+        turn: currentTurn,
+        timestamp: Date.now(),
+        type: 'OBJECTIVE',
+        message: `${event} 목표는 현재 활성화되어 있지 않습니다.`,
+      });
+      return undefined;
+    }
+    // --- END NEW VALIDATION ---
 
     // Determine which players are contesting this specific objective
     const team1Contesters = this.state.team1.players.filter(p => !p.isDead && !p.isRecalling && this.isContestingObjective(p.oderId, team1Actions, event));

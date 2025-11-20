@@ -26,7 +26,7 @@ INSERT INTO players (
   100, 102, 105, 100, 98, 90, 98, 102, 22),
 
 -- FW NL - ADC - 93 (2015 Worlds Pentakill)
-('WCP NL', 'FW', 'ADC', 93, 'PCS', 'WCP',
+('WCP NL', 'FW', 'ADC', 93, 'LCP', 'WCP',
   88, 95, 85, 90,
   90, 85, 95, 88, 82, 80, 88, 85, 17),
 
@@ -76,17 +76,17 @@ INSERT INTO players (
   100, 95, 105, 98, 92, 88, 98, 100, 22),
 
 -- SGB Shogun - ADC - 93 (2022 Worlds Pentakill)
-('WCP Shogun', 'SGB', 'ADC', 93, 'VCS', 'WCP',
+('WCP Shogun', 'SGB', 'ADC', 93, 'LCP', 'WCP',
   85, 95, 85, 90,
   90, 82, 96, 88, 82, 78, 88, 85, 17),
 
 -- LOUD Route - ADC - 93 (2022 Worlds Pentakill)
-('WCP Route', 'LOUD', 'ADC', 93, 'CBLOL', 'WCP',
+('WCP Route', 'LOUD', 'ADC', 93, 'LTA', 'WCP',
   86, 94, 86, 88,
   88, 84, 95, 86, 80, 76, 86, 84, 18),
 
 -- GAM Slayder - ADC - 90 (2023 Worlds Pentakill)
-('WCP Slayder', 'GAM', 'ADC', 90, 'VCS', 'WCP',
+('WCP Slayder', 'GAM', 'ADC', 90, 'LCP', 'WCP',
   82, 92, 80, 85,
   85, 80, 92, 82, 78, 75, 82, 80, 17),
 

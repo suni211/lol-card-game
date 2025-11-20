@@ -11,7 +11,10 @@ router.get('/all', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.user!.id;
 
     const [decks]: any = await pool.query(
-      'SELECT id, deck_slot, name, is_active, is_default, laning_strategy, teamfight_strategy, macro_strategy, created_at, updated_at FROM decks WHERE user_id = ? ORDER BY deck_slot ASC',
+      `SELECT id, deck_slot, name, is_active, is_default,
+       top_card_id, jungle_card_id, mid_card_id, adc_card_id, support_card_id,
+       laning_strategy, teamfight_strategy, macro_strategy,
+       created_at, updated_at FROM decks WHERE user_id = ? ORDER BY deck_slot ASC`,
       [userId]
     );
 

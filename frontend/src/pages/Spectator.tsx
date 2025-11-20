@@ -160,6 +160,7 @@ export default function Spectator() {
             team1: { ...result.team1State, username: prev.team1.username },
             team2: { ...result.team2State, username: prev.team2.username },
             currentTurn: result.turn + 1,
+            logs: [...prev.logs, ...result.events],
           };
         });
       });

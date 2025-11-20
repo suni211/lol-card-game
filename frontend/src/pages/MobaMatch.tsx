@@ -31,6 +31,7 @@ import type {
 import {
   POSITION_ACTIONS,
   EVENT_INFO,
+  OBJECTIVE_ACTIONS,
 } from '../types/moba';
 import BanPickTutorial from '../components/Moba/BanPickTutorial';
 
@@ -53,9 +54,11 @@ export default function MobaMatch() {
   const [showShop, setShowShop] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerState | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [selectedWardLane, setSelectedWardLane] = useState<Lane | null>(null); // For Control Ward
   const [showSurrender, setShowSurrender] = useState(false);
   const [winner, setWinner] = useState<1 | 2 | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isReady, setIsReady] = useState(false); // New state for Ready/Not Ready
   const [opponentName, setOpponentName] = useState<string>('');
   const [teamfightAlert, setTeamfightAlert] = useState<{
     event: string;
@@ -170,6 +173,7 @@ export default function MobaMatch() {
       setTurnResult(null);
       setActions(new Map());
       setHasSubmitted(false);
+      setIsReady(false); // Reset ready state at turn start
       setTeamfightAlert(null);
     });
 
@@ -259,7 +263,8 @@ export default function MobaMatch() {
   
   // Auto-submit when timer reaches 0
   useEffect(() => {
-    if (timeLeft === 0 && status === 'playing' && socket && matchState && !hasSubmitted) {
+    if (timeLeft === 0 && status === 'playing' && socket && matchState && !isReady) {
+      setIsReady(true);
       setHasSubmitted(true);
 
       // Set default actions for players without actions
@@ -278,16 +283,17 @@ export default function MobaMatch() {
         }
       }
 
-      // Submit actions
+      // Submit actions and set ready
       const actionArray = Array.from(updatedActions.values());
-      socket.emit('moba_submit_actions', {
+      socket.emit('moba_set_ready', {
         matchId: matchState.matchId,
+        isReady: true,
         actions: actionArray,
       });
 
       toast('시간 초과! 행동이 자동으로 제출되었습니다.', { icon: '⏰' });
     }
-  }, [timeLeft, status, socket, matchState, teamNumber, actions, hasSubmitted]);
+  }, [timeLeft, status, socket, matchState, teamNumber, actions, isReady]);
 
   // Set action for player
   const setPlayerAction = useCallback((oderId: number, action: PlayerAction) => {
@@ -301,19 +307,34 @@ export default function MobaMatch() {
 
   // Submit actions
   const submitActions = useCallback(() => {
-    if (!socket || !matchState || hasSubmitted) return;
+    if (!socket || !matchState) return;
 
-    setHasSubmitted(true);
-    const actionArray = Array.from(actions.values());
-    socket.emit('moba_submit_actions', {
+    // Toggle ready state
+    const newReadyState = !isReady;
+    setIsReady(newReadyState);
+    setHasSubmitted(newReadyState); // If ready, actions are considered submitted
+
+    socket.emit('moba_set_ready', {
       matchId: matchState.matchId,
-      actions: actionArray,
+      isReady: newReadyState,
+      actions: newReadyState ? Array.from(actions.values()) : [], // Send actions only when setting ready
     });
-  }, [socket, matchState, actions, hasSubmitted]);
+
+    toast.success(newReadyState ? '행동 제출 및 준비 완료!' : '준비 상태 해제');
+  }, [socket, matchState, actions, isReady]);
 
   // Buy item
   const buyItem = useCallback((itemId: string) => {
     if (!selectedPlayer) return;
+
+    const itemToBuy = items.find(item => item.id === itemId);
+    if (!itemToBuy) return;
+
+    // For control ward, ensure a lane is selected
+    if (itemToBuy.id === 'control_ward' && !selectedWardLane) {
+      toast.error('제어 와드를 설치할 라인을 선택해주세요.');
+      return;
+    }
 
     setActions(prev => {
       const newActions = new Map(prev);
@@ -321,13 +342,18 @@ export default function MobaMatch() {
         oderId: selectedPlayer.oderId,
         action: 'FIGHT' as PlayerAction,
       };
-      newActions.set(selectedPlayer.oderId, { ...existing, targetItemId: itemId });
+      newActions.set(selectedPlayer.oderId, {
+        ...existing,
+        targetItemId: itemId,
+        useItemTarget: itemToBuy.id === 'control_ward' ? selectedWardLane : undefined,
+      });
       return newActions;
     });
 
     toast.success('아이템 구매 예약됨');
     setShowShop(false);
-  }, [selectedPlayer]);
+    setSelectedWardLane(null); // Reset selected ward lane
+  }, [selectedPlayer, items, selectedWardLane]);
 
   // Surrender
   const handleSurrender = useCallback(() => {
@@ -610,6 +636,16 @@ export default function MobaMatch() {
           <span className={`px-3 py-1 rounded ${matchType === 'RANKED' ? 'bg-yellow-600' : 'bg-blue-600'} text-white`}>
             {matchType === 'RANKED' ? '랭크전' : '일반전'}
           </span>
+          {matchState.team1Ready && (
+            <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+              아군 준비 완료
+            </span>
+          )}
+          {matchState.team2Ready && (
+            <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+              적군 준비 완료
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -817,6 +853,7 @@ export default function MobaMatch() {
                 allItems={items}
                 champions={champions}
                 skillQueued={actions.get(player.oderId)?.useSkill}
+                currentEvent={matchState.currentEvent} // Pass current event
               />
             ))}
           </div>
@@ -860,11 +897,23 @@ export default function MobaMatch() {
           {/* Submit Button */}
           <button
             onClick={submitActions}
-            disabled={actions.size === 0}
-            className="mt-4 w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className={`mt-4 w-full py-3 text-white font-bold rounded-lg flex items-center justify-center gap-2 ${
+              isReady
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
           >
-            <Check className="w-5 h-5" />
-            행동 제출 ({actions.size}/5)
+            {isReady ? (
+              <>
+                <X className="w-5 h-5" />
+                준비 해제
+              </>
+            ) : (
+              <>
+                <Check className="w-5 h-5" />
+                준비 완료 ({actions.size}/5)
+              </>
+            )}
           </button>
         </div>
 
@@ -978,9 +1027,38 @@ export default function MobaMatch() {
                 </button>
               </div>
 
+              {/* Control Ward Lane Selection */}
+              {items.some(item => item.id === 'control_ward' && item.tier === 'CONSUMABLE') && (
+                <div className="mb-4">
+                  <p className="text-white text-sm mb-2">제어 와드를 구매할 경우, 설치할 라인을 선택해주세요:</p>
+                  <div className="flex gap-2">
+                    {(['TOP', 'MID', 'BOT'] as Lane[]).map(lane => (
+                      <button
+                        key={lane}
+                        onClick={() => setSelectedWardLane(lane)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          selectedWardLane === lane
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        {lane}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {items.map(item => {
                   const canBuy = selectedPlayer.gold >= item.cost;
+                  const isConsumable = item.tier === 'CONSUMABLE';
+                  const currentCost = item.buildsFrom && selectedPlayer.items
+                    ? item.cost - item.buildsFrom.reduce((acc, subId) => {
+                        return selectedPlayer.items.includes(subId) ? acc + (allItems?.find(i => i.id === subId)?.cost || 0) : acc;
+                      }, 0)
+                    : item.cost;
+
                   return (
                     <div
                       key={item.id}
@@ -1002,10 +1080,23 @@ export default function MobaMatch() {
                         />
                         <div>
                           <div className="text-white font-bold text-sm">{item.name}</div>
-                          <div className="text-yellow-400 text-xs">{item.cost}G</div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-400 text-xs">{currentCost}G</span>
+                            {item.buildsFrom && item.buildsFrom.length > 0 && (
+                              <span className="text-gray-400 text-xs">(조합식)</span>
+                            )}
+                            {isConsumable && (
+                              <span className="text-green-400 text-xs">(소모품)</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <p className="text-gray-400 text-xs">{item.description}</p>
+                      {item.buildsFrom && item.buildsFrom.length > 0 && (
+                        <div className="mt-2 text-xs text-gray-500">
+                          조합식: {item.buildsFrom.map(subId => allItems?.find(i => i.id === subId)?.name || subId).join(', ')}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1069,6 +1160,7 @@ function PlayerCard({
   allItems,
   champions,
   skillQueued,
+  currentEvent, // New prop
 }: {
   player: PlayerState;
   isMyTeam: boolean;
@@ -1080,9 +1172,19 @@ function PlayerCard({
   allItems?: Item[];
   champions?: Champion[];
   skillQueued?: boolean;
+  currentEvent?: string; // New prop type
 }) {
   const healthPercent = (player.currentHealth / player.maxHealth) * 100;
-  const actions = POSITION_ACTIONS[player.position];
+  let availableActions = POSITION_ACTIONS[player.position];
+
+  // Conditionally add objective actions if an event is active
+  if (currentEvent && OBJECTIVE_ACTIONS[currentEvent]) {
+    const objectiveAction: { action: PlayerAction; label: string } = {
+      action: OBJECTIVE_ACTIONS[currentEvent],
+      label: `${EVENT_INFO[currentEvent]?.name || currentEvent} 쟁탈`,
+    };
+    availableActions = [...availableActions, objectiveAction];
+  }
 
   // Get champion info
   const champion = player.championId && champions

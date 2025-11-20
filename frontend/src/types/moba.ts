@@ -15,7 +15,11 @@ export type PlayerAction =
   | 'GANK_TOP'
   | 'GANK_MID'
   | 'GANK_BOT'
-  | 'USE_SKILL';
+  | 'USE_SKILL'
+  | 'CONTEST_DRAGON'
+  | 'CONTEST_VOIDGRUB'
+  | 'CONTEST_BARON'
+  | 'CONTEST_ELDER';
 
 export type ScalingType = 'AD' | 'AP';
 export type ChampionClass = 'TANK' | 'BRUISER' | 'ASSASSIN' | 'DEALER' | 'RANGED_DEALER' | 'RANGED_AP' | 'SUPPORT';
@@ -179,6 +183,10 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'ROAM_MID', label: '미드 로밍' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
+    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
+    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
+    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
+    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   JUNGLE: [
     { action: 'FARM', label: '정글 파밍' },
@@ -186,6 +194,10 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'GANK_MID', label: '미드 갱' },
     { action: 'GANK_BOT', label: '바텀 갱' },
     { action: 'RECALL', label: '귀환' },
+    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
+    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
+    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
+    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   MID: [
     { action: 'FIGHT', label: '미드 전투' },
@@ -194,12 +206,20 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'ROAM_BOT', label: '바텀 로밍' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
+    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
+    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
+    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
+    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   ADC: [
     { action: 'FIGHT', label: '바텀 전투' },
     { action: 'DEFEND', label: '바텀 수비' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
+    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
+    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
+    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
+    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   SUPPORT: [
     { action: 'FIGHT', label: '바텀 전투' },
@@ -207,6 +227,10 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'ROAM_MID', label: '미드 로밍' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
+    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
+    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
+    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
+    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
 };
 
@@ -217,4 +241,12 @@ export const EVENT_INFO: Record<string, { name: string; description: string }> =
   HERALD: { name: '전령', description: '70% 확률 적 포탑 파괴' },
   BARON: { name: '바론', description: '50% 포탑 파괴 + 20% 데미지 증가' },
   ELDER: { name: '장로', description: '50% 확률 적 전멸' },
+};
+
+// Objective actions mapping
+export const OBJECTIVE_ACTIONS: Record<string, PlayerAction> = {
+  DRAGON: 'CONTEST_DRAGON',
+  VOIDGRUB: 'CONTEST_VOIDGRUB',
+  BARON: 'CONTEST_BARON',
+  ELDER: 'CONTEST_ELDER',
 };

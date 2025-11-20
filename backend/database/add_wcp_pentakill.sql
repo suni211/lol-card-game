@@ -1,114 +1,113 @@
 -- WCP (World Championship Pentakill) Cards
 -- 월드 챔피언쉽에서 펜타킬을 달성한 선수들
 
--- 티어 결정: overall 105+ = LEGENDARY, 95+ = EPIC, 85+ = RARE, 75+ = UNCOMMON, else COMMON
 -- 지역 결정: SSG/GRF/HLE/SN/BLG/DK/T1/GAM = LCK/LPL, FNC/OG/FB/SUP/BDS = LEC, C9 = LCS, FW/SGB = PCS, LYON/INF/LOUD = LATAM
 
 INSERT INTO players (
-  name, team, position, overall, region, tier, season,
+  name, team, position, overall, region, season,
   laning, teamfight, macro, mental,
   cs_ability, lane_pressure, damage_dealing, survivability,
   objective_control, vision_control, decision_making, consistency,
   market_price, salary
 ) VALUES
--- SSG IMP - ADC - 109 - Legendary (2014 Worlds Pentakill)
-('WCP IMP', 'SSG', 'ADC', 109, 'LCK', 'LEGENDARY', 'WCP',
+-- SSG IMP - ADC - 109 (2014 Worlds Pentakill)
+('WCP IMP', 'SSG', 'ADC', 109, 'LCK', 'WCP',
   100, 108, 102, 105,
   105, 100, 110, 98, 102, 95, 100, 104,
   250000, 25),
 
--- FNC Rekkles - ADC - 108 - Legendary (2017 Worlds Pentakill)
-('WCP Rekkles', 'FNC', 'ADC', 108, 'LEC', 'LEGENDARY', 'WCP',
+-- FNC Rekkles - ADC - 108 (2017 Worlds Pentakill)
+('WCP Rekkles', 'FNC', 'ADC', 108, 'LEC', 'WCP',
   102, 107, 105, 110,
   108, 98, 105, 108, 100, 96, 105, 110,
   240000, 24),
 
--- C9 Balls - TOP - 105 - Legendary (2015 Worlds Pentakill)
-('WCP Balls', 'C9', 'TOP', 105, 'LCS', 'LEGENDARY', 'WCP',
+-- C9 Balls - TOP - 105 (2015 Worlds Pentakill)
+('WCP Balls', 'C9', 'TOP', 105, 'LCS', 'WCP',
   98, 106, 100, 102,
   100, 102, 105, 100, 98, 90, 98, 102,
   200000, 22),
 
--- FW NL - ADC - 93 - EPIC (2015 Worlds Pentakill)
-('WCP NL', 'FW', 'ADC', 93, 'PCS', 'EPIC', 'WCP',
+-- FW NL - ADC - 93 (2015 Worlds Pentakill)
+('WCP NL', 'FW', 'ADC', 93, 'PCS', 'WCP',
   88, 95, 85, 90,
   90, 85, 95, 88, 82, 80, 88, 85,
   85000, 17),
 
--- OG sOAZ - TOP - 101 - Legendary (2015 Worlds Pentakill) - Note: Position corrected to TOP
-('WCP sOAZ', 'OG', 'TOP', 101, 'LEC', 'LEGENDARY', 'WCP',
+-- OG sOAZ - TOP - 101 (2015 Worlds Pentakill)
+('WCP sOAZ', 'OG', 'TOP', 101, 'LEC', 'WCP',
   96, 100, 98, 95,
   95, 98, 98, 95, 95, 88, 96, 92,
   150000, 20),
 
--- LYON WhiteLotus - ADC - 92 - EPIC (2017 Worlds Pentakill)
-('WCP WhiteLotus', 'LYON', 'ADC', 92, 'LATAM', 'EPIC', 'WCP',
+-- LYON WhiteLotus - ADC - 92 (2017 Worlds Pentakill)
+('WCP WhiteLotus', 'LYON', 'ADC', 92, 'LATAM', 'WCP',
   85, 94, 82, 88,
   88, 82, 95, 85, 80, 78, 85, 82,
   80000, 17),
 
--- FB Padden - ADC - 90 - EPIC (2017 Worlds Pentakill)
-('WCP Padden', 'FB', 'ADC', 90, 'LEC', 'EPIC', 'WCP',
+-- FB Padden - ADC - 90 (2017 Worlds Pentakill)
+('WCP Padden', 'FB', 'ADC', 90, 'LEC', 'WCP',
   82, 92, 80, 85,
   85, 80, 92, 82, 78, 75, 82, 80,
   70000, 16),
 
--- INF Renyu - ADC - 88 - RARE (2018 Worlds Pentakill)
-('WCP Renyu', 'INF', 'ADC', 88, 'LATAM', 'RARE', 'WCP',
+-- INF Renyu - ADC - 88 (2018 Worlds Pentakill)
+('WCP Renyu', 'INF', 'ADC', 88, 'LATAM', 'WCP',
   80, 90, 78, 82,
   82, 78, 90, 80, 76, 72, 80, 78,
   60000, 15),
 
--- SUP Zeitnot - ADC - 80 - UNCOMMON (2019 Worlds Pentakill)
-('WCP Zeitnot', 'SUP', 'ADC', 80, 'LEC', 'UNCOMMON', 'WCP',
+-- SUP Zeitnot - ADC - 80 (2019 Worlds Pentakill)
+('WCP Zeitnot', 'SUP', 'ADC', 80, 'LEC', 'WCP',
   70, 82, 72, 75,
   75, 68, 82, 72, 68, 65, 72, 70,
   40000, 12),
 
--- GRF Viper - ADC - 100 - Legendary (2019 Worlds Pentakill)
-('WCP Viper', 'GRF', 'ADC', 100, 'LCK', 'LEGENDARY', 'WCP',
+-- GRF Viper - ADC - 100 (2019 Worlds Pentakill)
+('WCP Viper', 'GRF', 'ADC', 100, 'LCK', 'WCP',
   95, 100, 96, 98,
   98, 92, 102, 95, 92, 88, 95, 96,
   145000, 20),
 
--- SN Bin - TOP - 105 - Legendary (2020 Worlds Pentakill)
-('WCP Bin', 'SN', 'TOP', 105, 'LPL', 'LEGENDARY', 'WCP',
+-- SN Bin - TOP - 105 (2020 Worlds Pentakill)
+('WCP Bin', 'SN', 'TOP', 105, 'LPL', 'WCP',
   100, 105, 95, 100,
   98, 105, 102, 95, 95, 85, 98, 95,
   200000, 22),
 
--- DK Khan - TOP - 111 - Legendary (2021 Worlds Pentakill)
-('WCP Khan', 'DK', 'TOP', 111, 'LCK', 'LEGENDARY', 'WCP',
+-- DK Khan - TOP - 111 (2021 Worlds Pentakill)
+('WCP Khan', 'DK', 'TOP', 111, 'LCK', 'WCP',
   105, 108, 105, 108,
   108, 108, 105, 105, 105, 95, 108, 105,
   280000, 26),
 
--- FNC Upset - ADC - 103 - Legendary (2022 Worlds Pentakill)
-('WCP Upset', 'FNC', 'ADC', 103, 'LEC', 'LEGENDARY', 'WCP',
+-- FNC Upset - ADC - 103 (2022 Worlds Pentakill)
+('WCP Upset', 'FNC', 'ADC', 103, 'LEC', 'WCP',
   98, 102, 95, 100,
   100, 95, 105, 98, 92, 88, 98, 100,
   180000, 22),
 
--- SGB Shogun - ADC - 93 - EPIC (2022 Worlds Pentakill)
-('WCP Shogun', 'SGB', 'ADC', 93, 'VCS', 'EPIC', 'WCP',
+-- SGB Shogun - ADC - 93 (2022 Worlds Pentakill)
+('WCP Shogun', 'SGB', 'ADC', 93, 'VCS', 'WCP',
   85, 95, 85, 90,
   90, 82, 96, 88, 82, 78, 88, 85,
   85000, 17),
 
--- LOUD Route - ADC - 93 - EPIC (2022 Worlds Pentakill)
-('WCP Route', 'LOUD', 'ADC', 93, 'CBLOL', 'EPIC', 'WCP',
+-- LOUD Route - ADC - 93 (2022 Worlds Pentakill)
+('WCP Route', 'LOUD', 'ADC', 93, 'CBLOL', 'WCP',
   86, 94, 86, 88,
   88, 84, 95, 86, 80, 76, 86, 84,
   85000, 18),
 
--- GAM Slayder - ADC - 90 - EPIC (2023 Worlds Pentakill)
-('WCP Slayder', 'GAM', 'ADC', 90, 'VCS', 'EPIC', 'WCP',
+-- GAM Slayder - ADC - 90 (2023 Worlds Pentakill)
+('WCP Slayder', 'GAM', 'ADC', 90, 'VCS', 'WCP',
   82, 92, 80, 85,
   85, 80, 92, 82, 78, 75, 82, 80,
   70000, 17),
 
--- BDS Crownie - ADC - 102 - Legendary (2024 Worlds Pentakill)
-('WCP Crownie', 'BDS', 'ADC', 102, 'LEC', 'LEGENDARY', 'WCP',
+-- BDS Crownie - ADC - 102 (2024 Worlds Pentakill)
+('WCP Crownie', 'BDS', 'ADC', 102, 'LEC', 'WCP',
   96, 100, 95, 98,
   98, 94, 102, 96, 90, 86, 95, 98,
   170000, 20);

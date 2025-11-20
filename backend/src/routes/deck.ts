@@ -159,6 +159,7 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         uc.user_id,
         uc.player_id,
         uc.level,
+        p.id as player_id,
         p.name,
         p.team,
         p.position,
@@ -180,7 +181,26 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
       [userId]
     );
 
-    res.json({ success: true, data: cards });
+    // Transform to nested player structure for frontend compatibility
+    const transformedCards = cards.map((card: any) => ({
+      id: card.id,
+      userId: card.user_id,
+      playerId: card.player_id,
+      level: card.level,
+      player: {
+        id: card.player_id,
+        name: card.name,
+        team: card.team,
+        position: card.position,
+        overall: card.overall,
+        region: card.region,
+        season: card.season,
+        salary: card.salary,
+        tier: card.tier
+      }
+    }));
+
+    res.json({ success: true, data: transformedCards });
   } catch (error: any) {
     console.error('Get user cards error:', error);
     res.status(500).json({ success: false, error: 'Server error' });

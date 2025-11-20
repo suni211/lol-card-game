@@ -5,6 +5,56 @@ import { syncCompletedMissions } from '../utils/guildMissionTracker';
 
 const router = express.Router();
 
+// 길드 버프 설정
+const GUILD_BUFFS = {
+  gacha_discount: {
+    name: '가챠 할인',
+    description: '가챠 비용 할인',
+    levels: [
+      { level: 1, value: 5, cost: 1000 },
+      { level: 2, value: 10, cost: 3000 },
+      { level: 3, value: 15, cost: 10000 },
+    ],
+  },
+  exp_boost: {
+    name: '경험치 부스트',
+    description: '획득 경험치 증가',
+    levels: [
+      { level: 1, value: 10, cost: 1000 },
+      { level: 2, value: 20, cost: 3000 },
+      { level: 3, value: 30, cost: 10000 },
+    ],
+  },
+  point_boost: {
+    name: '포인트 부스트',
+    description: '획득 포인트 증가',
+    levels: [
+      { level: 1, value: 5, cost: 1500 },
+      { level: 2, value: 10, cost: 5000 },
+      { level: 3, value: 15, cost: 15000 },
+    ],
+  },
+  enhance_boost: {
+    name: '강화 성공률 증가',
+    description: '카드 강화 성공률 증가',
+    levels: [
+      { level: 1, value: 5, cost: 2000 },
+      { level: 2, value: 10, cost: 8000 },
+    ],
+  },
+  refund_boost: {
+    name: '환급률 증가',
+    description: '중복 카드 환급률 증가',
+    levels: [
+      { level: 1, value: 55, cost: 1000 },
+      { level: 2, value: 60, cost: 4000 },
+      { level: 3, value: 65, cost: 12000 },
+    ],
+  },
+};
+
+const BUFF_DURATION_DAYS = 7;
+
 // 길드 생성 (5만 포인트 필요)
 router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
@@ -913,6 +963,266 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     console.error('Get guild detail error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// 길드 버프 목록 조회
+router.get('/buffs', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    // 유저의 길드 확인
+    const [users]: any = await pool.query(
+      'SELECT guild_id FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (!users[0]?.guild_id) {
+      return res.status(400).json({
+        success: false,
+        error: '길드에 소속되어 있지 않습니다.',
+      });
+    }
+
+    const guildId = users[0].guild_id;
+
+    // 길드 정보 조회
+    const [guilds]: any = await pool.query(
+      'SELECT points FROM guilds WHERE id = ?',
+      [guildId]
+    );
+
+    // 현재 활성화된 버프 조회
+    const [activeBuffs]: any = await pool.query(
+      `SELECT buff_type, level, expires_at
+       FROM guild_buffs
+       WHERE guild_id = ? AND expires_at > NOW()`,
+      [guildId]
+    );
+
+    const activeBuffMap: any = {};
+    activeBuffs.forEach((buff: any) => {
+      activeBuffMap[buff.buff_type] = {
+        level: buff.level,
+        expiresAt: buff.expires_at,
+      };
+    });
+
+    // 버프 정보 포맷
+    const buffsInfo = Object.entries(GUILD_BUFFS).map(([type, config]) => ({
+      type,
+      name: config.name,
+      description: config.description,
+      levels: config.levels,
+      currentLevel: activeBuffMap[type]?.level || 0,
+      expiresAt: activeBuffMap[type]?.expiresAt || null,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        guildPoints: guilds[0]?.points || 0,
+        buffs: buffsInfo,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get guild buffs error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// 길드 버프 구매/업그레이드
+router.post('/buffs/purchase', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+    const { buffType, level } = req.body;
+
+    // 버프 타입 확인
+    const buffConfig = GUILD_BUFFS[buffType as keyof typeof GUILD_BUFFS];
+    if (!buffConfig) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '잘못된 버프 타입입니다.',
+      });
+    }
+
+    // 레벨 확인
+    const levelConfig = buffConfig.levels.find(l => l.level === level);
+    if (!levelConfig) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '잘못된 버프 레벨입니다.',
+      });
+    }
+
+    // 유저의 길드 확인
+    const [users]: any = await connection.query(
+      'SELECT guild_id FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (!users[0]?.guild_id) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '길드에 소속되어 있지 않습니다.',
+      });
+    }
+
+    const guildId = users[0].guild_id;
+
+    // 권한 확인 (리더 또는 부리더만 가능)
+    const [members]: any = await connection.query(
+      'SELECT role FROM guild_members WHERE guild_id = ? AND user_id = ?',
+      [guildId, userId]
+    );
+
+    if (!members[0] || !['LEADER', 'CO_LEADER'].includes(members[0].role)) {
+      await connection.rollback();
+      return res.status(403).json({
+        success: false,
+        error: '버프 구매 권한이 없습니다. (리더/부리더만 가능)',
+      });
+    }
+
+    // 길드 포인트 확인
+    const [guilds]: any = await connection.query(
+      'SELECT points FROM guilds WHERE id = ?',
+      [guildId]
+    );
+
+    if (guilds[0].points < levelConfig.cost) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: `길드 포인트가 부족합니다. (필요: ${levelConfig.cost.toLocaleString()}, 보유: ${guilds[0].points.toLocaleString()})`,
+      });
+    }
+
+    // 현재 버프 상태 확인
+    const [currentBuff]: any = await connection.query(
+      `SELECT id, level, expires_at FROM guild_buffs
+       WHERE guild_id = ? AND buff_type = ? AND expires_at > NOW()`,
+      [guildId, buffType]
+    );
+
+    // 현재 레벨보다 낮은 레벨은 구매 불가
+    if (currentBuff.length > 0 && currentBuff[0].level >= level) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: '현재 활성화된 버프보다 높은 레벨만 구매할 수 있습니다.',
+      });
+    }
+
+    // 길드 포인트 차감
+    await connection.query(
+      'UPDATE guilds SET points = points - ? WHERE id = ?',
+      [levelConfig.cost, guildId]
+    );
+
+    // 버프 적용 (기존 버프가 있으면 업데이트, 없으면 삽입)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + BUFF_DURATION_DAYS);
+
+    if (currentBuff.length > 0) {
+      await connection.query(
+        `UPDATE guild_buffs
+         SET level = ?, expires_at = ?, purchased_at = NOW()
+         WHERE id = ?`,
+        [level, expiresAt, currentBuff[0].id]
+      );
+    } else {
+      await connection.query(
+        `INSERT INTO guild_buffs (guild_id, buff_type, level, expires_at)
+         VALUES (?, ?, ?, ?)`,
+        [guildId, buffType, level, expiresAt]
+      );
+    }
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: `${buffConfig.name} Lv.${level} 버프가 활성화되었습니다! (${BUFF_DURATION_DAYS}일간 유효)`,
+      data: {
+        buffType,
+        level,
+        value: levelConfig.value,
+        expiresAt,
+        remainingPoints: guilds[0].points - levelConfig.cost,
+      },
+    });
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Purchase guild buff error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+// 유저의 활성 길드 버프 조회 (게임 로직에서 사용)
+router.get('/my-buffs', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    // 유저의 길드 확인
+    const [users]: any = await pool.query(
+      'SELECT guild_id FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (!users[0]?.guild_id) {
+      return res.json({
+        success: true,
+        data: {
+          hasGuild: false,
+          buffs: {},
+        },
+      });
+    }
+
+    const guildId = users[0].guild_id;
+
+    // 활성화된 버프 조회
+    const [activeBuffs]: any = await pool.query(
+      `SELECT buff_type, level
+       FROM guild_buffs
+       WHERE guild_id = ? AND expires_at > NOW()`,
+      [guildId]
+    );
+
+    const buffs: any = {};
+    activeBuffs.forEach((buff: any) => {
+      const config = GUILD_BUFFS[buff.buff_type as keyof typeof GUILD_BUFFS];
+      if (config) {
+        const levelConfig = config.levels.find(l => l.level === buff.level);
+        if (levelConfig) {
+          buffs[buff.buff_type] = {
+            level: buff.level,
+            value: levelConfig.value,
+          };
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        hasGuild: true,
+        buffs,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get my guild buffs error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });

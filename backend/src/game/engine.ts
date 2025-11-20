@@ -13,6 +13,7 @@ import {
   PlayerAction,
 } from './types';
 import { ITEMS, calculateItemCost } from './items';
+import { processSkill, updateSkillCooldowns, isSkillReady, CHAMPIONS } from './skills';
 
 // Constants
 const TOWER_HEALTH = 500; // Reduced from 1000 for faster games
@@ -133,6 +134,14 @@ export class GameEngine {
       lastDamagedBy: [], // Track damage sources for assists
       buffs: [],
       debuffs: [],
+      championId: playerData.championId,
+      skill: playerData.championId ? {
+        championId: playerData.championId,
+        currentCooldown: 0,
+        hasBeenUsed: false,
+        skillLevel: 0, // Will be updated based on level
+      } : undefined,
+      isRecalling: false,
     };
   }
 
@@ -245,6 +254,18 @@ export class GameEngine {
     // 9.5. Level up players who didn't recall (max level 18)
     this.processLevelUp(this.state.team1, team1Actions, events);
     this.processLevelUp(this.state.team2, team2Actions, events);
+
+    // 9.6. Process skill usage
+    this.processSkillUsage(this.state.team1, this.state.team2, this.state.team1Actions, events, turn);
+    this.processSkillUsage(this.state.team2, this.state.team1, this.state.team2Actions, events, turn);
+
+    // 9.7. Update skill cooldowns
+    updateSkillCooldowns(this.state.team1);
+    updateSkillCooldowns(this.state.team2);
+
+    // 9.8. Reset recall status for next turn
+    this.resetRecallStatus(this.state.team1);
+    this.resetRecallStatus(this.state.team2);
 
     // 10. Apply support/item effects
     this.applyTurnEndEffects(this.state.team1, events);
@@ -933,13 +954,14 @@ export class GameEngine {
 
       const action = actions.get(player.oderId);
       if (action === 'RECALL') {
-        // Heal to full
+        // Heal to full and mark as recalling (can't participate in teamfight)
         player.currentHealth = player.maxHealth;
+        player.isRecalling = true;
         events.push({
           turn: this.state.currentTurn,
           timestamp: Date.now(),
           type: 'ACTION',
-          message: `${player.name}이(가) 귀환하여 체력을 회복했습니다.`,
+          message: `${player.name}이(가) 귀환하여 체력을 회복했습니다. (한타 참여 불가)`,
         });
       }
     }
@@ -1070,8 +1092,9 @@ export class GameEngine {
     events: MatchLog[]
   ): { event: ObjectiveEvent; winner: 1 | 2; effect: string } {
     // TEAMFIGHT: All alive players from both teams fight together!
-    const team1Fighters = this.state.team1.players.filter(p => !p.isDead);
-    const team2Fighters = this.state.team2.players.filter(p => !p.isDead);
+    // Filter out dead and recalling players from teamfight
+    const team1Fighters = this.state.team1.players.filter(p => !p.isDead && !p.isRecalling);
+    const team2Fighters = this.state.team2.players.filter(p => !p.isDead && !p.isRecalling);
 
     // Calculate team power for objective fight (all players contribute)
     let team1Power = 0;
@@ -1267,6 +1290,31 @@ export class GameEngine {
     }
 
     return power;
+  }
+
+  // Process skill usage for a team
+  private processSkillUsage(
+    allyTeam: TeamState,
+    enemyTeam: TeamState,
+    actions: TurnAction[],
+    events: MatchLog[],
+    turn: number
+  ) {
+    for (const action of actions) {
+      if (action.useSkill) {
+        const player = allyTeam.players.find(p => p.oderId === action.oderId);
+        if (player && !player.isDead && isSkillReady(player)) {
+          processSkill(player, allyTeam, enemyTeam, events, turn, action.skillTargetId);
+        }
+      }
+    }
+  }
+
+  // Reset recall status at end of turn
+  private resetRecallStatus(team: TeamState) {
+    for (const player of team.players) {
+      player.isRecalling = false;
+    }
   }
 
   // Surrender

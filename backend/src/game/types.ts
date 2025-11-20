@@ -30,6 +30,7 @@ export interface ItemEffect {
   attack?: number;
   health?: number;
   defense?: number;
+  magicResist?: number; // Magic resistance - reduces AP damage
   speed?: number; // Movement speed (attack priority)
   abilityPower?: number; // AP - Magic damage for MID, heal/shield for SUPPORT
   critChance?: number;
@@ -83,6 +84,7 @@ export interface PlayerState {
   currentHealth: number;
   attack: number;
   defense: number;
+  magicResist: number; // Magic resistance
   speed: number;
   abilityPower: number; // AP - for MID and SUPPORT
   critChance: number;

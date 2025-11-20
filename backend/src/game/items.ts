@@ -88,6 +88,18 @@ export const ITEMS: Record<string, Item> = {
     description: '회피력 +2',
     icon: '/items/broken_stopwatch.png',
   },
+  null_magic_mantle: {
+    id: 'null_magic_mantle',
+    name: '마법 무효화의 망토',
+    cost: 300,
+    tier: 'BASIC',
+    restriction: 'NONE',
+    effects: {
+      magicResist: 25,
+    },
+    description: '마법 저항력 +25',
+    icon: '/items/null_magic_mantle.png',
+  },
 
   // ========== INTERMEDIATE ITEMS (1000 Gold) ==========
   blasting_wand: {
@@ -227,10 +239,38 @@ export const ITEMS: Record<string, Item> = {
     restriction: 'NONE',
     effects: {
       attack: 6,
+      magicResist: 35,
       shieldPercent: 5,
     },
-    description: '공격력 +6, 체력의 5% 보호막 생성',
+    description: '공격력 +6, 마저 +35, 체력의 5% 보호막',
     icon: '/items/hexdrinker.png',
+  },
+  negatron_cloak: {
+    id: 'negatron_cloak',
+    name: '음전자 망토',
+    cost: 1000,
+    tier: 'INTERMEDIATE',
+    restriction: 'NONE',
+    buildsFrom: ['null_magic_mantle'],
+    effects: {
+      magicResist: 50,
+    },
+    description: '마법 저항력 +50',
+    icon: '/items/negatron_cloak.png',
+  },
+  specters_cowl: {
+    id: 'specters_cowl',
+    name: '망령의 두건',
+    cost: 1000,
+    tier: 'INTERMEDIATE',
+    restriction: 'NONE',
+    buildsFrom: ['null_magic_mantle'],
+    effects: {
+      health: 100,
+      magicResist: 40,
+    },
+    description: '체력 +100, 마법 저항력 +40',
+    icon: '/items/specters_cowl.png',
   },
 
   // ADC INTERMEDIATE (1000 Gold)
@@ -417,6 +457,69 @@ export const ITEMS: Record<string, Item> = {
     },
     description: '마법력 +60, 체력 +150, 팀원 회복 8%',
     icon: '/items/moonstone_renewer.png',
+  },
+
+  // MAGIC RESIST LEGENDARY
+  maw_of_malmortius: {
+    id: 'maw_of_malmortius',
+    name: '맬모셔스의 아귀',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'NONE',
+    buildsFrom: ['hexdrinker'],
+    effects: {
+      attack: 20,
+      magicResist: 50,
+      shieldPercent: 15,
+    },
+    description: '공격력 +20, 마저 +50, 체력 15% 보호막',
+    icon: '/items/maw_of_malmortius.png',
+  },
+  spirit_visage: {
+    id: 'spirit_visage',
+    name: '정령의 형상',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'NONE',
+    buildsFrom: ['specters_cowl'],
+    effects: {
+      health: 300,
+      magicResist: 60,
+      // Special: +25% healing received
+    },
+    description: '체력 +300, 마저 +60, 받는 회복량 25% 증가',
+    icon: '/items/spirit_visage.png',
+  },
+  force_of_nature: {
+    id: 'force_of_nature',
+    name: '자연의 힘',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'NONE',
+    buildsFrom: ['negatron_cloak'],
+    effects: {
+      health: 200,
+      magicResist: 70,
+      speed: 5,
+    },
+    description: '체력 +200, 마저 +70, 이속 +5',
+    icon: '/items/force_of_nature.png',
+  },
+  wits_end: {
+    id: 'wits_end',
+    name: '재치',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'NONE',
+    buildsFrom: ['negatron_cloak'],
+    effects: {
+      attack: 30,
+      magicResist: 50,
+      speed: 5,
+      onHitDamage: 8,
+    },
+    description: '공격력 +30, 마저 +50, 이속 +5, 적중 시 8% 추가 피해',
+    icon: '/items/wits_end.png',
   },
 
   trinity_force: {

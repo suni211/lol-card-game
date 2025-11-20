@@ -115,6 +115,7 @@ export class GameEngine {
       currentHealth: maxHealth,
       attack: baseAttack,
       defense: Math.floor(playerData.overall / 10),
+      magicResist: 0,
       speed: Math.floor(playerData.overall / 5),
       abilityPower: 0,
       critChance: 0,
@@ -428,6 +429,7 @@ export class GameEngine {
     // Reset to base stats
     player.attack = player.baseAttack;
     player.defense = player.baseDefense;
+    player.magicResist = 0;
     player.speed = player.baseSpeed;
     player.abilityPower = 0;
     player.critChance = 0;
@@ -445,6 +447,7 @@ export class GameEngine {
       const e = item.effects;
       player.attack += e.attack || 0;
       player.defense += e.defense || 0;
+      player.magicResist += e.magicResist || 0;
       player.speed += e.speed || 0;
       player.abilityPower += e.abilityPower || 0;
       player.critChance += e.critChance || 0;
@@ -767,30 +770,36 @@ export class GameEngine {
 
   private calculateDamage(attacker: PlayerState, defender: PlayerState, attackerTeam?: TeamState): number {
     // Base damage is attack * 2 for more impactful combat
-    let damage = attacker.attack * 2;
+    let physicalDamage = attacker.attack * 2;
+    let magicDamage = 0;
 
     // MID position gets AP as direct damage (300 AP = ~300-350 damage)
     if (attacker.position === 'MID' && attacker.abilityPower > 0) {
       // AP adds damage with slight variance (1.0 ~ 1.17x)
-      const apDamage = attacker.abilityPower * (1 + Math.random() * 0.17);
-      damage += apDamage;
+      magicDamage = attacker.abilityPower * (1 + Math.random() * 0.17);
     }
 
-    // Apply defense reduction (less impactful formula)
-    // Old: defense / (defense + 100) was too harsh
-    // New: defense / (defense + 300) for lighter reduction
+    // Apply defense reduction to physical damage
     const defenseReduction = defender.defense / (defender.defense + 300);
-    damage *= 1 - defenseReduction;
+    physicalDamage *= 1 - defenseReduction;
+
+    // Apply magic resistance reduction to magic damage
+    if (magicDamage > 0 && defender.magicResist > 0) {
+      const magicReduction = defender.magicResist / (defender.magicResist + 300);
+      magicDamage *= 1 - magicReduction;
+    }
+
+    let totalDamage = physicalDamage + magicDamage;
 
     // Minimum damage is 10% of attack
-    damage = Math.max(damage, attacker.attack * 0.1);
+    totalDamage = Math.max(totalDamage, attacker.attack * 0.1);
 
     // Check evasion
     if (Math.random() * 100 < defender.evasion) {
       return 0; // Evaded
     }
 
-    return Math.floor(damage);
+    return Math.floor(totalDamage);
   }
 
   // Check if target should be executed by elder buff

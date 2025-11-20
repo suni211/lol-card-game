@@ -257,20 +257,20 @@ export default function Deck() {
   const isOverSalaryCap = totalSalary > SALARY_CAP;
 
   useEffect(() => {
-    fetchDeckAndCards();
+    fetchMyCards();
     fetchCoachBuff();
   }, []);
 
-  const fetchCoachBuff = async () => {
-    if (!token) return;
-    const buff = await getActiveCoachBuff(token);
-    setCoachBuff(buff);
-  };
+  // 덱 슬롯 변경 시 해당 슬롯의 덱 로드
+  useEffect(() => {
+    if (myCards.length > 0) {
+      fetchDeckBySlot(currentDeckSlot);
+    }
+  }, [currentDeckSlot, myCards]);
 
-  const fetchDeckAndCards = async () => {
+  const fetchMyCards = async () => {
     try {
       setLoading(true);
-
       const cardsRes = await axios.get(`${API_URL}/gacha/my-cards`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -278,27 +278,33 @@ export default function Deck() {
       if (cardsRes.data.success) {
         setMyCards(cardsRes.data.data);
       }
+    } catch (error: any) {
+      console.error('Fetch cards error:', error);
+      toast.error('카드 정보를 불러오는데 실패했습니다');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const deckRes = await axios.get(`${API_URL}/deck`, {
+  const fetchDeckBySlot = async (slot: number) => {
+    try {
+      const deckRes = await axios.get(`${API_URL}/deck/${slot}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (deckRes.data.success && deckRes.data.data) {
         const deck = deckRes.data.data;
 
-        // 현재 활성 덱 슬롯 설정
-        setCurrentDeckSlot(deck.deck_slot || 1);
-
         setDeckSlots((prev) =>
-          prev.map((slot) => {
-            const posKey = slot.position.toLowerCase();
+          prev.map((slotItem) => {
+            const posKey = slotItem.position.toLowerCase();
             const cardData = deck[posKey];
 
             if (cardData) {
-              const fullCard = cardsRes.data.data.find((c: UserCard) => c.id === cardData.id);
-              return { ...slot, card: fullCard || null };
+              const fullCard = myCards.find((c: UserCard) => c.id === cardData.id);
+              return { ...slotItem, card: fullCard || null };
             }
-            return slot;
+            return { ...slotItem, card: null };
           })
         );
 
@@ -306,18 +312,46 @@ export default function Deck() {
         setTeamfightStrategy(deck.teamfightStrategy || 'ENGAGE');
         setMacroStrategy(deck.macroStrategy || 'OBJECTIVE');
 
-        // 강화 시너지 설정
         if (deck.enhancementSynergy) {
           setEnhancementSynergy(deck.enhancementSynergy);
+        } else {
+          setEnhancementSynergy({
+            bonus: 0,
+            tier: 'none',
+            minLevel: 0,
+            description: '강화 시너지 없음',
+          });
         }
+      } else {
+        // 덱이 없는 경우 초기화
+        setDeckSlots([
+          { position: 'TOP', label: '탑', card: null },
+          { position: 'JUNGLE', label: '정글', card: null },
+          { position: 'MID', label: '미드', card: null },
+          { position: 'ADC', label: '원딜', card: null },
+          { position: 'SUPPORT', label: '서폿', card: null },
+        ]);
+        setLaningStrategy('SAFE');
+        setTeamfightStrategy('ENGAGE');
+        setMacroStrategy('OBJECTIVE');
+        setEnhancementSynergy({
+          bonus: 0,
+          tier: 'none',
+          minLevel: 0,
+          description: '강화 시너지 없음',
+        });
       }
     } catch (error: any) {
       console.error('Fetch deck error:', error);
-      toast.error('덱 정보를 불러오는데 실패했습니다');
-    } finally {
-      setLoading(false);
     }
   };
+
+  const fetchCoachBuff = async () => {
+    if (!token) return;
+    const buff = await getActiveCoachBuff(token);
+    setCoachBuff(buff);
+  };
+
 
   const handleSlotClick = (position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT') => {
     setSelectedPosition(position);
@@ -377,7 +411,7 @@ export default function Deck() {
       });
 
       if (response.data.success) {
-        toast.success('덱이 저장되었습니다!');
+        toast.success(`덱 ${currentDeckSlot}이(가) 저장되었습니다!`);
       }
     } catch (error: any) {
       console.error('Save deck error:', error);
@@ -473,6 +507,26 @@ export default function Deck() {
               <Save className="w-5 h-5" />
               {saving ? '저장 중...' : '덱 저장'}
             </button>
+          </div>
+
+          {/* Deck Slot Selection */}
+          <div className="mb-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">덱 슬롯 선택</p>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((slot) => (
+                <button
+                  key={slot}
+                  onClick={() => setCurrentDeckSlot(slot)}
+                  className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                    currentDeckSlot === slot
+                      ? 'bg-primary-600 text-white shadow-lg scale-105'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  덱 {slot}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Deck Stats */}

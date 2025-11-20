@@ -680,14 +680,28 @@ function PlayerCard({
       {player.items.length > 0 && (
         <div className="flex gap-1 mb-2 flex-wrap">
           {player.items.map((itemId, idx) => (
-            <img
+            <div
               key={idx}
-              src={`/items/${itemId}.png`}
-              alt={itemId}
-              className="w-6 h-6 rounded"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/items/default.png';
-              }}
+              className="relative group"
+            >
+              <div className="w-6 h-6 rounded bg-gray-700 border border-gray-600 flex items-center justify-center text-xs text-gray-300 cursor-help">
+                {itemId.substring(0, 2).toUpperCase()}
+              </div>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-black/90 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                {itemId.replace(/_/g, ' ')}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Empty items placeholder */}
+      {player.items.length === 0 && (
+        <div className="flex gap-1 mb-2">
+          {[...Array(6)].map((_, idx) => (
+            <div
+              key={idx}
+              className="w-6 h-6 rounded bg-gray-800/50 border border-gray-700/50"
             />
           ))}
         </div>

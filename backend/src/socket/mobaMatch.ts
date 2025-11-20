@@ -834,7 +834,7 @@ async function processMatchRewards(io: Server, state: MatchState) {
   // --- START: Notify users of their updated points ---
   try {
     const [updatedUsers]: any = await pool.query(
-      'SELECT id, username, points, rating, level, exp, guild_id, guild_tag FROM users WHERE id IN (?, ?)',
+      'SELECT id, username, points, rating, level, exp, guild_id FROM users WHERE id IN (?, ?)',
       [winnerId, loserId]
     );
 

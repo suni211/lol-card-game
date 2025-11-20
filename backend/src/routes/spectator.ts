@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { activeMatches } from '../socket/realtimeMatch';
+import { activeMatches } from '../socket/mobaMatch';
 
 const router = express.Router();
 
@@ -10,24 +10,17 @@ router.get('/live-matches', authMiddleware, async (req: AuthRequest, res) => {
     const liveMatches: any[] = [];
 
     // Convert activeMatches Map to array and filter for ranked matches only
-    for (const [matchId, match] of activeMatches.entries()) {
-      // Only show ranked matches (isPractice = false)
-      if (!match.isPractice) {
+    for (const [matchId, engine] of activeMatches.entries()) {
+      const state = engine.getState();
+      // Only show ranked matches
+      if (state.matchType === 'RANKED') {
         liveMatches.push({
-          matchId,
-          player1: {
-            userId: match.player1.userId,
-            username: match.player1.username,
-            score: match.player1.score,
-          },
-          player2: {
-            userId: match.player2.userId,
-            username: match.player2.username,
-            score: match.player2.score,
-          },
-          currentRound: match.currentRound,
-          player1Deck: match.player1Deck,
-          player2Deck: match.player2Deck,
+          matchId: state.matchId,
+          matchType: state.matchType,
+          currentTurn: state.currentTurn,
+          team1NexusHealth: state.team1.nexusHealth,
+          team2NexusHealth: state.team2.nexusHealth,
+          status: state.status,
         });
       }
     }
@@ -46,17 +39,19 @@ router.get('/live-matches', authMiddleware, async (req: AuthRequest, res) => {
 router.get('/match/:matchId', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { matchId } = req.params;
-    const match = activeMatches.get(matchId);
+    const engine = activeMatches.get(matchId);
 
-    if (!match) {
+    if (!engine) {
       return res.status(404).json({
         success: false,
         error: '경기를 찾을 수 없습니다.',
       });
     }
 
+    const state = engine.getState();
+
     // Only allow spectating ranked matches
-    if (match.isPractice) {
+    if (state.matchType === 'NORMAL') {
       return res.status(403).json({
         success: false,
         error: '일반전은 관전할 수 없습니다.',
@@ -66,20 +61,13 @@ router.get('/match/:matchId', authMiddleware, async (req: AuthRequest, res) => {
     res.json({
       success: true,
       data: {
-        matchId,
-        player1: {
-          userId: match.player1.userId,
-          username: match.player1.username,
-          score: match.player1.score,
-        },
-        player2: {
-          userId: match.player2.userId,
-          username: match.player2.username,
-          score: match.player2.score,
-        },
-        currentRound: match.currentRound,
-        player1Deck: match.player1Deck,
-        player2Deck: match.player2Deck,
+        matchId: state.matchId,
+        matchType: state.matchType,
+        currentTurn: state.currentTurn,
+        team1: state.team1,
+        team2: state.team2,
+        status: state.status,
+        logs: state.logs,
       },
     });
   } catch (error: any) {

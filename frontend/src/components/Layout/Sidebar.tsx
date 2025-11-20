@@ -53,8 +53,6 @@ export default function Sidebar() {
       label: '경기',
       items: [
         { path: '/match-select', label: 'MOBA 대전' },
-        { path: '/match', label: '랭크전' },
-        { path: '/practice', label: '일반전' },
         { path: '/spectator', label: '관전' },
         { path: '/friendly', label: '친선전' },
         { path: '/ai-battle', label: 'AI 배틀' },

@@ -4,8 +4,8 @@ import { MatchState, TurnAction, TurnResult } from '../game/types';
 import { ITEMS, getAvailableItems } from '../game/items';
 import pool from '../config/database';
 
-// Active matches
-const activeMatches = new Map<string, GameEngine>();
+// Active matches - exported for spectator
+export const activeMatches = new Map<string, GameEngine>();
 const playerToMatch = new Map<number, string>(); // oderId -> matchId
 const matchTimers = new Map<string, NodeJS.Timeout>();
 

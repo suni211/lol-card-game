@@ -11,7 +11,6 @@ import authRoutes from './routes/auth';
 import gachaRoutes from './routes/gacha';
 import mileageRoutes from './routes/mileage';
 import deckRoutes from './routes/deck';
-import matchRoutes from './routes/match';
 import rankingRoutes from './routes/ranking';
 import missionsRoutes from './routes/missions';
 import tradeRoutes from './routes/trade';
@@ -45,8 +44,6 @@ import agentRoutes from './routes/agent';
 import lotteryRoutes from './routes/lottery';
 
 // Import matchmaking
-import { setupMatchmaking } from './socket/matchmaking';
-import { setupRealtimeMatch } from './socket/realtimeMatch';
 import { setupMobaMatch } from './socket/mobaMatch';
 import jwt from 'jsonwebtoken';
 
@@ -112,7 +109,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/gacha', gachaRoutes);
 app.use('/api/mileage', mileageRoutes);
 app.use('/api/deck', deckRoutes);
-app.use('/api/match', matchRoutes);
 app.use('/api/ranking', rankingRoutes);
 app.use('/api/missions', missionsRoutes);
 app.use('/api/trade', tradeRoutes);
@@ -161,9 +157,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   console.error('Error:', err);
   res.status(500).json({ success: false, error: 'Internal server error' });
 });
-
-// Setup matchmaking
-setupMatchmaking(io);
 
 // Setup socket.io for notices
 setSocketIO(io);
@@ -217,9 +210,6 @@ io.on('connection', (socket) => {
 
       // Send confirmation to this client
       socket.emit('auth_success', { userId: decoded.id });
-
-      // Setup realtime match event handlers
-      setupRealtimeMatch(io, socket, decoded);
 
       // Setup MOBA match event handlers
       setupMobaMatch(io, socket, decoded);

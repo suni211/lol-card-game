@@ -717,7 +717,10 @@ function PlayerCard({
           </div>
           <div>
             <span className="text-xs text-gray-400">{player.position}</span>
-            <div className="text-white font-bold text-sm">{player.name}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-white font-bold text-sm">{player.name}</span>
+              <span className="text-xs text-green-400">{player.kills}/{player.deaths}</span>
+            </div>
           </div>
         </div>
         {isMyTeam && !player.isDead && onOpenShop && (
@@ -749,7 +752,7 @@ function PlayerCard({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-1 text-xs mb-2">
+      <div className="grid grid-cols-3 gap-1 text-xs mb-2">
         <div className="flex items-center gap-1">
           <Zap className="w-3 h-3 text-red-400" />
           <span className="text-white">{Math.floor(player.attack)}</span>
@@ -761,10 +764,6 @@ function PlayerCard({
         <div className="flex items-center gap-1">
           <Target className="w-3 h-3 text-yellow-400" />
           <span className="text-white">{player.gold}G</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Swords className="w-3 h-3 text-green-400" />
-          <span className="text-white">{player.kills}/{player.deaths}</span>
         </div>
       </div>
 

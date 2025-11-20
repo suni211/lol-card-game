@@ -580,8 +580,38 @@ export class GameEngine {
       // Find targets
       const targets = attacker.team === 1 ? team2Players : team1Players;
       const attackerTeam = attacker.team === 1 ? team1 : team2;
+      const enemyTeam = attacker.team === 1 ? team2 : team1;
       const aliveTargets = targets.filter(t => !t.isDead);
-      if (aliveTargets.length === 0) continue;
+
+      // If no alive targets, attack tower/nexus instead
+      if (aliveTargets.length === 0) {
+        const tower = enemyTeam.towers.find(t => t.lane === lane && !t.isDestroyed);
+        if (tower) {
+          const towerDamage = Math.floor(attacker.player.attack * 1.5);
+          tower.health -= towerDamage;
+          if (tower.health <= 0) {
+            tower.isDestroyed = true;
+            tower.health = 0;
+            events.push({
+              turn: this.state.currentTurn,
+              timestamp: Date.now(),
+              type: 'TOWER',
+              message: `${attacker.player.name}이(가) ${lane} ${tower.position}차 포탑을 파괴했습니다!`,
+            });
+          }
+        } else {
+          // All towers destroyed, attack nexus
+          const nexusDamage = Math.floor(attacker.player.attack * 2);
+          enemyTeam.nexusHealth -= nexusDamage;
+          events.push({
+            turn: this.state.currentTurn,
+            timestamp: Date.now(),
+            type: 'TOWER',
+            message: `${attacker.player.name}이(가) 넥서스에 ${nexusDamage} 피해를 입혔습니다!`,
+          });
+        }
+        continue;
+      }
 
       // Pick random target
       const target = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];

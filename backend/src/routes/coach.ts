@@ -165,7 +165,7 @@ router.post('/enhance/:coachId', authMiddleware, async (req: AuthRequest, res) =
     const userCoachId = parseInt(req.params.coachId);
     const { materialCoachIds } = req.body; // 재료로 사용할 코치들
 
-    const MAX_ENHANCEMENT_LEVEL = 5;
+    const MAX_ENHANCEMENT_LEVEL = 10;
 
     if (!materialCoachIds || !Array.isArray(materialCoachIds) || materialCoachIds.length === 0) {
       await connection.rollback();

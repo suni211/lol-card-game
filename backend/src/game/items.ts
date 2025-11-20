@@ -26,17 +26,29 @@ export const ITEMS: Record<string, Item> = {
   },
 
   // ========== BASIC ITEMS (300 Gold) ==========
+  amplifying_tome: {
+    id: 'amplifying_tome',
+    name: '증폭의 서',
+    cost: 300,
+    tier: 'BASIC',
+    restriction: 'MID_SUPPORT',
+    effects: {
+      abilityPower: 20,
+    },
+    description: '마법력 +20 (미드: 대미지, 서폿: 힐/보호막)',
+    icon: '/items/amplifying_tome.png',
+  },
   dorans_ring: {
     id: 'dorans_ring',
     name: '도란의 반지',
     cost: 300,
     tier: 'BASIC',
-    restriction: 'NONE',
+    restriction: 'MID_SUPPORT',
     effects: {
-      attack: 2,
+      abilityPower: 15,
       skillHaste: 0.2,
     },
-    description: '공격력 +2, 공격 시 스킬 턴 0.2 단축',
+    description: '마법력 +15, 스킬 턴 0.2 단축',
     icon: '/items/dorans_ring.png',
   },
   dorans_blade: {
@@ -78,6 +90,45 @@ export const ITEMS: Record<string, Item> = {
   },
 
   // ========== INTERMEDIATE ITEMS (1000 Gold) ==========
+  blasting_wand: {
+    id: 'blasting_wand',
+    name: '폭발 마법봉',
+    cost: 1000,
+    tier: 'INTERMEDIATE',
+    restriction: 'MID_SUPPORT',
+    effects: {
+      abilityPower: 40,
+    },
+    description: '마법력 +40',
+    icon: '/items/blasting_wand.png',
+  },
+  lost_chapter: {
+    id: 'lost_chapter',
+    name: '잃어버린 챕터',
+    cost: 1000,
+    tier: 'INTERMEDIATE',
+    restriction: 'MID_SUPPORT',
+    buildsFrom: ['amplifying_tome'],
+    effects: {
+      abilityPower: 35,
+      skillHaste: 0.5,
+    },
+    description: '마법력 +35, 스킬 가속 0.5',
+    icon: '/items/lost_chapter.png',
+  },
+  fiendish_codex: {
+    id: 'fiendish_codex',
+    name: '사악한 고서',
+    cost: 1000,
+    tier: 'INTERMEDIATE',
+    restriction: 'MID_SUPPORT',
+    effects: {
+      abilityPower: 30,
+      skillHaste: 1,
+    },
+    description: '마법력 +30, 스킬 가속 1',
+    icon: '/items/fiendish_codex.png',
+  },
   boots: {
     id: 'boots',
     name: '장화',
@@ -293,6 +344,81 @@ export const ITEMS: Record<string, Item> = {
   },
 
   // ========== LEGENDARY ITEMS (3000 Gold) ==========
+  // AP LEGENDARY (MID/SUPPORT)
+  rabadons_deathcap: {
+    id: 'rabadons_deathcap',
+    name: '라바돈의 죽음모자',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'MID_SUPPORT',
+    buildsFrom: ['blasting_wand', 'blasting_wand'],
+    effects: {
+      abilityPower: 120,
+      // Special: +30% total AP
+    },
+    description: '마법력 +120, 총 마법력 30% 증가',
+    icon: '/items/rabadons_deathcap.png',
+  },
+  ludens_tempest: {
+    id: 'ludens_tempest',
+    name: '루덴의 폭풍',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'MID_ONLY',
+    buildsFrom: ['lost_chapter'],
+    effects: {
+      abilityPower: 80,
+      skillHaste: 1,
+      aoePercent: 15,
+    },
+    description: '마법력 +80, 스킬 가속 1, AOE 15%',
+    icon: '/items/ludens_tempest.png',
+  },
+  shadowflame: {
+    id: 'shadowflame',
+    name: '암흑불꽃',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'MID_ONLY',
+    buildsFrom: ['blasting_wand', 'amplifying_tome'],
+    effects: {
+      abilityPower: 100,
+      armorPen: 10,
+    },
+    description: '마법력 +100, 마법 관통력 +10',
+    icon: '/items/shadowflame.png',
+  },
+  horizon_focus: {
+    id: 'horizon_focus',
+    name: '지평선의 초점',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'MID_ONLY',
+    buildsFrom: ['fiendish_codex', 'blasting_wand'],
+    effects: {
+      abilityPower: 85,
+      health: 100,
+      skillHaste: 1.5,
+    },
+    description: '마법력 +85, 체력 +100, 스킬 가속 1.5',
+    icon: '/items/horizon_focus.png',
+  },
+  moonstone_renewer: {
+    id: 'moonstone_renewer',
+    name: '달빛 재생',
+    cost: 3000,
+    tier: 'LEGENDARY',
+    restriction: 'SUPPORT_ONLY',
+    buildsFrom: ['fiendish_codex'],
+    effects: {
+      abilityPower: 60,
+      health: 150,
+      healAllyPercent: 8,
+    },
+    description: '마법력 +60, 체력 +150, 팀원 회복 8%',
+    icon: '/items/moonstone_renewer.png',
+  },
+
   trinity_force: {
     id: 'trinity_force',
     name: '삼위일체',
@@ -645,6 +771,8 @@ export function getAvailableItems(position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | '
     if (item.restriction === 'NONE') return true;
     if (item.restriction === 'ADC_ONLY' && position === 'ADC') return true;
     if (item.restriction === 'SUPPORT_ONLY' && position === 'SUPPORT') return true;
+    if (item.restriction === 'MID_ONLY' && position === 'MID') return true;
+    if (item.restriction === 'MID_SUPPORT' && (position === 'MID' || position === 'SUPPORT')) return true;
     return false;
   });
 }

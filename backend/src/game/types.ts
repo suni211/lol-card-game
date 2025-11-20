@@ -24,13 +24,14 @@ export type ObjectiveEvent =
   | 'ELDER'; // Turn 12, 15, 18... - 50% team wipe
 
 export type ItemTier = 'CONSUMABLE' | 'BASIC' | 'INTERMEDIATE' | 'LEGENDARY';
-export type ItemRestriction = 'NONE' | 'ADC_ONLY' | 'SUPPORT_ONLY';
+export type ItemRestriction = 'NONE' | 'ADC_ONLY' | 'SUPPORT_ONLY' | 'MID_ONLY' | 'MID_SUPPORT';
 
 export interface ItemEffect {
   attack?: number;
   health?: number;
   defense?: number;
   speed?: number; // Movement speed (attack priority)
+  abilityPower?: number; // AP - Magic damage for MID, heal/shield for SUPPORT
   critChance?: number;
   skillHaste?: number; // Skill cooldown reduction in turns
   lifeSteal?: number; // % of damage healed
@@ -83,6 +84,7 @@ export interface PlayerState {
   attack: number;
   defense: number;
   speed: number;
+  abilityPower: number; // AP - for MID and SUPPORT
   critChance: number;
   lifeSteal: number;
   skillHaste: number;

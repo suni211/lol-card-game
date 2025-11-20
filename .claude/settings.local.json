@@ -31,7 +31,8 @@
       "Bash(npm run dev:*)",
       "Bash(\"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysql.exe\" -u root -pqwe123 lol_card_game -e \"DESCRIBE users;\")",
       "Bash(cp:*)",
-      "Bash(\"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysql.exe\" -u root -pqwe123 lol_card_game -e \"DESCRIBE players;\")"
+      "Bash(\"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysql.exe\" -u root -pqwe123 lol_card_game -e \"DESCRIBE players;\")",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

@@ -116,6 +116,7 @@ export class GameEngine {
       attack: baseAttack,
       defense: Math.floor(playerData.overall / 10),
       speed: Math.floor(playerData.overall / 5),
+      abilityPower: 0,
       critChance: 0,
       lifeSteal: 0,
       skillHaste: 0,
@@ -428,6 +429,7 @@ export class GameEngine {
     player.attack = player.baseAttack;
     player.defense = player.baseDefense;
     player.speed = player.baseSpeed;
+    player.abilityPower = 0;
     player.critChance = 0;
     player.lifeSteal = 0;
     player.skillHaste = 0;
@@ -444,11 +446,17 @@ export class GameEngine {
       player.attack += e.attack || 0;
       player.defense += e.defense || 0;
       player.speed += e.speed || 0;
+      player.abilityPower += e.abilityPower || 0;
       player.critChance += e.critChance || 0;
       player.lifeSteal += e.lifeSteal || 0;
       player.skillHaste += e.skillHaste || 0;
       player.evasion += e.evasion || 0;
       healthBonus += e.health || 0;
+    }
+
+    // Apply Rabadon's Deathcap bonus (+30% total AP)
+    if (player.items.includes('rabadons_deathcap')) {
+      player.abilityPower = Math.floor(player.abilityPower * 1.3);
     }
 
     // Update max health
@@ -761,6 +769,13 @@ export class GameEngine {
     // Base damage is attack * 2 for more impactful combat
     let damage = attacker.attack * 2;
 
+    // MID position gets AP as direct damage (300 AP = ~300-350 damage)
+    if (attacker.position === 'MID' && attacker.abilityPower > 0) {
+      // AP adds damage with slight variance (1.0 ~ 1.17x)
+      const apDamage = attacker.abilityPower * (1 + Math.random() * 0.17);
+      damage += apDamage;
+    }
+
     // Apply defense reduction (less impactful formula)
     // Old: defense / (defense + 100) was too harsh
     // New: defense / (defense + 300) for lighter reduction
@@ -954,25 +969,54 @@ export class GameEngine {
     for (const player of team.players) {
       if (player.isDead) continue;
 
-      // Knights Vow - 10% heal per turn
+      // Calculate AP bonus for SUPPORT (AP increases heal/shield effectiveness)
+      // 100 AP = +100% heal/shield, 300 AP = +300%
+      const apBonus = player.position === 'SUPPORT' ? (player.abilityPower / 100) : 0;
+
+      // Knights Vow - 10% heal per turn (boosted by AP)
       if (player.items.includes('knights_vow')) {
-        const heal = Math.floor(player.maxHealth * 0.1);
+        const baseHeal = player.maxHealth * 0.1;
+        const heal = Math.floor(baseHeal * (1 + apBonus));
         player.currentHealth = Math.min(player.maxHealth, player.currentHealth + heal);
       }
 
-      // Redemption - 10% team heal
+      // Redemption - 10% team heal (boosted by AP)
       if (player.items.includes('redemption')) {
         for (const ally of team.players) {
           if (!ally.isDead) {
-            const heal = Math.floor(ally.maxHealth * 0.1);
+            const baseHeal = ally.maxHealth * 0.1;
+            const heal = Math.floor(baseHeal * (1 + apBonus));
             ally.currentHealth = Math.min(ally.maxHealth, ally.currentHealth + heal);
           }
         }
       }
 
-      // Locket of Solari - 5% shield to all
+      // Moonstone Renewer - AP boosted heal
+      if (player.items.includes('moonstone_renewer')) {
+        const item = ITEMS['moonstone_renewer'];
+        const healPercent = (item.effects.healAllyPercent || 8) / 100;
+        for (const ally of team.players) {
+          if (!ally.isDead && ally.oderId !== player.oderId) {
+            const baseHeal = ally.maxHealth * healPercent;
+            const heal = Math.floor(baseHeal * (1 + apBonus));
+            ally.currentHealth = Math.min(ally.maxHealth, ally.currentHealth + heal);
+          }
+        }
+      }
+
+      // Staff of Flowing Water - AP boosted ADC heal
+      if (player.items.includes('staff_of_flowing_water')) {
+        const adc = team.players.find(p => p.position === 'ADC' && !p.isDead);
+        if (adc) {
+          const baseHeal = adc.maxHealth * 0.03;
+          const heal = Math.floor(baseHeal * (1 + apBonus));
+          adc.currentHealth = Math.min(adc.maxHealth, adc.currentHealth + heal);
+        }
+      }
+
+      // Locket of Solari - 5% shield to all (boosted by AP)
       if (player.items.includes('locket_of_solari')) {
-        // Shield effect would be applied in combat
+        // Shield effect would be applied in combat (apBonus can be used)
       }
     }
   }

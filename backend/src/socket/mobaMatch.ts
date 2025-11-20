@@ -90,6 +90,9 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
     if (engine.submitActions(teamNumber, data.actions)) {
       socket.emit('moba_actions_submitted');
 
+      // Check auto-ready for teams with all dead players
+      engine.checkAutoReady();
+
       // Check if both teams ready
       if (engine.areBothTeamsReady()) {
         processTurn(io, data.matchId);
@@ -324,6 +327,9 @@ function startTurnTimer(io: Server, matchId: string) {
     if (!state.team2Ready) {
       engine.submitActions(2, []);
     }
+
+    // Check auto-ready for dead teams
+    engine.checkAutoReady();
 
     processTurn(io, matchId);
   }, TURN_TIME);

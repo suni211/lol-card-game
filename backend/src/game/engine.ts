@@ -163,7 +163,11 @@ export class GameEngine {
       this.state.team2Ready = true;
     }
 
-    // Auto-ready teams with all dead players
+    return true;
+  }
+
+  // Check and auto-ready teams with all dead players (called before checking both ready)
+  checkAutoReady(): void {
     const team1AllDead = this.state.team1.players.every(p => p.isDead);
     const team2AllDead = this.state.team2.players.every(p => p.isDead);
 
@@ -175,8 +179,6 @@ export class GameEngine {
       this.state.team2Actions = [];
       this.state.team2Ready = true;
     }
-
-    return true;
   }
 
   // Check if both teams are ready

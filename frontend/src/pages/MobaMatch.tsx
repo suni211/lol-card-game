@@ -51,6 +51,7 @@ export default function MobaMatch() {
   const [items, setItems] = useState<Item[]>([]);
   const [showSurrender, setShowSurrender] = useState(false);
   const [winner, setWinner] = useState<1 | 2 | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   // Connect to socket
   useEffect(() => {
@@ -88,6 +89,7 @@ export default function MobaMatch() {
       setTimeLeft(Math.floor(data.timeLimit / 1000));
       setTurnResult(null);
       setActions(new Map());
+      setHasSubmitted(false);
     });
 
     newSocket.on('moba_actions_submitted', () => {
@@ -149,7 +151,9 @@ export default function MobaMatch() {
 
   // Auto-submit when timer reaches 0
   useEffect(() => {
-    if (timeLeft === 0 && status === 'playing' && socket && matchState) {
+    if (timeLeft === 0 && status === 'playing' && socket && matchState && !hasSubmitted) {
+      setHasSubmitted(true);
+
       // Set default actions for players without actions
       const myTeamPlayers = teamNumber === 1 ? matchState.team1.players : matchState.team2.players;
       const updatedActions = new Map(actions);
@@ -175,7 +179,7 @@ export default function MobaMatch() {
 
       toast('시간 초과! 행동이 자동으로 제출되었습니다.', { icon: '⏰' });
     }
-  }, [timeLeft, status, socket, matchState, teamNumber, actions]);
+  }, [timeLeft, status, socket, matchState, teamNumber, actions, hasSubmitted]);
 
   // Set action for player
   const setPlayerAction = useCallback((oderId: number, action: PlayerAction) => {
@@ -189,14 +193,15 @@ export default function MobaMatch() {
 
   // Submit actions
   const submitActions = useCallback(() => {
-    if (!socket || !matchState) return;
+    if (!socket || !matchState || hasSubmitted) return;
 
+    setHasSubmitted(true);
     const actionArray = Array.from(actions.values());
     socket.emit('moba_submit_actions', {
       matchId: matchState.matchId,
       actions: actionArray,
     });
-  }, [socket, matchState, actions]);
+  }, [socket, matchState, actions, hasSubmitted]);
 
   // Buy item
   const buyItem = useCallback((itemId: string) => {

@@ -378,20 +378,25 @@ export default function MobaMatch() {
             </div>
             <div className="mt-3 space-y-2">
               {(['TOP', 'MID', 'BOT'] as Lane[]).map(lane => {
-                const laneTowers = myTeam.towers.filter(t => t.lane === lane);
+                const laneTowers = myTeam.towers
+                  .filter(t => t.lane === lane)
+                  .sort((a, b) => a.position - b.position);
                 return (
                   <div key={lane} className="flex items-center gap-2">
                     <span className="text-gray-400 text-xs w-8">{lane}</span>
                     <div className="flex gap-1 flex-1">
                       {laneTowers.map(tower => (
-                        <div key={`${tower.lane}-${tower.position}`} className="flex-1">
-                          <div className={`h-2 rounded ${tower.isDestroyed ? 'bg-gray-600' : 'bg-gray-500'}`}>
+                        <div key={`${tower.lane}-${tower.position}`} className="flex-1" title={`${tower.position}차 포탑: ${tower.health}/${tower.maxHealth}`}>
+                          <div className={`h-3 rounded ${tower.isDestroyed ? 'bg-gray-600' : 'bg-gray-500'}`}>
                             {!tower.isDestroyed && (
                               <div
-                                className="h-2 rounded bg-blue-500 transition-all"
+                                className="h-3 rounded bg-blue-500 transition-all"
                                 style={{ width: `${(tower.health / tower.maxHealth) * 100}%` }}
                               />
                             )}
+                          </div>
+                          <div className="text-center text-xs text-gray-500 mt-0.5">
+                            {tower.isDestroyed ? 'X' : `${Math.ceil((tower.health / tower.maxHealth) * 100)}%`}
                           </div>
                         </div>
                       ))}
@@ -503,20 +508,25 @@ export default function MobaMatch() {
             </div>
             <div className="mt-3 space-y-2">
               {(['TOP', 'MID', 'BOT'] as Lane[]).map(lane => {
-                const laneTowers = enemyTeam.towers.filter(t => t.lane === lane);
+                const laneTowers = enemyTeam.towers
+                  .filter(t => t.lane === lane)
+                  .sort((a, b) => a.position - b.position);
                 return (
                   <div key={lane} className="flex items-center gap-2">
                     <span className="text-gray-400 text-xs w-8">{lane}</span>
                     <div className="flex gap-1 flex-1">
                       {laneTowers.map(tower => (
-                        <div key={`${tower.lane}-${tower.position}`} className="flex-1">
-                          <div className={`h-2 rounded ${tower.isDestroyed ? 'bg-gray-600' : 'bg-gray-500'}`}>
+                        <div key={`${tower.lane}-${tower.position}`} className="flex-1" title={`${tower.position}차 포탑: ${tower.health}/${tower.maxHealth}`}>
+                          <div className={`h-3 rounded ${tower.isDestroyed ? 'bg-gray-600' : 'bg-gray-500'}`}>
                             {!tower.isDestroyed && (
                               <div
-                                className="h-2 rounded bg-red-500 transition-all"
+                                className="h-3 rounded bg-red-500 transition-all"
                                 style={{ width: `${(tower.health / tower.maxHealth) * 100}%` }}
                               />
                             )}
+                          </div>
+                          <div className="text-center text-xs text-gray-500 mt-0.5">
+                            {tower.isDestroyed ? 'X' : `${Math.ceil((tower.health / tower.maxHealth) * 100)}%`}
                           </div>
                         </div>
                       ))}

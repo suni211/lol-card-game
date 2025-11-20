@@ -35,7 +35,7 @@ export default function Lottery() {
   const { token, updateUser } = useAuthStore();
   const [board, setBoard] = useState<LotteryNumber[]>([]);
   const [pickedCount, setPicked] = useState(0);
-  const [ticketCost, setTicketCost] = useState(100000);
+  const [ticketCost, setTicketCost] = useState(25000);
   const [loading, setLoading] = useState(true);
   const [picking, setPicking] = useState(false);
   const [result, setResult] = useState<LotteryResult | null>(null);

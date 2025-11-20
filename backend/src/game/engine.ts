@@ -154,6 +154,11 @@ export class GameEngine {
     return this.state;
   }
 
+  // Get upcoming event for the next turn (for notification)
+  getUpcomingEvent(): ObjectiveEvent | undefined {
+    return this.getEventForTurn(this.state.currentTurn);
+  }
+
   // Submit actions for a team
   submitActions(teamNumber: 1 | 2, actions: TurnAction[]): boolean {
     if (this.state.status !== 'IN_PROGRESS') return false;

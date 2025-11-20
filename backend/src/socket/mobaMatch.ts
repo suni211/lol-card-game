@@ -406,11 +406,34 @@ function startTurnTimer(io: Server, matchId: string) {
 
   matchTimers.set(matchId, timer);
 
+  // Get engine and check for upcoming event
+  const engine = activeMatches.get(matchId);
+  const upcomingEvent = engine?.getUpcomingEvent();
+  const currentTurn = engine?.getState().currentTurn;
+
   // Notify players of turn start
   io.to(matchId).emit('moba_turn_start', {
-    turn: activeMatches.get(matchId)?.getState().currentTurn,
+    turn: currentTurn,
     timeLimit: TURN_TIME,
+    upcomingEvent: upcomingEvent || null,
   });
+
+  // If there's a teamfight event, send special notification
+  if (upcomingEvent) {
+    const eventNames: Record<string, string> = {
+      'GRUB': '유충',
+      'DRAGON': '드래곤',
+      'BARON': '바론',
+      'ELDER': '장로 드래곤',
+    };
+
+    io.to(matchId).emit('moba_teamfight_alert', {
+      turn: currentTurn,
+      event: upcomingEvent,
+      eventName: eventNames[upcomingEvent] || upcomingEvent,
+      message: `⚔️ ${currentTurn}턴 한타! ${eventNames[upcomingEvent] || upcomingEvent} 쟁탈전이 시작됩니다!`,
+    });
+  }
 }
 
 async function processTurn(io: Server, matchId: string) {

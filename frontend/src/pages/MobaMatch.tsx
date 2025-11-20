@@ -53,6 +53,11 @@ export default function MobaMatch() {
   const [winner, setWinner] = useState<1 | 2 | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [opponentName, setOpponentName] = useState<string>('');
+  const [teamfightAlert, setTeamfightAlert] = useState<{
+    event: string;
+    eventName: string;
+    message: string;
+  } | null>(null);
 
   // Connect to socket
   useEffect(() => {
@@ -92,6 +97,20 @@ export default function MobaMatch() {
       setTurnResult(null);
       setActions(new Map());
       setHasSubmitted(false);
+      setTeamfightAlert(null);
+    });
+
+    newSocket.on('moba_teamfight_alert', (data) => {
+      console.log('[MobaMatch] Teamfight alert:', data);
+      setTeamfightAlert({
+        event: data.event,
+        eventName: data.eventName,
+        message: data.message,
+      });
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setTeamfightAlert(null);
+      }, 5000);
     });
 
     newSocket.on('moba_actions_submitted', () => {
@@ -346,6 +365,38 @@ export default function MobaMatch() {
           )}
         </div>
       </div>
+
+      {/* Teamfight Alert Popup */}
+      <AnimatePresence>
+        {teamfightAlert && (
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+          >
+            <div className="bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 p-1 rounded-xl">
+              <div className="bg-gray-900 rounded-lg p-8 text-center">
+                <motion.div
+                  animate={{ rotate: [0, -10, 10, -10, 10, 0] }}
+                  transition={{ duration: 0.5, repeat: 2 }}
+                >
+                  <Swords className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                </motion.div>
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  ⚔️ 한타 시작! ⚔️
+                </h2>
+                <p className="text-xl text-yellow-400 font-bold mb-2">
+                  {teamfightAlert.eventName} 쟁탈전
+                </p>
+                <p className="text-gray-300">
+                  모든 생존 선수가 전투에 참여합니다!
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Event Banner */}
       {matchState.currentEvent && (

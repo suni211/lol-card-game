@@ -205,9 +205,9 @@ export class GameEngine {
     // 7. Process jungle actions
     this.processJungleActions(team1Actions, team2Actions, events);
 
-    // 8. Apply tower damage for empty lanes
-    this.applyTowerDamage(team1Actions, this.state.team2, events);
-    this.applyTowerDamage(team2Actions, this.state.team1, events);
+    // 8. Apply tower damage - only if attackers present and no defenders
+    this.applyTowerDamage(team1Actions, this.state.team1, this.state.team2, team2Actions, events);
+    this.applyTowerDamage(team2Actions, this.state.team2, this.state.team1, team1Actions, events);
 
     // 9. Process recalls
     this.processRecalls(this.state.team1, team1Actions, events);
@@ -760,21 +760,42 @@ export class GameEngine {
   }
 
   private applyTowerDamage(
-    actions: Map<number, PlayerAction>,
+    attackerActions: Map<number, PlayerAction>,
+    attackerTeam: TeamState,
     enemyTeam: TeamState,
+    enemyActions: Map<number, PlayerAction>,
     events: MatchLog[]
   ) {
-    // Check each lane for undefended attacks
+    // Check each lane - only attack tower if we have attackers and enemy has no defenders
     for (const lane of ['TOP', 'MID', 'BOT'] as Lane[]) {
-      const defenders = this.getDefendersInLane(enemyTeam, actions, lane);
-      if (defenders.length === 0) {
-        // Lane is empty, damage tower
+      // Get our attackers in this lane
+      const attackers = this.getPlayersInLane(attackerTeam, attackerActions, lane);
+      // Get enemy defenders in this lane
+      const defenders = this.getDefendersInLane(enemyTeam, enemyActions, lane);
+
+      // Only attack tower if we have attackers and enemy has no defenders
+      if (attackers.length > 0 && defenders.length === 0) {
+        // Calculate total attack power
+        let totalDamage = 0;
+        for (const attacker of attackers) {
+          totalDamage += Math.floor(attacker.attack * 1.5);
+        }
+
+        // Apply grub buff
+        if (attackerTeam.grubBuff) {
+          totalDamage = Math.floor(totalDamage * 1.3);
+        }
+        // Apply baron buff
+        if (attackerTeam.baronBuff) {
+          totalDamage = Math.floor(totalDamage * 1.2);
+        }
+
+        // Damage tower
         const tower = enemyTeam.towers.find(
           t => t.lane === lane && !t.isDestroyed
         );
         if (tower) {
-          const damage = 100; // Base tower damage
-          tower.health -= damage;
+          tower.health -= totalDamage;
           if (tower.health <= 0) {
             tower.isDestroyed = true;
             tower.health = 0;
@@ -782,18 +803,24 @@ export class GameEngine {
               turn: this.state.currentTurn,
               timestamp: Date.now(),
               type: 'TOWER',
-              message: `${lane} ${tower.position}차 포탑이 파괴되었습니다!`,
+              message: `${lane} ${tower.position}차 포탑이 파괴되었습니다! (-${totalDamage})`,
+            });
+          } else {
+            events.push({
+              turn: this.state.currentTurn,
+              timestamp: Date.now(),
+              type: 'TOWER',
+              message: `${lane} ${tower.position}차 포탑에 ${totalDamage} 피해!`,
             });
           }
         } else {
           // All towers destroyed, damage nexus
-          const damage = 150;
-          enemyTeam.nexusHealth -= damage;
+          enemyTeam.nexusHealth -= totalDamage;
           events.push({
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'TOWER',
-            message: `${lane} 라인 넥서스에 ${damage} 피해!`,
+            message: `${lane} 라인 넥서스에 ${totalDamage} 피해!`,
           });
         }
       }

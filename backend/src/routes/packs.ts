@@ -100,9 +100,13 @@ function getPackConfig(packType: string) {
     },
     LEGENDARY: {
       cardCount: 5,
-      minOverall: 85,
-      maxOverall: 110,
+      minOverall: 100,
+      maxOverall: 999,
       guaranteedEpic: true,
+    },
+    ICON: {
+      cardCount: 1,
+      iconOnly: true,
     },
   };
 
@@ -114,32 +118,44 @@ async function openSinglePack(connection: any, userId: number, config: any) {
   const cards = [];
 
   for (let i = 0; i < config.cardCount; i++) {
-    let minOverall = config.minOverall;
-    let maxOverall = config.maxOverall;
+    let players: any;
 
-    // Guarantee specific tier on certain cards
-    if (i === 0 && config.guaranteedEpic) {
-      minOverall = 91;
-      maxOverall = 110;
-    } else if (i === 0 && config.guaranteedRare) {
-      minOverall = 81;
-      maxOverall = 100;
+    // ICON pack - get random ICON card
+    if (config.iconOnly) {
+      [players] = await connection.query(
+        `SELECT * FROM players
+         WHERE season = 'ICON'
+         ORDER BY RAND()
+         LIMIT 1`
+      );
+    } else {
+      let minOverall = config.minOverall;
+      let maxOverall = config.maxOverall;
+
+      // Guarantee specific tier on certain cards
+      if (i === 0 && config.guaranteedEpic) {
+        minOverall = 91;
+        maxOverall = 999;
+      } else if (i === 0 && config.guaranteedRare) {
+        minOverall = 81;
+        maxOverall = 100;
+      }
+
+      // Get random card
+      [players] = await connection.query(
+        `SELECT * FROM players
+         WHERE overall >= ?
+           AND overall <= ?
+           AND season != 'ICON'
+           AND name NOT LIKE 'ICON%'
+           AND name NOT LIKE '17SSG%'
+           AND name NOT LIKE '25WW%'
+           AND name NOT LIKE '25WUD%'
+         ORDER BY RAND()
+         LIMIT 1`,
+        [minOverall, maxOverall]
+      );
     }
-
-    // Get random card
-    const [players]: any = await connection.query(
-      `SELECT * FROM players
-       WHERE overall >= ?
-         AND overall <= ?
-         AND season != 'ICON'
-         AND name NOT LIKE 'ICON%'
-         AND name NOT LIKE '17SSG%'
-         AND name NOT LIKE '25WW%'
-         AND name NOT LIKE '25WUD%'
-       ORDER BY RAND()
-       LIMIT 1`,
-      [minOverall, maxOverall]
-    );
 
     if (players.length > 0) {
       const player = players[0];
@@ -158,6 +174,7 @@ async function openSinglePack(connection: any, userId: number, config: any) {
         position: player.position,
         overall: player.overall,
         season: player.season,
+        salary: player.salary,
         tier: calculateTier(player.overall, player.season),
         level: 0,
       });

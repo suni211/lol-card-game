@@ -358,4 +358,15 @@ function emitPointUpdate(userId: number, newPoints: number, newLevel?: number, n
 }
 
 export default app;
-export { io, emitPointUpdate };
+// Force logout function for banned users
+function forceLogoutUser(userId: number) {
+  const user = onlineUsers.get(userId);
+  if (user) {
+    io.to(user.socketId).emit('force_logout', { reason: '계정이 정지되었습니다.' });
+    console.log(`[ForceLogout] User ${userId} (${user.username}) kicked`);
+    return true;
+  }
+  return false;
+}
+
+export { io, emitPointUpdate, onlineUsers, forceLogoutUser };

@@ -404,6 +404,39 @@ router.get('/logs', authMiddleware, adminMiddleware, async (req: AuthRequest, re
   }
 });
 
+// 강제 로그아웃 (관리자 전용)
+router.post('/force-logout', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ success: false, error: 'Username required' });
+    }
+
+    // Get user id
+    const [users]: any = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const userId = users[0].id;
+
+    // Broadcast force logout to all clients - client will check if it's them
+    io.emit('force_logout', { userId, reason: '계정이 정지되었습니다.' });
+
+    console.log(`[Admin] Force logout sent for user ${username} (ID: ${userId})`);
+
+    res.json({
+      success: true,
+      message: `${username} 강제 로그아웃 신호 전송 완료`,
+    });
+  } catch (error: any) {
+    console.error('Force logout error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 // 핫타임 이벤트 수동 트리거 (관리자 전용)
 router.post('/hot-time/trigger', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   try {

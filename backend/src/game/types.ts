@@ -15,6 +15,10 @@ export type PlayerAction =
   | 'GANK_TOP' // Jungle only
   | 'GANK_MID' // Jungle only
   | 'GANK_BOT' // Jungle only
+  | 'CONTEST_DRAGON' // Contest Dragon objective
+  | 'CONTEST_VOIDGRUB' // Contest Voidgrub objective
+  | 'CONTEST_BARON' // Contest Baron objective
+  | 'CONTEST_ELDER' // Contest Elder Dragon objective
   | 'USE_SKILL'; // Use champion skill
 
 export type ChampionClass = 'TANK' | 'BRUISER' | 'ASSASSIN' | 'DEALER' | 'RANGED_DEALER' | 'RANGED_AP' | 'SUPPORT';
@@ -45,11 +49,10 @@ export interface SkillState {
 }
 
 export type ObjectiveEvent =
-  | 'GRUB' // Turn 3 - Tower/Nexus damage buff
-  | 'DRAGON' // Turn 5, 10 - Player damage buff
-  | 'HERALD' // Turn 7 - 70% chance destroy enemy tower
-  | 'BARON' // Turn 9, 12, 15... - 50% tower + 20% damage buff
-  | 'ELDER'; // Turn 12, 15, 18... - 50% team wipe
+  | 'VOIDGRUB' // Turn 4 - Voidgrub objective
+  | 'DRAGON' // Dragon objective
+  | 'BARON' // Baron objective
+  | 'ELDER'; // Elder Dragon objective
 
 export type ItemTier = 'CONSUMABLE' | 'BASIC' | 'INTERMEDIATE' | 'LEGENDARY';
 export type ItemRestriction = 'NONE' | 'ADC_ONLY' | 'SUPPORT_ONLY' | 'MID_ONLY' | 'MID_SUPPORT';

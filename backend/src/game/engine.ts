@@ -29,9 +29,13 @@ const TOWER_DAMAGE_MULTIPLIER = 2.5; // Increased tower damage multiplier
 
 // Event tracking
 interface EventTracker {
-  dragonCount: number; // Max 2 dragons between turns 7-15
-  lastBaronTurn: number; // Track when baron last appeared
-  lastElderTurn: number; // Track when elder last appeared
+  lastDragonKillTurn: number; // Track when dragon was last killed
+  team1DragonCount: number;
+  team2DragonCount: number;
+  team1Has4Dragons: boolean;
+  team2Has4Dragons: boolean;
+  lastBaronSpawnTurn: number; // Track when baron last appeared
+  elderSpawnTurn: number; // Turn when Elder Dragon should spawn
 }
 
 export class GameEngine {
@@ -41,9 +45,13 @@ export class GameEngine {
   constructor(matchId: string, matchType: 'RANKED' | 'NORMAL', team1Data: any, team2Data: any) {
     this.state = this.initializeMatch(matchId, matchType, team1Data, team2Data);
     this.eventTracker = {
-      dragonCount: 0,
-      lastBaronTurn: 0,
-      lastElderTurn: 0,
+      lastDragonKillTurn: 0,
+      team1DragonCount: 0,
+      team2DragonCount: 0,
+      team1Has4Dragons: false,
+      team2Has4Dragons: false,
+      lastBaronSpawnTurn: 0,
+      elderSpawnTurn: 0,
     };
   }
 
@@ -293,9 +301,26 @@ export class GameEngine {
 
     // 11. Check for objective event
     let objectiveResult = undefined;
-    const event = this.getEventForTurn(turn);
+    const event = this.determineObjectiveSpawn(turn); // Use the new function
+
     if (event) {
-      objectiveResult = this.processObjectiveEvent(event, team1Actions, team2Actions, events);
+      if (event === 'DRAGON_AND_VOIDGRUB') {
+        // Process Dragon first
+        objectiveResult = this.processObjectiveEvent('DRAGON', team1Actions, team2Actions, events);
+        // Then process Voidgrub
+        const voidgrubResult = this.processObjectiveEvent('VOIDGRUB', team1Actions, team2Actions, events);
+        // Combine results or prioritize one for the main objectiveResult
+        if (voidgrubResult) {
+          events.push({
+            turn,
+            timestamp: Date.now(),
+            type: 'OBJECTIVE',
+            message: `Team ${voidgrubResult.winner}이(가) 공허 유충 획득! ${voidgrubResult.effect}`,
+          });
+        }
+      } else {
+        objectiveResult = this.processObjectiveEvent(event, team1Actions, team2Actions, events);
+      }
     }
 
     // 12. Check win condition
@@ -422,25 +447,58 @@ export class GameEngine {
           const canBuy = player.gold >= cost && (isConsumable || finalItemCount <= 6);
 
           if (canBuy) {
-            // Remove sub-items if upgrading
-            if (item.buildsFrom) {
-              for (const subItemId of item.buildsFrom) {
-                const idx = player.items.indexOf(subItemId);
-                if (idx !== -1) {
-                  player.items.splice(idx, 1);
+            player.gold -= cost;
+
+            if (isConsumable) {
+              // Apply consumable effects immediately
+              if (item.id === 'health_potion') {
+                const healAmount = Math.floor(player.maxHealth * (item.effects.health || 0) / 100);
+                player.currentHealth = Math.min(player.maxHealth, player.currentHealth + healAmount);
+                events.push({
+                  turn: this.state.currentTurn,
+                  timestamp: Date.now(),
+                  type: 'ITEM',
+                  message: `${player.name}이(가) ${item.name}을(를) 사용했습니다. (+${healAmount} 체력)`,
+                });
+              } else if (item.id === 'control_ward') {
+                // Control ward needs a target lane, which should be provided in action.useItemTarget
+                if (action.useItemTarget) {
+                  player.wardPlaced = action.useItemTarget;
+                  events.push({
+                    turn: this.state.currentTurn,
+                    timestamp: Date.now(),
+                    type: 'ITEM',
+                    message: `${player.name}이(가) ${action.useItemTarget} 라인에 제어 와드를 설치했습니다.`,
+                  });
+                } else {
+                  events.push({
+                    turn: this.state.currentTurn,
+                    timestamp: Date.now(),
+                    type: 'ITEM',
+                    message: `${player.name}이(가) 제어 와드를 구매했지만, 사용할 라인을 지정하지 않았습니다.`,
+                  });
                 }
               }
+              // Consumables are used immediately and do not go into inventory
+            } else {
+              // Remove sub-items if upgrading
+              if (item.buildsFrom) {
+                for (const subItemId of item.buildsFrom) {
+                  const idx = player.items.indexOf(subItemId);
+                  if (idx !== -1) {
+                    player.items.splice(idx, 1);
+                  }
+                }
+              }
+              player.items.push(action.targetItemId);
+              this.recalculatePlayerStats(player);
+              events.push({
+                turn: this.state.currentTurn,
+                timestamp: Date.now(),
+                type: 'ITEM',
+                message: `${player.name}이(가) ${item.name}을(를) 구매했습니다. (-${cost}G)`,
+              });
             }
-
-            player.gold -= cost;
-            player.items.push(action.targetItemId);
-            this.recalculatePlayerStats(player);
-            events.push({
-              turn: this.state.currentTurn,
-              timestamp: Date.now(),
-              type: 'ITEM',
-              message: `${player.name}이(가) ${item.name}을(를) 구매했습니다. (-${cost}G)`,
-            });
           } else if (!isConsumable && finalItemCount > 6) {
             events.push({
               turn: this.state.currentTurn,
@@ -448,21 +506,28 @@ export class GameEngine {
               type: 'ITEM',
               message: `${player.name}: 아이템이 가득 찼습니다! (최대 6개)`,
             });
+          } else if (player.gold < cost) {
+            events.push({
+              turn: this.state.currentTurn,
+              timestamp: Date.now(),
+              type: 'ITEM',
+              message: `${player.name}: 골드가 부족하여 ${item.name}을(를) 구매할 수 없습니다. (필요: ${cost}G)`,
+            });
           }
         }
       }
 
-      // Use control ward
-      if (action.useItemTarget && player.items.includes('control_ward')) {
-        player.wardPlaced = action.useItemTarget;
-        player.items = player.items.filter(id => id !== 'control_ward');
-        events.push({
-          turn: this.state.currentTurn,
-          timestamp: Date.now(),
-          type: 'ITEM',
-          message: `${player.name}이(가) ${action.useItemTarget} 라인에 제어 와드를 설치했습니다.`,
-        });
-      }
+      // The separate control ward usage logic is now redundant as it's handled on purchase
+      // if (action.useItemTarget && player.items.includes('control_ward')) {
+      //   player.wardPlaced = action.useItemTarget;
+      //   player.items = player.items.filter(id => id !== 'control_ward');
+      //   events.push({
+      //     turn: this.state.currentTurn,
+      //     timestamp: Date.now(),
+      //     type: 'ITEM',
+      //     message: `${player.name}이(가) ${action.useItemTarget} 라인에 제어 와드를 설치했습니다.`,
+      //   });
+      // }
     }
   }
 
@@ -1072,34 +1137,31 @@ export class GameEngine {
     }
   }
 
-  private getEventForTurn(turn: number): ObjectiveEvent | undefined {
-    // Turn 5: Fixed GRUB event
-    if (turn === 5) {
-      return 'GRUB';
+  // Determine which objective, if any, spawns on a given turn
+  private determineObjectiveSpawn(turn: number): ObjectiveEvent | undefined {
+    // Turn 4: Dragon and Voidgrubs always spawn simultaneously
+    if (turn === 4) {
+      return 'DRAGON_AND_VOIDGRUB'; // Special combined event
     }
 
-    // Turns 7-15: Random DRAGON events (max 2)
-    if (turn >= 7 && turn <= 15 && this.eventTracker.dragonCount < 2) {
-      // 40% chance for dragon each eligible turn
-      if (Math.random() < 0.4) {
+    // Dragon respawn logic
+    if (!this.eventTracker.team1Has4Dragons && !this.eventTracker.team2Has4Dragons) {
+      if (this.eventTracker.lastDragonKillTurn > 0 && (turn - this.eventTracker.lastDragonKillTurn) === 2) {
         return 'DRAGON';
       }
     }
 
-    // Turn 13+: Random BARON event (must wait 2 turns after last baron)
-    if (turn >= 13 && (turn - this.eventTracker.lastBaronTurn) >= 3) {
-      // 35% chance for baron
-      if (Math.random() < 0.35) {
+    // Baron spawn logic (from Turn 12)
+    if (turn >= 12 && (turn - this.eventTracker.lastBaronSpawnTurn) >= 5) { // Baron respawns every 5 turns after being killed
+      // 50% chance for Baron to spawn if eligible
+      if (Math.random() < 0.5) {
         return 'BARON';
       }
     }
 
-    // Turn 14+: Random ELDER event (must wait 2 turns after last elder)
-    if (turn >= 14 && (turn - this.eventTracker.lastElderTurn) >= 3) {
-      // 30% chance for elder
-      if (Math.random() < 0.3) {
-        return 'ELDER';
-      }
+    // Elder Dragon spawn logic (2 turns after a team secures 4 dragons)
+    if (this.eventTracker.elderSpawnTurn > 0 && turn === this.eventTracker.elderSpawnTurn) {
+      return 'ELDER';
     }
 
     return undefined;
@@ -1110,47 +1172,156 @@ export class GameEngine {
     team1Actions: Map<number, PlayerAction>,
     team2Actions: Map<number, PlayerAction>,
     events: MatchLog[]
-  ): { event: ObjectiveEvent; winner: 1 | 2; effect: string } {
-    // TEAMFIGHT: All alive players from both teams fight together!
-    // Filter out dead and recalling players from teamfight
-    const team1Fighters = this.state.team1.players.filter(p => !p.isDead && !p.isRecalling);
-    const team2Fighters = this.state.team2.players.filter(p => !p.isDead && !p.isRecalling);
+  ): { event: ObjectiveEvent; winner: 1 | 2; effect: string } | undefined {
+    const currentTurn = this.state.currentTurn;
+    let winner: 1 | 2 | undefined;
+    let effect = '';
 
-    // Calculate team power for objective fight (all players contribute)
-    let team1Power = 0;
-    for (const player of team1Fighters) {
-      team1Power += player.attack + player.currentHealth / 10;
-    }
-    let team2Power = 0;
-    for (const player of team2Fighters) {
-      team2Power += player.attack + player.currentHealth / 10;
-    }
+    // Determine which players are contesting this specific objective
+    const team1Contesters = this.state.team1.players.filter(p => !p.isDead && !p.isRecalling && this.isContestingObjective(p.oderId, team1Actions, event));
+    const team2Contesters = this.state.team2.players.filter(p => !p.isDead && !p.isRecalling && this.isContestingObjective(p.oderId, team2Actions, event));
 
-    // Apply team buffs to power
-    if (this.state.team1.dragonStacks > 0) {
-      team1Power *= 1 + this.state.team1.dragonStacks * 0.05;
-    }
-    if (this.state.team1.baronBuff) {
-      team1Power *= 1.2;
-    }
-    if (this.state.team2.dragonStacks > 0) {
-      team2Power *= 1 + this.state.team2.dragonStacks * 0.05;
-    }
-    if (this.state.team2.baronBuff) {
-      team2Power *= 1.2;
+    // If no one contests, no event happens for this objective
+    if (team1Contesters.length === 0 && team2Contesters.length === 0) {
+      events.push({
+        turn: currentTurn,
+        timestamp: Date.now(),
+        type: 'OBJECTIVE',
+        message: `${event} 목표에 아무도 참여하지 않았습니다.`,
+      });
+      return undefined;
     }
 
-    // Determine winner (with some randomness)
-    const total = team1Power + team2Power;
-    const team1Chance = total > 0 ? team1Power / total : 0.5;
-    const winner = Math.random() < team1Chance ? 1 : 2;
+    // If only one team contests, they secure it without a fight
+    if (team1Contesters.length > 0 && team2Contesters.length === 0) {
+      winner = 1;
+    } else if (team1Contesters.length === 0 && team2Contesters.length > 0) {
+      winner = 2;
+    } else {
+      // Both teams contest, resolve a teamfight at the objective
+      const team1Power = this.calculateTeamPower(team1Contesters, this.state.team1);
+      const team2Power = this.calculateTeamPower(team2Contesters, this.state.team2);
 
-    const winningTeam = winner === 1 ? this.state.team1 : this.state.team2;
-    const losingTeam = winner === 1 ? this.state.team2 : this.state.team1;
-    const winningFighters = winner === 1 ? team1Fighters : team2Fighters;
-    const losingFighters = winner === 1 ? team2Fighters : team1Fighters;
+      const total = team1Power + team2Power;
+      const team1Chance = total > 0 ? team1Power / total : 0.5;
+      winner = Math.random() < team1Chance ? 1 : 2;
 
-    // TEAMFIGHT CASUALTIES: Both teams take heavy damage
+      // Resolve casualties from the objective teamfight
+      this.resolveObjectiveTeamfight(
+        winner,
+        team1Contesters,
+        team2Contesters,
+        team1Power,
+        team2Power,
+        this.state.team1,
+        this.state.team2,
+        events
+      );
+    }
+
+    if (!winner) return undefined; // Should not happen if any team contested
+
+    const winningTeamState = winner === 1 ? this.state.team1 : this.state.team2;
+    const losingTeamState = winner === 1 ? this.state.team2 : this.state.team1;
+
+    // Apply objective effects
+    switch (event) {
+      case 'VOIDGRUB':
+        winningTeamState.grubBuff = true; // Assuming grubBuff is for Voidgrubs
+        effect = '포탑/넥서스 데미지 증가';
+        break;
+      case 'DRAGON':
+        winningTeamState.dragonStacks++;
+        this.eventTracker.lastDragonKillTurn = currentTurn; // Update last kill turn
+        if (winner === 1) {
+          this.eventTracker.team1DragonCount++;
+          if (this.eventTracker.team1DragonCount >= 4) this.eventTracker.team1Has4Dragons = true;
+        } else {
+          this.eventTracker.team2DragonCount++;
+          if (this.eventTracker.team2DragonCount >= 4) this.eventTracker.team2Has4Dragons = true;
+        }
+        effect = `용 버프 ${winningTeamState.dragonStacks}스택 (선수 공격력 증가)`;
+        break;
+      case 'BARON':
+        winningTeamState.baronBuff = true;
+        winningTeamState.baronBuffTurn = currentTurn;
+        this.eventTracker.lastBaronSpawnTurn = currentTurn; // Update last spawn turn
+        effect = '바론 버프 획득 (1턴, 데미지 +20%, 포탑 데미지 +50%)';
+        break;
+      case 'ELDER':
+        winningTeamState.elderBuff = true;
+        winningTeamState.elderBuffTurn = currentTurn;
+        effect = '장로 버프 획득 (1턴, 10% 미만 체력 적 처형)';
+        break;
+      case 'DRAGON_AND_VOIDGRUB': // This case should be handled in processTurn
+        break;
+    }
+
+    events.push({
+      turn: currentTurn,
+      timestamp: Date.now(),
+      type: 'OBJECTIVE',
+      message: `Team ${winner}이(가) ${event} 획득! ${effect}`,
+    });
+
+    // Check for Elder Dragon spawn condition
+    if (this.eventTracker.team1Has4Dragons && this.eventTracker.elderSpawnTurn === 0) {
+      this.eventTracker.elderSpawnTurn = currentTurn + 2;
+      events.push({
+        turn: currentTurn,
+        timestamp: Date.now(),
+        type: 'OBJECTIVE',
+        message: `Team 1이 4용을 획득하여 ${this.eventTracker.elderSpawnTurn}턴에 장로 드래곤이 등장합니다!`,
+      });
+    }
+    if (this.eventTracker.team2Has4Dragons && this.eventTracker.elderSpawnTurn === 0) {
+      this.eventTracker.elderSpawnTurn = currentTurn + 2;
+      events.push({
+        turn: currentTurn,
+        timestamp: Date.now(),
+        type: 'OBJECTIVE',
+        message: `Team 2가 4용을 획득하여 ${this.eventTracker.elderSpawnTurn}턴에 장로 드래곤이 등장합니다!`,
+      });
+    }
+
+    return { event, winner, effect };
+  }
+
+  private isContestingObjective(playerId: number, actions: Map<number, PlayerAction>, objective: ObjectiveEvent): boolean {
+    const action = actions.get(playerId);
+    if (!action) return false;
+
+    switch (objective) {
+      case 'DRAGON':
+        return action === 'CONTEST_DRAGON';
+      case 'VOIDGRUB':
+        return action === 'CONTEST_VOIDGRUB';
+      case 'BARON':
+        return action === 'CONTEST_BARON';
+      case 'ELDER':
+        return action === 'CONTEST_ELDER';
+      case 'DRAGON_AND_VOIDGRUB': // If it's a combined event, check both
+        return action === 'CONTEST_DRAGON' || action === 'CONTEST_VOIDGRUB';
+      default:
+        return false;
+    }
+  }
+
+  private resolveObjectiveTeamfight(
+    winner: 1 | 2,
+    team1Contesters: PlayerState[],
+    team2Contesters: PlayerState[],
+    team1Power: number,
+    team2Power: number,
+    team1State: TeamState,
+    team2State: TeamState,
+    events: MatchLog[]
+  ) {
+    const winningFighters = winner === 1 ? team1Contesters : team2Contesters;
+    const losingFighters = winner === 1 ? team2Contesters : team1Contesters;
+    const winningTeam = winner === 1 ? team1State : team2State;
+    const losingTeam = winner === 1 ? team2State : team1State;
+
     // Power difference determines how devastating the fight is
     const powerRatio = winner === 1
       ? (team2Power / (team1Power || 1))
@@ -1158,7 +1329,6 @@ export class GameEngine {
 
     // Losing team: most/all players die or get heavily damaged
     for (const player of losingFighters) {
-      // Higher chance to die if team was weaker
       const deathChance = 0.5 + (1 - powerRatio) * 0.3; // 50-80% base death chance
       if (Math.random() < deathChance) {
         player.isDead = true;
@@ -1166,7 +1336,6 @@ export class GameEngine {
         player.respawnTurn = this.state.currentTurn + 2;
         player.deaths++;
 
-        // Random enemy gets the kill credit
         const aliveWinners = winningFighters.filter(p => !p.isDead);
         if (aliveWinners.length > 0) {
           const killer = aliveWinners[Math.floor(Math.random() * aliveWinners.length)];
@@ -1176,25 +1345,23 @@ export class GameEngine {
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'KILL',
-            message: `${killer.name}이(가) ${player.name}을(를) 한타에서 처치했습니다! (+${KILL_GOLD}G)`,
+            message: `${killer.name}이(가) ${player.name}을(를) 목표 한타에서 처치했습니다! (+${KILL_GOLD}G)`,
           });
         } else {
           events.push({
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'KILL',
-            message: `${player.name}이(가) 한타에서 사망했습니다!`,
+            message: `${player.name}이(가) 목표 한타에서 사망했습니다!`,
           });
         }
       } else {
-        // Survived but heavily damaged (10-40% HP remaining)
         player.currentHealth = Math.floor(player.maxHealth * (0.1 + Math.random() * 0.3));
       }
     }
 
     // Winning team: some casualties too if it was close
     for (const player of winningFighters) {
-      // Death chance based on how close the fight was
       const deathChance = powerRatio * 0.4; // 0-40% death chance based on enemy power
       if (Math.random() < deathChance) {
         player.isDead = true;
@@ -1202,7 +1369,6 @@ export class GameEngine {
         player.respawnTurn = this.state.currentTurn + 2;
         player.deaths++;
 
-        // Random enemy gets the kill credit
         const aliveLosers = losingFighters.filter(p => !p.isDead);
         if (aliveLosers.length > 0) {
           const killer = aliveLosers[Math.floor(Math.random() * aliveLosers.length)];
@@ -1212,18 +1378,17 @@ export class GameEngine {
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'KILL',
-            message: `${killer.name}이(가) ${player.name}을(를) 한타에서 처치했습니다! (+${KILL_GOLD}G)`,
+            message: `${killer.name}이(가) ${player.name}을(를) 목표 한타에서 처치했습니다! (+${KILL_GOLD}G)`,
           });
         } else {
           events.push({
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'KILL',
-            message: `${player.name}이(가) 한타에서 사망했습니다!`,
+            message: `${player.name}이(가) 목표 한타에서 사망했습니다!`,
           });
         }
       } else {
-        // Survivors take some damage (30-80% HP remaining)
         const remainingHpPercent = 0.3 + Math.random() * 0.5;
         player.currentHealth = Math.min(
           player.currentHealth,
@@ -1234,82 +1399,6 @@ export class GameEngine {
 
     // Give gold to winners
     this.giveTeamGold(winningTeam, EVENT_WIN_GOLD);
-
-    let effect = '';
-
-    switch (event) {
-      case 'GRUB':
-        winningTeam.grubBuff = true;
-        effect = '포탑/넥서스 데미지 증가';
-        break;
-      case 'DRAGON':
-        winningTeam.dragonStacks++;
-        this.eventTracker.dragonCount++;
-        effect = `용 버프 ${winningTeam.dragonStacks}스택 (선수 공격력 증가)`;
-        break;
-      case 'HERALD':
-        if (Math.random() < 0.7) {
-          const tower = losingTeam.towers.find(t => !t.isDestroyed);
-          if (tower) {
-            tower.isDestroyed = true;
-            tower.health = 0;
-            effect = `${tower.lane} ${tower.position}차 포탑 파괴`;
-          } else {
-            effect = '전령 획득 (파괴할 포탑 없음)';
-          }
-        } else {
-          effect = '전령 실패';
-        }
-        break;
-      case 'BARON':
-        winningTeam.baronBuff = true;
-        winningTeam.baronBuffTurn = this.state.currentTurn; // Track when buff was obtained
-        this.eventTracker.lastBaronTurn = this.state.currentTurn; // Track for cooldown
-        if (Math.random() < 0.5) {
-          const tower = losingTeam.towers.find(t => !t.isDestroyed);
-          if (tower) {
-            tower.isDestroyed = true;
-            tower.health = 0;
-            effect = `바론 버프 (1턴) + ${tower.lane} ${tower.position}차 포탑 파괴`;
-          } else {
-            effect = '바론 버프 (1턴, 데미지 +20%)';
-          }
-        } else {
-          effect = '바론 버프 (1턴, 데미지 +20%)';
-        }
-        break;
-      case 'ELDER':
-        winningTeam.elderBuff = true;
-        winningTeam.elderBuffTurn = this.state.currentTurn; // Track when buff was obtained
-        this.eventTracker.lastElderTurn = this.state.currentTurn; // Track for cooldown
-        effect = '장로 버프 획득 (1턴, 10% 미만 체력 적 처형)';
-        break;
-    }
-
-    events.push({
-      turn: this.state.currentTurn,
-      timestamp: Date.now(),
-      type: 'OBJECTIVE',
-      message: `Team ${winner}이(가) ${event} 획득! ${effect}`,
-    });
-
-    return { event, winner, effect };
-  }
-
-  private calculateObjectivePower(team: TeamState, actions: Map<number, PlayerAction>): number {
-    let power = 0;
-
-    for (const player of team.players) {
-      if (player.isDead) continue;
-
-      const action = actions.get(player.oderId);
-      // Players not recalling contribute to objective
-      if (action !== 'RECALL') {
-        power += player.attack + player.currentHealth / 10;
-      }
-    }
-
-    return power;
   }
 
   // Process skill usage for a team

@@ -25,21 +25,24 @@ const BASE_ATTACK_MULTIPLIER = 1;
 const ELDER_EXECUTE_THRESHOLD = 0.1; // Execute enemies below 10% HP
 const TOWER_DAMAGE_MULTIPLIER = 2.5; // Increased tower damage multiplier
 
-// Event schedule
-const EVENT_SCHEDULE: Record<number, ObjectiveEvent> = {
-  3: 'GRUB',
-  5: 'DRAGON',
-  7: 'HERALD',
-  9: 'BARON',
-  10: 'DRAGON',
-  12: 'ELDER',
-};
+// Event tracking
+interface EventTracker {
+  dragonCount: number; // Max 2 dragons between turns 7-15
+  lastBaronTurn: number; // Track when baron last appeared
+  lastElderTurn: number; // Track when elder last appeared
+}
 
 export class GameEngine {
   private state: MatchState;
+  private eventTracker: EventTracker;
 
   constructor(matchId: string, matchType: 'RANKED' | 'NORMAL', team1Data: any, team2Data: any) {
     this.state = this.initializeMatch(matchId, matchType, team1Data, team2Data);
+    this.eventTracker = {
+      dragonCount: 0,
+      lastBaronTurn: 0,
+      lastElderTurn: 0,
+    };
   }
 
   private initializeMatch(
@@ -929,19 +932,33 @@ export class GameEngine {
   }
 
   private getEventForTurn(turn: number): ObjectiveEvent | undefined {
-    // Check scheduled events
-    if (EVENT_SCHEDULE[turn]) {
-      return EVENT_SCHEDULE[turn];
+    // Turn 5: Fixed GRUB event
+    if (turn === 5) {
+      return 'GRUB';
     }
 
-    // Baron repeats every 3 turns after turn 9
-    if (turn > 9 && (turn - 9) % 3 === 0) {
-      return 'BARON';
+    // Turns 7-15: Random DRAGON events (max 2)
+    if (turn >= 7 && turn <= 15 && this.eventTracker.dragonCount < 2) {
+      // 40% chance for dragon each eligible turn
+      if (Math.random() < 0.4) {
+        return 'DRAGON';
+      }
     }
 
-    // Elder repeats every 3 turns after turn 12
-    if (turn > 12 && (turn - 12) % 3 === 0) {
-      return 'ELDER';
+    // Turn 13+: Random BARON event (must wait 2 turns after last baron)
+    if (turn >= 13 && (turn - this.eventTracker.lastBaronTurn) >= 3) {
+      // 35% chance for baron
+      if (Math.random() < 0.35) {
+        return 'BARON';
+      }
+    }
+
+    // Turn 14+: Random ELDER event (must wait 2 turns after last elder)
+    if (turn >= 14 && (turn - this.eventTracker.lastElderTurn) >= 3) {
+      // 30% chance for elder
+      if (Math.random() < 0.3) {
+        return 'ELDER';
+      }
     }
 
     return undefined;
@@ -1085,6 +1102,7 @@ export class GameEngine {
         break;
       case 'DRAGON':
         winningTeam.dragonStacks++;
+        this.eventTracker.dragonCount++;
         effect = `용 버프 ${winningTeam.dragonStacks}스택 (선수 공격력 증가)`;
         break;
       case 'HERALD':
@@ -1104,6 +1122,7 @@ export class GameEngine {
       case 'BARON':
         winningTeam.baronBuff = true;
         winningTeam.baronBuffTurn = this.state.currentTurn; // Track when buff was obtained
+        this.eventTracker.lastBaronTurn = this.state.currentTurn; // Track for cooldown
         if (Math.random() < 0.5) {
           const tower = losingTeam.towers.find(t => !t.isDestroyed);
           if (tower) {
@@ -1120,6 +1139,7 @@ export class GameEngine {
       case 'ELDER':
         winningTeam.elderBuff = true;
         winningTeam.elderBuffTurn = this.state.currentTurn; // Track when buff was obtained
+        this.eventTracker.lastElderTurn = this.state.currentTurn; // Track for cooldown
         effect = '장로 버프 획득 (1턴, 10% 미만 체력 적 처형)';
         break;
     }

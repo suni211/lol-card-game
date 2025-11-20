@@ -164,9 +164,15 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         p.position,
         p.overall,
         p.region,
-        p.tier,
         p.season,
-        p.salary
+        p.salary,
+        CASE
+          WHEN p.season = 'ICON' THEN 'ICON'
+          WHEN p.overall <= 80 THEN 'COMMON'
+          WHEN p.overall <= 90 THEN 'RARE'
+          WHEN p.overall <= 100 THEN 'EPIC'
+          ELSE 'LEGENDARY'
+        END as tier
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
       WHERE uc.user_id = ?

@@ -73,9 +73,9 @@ async function getOrCreatePlayerPrice(connection: any, playerId: number): Promis
 
   // 시세 정보 자동 생성
   await connection.query(
-    `INSERT INTO player_market_prices (player_id, price_floor, price_ceiling, current_price, total_volume)
-     VALUES (?, ?, ?, ?, 0)`,
-    [playerId, autoPrice.floor, autoPrice.ceiling, autoPrice.current]
+    `INSERT INTO player_market_prices (player_id, price_floor, price_ceiling, current_price, base_price, total_volume)
+     VALUES (?, ?, ?, ?, ?, 0)`,
+    [playerId, autoPrice.floor, autoPrice.ceiling, autoPrice.current, autoPrice.current]
   );
 
   return {

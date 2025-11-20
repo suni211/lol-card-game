@@ -9,6 +9,7 @@ import { spectatorCounts } from '../routes/spectator';
 // Active matches - exported for spectator
 export const activeMatches = new Map<string, GameEngine>();
 const playerToMatch = new Map<number, string>(); // oderId -> matchId
+const userIdToSocketId = new Map<number, string>(); // oderId -> socketId
 const matchTimers = new Map<string, NodeJS.Timeout>();
 const spectatorSockets = new Map<string, Set<string>>(); // matchId -> Set of socket IDs
 
@@ -41,8 +42,13 @@ const rankedQueue: QueuePlayer[] = [];
 const normalQueue: QueuePlayer[] = [];
 const banPickStates = new Map<string, BanPickState>();
 
+function getSocketIdByUserId(userId: number): string | undefined {
+  return userIdToSocketId.get(userId);
+}
+
 export function setupMobaMatch(io: Server, socket: Socket, user: any) {
   const oderId = user.id;
+  userIdToSocketId.set(oderId, socket.id);
 
   // Join match queue
   socket.on('moba_queue_join', async (data: { matchType: 'RANKED' | 'NORMAL'; deckSlot: number }) => {
@@ -78,6 +84,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
       }
 
       queue.push(queuePlayer);
+      userIdToSocketId.set(oderId, socket.id);
 
       socket.emit('moba_queue_joined', { position: queue.length, matchType: data.matchType });
 
@@ -155,7 +162,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
       });
 
       // Process rewards
-      processMatchRewards(finalState);
+      processMatchRewards(io, finalState);
 
       // Cleanup
       cleanupMatch(data.matchId);
@@ -358,7 +365,13 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
 
   // Handle disconnect
   socket.on('disconnect', async () => {
-    removeFromQueue(oderId);
+    const disconnectedUserId = [...userIdToSocketId.entries()]
+        .find(([_, socketId]) => socketId === socket.id)?.[0];
+    
+    if (disconnectedUserId) {
+        removeFromQueue(disconnectedUserId);
+        userIdToSocketId.delete(disconnectedUserId);
+    }
 
     // Remove from any spectator rooms
     for (const [matchId, sockets] of spectatorSockets.entries()) {
@@ -375,7 +388,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
     }
 
     // Handle in-match disconnect - player who disconnects loses
-    const matchId = playerToMatch.get(oderId);
+    const matchId = disconnectedUserId ? playerToMatch.get(disconnectedUserId) : undefined;
     if (matchId) {
       const engine = activeMatches.get(matchId);
       if (engine) {
@@ -383,7 +396,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
 
         // Only process if match is still in progress
         if (state.status === 'IN_PROGRESS') {
-          const teamNumber = state.team1.oderId === oderId ? 1 : 2;
+          const teamNumber = state.team1.oderId === disconnectedUserId ? 1 : 2;
           const winner = teamNumber === 1 ? 2 : 1;
 
           // Update state to show disconnected team lost
@@ -401,7 +414,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
           });
 
           // Process rewards
-          await processMatchRewards(state);
+          await processMatchRewards(io, state);
 
           // Cleanup
           cleanupMatch(matchId);
@@ -793,7 +806,7 @@ async function processTurn(io: Server, matchId: string) {
       });
 
       // Process rewards
-      await processMatchRewards(finalState);
+      await processMatchRewards(io, finalState);
 
       // Cleanup
       cleanupMatch(matchId);
@@ -806,7 +819,7 @@ async function processTurn(io: Server, matchId: string) {
   }
 }
 
-async function processMatchRewards(state: MatchState) {
+async function processMatchRewards(io: Server, state: MatchState) {
   const winner = state.status === 'TEAM1_WINS' ? 1 : 2;
   const winnerId = winner === 1 ? state.team1.oderId : state.team2.oderId;
   const loserId = winner === 1 ? state.team2.oderId : state.team1.oderId;
@@ -840,6 +853,30 @@ async function processMatchRewards(state: MatchState) {
     WHERE id = ?`,
     [loserPoints, ratingChange, loserId]
   );
+
+  // --- START: Notify users of their updated points ---
+  try {
+    const [updatedUsers]: any = await pool.query(
+      'SELECT id, username, points, rating, level, exp, guild_id, guild_tag FROM users WHERE id IN (?, ?)',
+      [winnerId, loserId]
+    );
+
+    const winnerData = updatedUsers.find((u: any) => u.id === winnerId);
+    const loserData = updatedUsers.find((u: any) => u.id === loserId);
+
+    const winnerSocketId = getSocketIdByUserId(winnerId);
+    const loserSocketId = getSocketIdByUserId(loserId);
+
+    if (winnerData && winnerSocketId) {
+      io.to(winnerSocketId).emit('user_update', winnerData);
+    }
+    if (loserData && loserSocketId) {
+      io.to(loserSocketId).emit('user_update', loserData);
+    }
+  } catch (error) {
+    console.error('Error fetching or emitting user updates after match:', error);
+  }
+  // --- END: Notify users of their updated points ---
 
   // Update stats
   await pool.query(
@@ -933,6 +970,7 @@ function removeFromQueue(oderId: number) {
   if (normalIndex !== -1) {
     normalQueue.splice(normalIndex, 1);
   }
+  userIdToSocketId.delete(oderId);
 }
 
 function removeSpectator(socket: Socket, matchId: string) {
@@ -961,6 +999,8 @@ function cleanupMatch(matchId: string) {
     const state = engine.getState();
     playerToMatch.delete(state.team1.oderId);
     playerToMatch.delete(state.team2.oderId);
+    userIdToSocketId.delete(state.team1.oderId);
+    userIdToSocketId.delete(state.team2.oderId);
   }
 
   activeMatches.delete(matchId);

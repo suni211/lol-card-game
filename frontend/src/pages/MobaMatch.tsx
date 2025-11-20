@@ -608,8 +608,8 @@ export default function MobaMatch() {
           </div>
           <p className="text-xl text-white mb-4">
             {isWinner
-              ? `+${matchType === 'RANKED' ? '5,000' : '1,500'}P`
-              : `+${matchType === 'RANKED' ? '1,000' : '300'}P`}
+              ? `+${matchType === 'RANKED' ? '15,000' : '1,500'}P`
+              : `+${matchType === 'RANKED' ? '10,000' : '300'}P`}
           </p>
           {matchType === 'RANKED' && (
             <p className="text-gray-400 mb-6">

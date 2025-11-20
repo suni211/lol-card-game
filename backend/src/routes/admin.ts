@@ -267,12 +267,12 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
   try {
     await connection.beginTransaction();
 
-    const { username, playerName, level, reason } = req.body;
+    const { username, playerId, level, reason } = req.body;
 
-    if (!username || !playerName) {
+    if (!username || !playerId) {
       return res.status(400).json({
         success: false,
-        error: '유저명과 선수명을 입력해주세요.',
+        error: '유저명과 선수를 선택해주세요.',
       });
     }
 
@@ -301,64 +301,25 @@ router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthReque
 
     const targetUser = users[0];
 
-    // 선수 찾기 - "ICON Uzi" 형태 지원
-    let searchName = playerName.trim();
-    let searchTier = null;
-
-    // "TIER NAME" 형태로 입력된 경우 분리
-    const tierPattern = /^(ICON|LEGENDARY|EPIC|RARE|COMMON)\s+(.+)$/i;
-    const tierMatch = searchName.match(tierPattern);
-
-    if (tierMatch) {
-      searchTier = tierMatch[1].toUpperCase();
-      searchName = tierMatch[2];
-    }
-
-    // 선수 검색 (정확히 일치하는 이름만)
-    let players: any;
-    if (searchTier) {
-      // Tier별 overall 범위 계산
-      let minOvr = 0, maxOvr = 120;
-      if (searchTier === 'ICON') { minOvr = 115; maxOvr = 120; }
-      else if (searchTier === 'LEGENDARY') { minOvr = 101; maxOvr = 114; }
-      else if (searchTier === 'EPIC') { minOvr = 91; maxOvr = 100; }
-      else if (searchTier === 'RARE') { minOvr = 81; maxOvr = 90; }
-      else if (searchTier === 'COMMON') { minOvr = 1; maxOvr = 80; }
-
-      [players] = await connection.query(
-        `SELECT id, name, overall, season,
-                CASE
-                  WHEN season = 'ICON' THEN 'ICON'
-                  WHEN overall <= 80 THEN 'COMMON'
-                  WHEN overall <= 90 THEN 'RARE'
-                  WHEN overall <= 100 THEN 'EPIC'
-                  ELSE 'LEGENDARY'
-                END as tier
-         FROM players WHERE name = ? AND overall BETWEEN ? AND ?`,
-        [searchName, minOvr, maxOvr]
-      );
-    } else {
-      [players] = await connection.query(
-        `SELECT id, name, overall, season,
-                CASE
-                  WHEN season = 'ICON' THEN 'ICON'
-                  WHEN overall <= 80 THEN 'COMMON'
-                  WHEN overall <= 90 THEN 'RARE'
-                  WHEN overall <= 100 THEN 'EPIC'
-                  ELSE 'LEGENDARY'
-                END as tier
-         FROM players WHERE name = ?`,
-        [searchName]
-      );
-    }
+    // 선수 ID로 직접 찾기
+    const [players]: any = await connection.query(
+      `SELECT id, name, overall, season,
+              CASE
+                WHEN season = 'ICON' THEN 'ICON'
+                WHEN overall <= 80 THEN 'COMMON'
+                WHEN overall <= 90 THEN 'RARE'
+                WHEN overall <= 100 THEN 'EPIC'
+                ELSE 'LEGENDARY'
+              END as tier
+       FROM players WHERE id = ?`,
+      [playerId]
+    );
 
     if (players.length === 0) {
       await connection.rollback();
       return res.status(404).json({
         success: false,
-        error: searchTier
-          ? `${searchTier} 등급의 "${searchName}" 선수를 찾을 수 없습니다.`
-          : `"${searchName}" 선수를 찾을 수 없습니다.`,
+        error: '선수를 찾을 수 없습니다.',
       });
     }
 

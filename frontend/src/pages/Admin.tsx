@@ -33,6 +33,7 @@ export default function Admin() {
   const [points, setPoints] = useState('');
   const [reason, setReason] = useState('');
   const [playerName, setPlayerName] = useState('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [enhancementLevel, setEnhancementLevel] = useState('0');
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AdminLog[]>([]);
@@ -175,12 +176,13 @@ export default function Admin() {
 
   const selectPlayer = (player: Player) => {
     setPlayerName(player.name);
+    setSelectedPlayerId(player.id);
     setShowSuggestions(false);
   };
 
   const handleGiveCard = async () => {
-    if (!username || !playerName) {
-      toast.error('유저명과 선수명을 입력해주세요.');
+    if (!username || !selectedPlayerId) {
+      toast.error('유저명을 입력하고 선수를 선택해주세요.');
       return;
     }
 
@@ -194,7 +196,7 @@ export default function Admin() {
       setLoading(true);
       const response = await axios.post(
         `${API_URL}/admin/give-card`,
-        { username, playerName, level, reason },
+        { username, playerId: selectedPlayerId, level, reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -202,6 +204,7 @@ export default function Admin() {
         toast.success(response.data.message);
         setUsername('');
         setPlayerName('');
+        setSelectedPlayerId(null);
         setEnhancementLevel('0');
         setReason('');
         setPlayerSuggestions([]);

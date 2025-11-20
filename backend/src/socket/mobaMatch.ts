@@ -725,6 +725,7 @@ function startTurnTimer(io: Server, matchId: string) {
   const engine = activeMatches.get(matchId);
   const upcomingEvent = engine?.getUpcomingEvent();
   const currentTurn = engine?.getState().currentTurn;
+  console.log(`[startTurnTimer] Match ${matchId}: Starting turn timer for turn ${currentTurn || 'N/A'}`);
 
   // Notify players of turn start
   io.to(matchId).emit('moba_turn_start', {
@@ -763,7 +764,10 @@ async function processTurn(io: Server, matchId: string) {
   }
 
   // Process the turn
+  console.log(`[processTurn] Match ${matchId}: Processing turn ${engine.getState().currentTurn}`);
   const result = engine.processTurn();
+
+  console.log(`[processTurn] Match ${matchId}: Turn ${engine.getState().currentTurn} processed. Game end: ${!!result.gameEnd}`);
 
   // Send turn result to all in room
   io.to(matchId).emit('moba_turn_result', result);

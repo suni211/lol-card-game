@@ -43,6 +43,7 @@ export default function Navbar() {
 
   const navStructure: NavStructureItem[] = [
     { path: '/', label: '홈' },
+    { path: '/how-to-play', label: '게임 가이드' },
     {
       label: '카드',
       items: [

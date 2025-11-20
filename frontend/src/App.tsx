@@ -60,6 +60,7 @@ import Agent from './pages/Agent';
 import Lottery from './pages/Lottery';
 import MobaMatch from './pages/MobaMatch';
 import MatchSelect from './pages/MatchSelect';
+import HowToPlay from './pages/HowToPlay';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -294,6 +295,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/notices" element={<Notices />} />
           <Route path="/ranking" element={<Ranking />} />
+          <Route path="/how-to-play" element={<HowToPlay />} />
 
           {/* Auth Routes */}
           <Route

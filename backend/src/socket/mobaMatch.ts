@@ -253,6 +253,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
       teamNumber,
     });
 
+    banPickState.turn++; // Increment turn here
     advanceBanPick(io, data.matchId, banPickState);
   });
 
@@ -297,6 +298,7 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
       teamNumber,
     });
 
+    banPickState.turn++; // Increment turn here
     advanceBanPick(io, data.matchId, banPickState);
   });
 
@@ -643,8 +645,6 @@ function advanceBanPick(io: Server, matchId: string, banPickState: BanPickState)
     banPickState.turn++;
     advanceBanPick(io, matchId, banPickState);
   }, BAN_PICK_TIME);
-
-  banPickState.turn++;
 }
 
 function finishBanPick(io: Server, matchId: string, banPickState: BanPickState) {

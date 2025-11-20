@@ -25,6 +25,8 @@ import type {
   Item,
   PlayerAction,
   Lane,
+  Champion,
+  BanPickPhaseData,
 } from '../types/moba';
 import {
   POSITION_ACTIONS,
@@ -41,7 +43,7 @@ export default function MobaMatch() {
   const deckSlot = parseInt(searchParams.get('deck') || '1');
 
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [status, setStatus] = useState<'connecting' | 'queuing' | 'matched' | 'playing' | 'ended'>('connecting');
+  const [status, setStatus] = useState<'connecting' | 'queuing' | 'matched' | 'ban_pick' | 'playing' | 'ended'>('connecting');
   const [matchState, setMatchState] = useState<MatchState | null>(null);
   const [teamNumber, setTeamNumber] = useState<1 | 2>(1);
   const [actions, setActions] = useState<Map<number, TurnAction>>(new Map());
@@ -62,6 +64,19 @@ export default function MobaMatch() {
   const [gameEndPopup, setGameEndPopup] = useState<{
     winner: 1 | 2;
     reason: string;
+  } | null>(null);
+
+  // Ban/Pick state
+  const [champions, setChampions] = useState<Champion[]>([]);
+  const [banPickPhase, setBanPickPhase] = useState<BanPickPhaseData | null>(null);
+  const [selectedChampion, setSelectedChampion] = useState<number | null>(null);
+  const [myPicks, setMyPicks] = useState<number[]>([]);
+  const [enemyPicks, setEnemyPicks] = useState<number[]>([]);
+
+  // Skill usage state (for future target selection feature)
+  const [, setSkillTargetSelection] = useState<{
+    playerId: number;
+    needsTarget: boolean;
   } | null>(null);
 
   // Connect to socket
@@ -92,8 +107,49 @@ export default function MobaMatch() {
       setMatchState(data.state);
       setTeamNumber(data.teamNumber);
       setOpponentName(data.opponent?.username || '상대방');
+
+      // Check if ban/pick phase
+      if (data.banPickPhase) {
+        setChampions(data.champions || []);
+        setStatus('ban_pick');
+        toast.success('매치 시작! 챔피언을 선택하세요.');
+      } else {
+        setStatus('playing');
+        toast.success('매치 시작!');
+      }
+    });
+
+    // Ban/Pick events
+    newSocket.on('moba_ban_pick_phase', (data: BanPickPhaseData) => {
+      console.log('[MobaMatch] Ban/Pick phase:', data);
+      setBanPickPhase(data);
+      setTimeLeft(Math.floor(data.timeLimit / 1000));
+
+      if (teamNumber === 1) {
+        setMyPicks(data.team1Picks);
+        setEnemyPicks(data.team2Picks);
+      } else {
+        setMyPicks(data.team2Picks);
+        setEnemyPicks(data.team1Picks);
+      }
+    });
+
+    newSocket.on('moba_champion_picked', (data) => {
+      console.log('[MobaMatch] Champion picked:', data);
+      toast(`${data.championName} 선택됨`, { icon: '🎮' });
+      setSelectedChampion(null);
+    });
+
+    newSocket.on('moba_ban_pick_complete', (data) => {
+      console.log('[MobaMatch] Ban/Pick complete:', data);
+      setMatchState(data.state);
+      setBanPickPhase(null);
       setStatus('playing');
-      toast.success('매치 시작!');
+      toast.success('챔피언 선택 완료! 게임을 시작합니다.');
+    });
+
+    newSocket.on('moba_champions_list', (data) => {
+      setChampions(data.champions);
     });
 
     newSocket.on('moba_turn_start', (data) => {
@@ -265,6 +321,51 @@ export default function MobaMatch() {
     setShowSurrender(false);
   }, [socket, matchState]);
 
+  // Pick champion during ban/pick phase
+  const pickChampion = useCallback((championId: number) => {
+    if (!socket || !matchState) return;
+    socket.emit('moba_pick_champion', {
+      matchId: matchState.matchId,
+      championId,
+      position: 'AUTO', // Position will be auto-assigned
+    });
+  }, [socket, matchState]);
+
+  // Use skill
+  const useSkill = useCallback((player: PlayerState, targetId?: number) => {
+    setActions(prev => {
+      const newActions = new Map(prev);
+      const existing = newActions.get(player.oderId) || {
+        oderId: player.oderId,
+        action: 'FIGHT' as PlayerAction,
+      };
+      newActions.set(player.oderId, {
+        ...existing,
+        useSkill: true,
+        skillTargetId: targetId,
+      });
+      return newActions;
+    });
+    setSkillTargetSelection(null);
+    toast.success(`${player.name} 스킬 사용 예약됨`);
+  }, []);
+
+  // Cancel skill
+  const cancelSkill = useCallback((playerId: number) => {
+    setActions(prev => {
+      const newActions = new Map(prev);
+      const existing = newActions.get(playerId);
+      if (existing) {
+        newActions.set(playerId, {
+          ...existing,
+          useSkill: false,
+          skillTargetId: undefined,
+        });
+      }
+      return newActions;
+    });
+  }, []);
+
   // Get my team
   const myTeam = teamNumber === 1 ? matchState?.team1 : matchState?.team2;
   const enemyTeam = teamNumber === 1 ? matchState?.team2 : matchState?.team1;
@@ -306,6 +407,189 @@ export default function MobaMatch() {
             취소
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Ban/Pick Phase UI
+  if (status === 'ban_pick' && banPickPhase) {
+    const isMyTurn = banPickPhase.currentTeam === teamNumber;
+    const allPicked = [...banPickPhase.team1Picks, ...banPickPhase.team2Picks, ...banPickPhase.bannedChampions];
+
+    return (
+      <div className="min-h-screen bg-gray-900 p-4">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">챔피언 선택</h1>
+          <div className="flex items-center justify-center gap-4">
+            <span className={`px-4 py-2 rounded-lg font-bold ${
+              isMyTurn ? 'bg-green-600 text-white animate-pulse' : 'bg-gray-700 text-gray-400'
+            }`}>
+              {isMyTurn ? '내 차례!' : '상대방 차례'}
+            </span>
+            <span className="text-white">
+              <Clock className="inline w-5 h-5 mr-1" />
+              {timeLeft}초
+            </span>
+          </div>
+        </div>
+
+        {/* Pick Status */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* My Team Picks */}
+          <div className="bg-blue-900/30 rounded-lg p-4">
+            <h3 className="text-blue-400 font-bold mb-3">내 팀 ({myPicks.length}/5)</h3>
+            <div className="flex gap-2 flex-wrap">
+              {[0, 1, 2, 3, 4].map(i => {
+                const championId = myPicks[i];
+                const champion = champions.find(c => c.id === championId);
+                return (
+                  <div
+                    key={i}
+                    className={`w-16 h-16 rounded-lg flex items-center justify-center ${
+                      champion ? 'bg-blue-600' : 'bg-gray-700 border-2 border-dashed border-gray-500'
+                    }`}
+                  >
+                    {champion ? (
+                      <div className="text-center">
+                        <div className="text-xs text-white font-bold truncate w-14">
+                          {champion.name}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-2xl">?</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Enemy Team Picks */}
+          <div className="bg-red-900/30 rounded-lg p-4">
+            <h3 className="text-red-400 font-bold mb-3">{opponentName} ({enemyPicks.length}/5)</h3>
+            <div className="flex gap-2 flex-wrap">
+              {[0, 1, 2, 3, 4].map(i => {
+                const championId = enemyPicks[i];
+                const champion = champions.find(c => c.id === championId);
+                return (
+                  <div
+                    key={i}
+                    className={`w-16 h-16 rounded-lg flex items-center justify-center ${
+                      champion ? 'bg-red-600' : 'bg-gray-700 border-2 border-dashed border-gray-500'
+                    }`}
+                  >
+                    {champion ? (
+                      <div className="text-center">
+                        <div className="text-xs text-white font-bold truncate w-14">
+                          {champion.name}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-2xl">?</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Champion Grid */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <h3 className="text-white font-bold mb-4">챔피언 목록</h3>
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-[400px] overflow-y-auto">
+            {champions.map(champion => {
+              const isPicked = allPicked.includes(champion.id);
+              const isSelected = selectedChampion === champion.id;
+
+              return (
+                <motion.div
+                  key={champion.id}
+                  whileHover={!isPicked && isMyTurn ? { scale: 1.05 } : {}}
+                  whileTap={!isPicked && isMyTurn ? { scale: 0.95 } : {}}
+                  onClick={() => {
+                    if (!isPicked && isMyTurn) {
+                      setSelectedChampion(champion.id);
+                    }
+                  }}
+                  className={`p-2 rounded-lg cursor-pointer transition-all ${
+                    isPicked
+                      ? 'bg-gray-700 opacity-30 cursor-not-allowed'
+                      : isSelected
+                      ? 'bg-primary-600 ring-2 ring-primary-400'
+                      : isMyTurn
+                      ? 'bg-gray-700 hover:bg-gray-600'
+                      : 'bg-gray-700 opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="w-10 h-10 mx-auto mb-1 rounded-full bg-gray-600 flex items-center justify-center">
+                      <span className="text-lg">
+                        {champion.scalingType === 'AD' ? '⚔️' : '✨'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-white font-bold truncate">
+                      {champion.name}
+                    </div>
+                    <div className="text-[10px] text-gray-400 truncate">
+                      {champion.skillName}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected Champion Info & Confirm */}
+        {selectedChampion && isMyTurn && (
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4"
+          >
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <div>
+                {(() => {
+                  const champion = champions.find(c => c.id === selectedChampion);
+                  if (!champion) return null;
+                  return (
+                    <div>
+                      <h4 className="text-xl font-bold text-white">{champion.name}</h4>
+                      <p className="text-sm text-primary-400">{champion.skillName}</p>
+                      <p className="text-xs text-gray-400">{champion.skillDescription}</p>
+                      <div className="flex gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          champion.scalingType === 'AD' ? 'bg-red-600' : 'bg-purple-600'
+                        }`}>
+                          {champion.scalingType}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-gray-600">
+                          쿨타임: {champion.cooldown}턴
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedChampion(null)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => pickChampion(selectedChampion)}
+                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-bold"
+                >
+                  선택 확정
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     );
   }
@@ -562,7 +846,11 @@ export default function MobaMatch() {
                 action={actions.get(player.oderId)?.action}
                 onActionChange={(action) => setPlayerAction(player.oderId, action)}
                 onOpenShop={() => openShop(player)}
+                onUseSkill={useSkill}
+                onCancelSkill={cancelSkill}
                 allItems={items}
+                champions={champions}
+                skillQueued={actions.get(player.oderId)?.useSkill}
               />
             ))}
           </div>
@@ -691,6 +979,7 @@ export default function MobaMatch() {
                 player={player}
                 isMyTeam={false}
                 allItems={items}
+                champions={champions}
               />
             ))}
           </div>
@@ -809,17 +1098,37 @@ function PlayerCard({
   action,
   onActionChange,
   onOpenShop,
+  onUseSkill,
+  onCancelSkill,
   allItems,
+  champions,
+  skillQueued,
 }: {
   player: PlayerState;
   isMyTeam: boolean;
   action?: PlayerAction;
   onActionChange?: (action: PlayerAction) => void;
   onOpenShop?: () => void;
+  onUseSkill?: (player: PlayerState, targetId?: number) => void;
+  onCancelSkill?: (playerId: number) => void;
   allItems?: Item[];
+  champions?: Champion[];
+  skillQueued?: boolean;
 }) {
   const healthPercent = (player.currentHealth / player.maxHealth) * 100;
   const actions = POSITION_ACTIONS[player.position];
+
+  // Get champion info
+  const champion = player.championId && champions
+    ? champions.find(c => c.id === player.championId)
+    : null;
+
+  // Check if skill is ready (used in skill display logic)
+  const _skillReady = player.skill &&
+    player.skill.skillLevel > 0 &&
+    player.skill.currentCooldown === 0 &&
+    !player.skill.hasBeenUsed;
+  void _skillReady; // Mark as used
 
   return (
     <div
@@ -845,7 +1154,12 @@ function PlayerCard({
             </div>
           </div>
           <div>
-            <span className="text-xs text-gray-400">{player.position}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-400">{player.position}</span>
+              {champion && (
+                <span className="text-xs text-primary-400">({champion.name})</span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-white font-bold text-sm">{player.name}</span>
               <span className="text-xs text-green-400">{player.kills}/{player.deaths}/{player.assists}</span>
@@ -937,6 +1251,52 @@ function PlayerCard({
         </div>
       )}
 
+      {/* Skill Info */}
+      {champion && player.skill && (
+        <div className="mb-2 p-2 bg-gray-800 rounded">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-bold text-primary-400">{champion.skillName}</span>
+                <span className={`text-[10px] px-1 rounded ${
+                  champion.scalingType === 'AD' ? 'bg-red-600' : 'bg-purple-600'
+                }`}>
+                  {champion.scalingType}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400 truncate">{champion.skillDescription}</p>
+            </div>
+            {isMyTeam && !player.isDead && onUseSkill && (
+              <div className="ml-2">
+                {player.skill.skillLevel === 0 ? (
+                  <span className="text-xs text-gray-500">Lv6 해금</span>
+                ) : player.skill.currentCooldown > 0 ? (
+                  <span className="text-xs text-orange-400">
+                    {player.skill.currentCooldown}턴
+                  </span>
+                ) : player.skill.hasBeenUsed ? (
+                  <span className="text-xs text-gray-500">사용됨</span>
+                ) : skillQueued ? (
+                  <button
+                    onClick={() => onCancelSkill?.(player.oderId)}
+                    className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    취소
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onUseSkill(player)}
+                    className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 animate-pulse"
+                  >
+                    사용
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Action Selection (only for my team) */}
       {isMyTeam && !player.isDead && onActionChange && actions && (
         <div className="flex flex-wrap gap-1">
@@ -953,6 +1313,13 @@ function PlayerCard({
               {label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Recalling indicator */}
+      {player.isRecalling && (
+        <div className="mt-2 text-center text-yellow-400 text-xs animate-pulse">
+          귀환 중...
         </div>
       )}
 

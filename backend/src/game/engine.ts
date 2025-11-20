@@ -66,6 +66,7 @@ export class GameEngine {
       team1Ready: false,
       team2Ready: false,
       status: 'IN_PROGRESS',
+      bannedChampions: [],
       logs: [],
     };
   }

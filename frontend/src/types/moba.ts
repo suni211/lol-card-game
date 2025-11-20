@@ -14,7 +14,28 @@ export type PlayerAction =
   | 'FARM'
   | 'GANK_TOP'
   | 'GANK_MID'
-  | 'GANK_BOT';
+  | 'GANK_BOT'
+  | 'USE_SKILL';
+
+export type ScalingType = 'AD' | 'AP';
+export type ChampionClass = 'TANK' | 'BRUISER' | 'ASSASSIN' | 'DEALER' | 'RANGED_DEALER' | 'RANGED_AP' | 'SUPPORT';
+
+export interface Champion {
+  id: number;
+  name: string;
+  skillName: string;
+  skillDescription: string;
+  cooldown: number;
+  scalingType: ScalingType;
+  championClass: ChampionClass;
+}
+
+export interface SkillState {
+  championId: number;
+  currentCooldown: number;
+  hasBeenUsed: boolean;
+  skillLevel: 0 | 1 | 2 | 3;
+}
 
 export interface PlayerState {
   oderId: number;
@@ -25,9 +46,13 @@ export interface PlayerState {
   currentHealth: number;
   attack: number;
   defense: number;
+  magicResist: number;
   speed: number;
+  abilityPower: number;
   critChance: number;
   lifeSteal: number;
+  skillHaste: number;
+  evasion: number;
   isDead: boolean;
   respawnTurn: number;
   gold: number;
@@ -36,6 +61,9 @@ export interface PlayerState {
   kills: number;
   deaths: number;
   assists: number;
+  championId?: number;
+  skill?: SkillState;
+  isRecalling?: boolean;
 }
 
 export interface TowerState {
@@ -71,7 +99,9 @@ export interface MatchState {
   team1Ready: boolean;
   team2Ready: boolean;
   currentEvent?: string;
-  status: string;
+  status: 'BAN_PICK' | 'WAITING' | 'IN_PROGRESS' | 'TEAM1_WINS' | 'TEAM2_WINS' | 'SURRENDERED';
+  bannedChampions?: number[];
+  banPickPhase?: number;
   logs: MatchLog[];
 }
 
@@ -89,6 +119,18 @@ export interface TurnAction {
   targetItemId?: string;
   sellItemId?: string;
   useItemTarget?: Lane;
+  useSkill?: boolean;
+  skillTargetId?: number;
+}
+
+export interface BanPickPhaseData {
+  phase: number;
+  currentTeam: 1 | 2;
+  picksNeeded: number;
+  team1Picks: number[];
+  team2Picks: number[];
+  bannedChampions: number[];
+  timeLimit: number;
 }
 
 export interface CombatResult {

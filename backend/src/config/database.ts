@@ -1,7 +1,9 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// .env 파일 경로 명시적으로 지정 (PM2 실행 시 작업 디렉토리 문제 해결)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',

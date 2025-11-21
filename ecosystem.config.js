@@ -5,8 +5,10 @@ module.exports = {
     {
       name: 'lol-backend',
       script: path.join(__dirname, 'backend', 'dist', 'server.js'),
+      cwd: path.join(__dirname, 'backend'),
       instances: 1,
       exec_mode: 'fork',
+      env_file: path.join(__dirname, 'backend', '.env'),
       env: {
         NODE_ENV: 'production',
         PORT: 5000,

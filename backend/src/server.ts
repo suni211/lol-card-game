@@ -49,8 +49,10 @@ import jwt from 'jsonwebtoken';
 
 // Import scheduler
 import { startHotTimeScheduler, setSocketIOForHotTime } from './scheduler/hotTimeEvent';
+import path from 'path';
 
-dotenv.config();
+// .env 파일 경로 명시적으로 지정 (PM2 실행 시 작업 디렉토리 문제 해결)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const app = express();
 const httpServer = createServer(app);

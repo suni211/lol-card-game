@@ -150,15 +150,43 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Root path handler
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'LOL Card Game API Server',
+    version: '1.0.0',
+    endpoints: '/api/*',
+    health: '/health'
+  });
+});
+
+// Favicon handler (return 204 No Content to avoid errors)
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
+
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ success: false, error: 'Not found' });
+  res.status(404).json({ success: false, error: 'Not found', path: req.path });
 });
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ success: false, error: 'Internal server error' });
+  console.error('[Server Error]', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Don't leak error details in production
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  res.status(500).json({ 
+    success: false, 
+    error: 'Internal server error',
+    ...(isDevelopment && { details: err.message })
+  });
 });
 
 // Setup socket.io for notices

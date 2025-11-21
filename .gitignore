@@ -39,3 +39,7 @@ temp/
 tmp/
 *.sql
 !lol_card_game_backup.sql
+
+# PM2 logs
+logs/
+*.log

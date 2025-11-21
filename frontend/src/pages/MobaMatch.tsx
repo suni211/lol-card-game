@@ -39,8 +39,8 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 // Match rewards (must match backend values)
 const MATCH_REWARDS = {
   RANKED: {
-    WIN: { points: 15000, rating: 25 },
-    LOSE: { points: 10000, rating: -25 },
+    WIN: { points: 25000, rating: 25 },
+    LOSE: { points: 25000, rating: -25 },
   },
   NORMAL: {
     WIN: { points: 1500, rating: 0 },

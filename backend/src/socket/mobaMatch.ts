@@ -90,6 +90,10 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
 
       // Get user rating and username
       const [users]: any = await pool.query('SELECT rating, username FROM users WHERE id = ?', [oderId]);
+      if (!users || users.length === 0) {
+        socket.emit('moba_error', { message: '사용자 정보를 찾을 수 없습니다.' });
+        return;
+      }
       const rating = users[0]?.rating || 1000;
       const username = users[0]?.username || `Player ${oderId}`;
 
@@ -464,59 +468,67 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
 
   // Request to swap champions between two players on the same team
   socket.on('moba_request_swap', (data: { matchId: string; player1OderId: number; player2OderId: number; champion1Id: number; champion2Id: number }) => {
-    const engine = activeMatches.get(data.matchId);
-    if (!engine) {
-      socket.emit('moba_error', { message: '매치를 찾을 수 없습니다.' });
-      return;
-    }
-
-    const state = engine.getState();
-    const requestingTeamNumber = state.team1.oderId === oderId ? 1 : 2;
-
-    // Validation: Allow swaps after ban/pick is complete (including during game)
-    const banPickState = banPickStates.get(data.matchId); // Get current banPickState
-    if (!banPickState || banPickState.phase !== 'COMPLETE') {
-        socket.emit('moba_error', { message: '지금은 챔피언을 스왑할 수 없습니다. 밴/픽 단계가 완료된 후에만 스왑 가능합니다.' });
+    try {
+      const engine = activeMatches.get(data.matchId);
+      if (!engine) {
+        socket.emit('moba_error', { message: '매치를 찾을 수 없습니다.' });
         return;
-    }
+      }
 
-    // Ensure requesting player is on the team that the players to be swapped belong to
-    let teamNumber: 1 | 2;
-    if (state.team1.oderId === requestingTeamNumber) { // The requesting user is part of team1
-        teamNumber = 1;
-    } else if (state.team2.oderId === requestingTeamNumber) { // The requesting user is part of team2
-        teamNumber = 2;
-    } else {
-        socket.emit('moba_error', { message: '스왑을 요청한 플레이어가 매치에 없습니다.' });
-        return;
-    }
+      const state = engine.getState();
+      const requestingTeamNumber = state.team1.oderId === oderId ? 1 : 2;
 
-    if (data.player1OderId === data.player2OderId) {
-        socket.emit('moba_error', { message: '같은 플레이어끼리 챔피언을 스왑할 수 없습니다.' });
-        return;
-    }
+      // Validation: Allow swaps after ban/pick is complete (including during game)
+      const banPickState = banPickStates.get(data.matchId); // Get current banPickState
+      if (!banPickState || banPickState.phase !== 'COMPLETE') {
+          socket.emit('moba_error', { message: '지금은 챔피언을 스왑할 수 없습니다. 밴/픽 단계가 완료된 후에만 스왑 가능합니다.' });
+          return;
+      }
 
-    // Call the GameEngine method to perform the swap
-    const swapSuccessful = engine.swapChampions(
-        teamNumber,
-        data.player1OderId,
-        data.player2OderId,
-        data.champion1Id,
-        data.champion2Id
-    );
+      // Ensure requesting player is on the team that the players to be swapped belong to
+      // requestingTeamNumber is already 1 or 2, so we can use it directly
+      const teamNumber: 1 | 2 = requestingTeamNumber;
+      
+      // Verify that the players to be swapped belong to the requesting player's team
+      const team = teamNumber === 1 ? state.team1 : state.team2;
+      const player1InTeam = team.players.some(p => p.oderId === data.player1OderId);
+      const player2InTeam = team.players.some(p => p.oderId === data.player2OderId);
+      
+      if (!player1InTeam || !player2InTeam) {
+          socket.emit('moba_error', { message: '스왑할 플레이어들이 같은 팀에 속해 있지 않습니다.' });
+          return;
+      }
 
-    if (swapSuccessful) {
-        io.to(data.matchId).emit('moba_champion_swapped', {
-            teamNumber,
-            player1OderId: data.player1OderId,
-            player2OderId: data.player2OderId,
-            player1NewChampionId: data.champion2Id, // After swap, player1 gets champion2Id
-            player2NewChampionId: data.champion1Id, // After swap, player2 gets champion1Id
-        });
-    } else {
-        socket.emit('moba_error', { message: '챔피언 스왑에 실패했습니다. 유효하지 않은 요청이거나 챔피언 정보가 일치하지 않습니다.' });
+      if (data.player1OderId === data.player2OderId) {
+          socket.emit('moba_error', { message: '같은 플레이어끼리 챔피언을 스왑할 수 없습니다.' });
+          return;
+      }
+
+      // Call the GameEngine method to perform the swap
+      const swapSuccessful = engine.swapChampions(
+          teamNumber,
+          data.player1OderId,
+          data.player2OderId,
+          data.champion1Id,
+          data.champion2Id
+      );
+
+      if (swapSuccessful) {
+          io.to(data.matchId).emit('moba_champion_swapped', {
+              teamNumber,
+              player1OderId: data.player1OderId,
+              player2OderId: data.player2OderId,
+              player1NewChampionId: data.champion2Id, // After swap, player1 gets champion2Id
+              player2NewChampionId: data.champion1Id, // After swap, player2 gets champion1Id
+          });
+      } else {
+          socket.emit('moba_error', { message: '챔피언 스왑에 실패했습니다. 유효하지 않은 요청이거나 챔피언 정보가 일치하지 않습니다.' });
+      }
+    } catch (error) {
+      console.error('moba_request_swap error:', error);
+      socket.emit('moba_error', { message: '챔피언 스왑 중 오류가 발생했습니다.' });
     }
-});
+  });
 
   // Handle disconnect
   socket.on('disconnect', async () => {
@@ -930,8 +942,8 @@ async function processMatchRewards(io: Server, state: MatchState) {
   let winnerPoints, loserPoints, ratingChange;
 
   if (state.matchType === 'RANKED') {
-    winnerPoints = 15000;
-    loserPoints = 10000;
+    winnerPoints = 25000;
+    loserPoints = 25000;
     ratingChange = 25;
   } else {
     winnerPoints = 1500;

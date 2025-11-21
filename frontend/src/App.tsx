@@ -7,6 +7,7 @@ import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { useAudioStore } from './store/audioStore';
 import { useOnlineStore } from './store/onlineStore';
+import { useMatchNotificationStore } from './store/matchNotificationStore';
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -221,6 +222,21 @@ function App() {
       }
     });
 
+    // Match notifications
+    socket.on('moba_match_notification', (notification: any) => {
+      console.log('[App] Match notification received:', notification);
+      const currentUser = useAuthStore.getState().user;
+      
+      // Don't show notification for own user
+      if (notification.userId === currentUser?.id) {
+        console.log('[App] Ignoring own match notification');
+        return;
+      }
+      
+      // Set notification in store
+      useMatchNotificationStore.getState().setNotification(notification);
+    });
+
     return () => {
       console.log('[App] Cleaning up socket connection...');
       if (heartbeatInterval) {
@@ -234,6 +250,7 @@ function App() {
       socket.off('online_users');
       socket.off('pointsUpdate');
       socket.off('user_update');
+      socket.off('moba_match_notification');
 
       socket.disconnect();
     };

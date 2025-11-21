@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import Navbar from './Navbar';
@@ -8,6 +8,8 @@ import ChatPopup from '../Chat/ChatPopup';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLayoutStore } from '../../store/layoutStore';
+import { useMatchNotificationStore } from '../../store/matchNotificationStore';
+import { Swords, XCircle } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
@@ -21,6 +23,8 @@ interface NoticePopup {
 
 export default function Layout() {
   const { layoutType } = useLayoutStore();
+  const navigate = useNavigate();
+  const { notification: matchNotification, setNotification } = useMatchNotificationStore();
   const [noticePopup, setNoticePopup] = useState<NoticePopup | null>(null);
   const [isHappyHour, setIsHappyHour] = useState(false);
 
@@ -81,6 +85,29 @@ export default function Layout() {
     };
     return typeMap[type as keyof typeof typeMap] || typeMap.NOTICE;
   };
+
+  const handleJoinMatch = () => {
+    if (!matchNotification) return;
+    
+    // Navigate to match select with the same match type
+    navigate(`/match-select?type=${matchNotification.matchType}`);
+    setNotification(null);
+  };
+
+  const handleDismissMatch = () => {
+    setNotification(null);
+  };
+
+  // Auto-hide match notification after 10 seconds
+  useEffect(() => {
+    if (!matchNotification) return;
+
+    const timer = setTimeout(() => {
+      setNotification(null);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [matchNotification, setNotification]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -154,6 +181,62 @@ export default function Layout() {
           duration: 3000,
         }}
       />
+
+      {/* Match Notification - Shows for both navbar and sidebar layouts */}
+      <AnimatePresence>
+        {matchNotification && (
+          <motion.div
+            initial={{ x: layoutType === 'navbar' ? 0 : 300, y: layoutType === 'navbar' ? -100 : 0, opacity: 0 }}
+            animate={{ x: 0, y: 0, opacity: 1 }}
+            exit={{ x: layoutType === 'navbar' ? 0 : 300, y: layoutType === 'navbar' ? -100 : 0, opacity: 0 }}
+            className={`fixed z-50 ${
+              layoutType === 'navbar' 
+                ? 'top-20 left-1/2 -translate-x-1/2 max-w-md w-full mx-4' 
+                : 'top-4 right-72 w-64'
+            }`}
+          >
+            <div className="bg-gradient-to-r from-primary-500/95 to-purple-500/95 backdrop-blur-sm rounded-lg shadow-2xl border border-primary-400/50 p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Swords className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white truncate">
+                    {matchNotification.username}
+                  </p>
+                  <p className="text-xs text-white/90">
+                    {matchNotification.matchType === 'RANKED' ? '랭크전' : '일반전'} 매칭 중
+                  </p>
+                  <p className="text-xs text-white/70">
+                    레이팅: {matchNotification.rating} | 큐 위치: {matchNotification.queuePosition}
+                  </p>
+                </div>
+                <button
+                  onClick={handleDismissMatch}
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                >
+                  <XCircle className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleJoinMatch}
+                  className="flex-1 px-3 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 backdrop-blur-sm"
+                >
+                  <Swords className="w-4 h-4" />
+                  같이하기
+                </button>
+                <button
+                  onClick={handleDismissMatch}
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  무시
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Large Notice Popup */}
       <AnimatePresence>

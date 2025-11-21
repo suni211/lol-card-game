@@ -4,28 +4,18 @@ import { useState, useEffect } from 'react';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useOnlineStore } from '../../store/onlineStore';
+import { useMatchNotificationStore } from '../../store/matchNotificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { io } from 'socket.io-client';
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-
-interface MatchNotification {
-  userId: number;
-  username: string;
-  matchType: 'RANKED' | 'NORMAL';
-  rating: number;
-  queuePosition: number;
-}
 
 export default function Sidebar() {
   const { theme, toggleTheme } = useThemeStore();
-  const { user, isAuthenticated, logout, token } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const { onlineUsers } = useOnlineStore();
+  const { notification: matchNotification, setNotification } = useMatchNotificationStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [matchNotification, setMatchNotification] = useState<MatchNotification | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -37,50 +27,28 @@ export default function Sidebar() {
     );
   };
 
-  // Listen for match notifications
-  useEffect(() => {
-    if (!isAuthenticated || !token) return;
-
-    const socket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      reconnection: true,
-    });
-
-    socket.on('connect', () => {
-      socket.emit('authenticate', { token });
-    });
-
-    socket.on('auth_success', () => {
-      // Listen for match notifications
-      socket.on('moba_match_notification', (notification: MatchNotification) => {
-        // Don't show notification for own user
-        if (notification.userId === user?.id) return;
-        
-        setMatchNotification(notification);
-        
-        // Auto-hide after 10 seconds
-        setTimeout(() => {
-          setMatchNotification(null);
-        }, 10000);
-      });
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [isAuthenticated, token, user?.id]);
-
   const handleJoinMatch = () => {
     if (!matchNotification) return;
     
     // Navigate to match select with the same match type
     navigate(`/match-select?type=${matchNotification.matchType}`);
-    setMatchNotification(null);
+    setNotification(null);
   };
 
   const handleDismiss = () => {
-    setMatchNotification(null);
+    setNotification(null);
   };
+
+  // Auto-hide notification after 10 seconds
+  useEffect(() => {
+    if (!matchNotification) return;
+
+    const timer = setTimeout(() => {
+      setNotification(null);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [matchNotification, setNotification]);
 
   type NavItem = {
     path: string;

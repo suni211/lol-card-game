@@ -93,6 +93,9 @@ export default function MobaMatch() {
   // New states for swap phase
   const [swapTimeLeft, setSwapTimeLeft] = useState<number>(0);
   const [swapPhaseActive, setSwapPhaseActive] = useState<boolean>(false);
+  
+  // Shop tab state
+  const [shopTab, setShopTab] = useState<'buy' | 'sell'>('buy');
 
   // Skill usage state (for future target selection feature)
   const [, setSkillTargetSelection] = useState<{
@@ -418,6 +421,37 @@ export default function MobaMatch() {
     setSelectedWardLane(null); // Reset selected ward lane
   }, [selectedPlayer, items, selectedWardLane]);
 
+  // Sell item
+  const sellItem = useCallback((itemId: string) => {
+    if (!selectedPlayer) return;
+
+    const itemToSell = items.find(item => item.id === itemId);
+    if (!itemToSell) return;
+
+    // Check if player has this item
+    if (!selectedPlayer.items.includes(itemId)) {
+      toast.error('보유하지 않은 아이템입니다.');
+      return;
+    }
+
+    setActions(prev => {
+      const newActions = new Map(prev);
+      const existing = newActions.get(selectedPlayer.oderId) || {
+        oderId: selectedPlayer.oderId,
+        action: 'FIGHT' as PlayerAction,
+      };
+      newActions.set(selectedPlayer.oderId, {
+        ...existing,
+        sellItemId: itemId,
+      });
+      return newActions;
+    });
+
+    const sellPrice = Math.floor(itemToSell.cost * 0.5);
+    toast.success(`아이템 판매 예약됨 (${sellPrice}G 환불)`);
+    setShowShop(false);
+  }, [selectedPlayer, items]);
+
   // Surrender
   const handleSurrender = useCallback(() => {
     if (!socket || !matchState) return;
@@ -504,6 +538,7 @@ export default function MobaMatch() {
     setSelectedPlayer(player);
     socket?.emit('moba_get_items', { position: player.position });
     setShowShop(true);
+    setShopTab('buy'); // Reset to buy tab when opening shop
   };
 
   if (status === 'connecting') {
@@ -1163,8 +1198,32 @@ export default function MobaMatch() {
                 </button>
               </div>
 
-              {/* Control Ward Lane Selection */}
-              {items.some(item => item.id === 'control_ward' && item.tier === 'CONSUMABLE') && (
+              {/* Tabs */}
+              <div className="flex gap-2 mb-4 border-b border-gray-700">
+                <button
+                  onClick={() => setShopTab('buy')}
+                  className={`px-4 py-2 font-medium transition-colors ${
+                    shopTab === 'buy'
+                      ? 'text-white border-b-2 border-primary-500'
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  구매
+                </button>
+                <button
+                  onClick={() => setShopTab('sell')}
+                  className={`px-4 py-2 font-medium transition-colors ${
+                    shopTab === 'sell'
+                      ? 'text-white border-b-2 border-primary-500'
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  판매 ({selectedPlayer.items.filter(id => items.find(i => i.id === id)?.tier !== 'CONSUMABLE').length}/6)
+                </button>
+              </div>
+
+              {/* Control Ward Lane Selection (only for buy tab) */}
+              {shopTab === 'buy' && items.some(item => item.id === 'control_ward' && item.tier === 'CONSUMABLE') && (
                 <div className="mb-4">
                   <p className="text-white text-sm mb-2">제어 와드를 구매할 경우, 설치할 라인을 선택해주세요:</p>
                   <div className="flex gap-2">
@@ -1185,6 +1244,8 @@ export default function MobaMatch() {
                 </div>
               )}
 
+              {/* Buy Tab */}
+              {shopTab === 'buy' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {items.map(item => {
                   const currentCost = item.buildsFrom && selectedPlayer.items
@@ -1237,6 +1298,63 @@ export default function MobaMatch() {
                   );
                 })}
               </div>
+              )}
+
+              {/* Sell Tab */}
+              {shopTab === 'sell' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {selectedPlayer.items
+                    .filter(itemId => {
+                      const item = items.find(i => i.id === itemId);
+                      return item && item.tier !== 'CONSUMABLE'; // Only show non-consumable items
+                    })
+                    .map(itemId => {
+                      const item = items.find(i => i.id === itemId);
+                      if (!item) return null;
+                      const sellPrice = Math.floor(item.cost * 0.5);
+                      
+                      return (
+                        <div
+                          key={itemId}
+                          className="p-3 rounded-lg border bg-gray-700 border-gray-600"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <img
+                              src={`/items/${item.id}.png`}
+                              alt={item.name}
+                              className="w-8 h-8 rounded"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/items/default.svg';
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-white font-bold text-sm">{item.name}</div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-400 text-xs">판매: {sellPrice}G</span>
+                                <span className="text-gray-400 text-xs">(원가: {item.cost}G)</span>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-gray-400 text-xs mb-2">{item.description}</p>
+                          <button
+                            onClick={() => sellItem(item.id)}
+                            className="w-full py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            판매하기
+                          </button>
+                        </div>
+                      );
+                    })}
+                  {selectedPlayer.items.filter(itemId => {
+                    const item = items.find(i => i.id === itemId);
+                    return item && item.tier !== 'CONSUMABLE';
+                  }).length === 0 && (
+                    <div className="col-span-full text-center text-gray-400 py-8">
+                      판매할 수 있는 아이템이 없습니다.
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

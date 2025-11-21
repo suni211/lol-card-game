@@ -442,14 +442,16 @@ export class GameEngine {
       if (action.sellItemId && player.items.includes(action.sellItemId)) {
         const item = ITEMS[action.sellItemId];
         if (item) {
-          player.gold += item.cost; // Full refund
+          // Calculate sell price (50% of original cost)
+          const sellPrice = Math.floor(item.cost * 0.5);
+          player.gold += sellPrice;
           player.items = player.items.filter(id => id !== action.sellItemId);
           this.recalculatePlayerStats(player);
           events.push({
             turn: this.state.currentTurn,
             timestamp: Date.now(),
             type: 'ITEM',
-            message: `${player.name}이(가) ${item.name}을(를) 판매했습니다. (+${item.cost}G)`,
+            message: `${player.name}이(가) ${item.name}을(를) 판매했습니다. (+${sellPrice}G)`,
           });
         }
       }

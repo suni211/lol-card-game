@@ -267,7 +267,7 @@ export default function Event() {
             {Array.from({ length: 30 }, (_, i) => {
               const day = i + 1;
               const isChecked = attendance.consecutiveDays >= day;
-              const reward = getAttendanceReward(day);
+
               const isSpecial = [7, 14, 21, 28, 30].includes(day);
               const isToday = attendance.consecutiveDays + 1 === day && attendance.canCheckIn;
 

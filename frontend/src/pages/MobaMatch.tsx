@@ -90,6 +90,10 @@ export default function MobaMatch() {
   const [player1ToSwap, setPlayer1ToSwap] = useState<PlayerState | null>(null);
   const [player2ToSwap, setPlayer2ToSwap] = useState<PlayerState | null>(null);
 
+  // New states for swap phase
+  const [swapTimeLeft, setSwapTimeLeft] = useState<number>(0);
+  const [swapPhaseActive, setSwapPhaseActive] = useState<boolean>(false);
+
   // Skill usage state (for future target selection feature)
   const [, setSkillTargetSelection] = useState<{
     playerId: number;
@@ -189,10 +193,10 @@ export default function MobaMatch() {
 
     newSocket.on('moba_ban_pick_complete', (data) => {
       console.log('[MobaMatch] Ban/Pick complete:', data);
-      setMatchState(data.state);
-      setBanPickData(null);
-      setStatus('playing');
-      toast.success('챔피언 선택 완료! 게임을 시작합니다.');
+      setBanPickData((prev: any) => ({ ...prev, phase: 'COMPLETE' }));
+      setSwapPhaseActive(true);
+      setSwapTimeLeft(20);
+      toast.success('밴픽 완료! 챔피언 스왑 시간을 드립니다.');
     });
 
     newSocket.on('moba_champions_list', (data) => {
@@ -332,6 +336,28 @@ export default function MobaMatch() {
       toast('시간 초과! 행동이 자동으로 제출되었습니다.', { icon: '⏰' });
     }
   }, [timeLeft, status, socket, matchState, teamNumber, actions, isReady]);
+
+  // Swap phase countdown
+  useEffect(() => {
+    if (!swapPhaseActive || swapTimeLeft === 0) return;
+
+    const interval = setInterval(() => {
+      setSwapTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [swapPhaseActive, swapTimeLeft]);
+
+  // Handle swap phase expiration
+  useEffect(() => {
+    if (swapPhaseActive && swapTimeLeft === 0) {
+      setSwapPhaseActive(false);
+      setBanPickData(null); // Clear banPickData after swap phase
+      setStatus('playing'); // Transition to playing status
+      setShowSwapModal(false); // Close swap modal if open
+      toast('챔피언 스왑 시간이 종료되었습니다. 매치가 곧 시작됩니다.');
+    }
+  }, [swapPhaseActive, swapTimeLeft, socket, matchState]);
 
   // Set action for player
   const setPlayerAction = useCallback((oderId: number, action: PlayerAction) => {
@@ -552,8 +578,17 @@ export default function MobaMatch() {
 
           {/* Center Info */}
           <div className="text-center">
-            <h1 className="text-2xl font-bold">{turnText}</h1>
-            <div className="text-xl font-mono">{timeLeft}</div>
+            {swapPhaseActive ? (
+              <>
+                <h1 className="text-2xl font-bold text-yellow-400">챔피언 스왑 시간!</h1>
+                <div className="text-xl font-mono text-yellow-400">{swapTimeLeft}</div>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold">{turnText}</h1>
+                <div className="text-xl font-mono">{timeLeft}</div>
+              </>
+            )}
           </div>
 
           {/* Team 2 */}
@@ -647,7 +682,7 @@ export default function MobaMatch() {
                 </button>
               )}
             </div>
-            {banPickData.phase === 'COMPLETE' && (
+            {swapPhaseActive && swapTimeLeft > 0 && (
               <button
                 onClick={() => setShowSwapModal(true)}
                 className="mt-2 w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors"
@@ -1369,7 +1404,7 @@ function PlayerCard({
   currentEvent?: string; // New prop type
 }) {
   const healthPercent = (player.currentHealth / player.maxHealth) * 100;
-  let availableActions = POSITION_ACTIONS[player.position];
+  let availableActions = POSITION_ACTIONS[player.position].map(action => ({ ...action, isActive: true }));
 
   // Add all objective actions, but mark which ones are active
   const objectiveActions: Array<{ action: PlayerAction; label: string; isActive: boolean }> = [
@@ -1379,12 +1414,10 @@ function PlayerCard({
     { action: 'CONTEST_ELDER', label: '장로 쟁탈', isActive: currentEvent === 'ELDER' },
   ];
 
-  // Add objective actions to available actions with active status
-  availableActions = [
-    ...availableActions,
-    ...objectiveActions.map(({ action, label }) => ({ action, label })),
-  ];
-
+            availableActions = [
+              ...availableActions,
+              ...objectiveActions,
+            ];
   // Get champion info
   const champion = player.championId && champions
     ? champions.find(c => c.id === player.championId)
@@ -1569,23 +1602,7 @@ function PlayerCard({
       {/* Action Selection (only for my team) */}
       {isMyTeam && !player.isDead && onActionChange && availableActions && (
         <div className="flex flex-wrap gap-1">
-          {availableActions.map(({ action: actionType, label }: { action: PlayerAction; label: string }) => {
-            // Check if this is an objective action and if it's active
-            const isObjectiveAction = actionType.startsWith('CONTEST_');
-            let isActive = true;
-            
-            if (isObjectiveAction) {
-              if (actionType === 'CONTEST_VOIDGRUB') {
-                isActive = currentEvent === 'VOIDGRUB' || currentEvent === 'DRAGON_AND_VOIDGRUB';
-              } else if (actionType === 'CONTEST_DRAGON') {
-                isActive = currentEvent === 'DRAGON' || currentEvent === 'DRAGON_AND_VOIDGRUB';
-              } else if (actionType === 'CONTEST_BARON') {
-                isActive = currentEvent === 'BARON';
-              } else if (actionType === 'CONTEST_ELDER') {
-                isActive = currentEvent === 'ELDER';
-              }
-            }
-
+                      {availableActions.map(({ action: actionType, label, isActive }: { action: PlayerAction; label: string; isActive: boolean }) => {
             return (
               <button
                 key={actionType}

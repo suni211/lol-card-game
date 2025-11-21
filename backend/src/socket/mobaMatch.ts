@@ -115,6 +115,15 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
 
       socket.emit('moba_queue_joined', { position: queue.length, matchType: data.matchType });
 
+      // Broadcast match notification to all other users (excluding sender)
+      socket.broadcast.emit('moba_match_notification', {
+        userId: oderId,
+        username,
+        matchType: data.matchType,
+        rating,
+        queuePosition: queue.length,
+      });
+
       // Try to find match
       tryMatchPlayers(io, queue, data.matchType);
     } catch (error) {
@@ -150,6 +159,43 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
       if (engine.areBothTeamsReady()) {
         processTurn(io, data.matchId);
       }
+    }
+  });
+
+  // Set ready state (with actions)
+  socket.on('moba_set_ready', (data: { matchId: string; isReady: boolean; actions: TurnAction[] }) => {
+    const engine = activeMatches.get(data.matchId);
+    if (!engine) {
+      socket.emit('moba_error', { message: '매치를 찾을 수 없습니다.' });
+      return;
+    }
+
+    const state = engine.getState();
+    const teamNumber = state.team1.oderId === oderId ? 1 : 2;
+
+    if (data.isReady) {
+      // Submit actions and set ready
+      if (engine.submitActions(teamNumber, data.actions)) {
+        socket.emit('moba_actions_submitted');
+
+        // Check auto-ready for teams with all dead players
+        engine.checkAutoReady();
+
+        // Check if both teams ready - auto process turn
+        if (engine.areBothTeamsReady()) {
+          processTurn(io, data.matchId);
+        }
+      }
+    } else {
+      // Unset ready state
+      if (teamNumber === 1) {
+        state.team1Ready = false;
+        state.team1Actions = [];
+      } else {
+        state.team2Ready = false;
+        state.team2Actions = [];
+      }
+      socket.emit('moba_ready_state_changed', { isReady: false });
     }
   });
 

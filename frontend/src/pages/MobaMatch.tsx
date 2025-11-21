@@ -1173,14 +1173,19 @@ function PlayerCard({
   const healthPercent = (player.currentHealth / player.maxHealth) * 100;
   let availableActions = POSITION_ACTIONS[player.position];
 
-  // Conditionally add objective actions if an event is active
-  if (currentEvent && OBJECTIVE_ACTIONS[currentEvent]) {
-    const objectiveAction: { action: PlayerAction; label: string } = {
-      action: OBJECTIVE_ACTIONS[currentEvent],
-      label: `${EVENT_INFO[currentEvent]?.name || currentEvent} 쟁탈`,
-    };
-    availableActions = [...availableActions, objectiveAction];
-  }
+  // Add all objective actions, but mark which ones are active
+  const objectiveActions: Array<{ action: PlayerAction; label: string; isActive: boolean }> = [
+    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈', isActive: currentEvent === 'VOIDGRUB' || currentEvent === 'DRAGON_AND_VOIDGRUB' },
+    { action: 'CONTEST_DRAGON', label: '용 쟁탈', isActive: currentEvent === 'DRAGON' || currentEvent === 'DRAGON_AND_VOIDGRUB' },
+    { action: 'CONTEST_BARON', label: '바론 쟁탈', isActive: currentEvent === 'BARON' },
+    { action: 'CONTEST_ELDER', label: '장로 쟁탈', isActive: currentEvent === 'ELDER' },
+  ];
+
+  // Add objective actions to available actions with active status
+  availableActions = [
+    ...availableActions,
+    ...objectiveActions.map(({ action, label }) => ({ action, label })),
+  ];
 
   // Get champion info
   const champion = player.championId && champions
@@ -1366,19 +1371,40 @@ function PlayerCard({
       {/* Action Selection (only for my team) */}
       {isMyTeam && !player.isDead && onActionChange && availableActions && (
         <div className="flex flex-wrap gap-1">
-          {availableActions.map(({ action: actionType, label }: { action: PlayerAction; label: string }) => (
-            <button
-              key={actionType}
-              onClick={() => onActionChange(actionType)}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
-                action === actionType
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {availableActions.map(({ action: actionType, label }: { action: PlayerAction; label: string }) => {
+            // Check if this is an objective action and if it's active
+            const isObjectiveAction = actionType.startsWith('CONTEST_');
+            let isActive = true;
+            
+            if (isObjectiveAction) {
+              if (actionType === 'CONTEST_VOIDGRUB') {
+                isActive = currentEvent === 'VOIDGRUB' || currentEvent === 'DRAGON_AND_VOIDGRUB';
+              } else if (actionType === 'CONTEST_DRAGON') {
+                isActive = currentEvent === 'DRAGON' || currentEvent === 'DRAGON_AND_VOIDGRUB';
+              } else if (actionType === 'CONTEST_BARON') {
+                isActive = currentEvent === 'BARON';
+              } else if (actionType === 'CONTEST_ELDER') {
+                isActive = currentEvent === 'ELDER';
+              }
+            }
+
+            return (
+              <button
+                key={actionType}
+                onClick={() => isActive && onActionChange(actionType)}
+                disabled={!isActive}
+                className={`px-2 py-1 text-xs rounded transition-colors ${
+                  !isActive
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
+                    : action === actionType
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Swords, Trophy, Users, Eye, ChevronRight, Shield, Zap, Check, X } from 'lucide-react';
 import axios from 'axios';
@@ -17,14 +17,35 @@ interface DeckInfo {
 
 export default function MatchSelect() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { token } = useAuthStore();
   const [decks, setDecks] = useState<DeckInfo[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+  const [autoStartType, setAutoStartType] = useState<'RANKED' | 'NORMAL' | null>(null);
 
   useEffect(() => {
     fetchDecks();
-  }, []);
+    
+    // Check for auto-start type from URL params
+    const typeParam = searchParams.get('type');
+    if (typeParam === 'RANKED' || typeParam === 'NORMAL') {
+      setAutoStartType(typeParam);
+    }
+  }, [searchParams]);
+
+  // Auto-start match when decks are loaded and type is specified
+  useEffect(() => {
+    if (!loading && autoStartType && decks.length > 0) {
+      const completeDeck = decks.find(d => d.isComplete);
+      if (completeDeck) {
+        setSelectedDeck(completeDeck.slot);
+        setTimeout(() => {
+          startMatch(autoStartType);
+        }, 500);
+      }
+    }
+  }, [loading, autoStartType, decks]);
 
   const fetchDecks = async () => {
     try {

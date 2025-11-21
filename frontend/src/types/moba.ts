@@ -236,11 +236,12 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
 
 // Event descriptions
 export const EVENT_INFO: Record<string, { name: string; description: string }> = {
-  GRUB: { name: '유충', description: '포탑/넥서스 데미지 증가' },
+  VOIDGRUB: { name: '유충', description: '포탑/넥서스 데미지 증가' },
   DRAGON: { name: '용', description: '선수 공격력 증가' },
   HERALD: { name: '전령', description: '70% 확률 적 포탑 파괴' },
   BARON: { name: '바론', description: '50% 포탑 파괴 + 20% 데미지 증가' },
   ELDER: { name: '장로', description: '50% 확률 적 전멸' },
+  DRAGON_AND_VOIDGRUB: { name: '용 & 유충', description: '용과 유충 동시 쟁탈' },
 };
 
 // Objective actions mapping

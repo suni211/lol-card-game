@@ -1,18 +1,31 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown, ChevronRight, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Moon, Sun, Trophy, User, LogOut, Users, ChevronDown, ChevronRight, Menu, X, Swords, XCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useOnlineStore } from '../../store/onlineStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { io, Socket } from 'socket.io-client';
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
+interface MatchNotification {
+  userId: number;
+  username: string;
+  matchType: 'RANKED' | 'NORMAL';
+  rating: number;
+  queuePosition: number;
+}
 
 export default function Sidebar() {
   const { theme, toggleTheme } = useThemeStore();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, token } = useAuthStore();
   const { onlineUsers } = useOnlineStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [matchNotification, setMatchNotification] = useState<MatchNotification | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -22,6 +35,51 @@ export default function Sidebar() {
         ? prev.filter(s => s !== label)
         : [...prev, label]
     );
+  };
+
+  // Listen for match notifications
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnection: true,
+    });
+
+    socket.on('connect', () => {
+      socket.emit('authenticate', { token });
+    });
+
+    socket.on('auth_success', () => {
+      // Listen for match notifications
+      socket.on('moba_match_notification', (notification: MatchNotification) => {
+        // Don't show notification for own user
+        if (notification.userId === user?.id) return;
+        
+        setMatchNotification(notification);
+        
+        // Auto-hide after 10 seconds
+        setTimeout(() => {
+          setMatchNotification(null);
+        }, 10000);
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, token, user?.id]);
+
+  const handleJoinMatch = () => {
+    if (!matchNotification) return;
+    
+    // Navigate to match select with the same match type
+    navigate(`/match-select?type=${matchNotification.matchType}`);
+    setMatchNotification(null);
+  };
+
+  const handleDismiss = () => {
+    setMatchNotification(null);
   };
 
   type NavItem = {
@@ -240,6 +298,56 @@ export default function Sidebar() {
             }
           })}
         </nav>
+
+        {/* Match Notification */}
+        <AnimatePresence>
+          {matchNotification && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500/10 to-purple-500/10"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-primary-500 rounded-lg">
+                  <Swords className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                    {matchNotification.username}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {matchNotification.matchType === 'RANKED' ? '랭크전' : '일반전'} 매칭 중
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    레이팅: {matchNotification.rating} | 큐 위치: {matchNotification.queuePosition}
+                  </p>
+                </div>
+                <button
+                  onClick={handleDismiss}
+                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                >
+                  <XCircle className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleJoinMatch}
+                  className="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Swords className="w-4 h-4" />
+                  같이하기
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors"
+                >
+                  무시
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">

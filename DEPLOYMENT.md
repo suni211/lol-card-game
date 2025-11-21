@@ -239,14 +239,11 @@ CORS_ORIGIN=http://YOUR_VM_EXTERNAL_IP:3000
 ```
 
 ```bash
-# 의존성 설치 및 빌드
+# 의존성 설치
 npm install
-npm run build
 
-# PM2로 실행
-pm2 start dist/server.js --name "lol-backend"
-pm2 save
-pm2 startup
+# 프로덕션 빌드
+npm run build
 ```
 
 4. **프론트엔드 설정 및 실행**
@@ -260,6 +257,7 @@ nano .env
 `.env` 내용:
 ```env
 VITE_API_URL=http://YOUR_VM_EXTERNAL_IP:5000/api
+VITE_SOCKET_URL=http://YOUR_VM_EXTERNAL_IP:5000
 ```
 
 ```bash
@@ -268,11 +266,29 @@ npm install
 
 # 프로덕션 빌드
 npm run build
+```
 
-# Serve를 사용하여 배포
+5. **PM2로 프론트엔드와 백엔드 모두 실행**
+```bash
+# 프로젝트 루트로 이동
+cd ~/lol-card-game
+
+# serve 패키지 설치 (프론트엔드용)
 sudo npm install -g serve
-pm2 start "serve -s dist -l 3000" --name "lol-frontend"
+
+# PM2로 시작 (ecosystem.config.js 사용)
+pm2 start ecosystem.config.js
+
+# PM2 설정 저장 (재부팅 시 자동 시작)
 pm2 save
+
+# PM2 자동 시작 설정 (시스템 부팅 시)
+pm2 startup
+# 출력된 명령어를 복사해서 실행
+
+# 또는 스크립트 사용
+chmod +x pm2-start.sh
+./pm2-start.sh
 ```
 
 ### Step 5: Nginx 설정 (선택사항 - 프로덕션 권장)
@@ -356,22 +372,37 @@ sudo certbot renew --dry-run
 ```bash
 # 프로세스 상태 확인
 pm2 list
+pm2 status
 
 # 로그 확인
-pm2 logs lol-backend
-pm2 logs lol-frontend
+pm2 logs                    # 모든 로그
+pm2 logs lol-backend        # 백엔드 로그
+pm2 logs lol-frontend       # 프론트엔드 로그
 
 # 프로세스 재시작
-pm2 restart lol-backend
-pm2 restart lol-frontend
+pm2 restart all             # 모두 재시작
+pm2 restart lol-backend     # 백엔드만
+pm2 restart lol-frontend    # 프론트엔드만
+
+# 무중단 리로드
+pm2 reload all
 
 # 프로세스 중지
+pm2 stop all
 pm2 stop lol-backend
 pm2 stop lol-frontend
 
 # 프로세스 삭제
+pm2 delete all
 pm2 delete lol-backend
 pm2 delete lol-frontend
+
+# 모니터링
+pm2 monit
+
+# 상세 정보
+pm2 show lol-backend
+pm2 show lol-frontend
 ```
 
 ### 데이터베이스 백업

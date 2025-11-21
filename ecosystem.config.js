@@ -1,9 +1,10 @@
+const path = require('path');
+
 module.exports = {
   apps: [
     {
       name: 'lol-backend',
-      script: './backend/dist/server.js',
-      cwd: './backend',
+      script: path.join(__dirname, 'backend', 'dist', 'server.js'),
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -14,8 +15,8 @@ module.exports = {
         NODE_ENV: 'development',
         PORT: 5000,
       },
-      error_file: './logs/backend-error.log',
-      out_file: './logs/backend-out.log',
+      error_file: path.join(__dirname, 'logs', 'backend-error.log'),
+      out_file: path.join(__dirname, 'logs', 'backend-out.log'),
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       autorestart: true,
@@ -28,7 +29,7 @@ module.exports = {
       name: 'lol-frontend',
       script: 'npx',
       args: 'serve -s dist -l 3000',
-      cwd: './frontend',
+      cwd: path.join(__dirname, 'frontend'),
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -39,8 +40,8 @@ module.exports = {
         NODE_ENV: 'development',
         PORT: 3000,
       },
-      error_file: './logs/frontend-error.log',
-      out_file: './logs/frontend-out.log',
+      error_file: path.join(__dirname, 'logs', 'frontend-error.log'),
+      out_file: path.join(__dirname, 'logs', 'frontend-out.log'),
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       autorestart: true,

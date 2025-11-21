@@ -36,6 +36,18 @@ import BanPickTutorial from '../components/Moba/BanPickTutorial';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
+// Match rewards (must match backend values)
+const MATCH_REWARDS = {
+  RANKED: {
+    WIN: { points: 15000, rating: 25 },
+    LOSE: { points: 10000, rating: -25 },
+  },
+  NORMAL: {
+    WIN: { points: 1500, rating: 0 },
+    LOSE: { points: 300, rating: 0 },
+  },
+} as const;
+
 export default function MobaMatch() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -221,6 +233,14 @@ export default function MobaMatch() {
         setGameEndPopup(null);
         setStatus('ended');
       }, 3000);
+    });
+
+    newSocket.on('tier_promotion', (data: { oldTier: string; newTier: string; rewardPoints: number }) => {
+      console.log('[MobaMatch] Tier promotion:', data);
+      toast.success(
+        `🎉 티어 승격! ${data.oldTier} → ${data.newTier}\n보상: ${data.rewardPoints.toLocaleString()}P`,
+        { duration: 8000, icon: '🏆' }
+      );
     });
 
     newSocket.on('moba_items_list', (data) => {
@@ -595,12 +615,14 @@ export default function MobaMatch() {
           </div>
           <p className="text-xl text-white mb-4">
             {isWinner
-              ? `+${matchType === 'RANKED' ? '15,000' : '1,500'}P`
-              : `+${matchType === 'RANKED' ? '10,000' : '300'}P`}
+              ? `+${MATCH_REWARDS[matchType].WIN.points.toLocaleString()}P`
+              : `+${MATCH_REWARDS[matchType].LOSE.points.toLocaleString()}P`}
           </p>
           {matchType === 'RANKED' && (
             <p className="text-gray-400 mb-6">
-              {isWinner ? '+25 레이팅' : '-25 레이팅'}
+              {isWinner 
+                ? `+${MATCH_REWARDS.RANKED.WIN.rating} 레이팅` 
+                : `${MATCH_REWARDS.RANKED.LOSE.rating} 레이팅`}
             </p>
           )}
           <button
@@ -736,6 +758,20 @@ export default function MobaMatch() {
                   <p className="text-xl text-gray-300 mb-2">
                     {gameEndPopup.reason}
                   </p>
+                  <div className="mb-4 space-y-2">
+                    <p className="text-lg text-white font-bold">
+                      {isWin
+                        ? `+${MATCH_REWARDS[matchType].WIN.points.toLocaleString()}P`
+                        : `+${MATCH_REWARDS[matchType].LOSE.points.toLocaleString()}P`}
+                    </p>
+                    {matchType === 'RANKED' && (
+                      <p className="text-base text-gray-300">
+                        {isWin 
+                          ? `+${MATCH_REWARDS.RANKED.WIN.rating} 레이팅` 
+                          : `${MATCH_REWARDS.RANKED.LOSE.rating} 레이팅`}
+                      </p>
+                    )}
+                  </div>
                   <p className="text-gray-500 text-sm">
                     잠시 후 결과 화면으로 이동합니다...
                   </p>

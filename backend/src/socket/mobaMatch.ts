@@ -5,6 +5,7 @@ import { ITEMS, getAvailableItems } from '../game/items';
 import { CHAMPIONS } from '../game/skills';
 import pool from '../config/database';
 import { spectatorCounts } from '../routes/spectator';
+import { calculateTier } from '../utils/tierCalculator';
 
 // Active matches - exported for spectator
 export const activeMatches = new Map<string, GameEngine>();
@@ -946,22 +947,62 @@ async function processMatchRewards(io: Server, state: MatchState) {
   // Update champion stats
   await updateChampionStats(state, winner);
 
+  // Get current tier before update (for promotion check)
+  const [winnerBefore]: any = await pool.query(
+    'SELECT rating, tier FROM users WHERE id = ?',
+    [winnerId]
+  );
+  const oldWinnerTier = winnerBefore[0]?.tier || 'IRON';
+  const oldWinnerRating = winnerBefore[0]?.rating || 0;
+  const newWinnerRating = oldWinnerRating + ratingChange;
+  const newWinnerTier = calculateTier(newWinnerRating);
+
+  // Get loser info
+  const [loserBefore]: any = await pool.query(
+    'SELECT rating FROM users WHERE id = ?',
+    [loserId]
+  );
+  const oldLoserRating = loserBefore[0]?.rating || 0;
+  const newLoserRating = Math.max(0, oldLoserRating - ratingChange);
+  const newLoserTier = calculateTier(newLoserRating);
+
   // Update winner
   await pool.query(
     `UPDATE users SET
       points = points + ?,
-      rating = rating + ?
+      rating = ?,
+      tier = ?
     WHERE id = ?`,
-    [winnerPoints, ratingChange, winnerId]
+    [winnerPoints, newWinnerRating, newWinnerTier, winnerId]
   );
+
+  // Check for tier promotion (only for ranked matches)
+  if (state.matchType === 'RANKED' && newWinnerTier !== oldWinnerTier) {
+    // Tier promoted! Give 1,000,000 points
+    await pool.query(
+      'UPDATE users SET points = points + 1000000 WHERE id = ?',
+      [winnerId]
+    );
+    
+    // Notify winner of tier promotion
+    const winnerSocketId = getSocketIdByUserId(winnerId);
+    if (winnerSocketId) {
+      io.to(winnerSocketId).emit('tier_promotion', {
+        oldTier: oldWinnerTier,
+        newTier: newWinnerTier,
+        rewardPoints: 1000000,
+      });
+    }
+  }
 
   // Update loser
   await pool.query(
     `UPDATE users SET
       points = points + ?,
-      rating = GREATEST(0, rating - ?)
+      rating = ?,
+      tier = ?
     WHERE id = ?`,
-    [loserPoints, ratingChange, loserId]
+    [loserPoints, newLoserRating, newLoserTier, loserId]
   );
 
   // --- START: Notify users of their updated points ---

@@ -235,6 +235,35 @@ router.get('/:userId', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// Get attendance status
+router.get('/checkin', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+
+    const [users]: any = await pool.query(
+      'SELECT last_check_in, consecutive_days FROM users WHERE id = ?',
+      [userId]
+    );
+
+    const user = users[0];
+    const today = new Date().toISOString().split('T')[0];
+    const lastCheckIn = user.last_check_in ? new Date(user.last_check_in).toISOString().split('T')[0] : null;
+    const canCheckIn = lastCheckIn !== today;
+
+    res.json({
+      success: true,
+      data: {
+        lastCheckIn: user.last_check_in,
+        consecutiveDays: user.consecutive_days || 0,
+        canCheckIn,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get checkin error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 // Check in (daily attendance)
 router.post('/checkin', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
@@ -269,28 +298,51 @@ router.post('/checkin', authMiddleware, async (req: AuthRequest, res) => {
       consecutiveDays = (user.consecutive_days || 0) + 1;
     }
 
-    // Base reward: 50P
-    let reward = 50;
-
-    // Milestone bonuses (7, 30, 90, 180, 365 days)
+    // Base reward: 5000P (average)
+    let reward = 5000;
     let milestoneBonus = 0;
     let milestone = null;
+    let rewardCard = null;
 
+    // Special milestone rewards
     if (consecutiveDays === 7) {
-      milestoneBonus = 500;
-      milestone = '7일 연속';
+      reward = 15000;
+      milestone = '7일 연속 출석';
+    } else if (consecutiveDays === 14) {
+      reward = 30000;
+      milestone = '14일 연속 출석';
+    } else if (consecutiveDays === 21) {
+      // 103+ overall pack
+      reward = 0; // No points, only card
+      milestone = '21일 연속 출석';
+      
+      // Give 103+ overall card
+      const [cards]: any = await connection.query(
+        'SELECT * FROM players WHERE overall >= 103 ORDER BY RAND() LIMIT 1'
+      );
+      
+      if (cards.length > 0) {
+        const card = cards[0];
+        const [cardResult]: any = await connection.query(
+          'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
+          [userId, card.id]
+        );
+        
+        rewardCard = {
+          cardId: cardResult.insertId,
+          playerId: card.id,
+          playerName: card.name,
+          overall: card.overall,
+          position: card.position,
+          team: card.team,
+        };
+      }
+    } else if (consecutiveDays === 28) {
+      reward = 50000;
+      milestone = '28일 연속 출석';
     } else if (consecutiveDays === 30) {
-      milestoneBonus = 500;
-      milestone = '30일 연속';
-    } else if (consecutiveDays === 90) {
-      milestoneBonus = 500;
-      milestone = '90일 연속';
-    } else if (consecutiveDays === 180) {
-      milestoneBonus = 500;
-      milestone = '180일 연속';
-    } else if (consecutiveDays === 365) {
-      milestoneBonus = 500;
-      milestone = '365일 연속';
+      reward = 50000;
+      milestone = '30일 연속 출석';
     }
 
     const totalReward = reward + milestoneBonus;
@@ -320,6 +372,7 @@ router.post('/checkin', authMiddleware, async (req: AuthRequest, res) => {
         milestoneBonus,
         milestone,
         consecutiveDays,
+        rewardCard,
       },
     });
   } catch (error: any) {

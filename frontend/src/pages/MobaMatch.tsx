@@ -430,7 +430,8 @@ export default function MobaMatch() {
     });
     toast.success(`${player1.name}와 ${player2.name} 간 챔피언 스왑 요청이 전송되었습니다. 대기 중...`);
     setShowSwapModal(false);
-    setSelectedSwapPlayer(null); // Clear selection
+    setPlayer1ToSwap(null); // Clear selection
+    setPlayer2ToSwap(null); // Clear selection
   }, [socket, matchState, user]);
 
   // Use skill
@@ -611,7 +612,7 @@ export default function MobaMatch() {
             {/* Selected/Hovered Champion Details */}
             {(selectedChampion || hoveredChampion) && (
               <motion.div
-                key={(selectedChampion || hoveredChampion)?.id}
+                key={selectedChampion ?? hoveredChampion?.id ?? 'no-champion-selected'}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700"
@@ -1156,6 +1157,7 @@ export default function MobaMatch() {
                       }, 0)
                     : item.cost;
                   const canBuy = selectedPlayer.gold >= currentCost;
+                  const isConsumable = item.tier === 'CONSUMABLE';
 
                   return (
                     <div

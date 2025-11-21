@@ -237,11 +237,11 @@ export default function MatchSelect() {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-400">승리 보상</span>
-                    <span className="text-yellow-300 font-bold">5,000P</span>
+                    <span className="text-yellow-300 font-bold">15,000P</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-400">패배 보상</span>
-                    <span className="text-gray-300">1,000P</span>
+                    <span className="text-gray-300">10,000P</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-400">레이팅</span>

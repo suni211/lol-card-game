@@ -188,9 +188,38 @@ export class GameEngine {
             hasBeenUsed: false,
             skillLevel: 0, // Will be updated based on level
           };
+          // Reset current health if champion changes and health type is different, etc.
+          // For simplicity, just re-evaluate base stats based on new champion if needed
+          // For now, just ensure skill is correctly set.
         }
       }
     }
+  }
+
+  swapChampions(teamNumber: 1 | 2, player1OderId: number, player2OderId: number, champion1Id: number, champion2Id: number): boolean {
+    const team = teamNumber === 1 ? this.state.team1 : this.state.team2;
+    const player1 = team.players.find(p => p.oderId === player1OderId);
+    const player2 = team.players.find(p => p.oderId === player2OderId);
+
+    if (!player1 || !player2) {
+      console.warn(`[GameEngine] Swap failed: Player not found. p1: ${player1OderId}, p2: ${player2OderId}`);
+      return false;
+    }
+
+    // Ensure the current champions match what the frontend expects to swap
+    if (player1.championId !== champion1Id || player2.championId !== champion2Id) {
+        console.warn(`[GameEngine] Swap failed: Champion mismatch. p1 current: ${player1.championId}, expected: ${champion1Id}. p2 current: ${player2.championId}, expected: ${champion2Id}`);
+        return false;
+    }
+
+    // Perform the swap
+    const tempChampionId = player1.championId;
+    player1.championId = player2.championId;
+    player2.championId = tempChampionId;
+
+    // Re-initialize players to update skills and possibly stats based on new champion
+    this.initializePlayersWithChampions();
+    return true;
   }
 
   // Get upcoming event for the next turn (for notification)

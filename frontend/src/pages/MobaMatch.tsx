@@ -84,7 +84,11 @@ export default function MobaMatch() {
   const [champions, setChampions] = useState<Champion[]>([]);
   const [banPickData, setBanPickData] = useState<any | null>(null);
   const [selectedChampion, setSelectedChampion] = useState<number | null>(null);
+  const [hoveredChampion, setHoveredChampion] = useState<Champion | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [player1ToSwap, setPlayer1ToSwap] = useState<PlayerState | null>(null);
+  const [player2ToSwap, setPlayer2ToSwap] = useState<PlayerState | null>(null);
 
   // Skill usage state (for future target selection feature)
   const [, setSkillTargetSelection] = useState<{
@@ -164,6 +168,24 @@ export default function MobaMatch() {
       });
       toast(`챔피언이 선택되었습니다.`, { icon: '🎮' });
     });
+
+    newSocket.on('moba_champion_swapped', (data: {teamNumber: 1 | 2; player1OderId: number; player2OderId: number; player1NewChampionId: number; player2NewChampionId: number}) => {
+      setMatchState(prev => {
+        if (!prev) return prev;
+        const newMatchState = { ...prev };
+        const team = data.teamNumber === 1 ? newMatchState.team1 : newMatchState.team2;
+        
+        const player1 = team.players.find(p => p.oderId === data.player1OderId);
+        const player2 = team.players.find(p => p.oderId === data.player2OderId);
+
+        if (player1) player1.championId = data.player1NewChampionId;
+        if (player2) player2.championId = data.player2NewChampionId;
+        
+        toast.success('챔피언 스왑이 완료되었습니다!', {icon: '🤝'});
+        return newMatchState;
+      });
+    });
+
 
     newSocket.on('moba_ban_pick_complete', (data) => {
       console.log('[MobaMatch] Ban/Pick complete:', data);
@@ -397,6 +419,20 @@ export default function MobaMatch() {
     }
   };
 
+  const handleRequestSwap = useCallback((player1: PlayerState, player2: PlayerState) => {
+    if (!socket || !matchState || !user) return;
+    socket.emit('moba_request_swap', {
+      matchId: matchState.matchId,
+      player1OderId: player1.oderId,
+      player2OderId: player2.oderId,
+      champion1Id: player1.championId,
+      champion2Id: player2.championId,
+    });
+    toast.success(`${player1.name}와 ${player2.name} 간 챔피언 스왑 요청이 전송되었습니다. 대기 중...`);
+    setShowSwapModal(false);
+    setSelectedSwapPlayer(null); // Clear selection
+  }, [socket, matchState, user]);
+
   // Use skill
   const useSkill = useCallback((player: PlayerState, targetId?: number) => {
     setActions(prev => {
@@ -548,15 +584,17 @@ export default function MobaMatch() {
             ))}
           </div>
 
-          {/* Center: Champion Grid */}
+          {/* Center: Champion Grid and Details */}
           <div className="w-3/5 flex flex-col">
-            <div className="grid grid-cols-8 gap-1 flex-grow overflow-y-auto p-2 bg-gray-800 rounded-lg">
+            <div className="flex-grow grid grid-cols-8 gap-1 overflow-y-auto p-2 bg-gray-800 rounded-lg">
               {champions.map(champion => {
                 const isSelected = allSelectedChamps.includes(champion.id);
                 return (
                   <div
                     key={champion.id}
                     onClick={() => isMyTurn && !isSelected && setSelectedChampion(champion.id)}
+                    onMouseEnter={() => setHoveredChampion(champion)}
+                    onMouseLeave={() => setHoveredChampion(null)}
                     className={`
                       p-1 rounded text-center cursor-pointer transition-all
                       ${isSelected ? 'opacity-30 grayscale' : ''}
@@ -569,23 +607,53 @@ export default function MobaMatch() {
                 );
               })}
             </div>
-            <div className="flex gap-2">
+
+            {/* Selected/Hovered Champion Details */}
+            {(selectedChampion || hoveredChampion) && (
+              <motion.div
+                key={(selectedChampion || hoveredChampion)?.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700"
+              >
+                <h3 className="text-xl font-bold text-white mb-1">
+                  {(champions.find(c => c.id === selectedChampion) || hoveredChampion)?.name}
+                </h3>
+                <p className="text-primary-400 text-sm mb-2">
+                  {(champions.find(c => c.id === selectedChampion) || hoveredChampion)?.skillName}
+                </p>
+                <p className="text-gray-400 text-xs">
+                  {(champions.find(c => c.id === selectedChampion) || hoveredChampion)?.skillDescription}
+                </p>
+              </motion.div>
+            )}
+
+            <div className="flex gap-2 mt-4">
               <button
                 onClick={() => setShowTutorial(true)}
-                className="mt-4 px-4 py-3 bg-gray-600 text-white font-bold rounded-lg"
+                className="px-4 py-3 bg-gray-600 text-white font-bold rounded-lg flex items-center gap-2"
               >
                 <HelpCircle className="w-5 h-5" />
+                <span>튜토리얼</span>
               </button>
               {isMyTurn && (
                 <button
                   onClick={confirmBanPick}
                   disabled={!selectedChampion}
-                  className="mt-4 w-full py-3 bg-yellow-600 text-black font-bold rounded-lg disabled:opacity-50"
+                  className="flex-grow py-3 bg-yellow-600 text-black font-bold rounded-lg disabled:opacity-50"
                 >
                   {currentAction} 확정
                 </button>
               )}
             </div>
+            {banPickData.phase === 'COMPLETE' && (
+              <button
+                onClick={() => setShowSwapModal(true)}
+                className="mt-2 w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                챔피언 스왑
+              </button>
+            )}
           </div>
 
           {/* Team 2 Picks */}
@@ -1082,13 +1150,12 @@ export default function MobaMatch() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {items.map(item => {
-                  const canBuy = selectedPlayer.gold >= item.cost;
-                  const isConsumable = item.tier === 'CONSUMABLE';
                   const currentCost = item.buildsFrom && selectedPlayer.items
                     ? item.cost - item.buildsFrom.reduce((acc, subId) => {
                         return selectedPlayer.items.includes(subId) ? acc + (items?.find((i: Item) => i.id === subId)?.cost || 0) : acc;
                       }, 0)
                     : item.cost;
+                  const canBuy = selectedPlayer.gold >= currentCost;
 
                   return (
                     <div
@@ -1168,6 +1235,100 @@ export default function MobaMatch() {
                     className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                   >
                     항복
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Champion Swap Modal */}
+      <AnimatePresence>
+        {showSwapModal && matchState && myTeam && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-white mb-4">챔피언 스왑</h3>
+                <p className="text-gray-400 mb-6">
+                  같은 팀원과 챔피언을 바꿀 수 있습니다. 두 명의 선수를 선택해주세요.
+                </p>
+
+                <div className="space-y-3 mb-6">
+                  {myTeam.players.map(player => {
+                    const champion = champions.find(c => c.id === player.championId);
+                    const isSelected1 = player1ToSwap?.oderId === player.oderId;
+                    const isSelected2 = player2ToSwap?.oderId === player.oderId;
+                    const isDisabled = (player1ToSwap && player2ToSwap && !isSelected1 && !isSelected2) || player.isDead; // Cannot select more than 2 or dead players
+
+                    return (
+                      <div
+                        key={player.oderId}
+                        onClick={() => {
+                          if (isDisabled) return;
+                          if (isSelected1) {
+                            setPlayer1ToSwap(null);
+                          } else if (isSelected2) {
+                            setPlayer2ToSwap(null);
+                          } else if (!player1ToSwap) {
+                            setPlayer1ToSwap(player);
+                          } else if (!player2ToSwap) {
+                            setPlayer2ToSwap(player);
+                          }
+                        }}
+                        className={`p-3 rounded-lg flex items-center gap-3 transition-all ${
+                          isDisabled
+                            ? 'bg-gray-700/50 border border-gray-600/50 opacity-50 cursor-not-allowed'
+                            : (isSelected1 || isSelected2)
+                              ? 'bg-blue-600 border border-blue-400 cursor-pointer'
+                              : 'bg-gray-700 border border-gray-600 hover:bg-gray-600 cursor-pointer'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold">
+                          {player.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="text-white font-bold">{player.name}</div>
+                          <div className="text-gray-300 text-sm">{champion?.name || '챔피언 미선택'}</div>
+                        </div>
+                        {(isSelected1 || isSelected2) && <Check className="w-5 h-5 text-white" />}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowSwapModal(false);
+                      setPlayer1ToSwap(null);
+                      setPlayer2ToSwap(null);
+                    }}
+                    className="flex-1 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (player1ToSwap && player2ToSwap) {
+                        handleRequestSwap(player1ToSwap, player2ToSwap);
+                      }
+                    }}
+                    disabled={!player1ToSwap || !player2ToSwap}
+                    className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    스왑 요청
                   </button>
                 </div>
               </div>

@@ -135,14 +135,7 @@ export default function Event() {
     }
   };
 
-  const getAttendanceReward = (day: number): { points: number; special?: string } => {
-    if (day === 7) return { points: 15000, special: '7일 특별 보상' };
-    if (day === 14) return { points: 30000, special: '14일 특별 보상' };
-    if (day === 21) return { points: 0, special: '103+ 오버롤 팩' };
-    if (day === 28) return { points: 50000, special: '28일 특별 보상' };
-    if (day === 30) return { points: 50000, special: '30일 특별 보상' };
-    return { points: 5000 };
-  };
+
 
   const getQuestProgress = (quest: Quest): number => {
     switch (quest.quest_type) {

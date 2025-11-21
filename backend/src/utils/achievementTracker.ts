@@ -150,12 +150,12 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
 
     // Get user tier and check tier achievements
     const [user]: any = await connection.query(
-      'SELECT tier, rating, points, consecutive_days FROM users WHERE id = ?',
+      'SELECT tier, rating, points FROM users WHERE id = ?',
       [userId]
     );
 
     if (user.length > 0) {
-      const { tier, points, consecutive_days } = user[0];
+      const { tier, points } = user[0];
 
       // Tier achievements
       const tierMap: any = {
@@ -178,12 +178,7 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
       if (points >= 5000) await updateAchievementProgress(userId, 'points_owned_5000', 1);
       if (points >= 100000) await updateAchievementProgress(userId, 'points_owned_100000', 1);
 
-      // Login achievements
-      if (consecutive_days >= 3) await updateAchievementProgress(userId, 'consecutive_login_3', 1);
-      if (consecutive_days >= 7) await updateAchievementProgress(userId, 'consecutive_login_7', 1);
-      if (consecutive_days >= 30) await updateAchievementProgress(userId, 'consecutive_login_30', 1);
-      if (consecutive_days >= 100) await updateAchievementProgress(userId, 'consecutive_login_100', 1);
-      if (consecutive_days >= 365) await updateAchievementProgress(userId, 'consecutive_login_365', 1);
+
     }
 
   } catch (error) {

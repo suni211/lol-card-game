@@ -118,8 +118,7 @@ export default function Notices() {
 
   const getNoticeTypeColor = (type: Notice['type']) => {
     switch (type) {
-      case 'EVENT':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+
       case 'PATCH':
         return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
       case 'MAINTENANCE':
@@ -131,8 +130,7 @@ export default function Notices() {
 
   const getNoticeTypeLabel = (type: Notice['type']) => {
     switch (type) {
-      case 'EVENT':
-        return '이벤트';
+
       case 'PATCH':
         return '패치';
       case 'MAINTENANCE':
@@ -389,7 +387,7 @@ export default function Notices() {
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="NOTICE">공지</option>
-                      <option value="EVENT">이벤트</option>
+
                       <option value="PATCH">패치</option>
                       <option value="UPDATE">업데이트</option>
                       <option value="MAINTENANCE">점검</option>

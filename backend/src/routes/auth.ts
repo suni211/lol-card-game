@@ -439,7 +439,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
 
     const [users]: any = await pool.query(
       `SELECT u.id, u.username, u.email, u.points, u.tier, u.rating, u.is_admin,
-              u.last_check_in, u.consecutive_days, u.created_at, u.level, u.exp, u.total_exp,
+ u.created_at, u.level, u.exp, u.total_exp,
               u.equipped_title_id, t.id as title_id, t.name as title_name, t.color as title_color,
               t.icon as title_icon, t.rarity as title_rarity
        FROM users u
@@ -460,8 +460,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
       tier: users[0].tier,
       rating: users[0].rating,
       isAdmin: users[0].is_admin === 1,
-      lastCheckIn: users[0].last_check_in,
-      consecutiveDays: users[0].consecutive_days,
+
       createdAt: users[0].created_at,
       level: users[0].level || 1,
       exp: users[0].exp || 0,

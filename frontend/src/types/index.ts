@@ -154,14 +154,7 @@ export interface Mission {
   expiresAt: string;
 }
 
-// Attendance Types
-export interface Attendance {
-  userId: number;
-  lastCheckIn: string;
-  consecutiveDays: number;
-  totalDays: number;
-  canCheckIn: boolean;
-}
+
 
 // Trade Types
 export interface Trade {

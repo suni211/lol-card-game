@@ -36,9 +36,8 @@ import Market from './pages/Market';
 import Coupon from './pages/Coupon';
 import AdminCoupon from './pages/AdminCoupon';
 import Packs from './pages/Packs';
-import Event from './pages/Event';
-import EventMilestones from './pages/EventMilestones';
-import EventRewards from './pages/EventRewards';
+
+
 import StrategyStats from './pages/StrategyStats';
 import Guild from './pages/Guild';
 import Referral from './pages/Referral';
@@ -477,30 +476,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/event"
-            element={
-              <ProtectedRoute>
-                <Event />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/event/milestones"
-            element={
-              <ProtectedRoute>
-                <EventMilestones />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/event/rewards"
-            element={
-              <ProtectedRoute>
-                <EventRewards />
-              </ProtectedRoute>
-            }
-          />
+
+
           <Route
             path="/strategy-stats"
             element={

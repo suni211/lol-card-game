@@ -91,7 +91,6 @@ export default function Navbar() {
     {
       label: '이벤트',
       items: [
-        { path: '/event', label: '출석체크' },
         { path: '/lottery', label: '럭키 드로우' },
       ]
     },

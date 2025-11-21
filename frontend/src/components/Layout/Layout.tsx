@@ -78,7 +78,7 @@ export default function Layout() {
   const getNoticeTypeInfo = (type: string) => {
     const typeMap = {
       NOTICE: { emoji: '📢', bg: 'bg-blue-500', text: '공지사항' },
-      EVENT: { emoji: '🎉', bg: 'bg-purple-500', text: '이벤트' },
+
       PATCH: { emoji: '🔧', bg: 'bg-orange-500', text: '패치노트' },
       UPDATE: { emoji: '🔄', bg: 'bg-green-500', text: '업데이트' },
       MAINTENANCE: { emoji: '⚠️', bg: 'bg-red-500', text: '점검' },

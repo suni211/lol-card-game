@@ -31,7 +31,6 @@ import type {
 import {
   POSITION_ACTIONS,
   EVENT_INFO,
-  OBJECTIVE_ACTIONS,
 } from '../types/moba';
 import BanPickTutorial from '../components/Moba/BanPickTutorial';
 

@@ -137,6 +137,15 @@ export default function Event() {
 
 
 
+  const getAttendanceReward = (day: number): { points: number; special?: string } => {
+    if (day === 7) return { points: 15000, special: '7일 특별 보상' };
+    if (day === 14) return { points: 30000, special: '14일 특별 보상' };
+    if (day === 21) return { points: 0, special: '103+ 오버롤 팩' };
+    if (day === 28) return { points: 50000, special: '28일 특별 보상' };
+    if (day === 30) return { points: 50000, special: '30일 특별 보상' };
+    return { points: 5000 };
+  };
+
   const getQuestProgress = (quest: Quest): number => {
     switch (quest.quest_type) {
       case 'NORMAL_MATCH':
@@ -260,14 +269,14 @@ export default function Event() {
             {Array.from({ length: 30 }, (_, i) => {
               const day = i + 1;
               const isChecked = attendance.consecutiveDays >= day;
-
+              const reward = getAttendanceReward(day);
               const isSpecial = [7, 14, 21, 28, 30].includes(day);
               const isToday = attendance.consecutiveDays + 1 === day && attendance.canCheckIn;
 
               return (
                 <div
                   key={day}
-                  className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs sm:text-sm font-bold transition-all ${
+                  className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-xs sm:text-sm font-bold transition-all p-1 ${
                     isChecked
                       ? 'bg-white/30 border-2 border-white'
                       : isToday
@@ -279,6 +288,10 @@ export default function Event() {
                   {isSpecial && (
                     <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300 mt-0.5" />
                   )}
+                  <div className="absolute bottom-1 text-[8px] sm:text-[10px] opacity-80 text-center">
+                    {reward.points > 0 && <div>{reward.points.toLocaleString()}P</div>}
+                    {reward.special && <div className="text-yellow-200">{reward.special}</div>}
+                  </div>
                 </div>
               );
             })}

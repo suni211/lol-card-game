@@ -803,40 +803,50 @@ function startTurnTimer(io: Server, matchId: string) {
     clearTimeout(existingTimer);
   }
 
+  // Retrieve engine once for this function call scope
+  const engine = activeMatches.get(matchId);
+  if (!engine) {
+    console.warn(`[startTurnTimer] No engine found for matchId: ${matchId}. Cannot start turn timer.`);
+    return;
+  }
+
   // Set new timer
   const timer = setTimeout(() => {
-    const engine = activeMatches.get(matchId);
-    if (!engine) return;
+    // Re-check engine inside timeout in case it was cleaned up during the delay
+    const currentEngine = activeMatches.get(matchId);
+    if (!currentEngine) {
+      console.warn(`[startTurnTimer] Engine for matchId: ${matchId} not found in timeout. Skipping turn processing.`);
+      return;
+    }
 
     // Auto-submit default actions for players who didn't submit
-    const state = engine.getState();
+    const state = currentEngine.getState(); // Use currentEngine here
     if (!state.team1Ready) {
       const defaultActionsTeam1: TurnAction[] = state.team1.players.map(p => ({
         oderId: p.oderId,
         action: 'FIGHT', // Default to fight
       }));
-      engine.submitActions(1, defaultActionsTeam1);
+      currentEngine.submitActions(1, defaultActionsTeam1); // Use currentEngine here
     }
     if (!state.team2Ready) {
       const defaultActionsTeam2: TurnAction[] = state.team2.players.map(p => ({
         oderId: p.oderId,
         action: 'FIGHT', // Default to fight
       }));
-      engine.submitActions(2, defaultActionsTeam2);
+      currentEngine.submitActions(2, defaultActionsTeam2); // Use currentEngine here
     }
 
     // Check auto-ready for dead teams
-    engine.checkAutoReady();
+    currentEngine.checkAutoReady(); // Use currentEngine here
 
     processTurn(io, matchId);
   }, TURN_TIME);
 
   matchTimers.set(matchId, timer);
 
-  // Get engine and check for upcoming event
-  const engine = activeMatches.get(matchId);
-  const upcomingEvent = engine?.getUpcomingEvent();
-  const currentTurn = engine?.getState().currentTurn;
+  // Now, use the safely checked 'engine' for upcomingEvent logic
+  const upcomingEvent = engine.getUpcomingEvent();
+  const currentTurn = engine.getState().currentTurn;
   console.log(`[startTurnTimer] Match ${matchId}: Starting turn timer for turn ${currentTurn || 'N/A'}`);
 
   // Notify players of turn start

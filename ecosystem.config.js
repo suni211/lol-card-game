@@ -51,11 +51,12 @@ module.exports = {
     },
     {
       name: 'lol-frontend',
-      script: 'npx',
-      args: 'serve -s dist -l 3000',
+      script: 'serve',
+      args: '-s dist -l 3000',
       cwd: path.join(__dirname, 'frontend'),
       instances: 1,
       exec_mode: 'fork',
+      interpreter: 'none',
       env: {
         NODE_ENV: 'production',
         PORT: 3000,

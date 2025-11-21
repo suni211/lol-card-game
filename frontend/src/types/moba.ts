@@ -175,7 +175,7 @@ export interface Item {
   icon?: string;
 }
 
-// Action options per position
+// Action options per position (objective actions are added dynamically based on currentEvent)
 export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: string }[]> = {
   TOP: [
     { action: 'FIGHT', label: '탑 전투' },
@@ -183,10 +183,6 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'ROAM_MID', label: '미드 로밍' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
-    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
-    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
-    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
-    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   JUNGLE: [
     { action: 'FARM', label: '정글 파밍' },
@@ -194,10 +190,6 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'GANK_MID', label: '미드 갱' },
     { action: 'GANK_BOT', label: '바텀 갱' },
     { action: 'RECALL', label: '귀환' },
-    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
-    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
-    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
-    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   MID: [
     { action: 'FIGHT', label: '미드 전투' },
@@ -206,20 +198,12 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'ROAM_BOT', label: '바텀 로밍' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
-    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
-    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
-    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
-    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   ADC: [
     { action: 'FIGHT', label: '바텀 전투' },
     { action: 'DEFEND', label: '바텀 수비' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
-    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
-    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
-    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
-    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
   SUPPORT: [
     { action: 'FIGHT', label: '바텀 전투' },
@@ -227,10 +211,6 @@ export const POSITION_ACTIONS: Record<Position, { action: PlayerAction; label: s
     { action: 'ROAM_MID', label: '미드 로밍' },
     { action: 'ROAM_JUNGLE', label: '정글 지원' },
     { action: 'RECALL', label: '귀환' },
-    { action: 'CONTEST_DRAGON', label: '용 쟁탈' },
-    { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈' },
-    { action: 'CONTEST_BARON', label: '바론 쟁탈' },
-    { action: 'CONTEST_ELDER', label: '장로 쟁탈' },
   ],
 };
 

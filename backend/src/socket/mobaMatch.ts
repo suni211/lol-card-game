@@ -473,10 +473,10 @@ export function setupMobaMatch(io: Server, socket: Socket, user: any) {
     const state = engine.getState();
     const requestingTeamNumber = state.team1.oderId === oderId ? 1 : 2;
 
-    // Validation: Only allow swaps after ban/pick is complete and before game starts
+    // Validation: Allow swaps after ban/pick is complete (including during game)
     const banPickState = banPickStates.get(data.matchId); // Get current banPickState
-    if (!banPickState || banPickState.phase !== 'COMPLETE' || state.status === 'IN_PROGRESS') {
-        socket.emit('moba_error', { message: '지금은 챔피언을 스왑할 수 없습니다. 밴/픽 단계 완료 후 게임 시작 전에만 스왑 가능합니다.' });
+    if (!banPickState || banPickState.phase !== 'COMPLETE') {
+        socket.emit('moba_error', { message: '지금은 챔피언을 스왑할 수 없습니다. 밴/픽 단계가 완료된 후에만 스왑 가능합니다.' });
         return;
     }
 

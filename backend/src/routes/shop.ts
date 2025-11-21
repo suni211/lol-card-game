@@ -252,7 +252,9 @@ router.get('/inventory', authMiddleware, async (req: AuthRequest, res) => {
         si.item_type,
         si.effect_type,
         si.effect_value,
-        si.duration_minutes
+        si.duration_minutes,
+        si.price,
+        (si.price * 0.5) AS sell_price
       FROM user_items ui
       JOIN shop_items si ON ui.item_id = si.id
       WHERE ui.user_id = ? AND ui.quantity > 0
@@ -486,6 +488,89 @@ router.post('/use', authMiddleware, async (req: AuthRequest, res) => {
   } catch (error: any) {
     await connection.rollback();
     console.error('Use item error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+// Sell an item
+router.post('/sell', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.user!.id;
+    const { userItemId } = req.body;
+
+    if (!userItemId) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '판매할 아이템을 선택해주세요.' });
+    }
+
+    // Get user item details and its corresponding shop_item price
+    const [userItems]: any = await connection.query(`
+      SELECT ui.id, ui.quantity, si.price
+      FROM user_items ui
+      JOIN shop_items si ON ui.item_id = si.id
+      WHERE ui.id = ? AND ui.user_id = ?
+    `, [userItemId, userId]);
+
+    if (userItems.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: '아이템을 찾을 수 없습니다.' });
+    }
+
+    const userItem = userItems[0];
+
+    if (userItem.quantity <= 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: '판매할 아이템이 부족합니다.' });
+    }
+
+    // Calculate sell price (e.g., 50% of original price)
+    const sellPrice = Math.floor(userItem.price * 0.5);
+
+    // Decrease quantity of user item
+    await connection.query(
+      'UPDATE user_items SET quantity = quantity - 1 WHERE id = ?',
+      [userItemId]
+    );
+
+    // If quantity becomes 0, remove the user_item entry
+    if (userItem.quantity - 1 === 0) {
+      await connection.query(
+        'DELETE FROM user_items WHERE id = ?',
+        [userItemId]
+      );
+    }
+
+    // Add points to user
+    await connection.query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
+      [sellPrice, userId]
+    );
+
+    await connection.commit();
+
+    // Get updated user points
+    const [updatedUser]: any = await connection.query(
+      'SELECT points FROM users WHERE id = ?',
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      message: `아이템을 ${sellPrice} 포인트에 판매했습니다!`,
+      data: {
+        remainingPoints: updatedUser[0].points
+      }
+    });
+
+  } catch (error: any) {
+    await connection.rollback();
+    console.error('Sell item error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   } finally {
     connection.release();

@@ -30,6 +30,7 @@ interface UserItem {
   effect_type: string;
   effect_value: string;
   duration_minutes: number;
+  sell_price: number; // New property for sell price
 }
 
 interface ActiveEffect {
@@ -50,6 +51,7 @@ export default function Shop() {
   const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState<number | null>(null);
+  const [selling, setSelling] = useState<number | null>(null);
   const [showNameChangeModal, setShowNameChangeModal] = useState(false);
   const [newName, setNewName] = useState('');
 
@@ -127,6 +129,28 @@ export default function Shop() {
       }
     } catch (error: any) {
       toast.error(error.response?.data?.error || '아이템 사용에 실패했습니다');
+    }
+  };
+
+  const handleSellItem = async (userItemId: number) => {
+    try {
+      setSelling(userItemId);
+
+      const response = await axios.post(
+        `${API_URL}/shop/sell`,
+        { userItemId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        updateUser({ points: response.data.data.remainingPoints });
+        fetchShopData();
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || '아이템 판매에 실패했습니다');
+    } finally {
+      setSelling(null);
     }
   };
 
@@ -316,12 +340,24 @@ export default function Shop() {
                     {item.duration_minutes > 0 && (
                       <p className="text-blue-400 text-xs mb-2">⏱️ 지속시간: {item.duration_minutes}분</p>
                     )}
-                    <button
-                      onClick={() => handleUseItem(item.id, item.effect_type)}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:shadow-lg transition-all"
-                    >
-                      사용하기
-                    </button>
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-xl font-bold text-green-400">판매가: {item.sell_price.toLocaleString()} P</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleUseItem(item.id, item.effect_type)}
+                          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:shadow-lg transition-all"
+                        >
+                          사용하기
+                        </button>
+                        <button
+                          onClick={() => handleSellItem(item.id)}
+                          disabled={selling === item.id}
+                          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {selling === item.id ? '판매 중...' : '판매'}
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 ))
               )}

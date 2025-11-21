@@ -682,7 +682,8 @@ export default function MobaMatch() {
                 </button>
               )}
             </div>
-            {swapPhaseActive && swapTimeLeft > 0 && (
+            {/* Always show swap button after ban/pick is complete */}
+            {matchState && matchState.status !== 'BAN_PICK' && (
               <button
                 onClick={() => setShowSwapModal(true)}
                 className="mt-2 w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors"
@@ -1307,7 +1308,7 @@ export default function MobaMatch() {
                     const champion = champions.find(c => c.id === player.championId);
                     const isSelected1 = player1ToSwap?.oderId === player.oderId;
                     const isSelected2 = player2ToSwap?.oderId === player.oderId;
-                    const isDisabled = (player1ToSwap && player2ToSwap && !isSelected1 && !isSelected2) || player.isDead; // Cannot select more than 2 or dead players
+                    const isDisabled = (player1ToSwap && player2ToSwap && !isSelected1 && !isSelected2); // Cannot select more than 2 players
 
                     return (
                       <div
@@ -1404,9 +1405,11 @@ function PlayerCard({
   currentEvent?: string; // New prop type
 }) {
   const healthPercent = (player.currentHealth / player.maxHealth) * 100;
+  
+  // Start with base position actions
   let availableActions = POSITION_ACTIONS[player.position].map(action => ({ ...action, isActive: true }));
 
-  // Add all objective actions, but mark which ones are active
+  // Add objective actions dynamically based on current event
   const objectiveActions: Array<{ action: PlayerAction; label: string; isActive: boolean }> = [
     { action: 'CONTEST_VOIDGRUB', label: '유충 쟁탈', isActive: currentEvent === 'VOIDGRUB' || currentEvent === 'DRAGON_AND_VOIDGRUB' },
     { action: 'CONTEST_DRAGON', label: '용 쟁탈', isActive: currentEvent === 'DRAGON' || currentEvent === 'DRAGON_AND_VOIDGRUB' },
@@ -1414,10 +1417,11 @@ function PlayerCard({
     { action: 'CONTEST_ELDER', label: '장로 쟁탈', isActive: currentEvent === 'ELDER' },
   ];
 
-            availableActions = [
-              ...availableActions,
-              ...objectiveActions,
-            ];
+  // Always add objective actions (they will be disabled if not active)
+  availableActions = [
+    ...availableActions,
+    ...objectiveActions,
+  ];
   // Get champion info
   const champion = player.championId && champions
     ? champions.find(c => c.id === player.championId)

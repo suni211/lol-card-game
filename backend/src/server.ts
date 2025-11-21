@@ -25,7 +25,7 @@ import marketRoutes from './routes/market';
 import couponRoutes, { setSocketIOForCoupon } from './routes/coupon';
 import packsRoutes from './routes/packs';
 import shopRoutes, { setSocketIOForShop } from './routes/shop';
-import eventRoutes from './routes/event';
+
 import strategyStatsRoutes from './routes/strategyStats';
 import levelRoutes from './routes/level';
 import eventsRoutes from './routes/events';
@@ -126,7 +126,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/coupon', couponRoutes);
 app.use('/api/packs', packsRoutes);
 app.use('/api/shop', shopRoutes);
-app.use('/api/event', eventRoutes);
+
 app.use('/api/strategy-stats', strategyStatsRoutes);
 app.use('/api/level', levelRoutes);
 app.use('/api/events', eventsRoutes);

@@ -4,7 +4,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { updateMissionProgress } from '../utils/missionTracker';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { normalizeTeamName } from '../utils/teamUtils';
-import { updateEventProgress } from '../utils/eventTracker';
+
 import { addExperience, calculateExpReward } from '../utils/levelTracker';
 import { calculateDeckPowerWithCoachBuffs } from '../utils/coachBuffs';
 import { updateGuildMissionProgress } from '../utils/guildMissionTracker';
@@ -289,9 +289,7 @@ router.post('/battle', authMiddleware, async (req: AuthRequest, res: Response) =
     );
 
     // Update event progress
-    updateEventProgress(userId, 'AI_MATCH', 1).catch(err =>
-      console.error('Event update error:', err)
-    );
+
 
     // Update guild missions
     updateGuildMissionProgress(userId, 'MATCH', 1).catch(err =>
@@ -555,10 +553,7 @@ router.post('/auto-battle', authMiddleware, async (req: AuthRequest, res: Respon
       console.error('Mission update error:', err)
     );
 
-    // Update event progress for all battles
-    updateEventProgress(userId, 'AI_MATCH', count).catch(err =>
-      console.error('Event update error:', err)
-    );
+
 
     // Update guild missions for all battles
     updateGuildMissionProgress(userId, 'MATCH', count).catch(err =>

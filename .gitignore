@@ -37,8 +37,9 @@ coverage/
 .cache/
 temp/
 tmp/
-*.sql
-!lol_card_game_backup.sql
+
+# Allow database schema files
+!database/**/*.sql
 
 # PM2 logs
 logs/

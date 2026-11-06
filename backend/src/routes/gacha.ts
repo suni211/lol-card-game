@@ -152,7 +152,6 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         [players] = await connection.query(
           `SELECT *,
            CASE
-             WHEN season = '26WRs' THEN 'ICON'
              WHEN overall <= 80 THEN 'COMMON'
              WHEN overall <= 90 THEN 'RARE'
              WHEN overall <= 100 THEN 'EPIC'
@@ -162,7 +161,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
            WHERE overall >= ?
               AND overall <= ?
              AND season IN ('26 LIVE','26WR','26WRs')
-              AND season != '26WRs'
+              
            ORDER BY RAND() LIMIT 1`,
           [minOverall, maxOverall]
         );
@@ -176,7 +175,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         `SELECT *, CASE WHEN overall<=80 THEN 'COMMON'
                       WHEN overall<=90 THEN 'RARE'
                       WHEN overall<=100 THEN 'EPIC' ELSE 'LEGENDARY' END AS tier
-         FROM players WHERE season IN ('26 LIVE','26WR')
+         FROM players WHERE season IN ('26 LIVE','26WR','26WRs')
          ORDER BY overall DESC,RAND() LIMIT 1`
       );
     }
@@ -389,8 +388,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           [players] = await connection.query(
             `SELECT *,
              CASE
-               WHEN season = '26WRs' THEN 'ICON'
-               WHEN overall <= 80 THEN 'COMMON'
+                 WHEN overall <= 80 THEN 'COMMON'
                WHEN overall <= 90 THEN 'RARE'
                WHEN overall <= 100 THEN 'EPIC'
                ELSE 'LEGENDARY'
@@ -399,7 +397,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
              WHERE overall >= ?
               AND overall <= ?
                AND season IN ('26 LIVE','26WR','26WRs')
-              AND season != '26WRs'
+              
              ORDER BY RAND() LIMIT 1`,
             [minOverall, maxOverall]
           );
@@ -411,7 +409,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           `SELECT *, CASE WHEN overall<=80 THEN 'COMMON'
                           WHEN overall<=90 THEN 'RARE'
                           WHEN overall<=100 THEN 'EPIC' ELSE 'LEGENDARY' END AS tier
-           FROM players WHERE season IN ('26 LIVE','26WR')
+           FROM players WHERE season IN ('26 LIVE','26WR','26WRs')
            ORDER BY overall DESC,RAND() LIMIT 1`
         );
       }
@@ -570,7 +568,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         p.region,
         p.salary,
         CASE
-          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -678,7 +676,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
         p.region,
         p.salary,
         CASE
-          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -804,7 +802,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     const [cards]: any = await pool.query(
       `SELECT uc.*, p.name as player_name,
         CASE
-          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -905,7 +903,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     const [cards]: any = await connection.query(
       `SELECT uc.*, p.name as player_name,
         CASE
-          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'

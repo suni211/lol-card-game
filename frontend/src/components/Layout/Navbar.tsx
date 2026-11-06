@@ -282,41 +282,33 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className="lg:hidden pb-3 overflow-x-auto scrollbar-hide">
-          <div className="flex space-x-2">
-            {navStructure.map((item) => {
-              if ('items' in item) {
-                return item.items.map((subItem) => (
-                  <Link
-                    key={subItem.path}
-                    to={subItem.path}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                      isActive(subItem.path)
-                        ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {item.label} - {subItem.label}
-                  </Link>
-                ));
-              } else {
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                      isActive(item.path)
-                        ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              }
-            })}
+        {/* Mobile Navigation: only top-level groups, no dozens of scrolling tabs */}
+        <div className="lg:hidden pb-3">
+          <div className="flex gap-2 overflow-x-auto py-1">
+            {navStructure.map(item => 'items' in item ? (
+              <button
+                key={item.label}
+                type="button"
+                aria-expanded={clickedDropdown===item.label}
+                onClick={()=>setClickedDropdown(clickedDropdown===item.label?null:item.label)}
+                className={`flex-shrink-0 rounded-md px-3 py-2 text-sm font-semibold ${isDropdownActive(item.items)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
+                {item.label} <ChevronDown className="inline h-3 w-3" />
+              </button>
+            ) : (
+              <Link key={item.path} to={item.path} onClick={()=>setClickedDropdown(null)}
+                className="flex-shrink-0 rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{item.label}</Link>
+            ))}
           </div>
+          {navStructure.filter((item): item is NavDropdown => 'items' in item && item.label===clickedDropdown).map(group=>(
+            <div key={group.label} className="mt-2 grid max-h-[45dvh] grid-cols-2 gap-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+              {group.items.map(sub=>(
+                <Link key={sub.path} to={sub.path} onClick={()=>setClickedDropdown(null)}
+                  className={`rounded-md px-3 py-2 text-sm ${isActive(sub.path)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>
+                  {sub.label}
+                </Link>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     </nav>

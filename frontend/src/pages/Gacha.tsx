@@ -4,6 +4,7 @@ import { Sparkles, Trophy, Info, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import type { Player, GachaOption } from '../types';
+import { getPlayerImageUrl, getSeriesLogo } from '../utils/playerImage';
 import axios from 'axios';
 import { playSound } from '../utils/soundEffects';
 
@@ -1172,7 +1173,7 @@ export default function Gacha() {
                       </div>
                       <div className="text-gray-300 text-2xl mb-4">{drawnCard.team} • {drawnCard.position}</div>
                       <img
-                        src={`/players/${drawnCard.name}.png`}
+                        src={getPlayerImageUrl(drawnCard.name, drawnCard.season, drawnCard.tier, drawnCard.imageUrl)}
                         alt={drawnCard.name}
                         className="w-48 h-48 object-contain mx-auto"
                         onError={(e) => {
@@ -1270,7 +1271,7 @@ export default function Gacha() {
                     </div>
                     <div className="text-yellow-200 text-3xl mb-4">{drawnCard.team} • {drawnCard.position}</div>
                     <img
-                      src={`/players/${drawnCard.name}.png`}
+                      src={getPlayerImageUrl(drawnCard.name, drawnCard.season, drawnCard.tier, drawnCard.imageUrl)}
                       alt={drawnCard.name}
                       className="w-64 h-64 object-contain mx-auto"
                       onError={(e) => {

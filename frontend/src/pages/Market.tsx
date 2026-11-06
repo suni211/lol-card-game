@@ -317,8 +317,12 @@ export default function Market() {
         setShowSellModal(true);
       }
     } catch (error) {
-      console.error('Failed to fetch player price:', error);
-      toast.error('가격 정보를 불러오는데 실패했습니다');
+      console.error('Reference price unavailable; allow user-set listing:', error);
+      setPriceRange({ floor: 0, ceiling: 0 });
+      setSellPrice(1000);
+      setSelectedCard(card);
+      setShowSellModal(true);
+      toast('기준 시세를 불러오지 못했습니다. 판매가는 직접 입력할 수 있습니다.');
     }
   };
 
@@ -1235,7 +1239,7 @@ export default function Market() {
                     max={1000000000}
                   />
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    참고 시세 범위: {priceRange.floor.toLocaleString()}P ~ {priceRange.ceiling.toLocaleString()}P · 판매가는 자유롭게 정할 수 있습니다.
+                    {priceRange.ceiling > 0 ? `참고 시세: ${priceRange.floor.toLocaleString()}P ~ ${priceRange.ceiling.toLocaleString()}P` : '기준 시세 없음'} · 판매가는 직접 설정할 수 있습니다.
                   </p>
                   {sellPrice > 0 && (
                     <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">

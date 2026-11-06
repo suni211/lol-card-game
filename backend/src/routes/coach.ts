@@ -4,6 +4,60 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// User-paid coach scouting. Stars are rarity tiers for game balance (1 through 5).
+const COACH_DRAW_COST = 5000;
+router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const userId = req.user!.id;
+    const [users]:any = await connection.query(
+      'SELECT points FROM users WHERE id = ? FOR UPDATE',[userId]
+    );
+    if (!users.length || users[0].points < COACH_DRAW_COST) {
+      await connection.rollback();
+      return res.status(400).json({success:false,error:'코치 스카우트에는 5,000P가 필요합니다.'});
+    }
+    // Do not sell already owned coaches twice: duplicates would be unusable for this roster.
+    const [available]:any = await connection.query(
+      `SELECT c.* FROM coaches c WHERE NOT EXISTS
+         (SELECT 1 FROM user_coaches uc WHERE uc.coach_id=c.id AND uc.user_id=?)
+       AND c.star_rating BETWEEN 1 AND 5`,[userId]
+    );
+    if (!available.length) {
+      await connection.rollback();
+      return res.status(409).json({success:false,error:'모든 코치를 보유하고 있습니다.'});
+    }
+    const weights = [0, 48, 28, 15, 7, 2];
+    const weighted = available.reduce((sum:number,c:any)=>sum+weights[c.star_rating],0);
+    let target=Math.random()*weighted;
+    let selected=available[available.length-1];
+    for (const c of available) {
+      target-=weights[c.star_rating];
+      if (target < 0) { selected=c; break; }
+    }
+    const [paid]:any = await connection.query(
+      'UPDATE users SET points=points-? WHERE id=? AND points>=?',
+      [COACH_DRAW_COST,userId,COACH_DRAW_COST]
+    );
+    if (!paid.affectedRows) {
+      await connection.rollback();
+      return res.status(400).json({success:false,error:'포인트가 부족합니다.'});
+    }
+    await connection.query(
+      'INSERT INTO user_coaches (user_id,coach_id,enhancement_level,current_buff_value) VALUES (?,?,0,?)',
+      [userId,selected.id,selected.buff_value]
+    );
+    await connection.commit();
+    return res.json({success:true,data:{coach:selected,cost:COACH_DRAW_COST},
+      message:`${selected.name} 코치 (${selected.star_rating}성) 스카우트 성공!`});
+  } catch(error) {
+    await connection.rollback();
+    console.error('Coach draw error:',error);
+    return res.status(500).json({success:false,error:'코치 스카우트 실패'});
+  } finally {connection.release();}
+});
+
 // Get all coaches
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {

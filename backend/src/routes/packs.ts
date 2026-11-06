@@ -12,7 +12,7 @@ router.get('/inventory', authMiddleware, async (req: AuthRequest, res) => {
     const [packs]: any = await pool.query(
       `SELECT pack_type, quantity, received_at
        FROM user_packs
-       WHERE user_id = ? AND quantity > 0
+       WHERE user_id = ? AND quantity > 0 AND pack_type IN ('STANDARD','PREMIUM','EPIC','LEGENDARY')
        ORDER BY received_at DESC`,
       [userId]
     );
@@ -34,7 +34,7 @@ router.post('/open', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.user!.id;
     const { packType, count = 1 } = req.body;
 
-    if (!packType || count < 1) {
+    if (!['STANDARD','PREMIUM','EPIC','LEGENDARY'].includes(packType) || !Number.isSafeInteger(count) || count < 1 || count > 10) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Invalid pack type or count' });
     }
@@ -104,10 +104,6 @@ function getPackConfig(packType: string) {
       maxOverall: 999,
       guaranteedEpic: true,
     },
-    ICON: {
-      cardCount: 1,
-      iconOnly: true,
-    },
     EPIC: {
       cardCount: 5,
       minOverall: 85,
@@ -116,7 +112,7 @@ function getPackConfig(packType: string) {
     },
   };
 
-  return configs[packType] || configs.STANDARD;
+  return configs[packType];
 }
 
 // Open a single pack

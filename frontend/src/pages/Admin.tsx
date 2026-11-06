@@ -40,6 +40,8 @@ export default function Admin() {
   const [overallSearch, setOverallSearch] = useState('');
   const [overallCandidates, setOverallCandidates] = useState<Player[]>([]);
   const [overallPlayerId, setOverallPlayerId] = useState<number | null>(null);
+  const [countryCode, setCountryCode] = useState('');
+  const [missingNationalityCount, setMissingNationalityCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -258,6 +260,30 @@ export default function Admin() {
     } catch(e:any) { toast.error(e.response?.data?.error || 'OVR 저장 실패'); }
   };
 
+  const saveNationality = async () => {
+    if (!overallPlayerId || !/^[A-Za-z]{2}$/.test(countryCode)) {
+      toast.error('선수 카드 선택 후 두 글자 국적 코드(KR 등)를 입력해주세요.');
+      return;
+    }
+    try {
+      const r=await axios.put(`${API_URL}/admin/player-nationality/${overallPlayerId}`,
+        {nationality:countryCode.toUpperCase()},{
+          headers:{Authorization:`Bearer ${token}`},
+        });
+      toast.success(r.data.message);
+      await inspectMissingNationalities();
+    } catch(e:any) {toast.error(e.response?.data?.error || '국적 저장 실패');}
+  };
+  const inspectMissingNationalities = async () => {
+    try {
+      const r=await axios.get(`${API_URL}/admin/missing-nationalities`,{
+        headers:{Authorization:`Bearer ${token}`},
+      });
+      setMissingNationalityCount(Number(r.data.data?.total || 0));
+      toast.success(`국적 미등록 카드 ${r.data.data?.total || 0}개 (전체 시즌 기준)`);
+    } catch(e:any) {toast.error(e.response?.data?.error || '국적 현황 조회 실패');}
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ko-KR');
   };
@@ -321,6 +347,22 @@ export default function Admin() {
             <button onClick={()=>void saveOverall()} disabled={!overallPlayerId}
               className="rounded-md bg-emerald-600 px-6 py-3 font-bold text-white disabled:opacity-50">OVR 저장</button>
           </div>
+        </div>
+        <div className="mb-8 rounded-xl border border-amber-300 bg-white p-6 shadow-lg dark:border-amber-900 dark:bg-gray-800">
+          <h2 className="mb-3 text-xl font-bold text-gray-900 dark:text-white">국적 데이터 검수</h2>
+          <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">위에서 정확한 선수·시즌을 선택한 뒤 ISO 두 글자 국적을 기록하세요. 국적을 리그 지역으로 자동 추정하지 않습니다.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input aria-label="ISO 국가 코드" value={countryCode} maxLength={2}
+              onChange={e=>setCountryCode(e.target.value.toUpperCase())}
+              placeholder="KR" className="w-24 rounded-md border p-3 text-gray-900"/>
+            <button disabled={!overallPlayerId} onClick={()=>void saveNationality()}
+              className="rounded-md bg-amber-600 px-5 py-3 font-bold text-white disabled:opacity-50">선수 국적 저장</button>
+            <button onClick={()=>void inspectMissingNationalities()}
+              className="rounded-md border border-amber-500 px-5 py-3 font-bold text-amber-700 dark:text-amber-300">
+              미등록 국적 조회
+            </button>
+          </div>
+          {missingNationalityCount!==null && <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">국적 미등록 선수 카드: {missingNationalityCount}개</p>}
         </div>
         <div className="grid grid-cols-1 gap-8">
           {/* Point Management */}

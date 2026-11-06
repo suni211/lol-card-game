@@ -4,7 +4,7 @@ import { MessageCircle, X, Send, Users } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/authStore';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.PROD ? window.location.origin : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
 
 interface ChatMessage {
   id: number;

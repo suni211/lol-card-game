@@ -17,29 +17,18 @@
 ## 2. 팀 로고
 `frontend/public/teams/`에 **투명 배경 PNG** 파일을 넣으세요.
 
-정확한 파일명 (2026 월즈 19개 팀):
+정확한 파일명 (**2026 전 세계 1부 리그 60개 팀**):
+
 ```text
-GEN.G.png
-HLE.png
-T1.png
-DK.png
-AL.png
-BLG.png
-TES.png
-IG.png
-G2.png
-MKOI.png
-KC.png
-TLAW.png
-LYON.png
-C9.png
-TSW.png
-CFO.png
-MVK.png
-LOS.png
-FUR.png
+LCK: GEN.G.png HLE.png T1.png DK.png BFX.png BRO.png DNS.png KRX.png KT.png NS.png
+LPL: AL.png BLG.png TES.png IG.png JDG.png EDG.png LGD.png LNG.png NIP.png WE.png TT.png WBG.png OMG.png UP.png
+LEC: G2.png MKOI.png KC.png FNC.png GX.png NAVI.png VIT.png TH.png SHFT.png SK.png LR.png KCB.png
+LCS: TLAW.png LYON.png C9.png SEN.png DIG.png FLY.png SR.png DSG.png
+CBLOL: LOS.png FUR.png FX.png LOUD.png LEV.png PAIN.png RED.png VKS.png
+LCP: TSW.png CFO.png MVK.png DCG.png DFM.png GAM.png GZ.png SHG.png
 ```
 
+**각 팀의 주전 5명 선수 이름은 [2026 전체 1부 리그 60팀 명단](2026-global-tier1-rosters.md)을 참고하세요.**
 예: `frontend/public/teams/T1.png`, `frontend/public/teams/GEN.G.png`.
 서버는 팀 이름을 그대로 파일명으로 사용하므로 대소문자/마침표를 바꾸면 표시되지 않습니다.
 

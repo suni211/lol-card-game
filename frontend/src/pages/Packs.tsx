@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Pack {
   pack_type: string;
@@ -106,6 +106,12 @@ export default function Packs() {
         emoji: '🎁',
         bg: 'from-blue-500 to-purple-600',
         description: '5장의 카드 (70-100 OVR, RARE 이상 1장 보장)',
+      },
+      EPIC: {
+        name: '에픽 팩',
+        emoji: '✨',
+        bg: 'from-purple-500 to-indigo-600',
+        description: '5장의 카드 (85-105 OVR, EPIC 이상 1장 보장)',
       },
       LEGENDARY: {
         name: '전설 팩',

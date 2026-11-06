@@ -1,64 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trophy, Gift, Check, X } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function Register() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
-  const [referralCode, setReferralCode] = useState('');
-  const [referralValid, setReferralValid] = useState<boolean | null>(null);
-  const [referralUsername, setReferralUsername] = useState('');
-
-  // Debounced referral code validation
-  useEffect(() => {
-    if (referralCode.length >= 4) {
-      const timer = setTimeout(() => {
-        validateReferralCode(referralCode);
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setReferralValid(null);
-      setReferralUsername('');
-    }
-  }, [referralCode]);
-
-  const validateReferralCode = async (code: string) => {
-    if (!code) {
-      setReferralValid(null);
-      setReferralUsername('');
-      return;
-    }
-
-    try {
-      const result = await axios.post(`${API_URL}/referral/validate`, {
-        referralCode: code,
-      });
-
-      if (result.data.success) {
-        setReferralValid(true);
-        setReferralUsername(result.data.data.referrerUsername);
-      } else {
-        setReferralValid(false);
-        setReferralUsername('');
-      }
-    } catch (error: any) {
-      setReferralValid(false);
-      setReferralUsername('');
-    }
-  };
 
   const handleGoogleSignIn = async (response: any) => {
     try {
       const result = await axios.post(`${API_URL}/auth/google`, {
         credential: response.credential,
-        referralCode: referralCode || undefined,
       });
 
       if (result.data.success) {
@@ -130,57 +88,6 @@ export default function Register() {
                 </p>
               </div>
             </div>
-          </div>
-
-          {/* Referral Code Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <div className="flex items-center gap-2">
-                <Gift className="w-4 h-4 text-purple-500" />
-                추천인 코드 (선택사항)
-              </div>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                placeholder="추천인 코드를 입력하세요"
-                className={`w-full px-4 py-3 pr-12 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
-                  referralValid === true
-                    ? 'border-green-500 dark:border-green-500'
-                    : referralValid === false
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-gray-300 dark:border-gray-600'
-                }`}
-                maxLength={12}
-              />
-              {referralValid === true && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <Check className="w-5 h-5 text-green-500" />
-                </div>
-              )}
-              {referralValid === false && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <X className="w-5 h-5 text-red-500" />
-                </div>
-              )}
-            </div>
-            {referralValid === true && referralUsername && (
-              <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-                ✓ {referralUsername}님의 추천으로 가입 시 양측 모두 5,000P 지급!
-              </p>
-            )}
-            {referralValid === false && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                ✗ 유효하지 않은 추천인 코드입니다.
-              </p>
-            )}
-            {referralValid === null && (
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                추천인 코드를 입력하면 양측 모두 5,000P를 받습니다!
-              </p>
-            )}
           </div>
 
           {/* Google Sign-In Button */}

@@ -6,6 +6,13 @@ const router = express.Router();
 
 // Lottery draws are permitted only during 20:00-20:59 Asia/Seoul.
 // Use the server clock so clients cannot bypass the window.
+const getKstDate = () => {
+  const pieces = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (type: string) => pieces.find(p => p.type === type)?.value || '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
 const isLotteryOpen = () => {
   const hour = Number(new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Seoul', hour: '2-digit', hourCycle: 'h23',
@@ -13,13 +20,24 @@ const isLotteryOpen = () => {
   return hour === 20;
 };
 
-router.get('/availability', (_req, res) => {
-  res.json({ success: true, data: {
-    isOpen: isLotteryOpen(),
-    timeZone: 'Asia/Seoul',
-    start: '20:00',
-    end: '21:00',
-  } });
+router.get('/availability', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const date = getKstDate();
+    const [plays]: any = await pool.query(
+      'SELECT 1 FROM lottery_daily_plays WHERE user_id=? AND play_date=? LIMIT 1',
+      [req.user!.id,date]
+    );
+    const alreadyPlayed = plays.length > 0;
+    res.json({success:true,data:{
+      isOpen: isLotteryOpen() && !alreadyPlayed,
+      withinTimeWindow: isLotteryOpen(),
+      alreadyPlayed,
+      timeZone:'Asia/Seoul',start:'20:00',end:'21:00',playDate:date,
+    }});
+  } catch (error) {
+    console.error('Lottery availability error:',error);
+    res.status(500).json({success:false,error:'럭키드로우 참여 상태 확인 실패'});
+  }
 });
 
 // Lottery configuration
@@ -219,6 +237,17 @@ router.post('/pick', authMiddleware, async (req: AuthRequest, res: Response) => 
       return res.status(400).json({ success: false, error: '유효하지 않은 번호입니다.' });
     }
 
+    // Lock the user before checking daily eligibility to serialize simultaneous requests.
+    const playDate = getKstDate();
+    const [previous]: any = await connection.query(
+      'SELECT 1 FROM lottery_daily_plays WHERE user_id=? AND play_date=? LIMIT 1',
+      [userId,playDate]
+    );
+    if (previous.length) {
+      await connection.rollback();
+      return res.status(409).json({success:false,error:'오늘 럭키드로우 참여를 이미 완료했습니다. 내일 오후 8시에 다시 참여하세요.'});
+    }
+
     // Check user points
     const [users]: any = await connection.query(
       'SELECT points FROM users WHERE id = ? FOR UPDATE',
@@ -259,6 +288,19 @@ router.post('/pick', authMiddleware, async (req: AuthRequest, res: Response) => 
     if (!selectedItem) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: '번호를 찾을 수 없습니다.' });
+    }
+
+    // Reserve today's draw in the same transaction as the point debit and reward.
+    // Unique (user_id,play_date) blocks double payouts even for parallel requests.
+    try {
+      await connection.query(
+        'INSERT INTO lottery_daily_plays (user_id,play_date) VALUES (?,?)',
+        [userId,playDate]
+      );
+    } catch (dailyError: any) {
+      if (dailyError?.code !== 'ER_DUP_ENTRY') throw dailyError;
+      await connection.rollback();
+      return res.status(409).json({success:false,error:'오늘 럭키드로우는 이미 참여했습니다.'});
     }
 
     // Deduct points

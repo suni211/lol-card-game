@@ -16,10 +16,16 @@ echo "Dropping accounts, cards and all old match data..."
 sudo mariadb -e 'DROP DATABASE IF EXISTS lol_card_game;'
 echo "Initializing tables and application schema..."
 sudo mariadb < database/schema.sql
-echo "Creating only 2026 LIVE / WR / WRs cards..."
+echo "Creating 2026 Worlds LIVE / WR / WRs cards..."
 sudo mariadb < database/migrations/2026_live_worlds.sql
+echo "Adding all 2026 global tier-1 LIVE teams..."
+sudo mariadb < database/migrations/2026_global_tier1_live.sql
 echo "Creating RIFT Manager games and draft tables..."
 sudo mariadb < database/migrations/rift_games.sql
 echo "Removing historical cards seeded by the original schema..."
 sudo mariadb < database/migrations/2026_fresh_only.sql
+echo "Initializing market prices for the 2026 cards..."
+sudo mariadb < database/migrations/2026_market_prices.sql
+echo "Checking player pool and application database access..."
+sudo mariadb -e "SELECT season, COUNT(*) AS cards FROM lol_card_game.players GROUP BY season ORDER BY season; SELECT COUNT(*) AS prices FROM lol_card_game.player_market_prices;"
 echo "Fresh 2026 launch database ready. All old accounts have been deleted."

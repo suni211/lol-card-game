@@ -83,7 +83,7 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.PROD ? window.location.origin : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
 
 function App() {
   const { theme } = useThemeStore();

@@ -178,7 +178,7 @@ export default function Lottery() {
     if (!reward) return '';
     if (reward.type === 'points') return reward.name;
     if (reward.type === 'pack') return reward.name;
-    if (reward.type === 'icon') return reward.name;
+    if (reward.type === 'wrs') return reward.name;
     return '';
   };
 
@@ -230,7 +230,7 @@ export default function Lottery() {
               { grade: 'A', prob: '20%', desc: '3,000P~, 92+팩' },
               { grade: 'S', prob: '6.25%', desc: '10,000P~, 100+팩' },
               { grade: 'SS', prob: '3.75%', desc: '150,000P~, 103+팩' },
-              { grade: 'SSR', prob: '1개 보장', desc: '500,000P~, 110+팩' },
+              { grade: 'SSR', prob: '1개 보장', desc: '500,000P~, 26WRs 확정 가능' },
             ].map(({ grade, prob, desc }) => (
               <div
                 key={grade}

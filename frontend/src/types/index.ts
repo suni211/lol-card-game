@@ -5,7 +5,7 @@ export interface Player {
   team: string;
   position: 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT';
   overall: number;
-  region: 'LCK' | 'LPL' | 'LEC' | 'LCS' | 'PCS' | 'VCS' | 'CBLOL' | 'LJL' | 'LLA';
+  region: 'LCK' | 'LPL' | 'LEC' | 'LCS' | 'LCP' | 'PCS' | 'VCS' | 'CBLOL' | 'LJL' | 'LLA';
   tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'ICON' | 'GR';
   season?: string; // 26 LIVE, 26WR, 26WRs
   nationality?: string | null; // ISO country code: KR, CN, etc; NOT the competition region

@@ -28,6 +28,8 @@ echo 'Restoring deck slot columns...'
 sudo mariadb < database/migrations/2026_deck_compat.sql
 echo 'Restoring agent cooldown table...'
 sudo mariadb < database/migrations/2026_agent_usage.sql
+echo 'Preparing verified 2026 real coaching staff and 1-5 star scouting...'
+sudo mariadb < database/migrations/2026_real_coaches.sql
 echo 'Preparing lottery storage and one draw per day...'
 sudo mariadb < database/migrations/2026_lottery_daily.sql
 echo "Creating 2026 Worlds LIVE / WR / WRs cards..."

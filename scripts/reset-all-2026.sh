@@ -24,6 +24,8 @@ echo "Preparing campaign and infinite challenge game modes..."
 sudo mariadb < database/migrations/2026_game_modes.sql
 echo 'Preparing shop, titles, raid and referral compatibility...'
 sudo mariadb < database/migrations/2026_legacy_menu_compat.sql
+echo 'Preparing lottery storage and one draw per day...'
+sudo mariadb < database/migrations/2026_lottery_daily.sql
 echo "Creating 2026 Worlds LIVE / WR / WRs cards..."
 sudo mariadb < database/migrations/2026_live_worlds.sql
 echo "Adding all 2026 global tier-1 LIVE teams..."

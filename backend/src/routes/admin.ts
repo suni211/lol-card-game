@@ -261,6 +261,41 @@ router.get('/search-players', authMiddleware, adminMiddleware, async (req: AuthR
   }
 });
 
+// Update the OVR of one exact player card series. Never modify a whole name across seasons.
+router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const playerId = Number(req.params.id);
+  const overall = Number(req.body?.overall);
+  if (!Number.isSafeInteger(playerId) || playerId < 1 ||
+      !Number.isSafeInteger(overall) || overall < 1 || overall > 150) {
+    return res.status(400).json({success:false,error:'선수 ID 또는 OVR이 올바르지 않습니다. (1~150)'});
+  }
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [players]:any = await connection.query(
+      'SELECT id,name,team,season,overall FROM players WHERE id=? FOR UPDATE',
+      [playerId]
+    );
+    if (!players.length) {
+      await connection.rollback();
+      return res.status(404).json({success:false,error:'선수 카드를 찾을 수 없습니다.'});
+    }
+    await connection.query('UPDATE players SET overall=? WHERE id=?',[overall,playerId]);
+    await connection.query(
+      'INSERT INTO admin_logs (admin_id,action,target_user_id,details) VALUES (?,?,NULL,?)',
+      [req.user!.id,'UPDATE_PLAYER_OVERALL',
+       JSON.stringify({playerId,name:players[0].name,team:players[0].team,
+         season:players[0].season,oldOverall:players[0].overall,newOverall:overall})]
+    );
+    await connection.commit();
+    return res.json({success:true,message:`${players[0].name} ${players[0].season} OVR ${overall} 적용 완료`});
+  } catch(error) {
+    await connection.rollback();
+    console.error('Admin update player overall error:',error);
+    return res.status(500).json({success:false,error:'OVR 저장 실패'});
+  } finally {connection.release();}
+});
+
 // 카드 지급
 router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();

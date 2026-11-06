@@ -18,6 +18,10 @@ echo "Initializing tables and application schema..."
 sudo mariadb < database/schema.sql
 echo "Preparing Google authentication account mapping..."
 sudo mariadb < database/migrations/google_auth_2026.sql
+echo "Preparing active card detail fields..."
+sudo mariadb < database/migrations/2026_card_columns.sql
+echo "Preparing campaign and infinite challenge game modes..."
+sudo mariadb < database/migrations/2026_game_modes.sql
 echo "Creating 2026 Worlds LIVE / WR / WRs cards..."
 sudo mariadb < database/migrations/2026_live_worlds.sql
 echo "Adding all 2026 global tier-1 LIVE teams..."

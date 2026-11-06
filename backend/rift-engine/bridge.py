@@ -112,6 +112,9 @@ def simulate(payload):
         raise ValueError("Expected both team strategies")
     seed = int(payload.get("seed", 1))
     match = Match(seed=seed, roster=tuple(tuple(t) for t in roster))
+    # OVR is a real simulation input, not a coin-flip probability:
+    # each +20 OVR adds roughly +5.6% champion HP/AD and +2.35 percentage
+    # points of mechanical execution, with modest defensive scaling.
     for side in (0, 1):
         if len(teams[side]) != 5:
             raise ValueError("Each side must have five players")
@@ -125,6 +128,8 @@ def simulate(payload):
             unit.maxhp *= scale
             unit.hp = unit.maxhp
             unit.ad *= scale
+            unit.armor *= 1 + (overall - 80) / 500
+            unit.mr *= 1 + (overall - 80) / 500
             unit.mechanics = max(.62, min(.99, unit.mechanics + (overall - 80) / 850))
             aggression = {
                 "AGGRESSIVE": .76, "SAFE": .35, "SCALING": .46,
@@ -133,8 +138,15 @@ def simulate(payload):
                 aggression += .08
             if strategy.get("teamfight") == "PROTECT":
                 aggression -= .09
+            if strategy.get("teamfight") == "KITE":
+                aggression -= .065
             if strategy.get("macro") == "OBJECTIVE":
                 aggression -= .03
+            if strategy.get("macro") == "VISION":
+                aggression -= .04
+                unit.ward_interval *= .8
+            if strategy.get("macro") == "SPLITPUSH":
+                aggression += .045
             unit.aggression = max(.24, min(.93, aggression))
             unit.player_id = card.get("id")
             unit.player_name = card.get("name")

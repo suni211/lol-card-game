@@ -383,49 +383,9 @@ INSERT INTO achievements (title, description, category, difficulty, requirement_
 ('1년의 여정', '365일 연속 출석', 'MILESTONE', 'HARD', 'consecutive_login_365', 1, 50000),
 ('부의 축적', '100000 포인트 보유', 'MILESTONE', 'HARD', 'points_owned_100000', 1, 5000),
 ('미션 올클리어', '모든 미션 타입 각 100개씩 완료', 'MILESTONE', 'HARD', 'all_mission_types_100', 1, 10000);
--- Create admin account
--- Username: admin
--- Password: ss092888!
--- Email: admin@berrple.com
+-- Fresh installation: do not auto-create a predictable administrator.
+-- Run backend/scripts/create-admin.js with ADMIN_EMAIL, ADMIN_USERNAME and ADMIN_PASSWORD.
 
-USE lol_card_game;
-
--- Delete existing admin account if exists
-DELETE FROM users WHERE email = 'admin@berrple.com';
-
--- Insert admin account
--- Password hash for "ss092888!" using bcrypt (10 rounds)
-INSERT INTO users (
-  username,
-  email,
-  password,
-  points,
-  tier,
-  rating,
-  is_admin,
-  level,
-  exp,
-  welcome_packs_remaining,
-  referral_code
-) VALUES (
-  'admin',
-  'admin@berrple.com',
-  '$2b$10$ANYm4AbavfvAGPJL8qmUnusCeS/JnVid7Fzzp0bU4o6q8L18FXtZK',
-  0,
-  'CHALLENGER',
-  2000,
-  1,
-  1,
-  0,
-  5,
-  'ADMIN001'
-);
-
--- Create user_stats for admin
-INSERT INTO user_stats (user_id) VALUES (LAST_INSERT_ID());
-
--- Verify admin account creation
-SELECT id, username, email, points, tier, rating, is_admin, welcome_packs_remaining FROM users WHERE email = 'admin@berrple.com';
 -- Admin logs table for tracking admin actions
 CREATE TABLE IF NOT EXISTS admin_logs (
   id INT PRIMARY KEY AUTO_INCREMENT,

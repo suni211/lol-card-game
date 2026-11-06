@@ -21,7 +21,7 @@ import Register from './pages/Register';
 import Gacha from './pages/Gacha';
 import Collection from './pages/Collection';
 import Deck from './pages/Deck';
-import AIBattle from './pages/AIBattle';
+import RiftPrep from './pages/RiftPrep';
 import Ranking from './pages/Ranking';
 import Missions from './pages/Missions';
 import Trade from './pages/Trade';
@@ -58,7 +58,6 @@ import Campaign from './pages/Campaign';
 import CampaignBattle from './pages/CampaignBattle';
 import Agent from './pages/Agent';
 import Lottery from './pages/Lottery';
-import MobaMatch from './pages/MobaMatch';
 import MatchSelect from './pages/MatchSelect';
 import HowToPlay from './pages/HowToPlay';
 
@@ -376,7 +375,7 @@ function App() {
             path="/ai-battle"
             element={
               <ProtectedRoute>
-                <AIBattle />
+                <RiftPrep />
               </ProtectedRoute>
             }
           />
@@ -631,6 +630,10 @@ function App() {
             }
           />
           <Route
+            path="/rift-prep"
+            element={<ProtectedRoute><RiftPrep /></ProtectedRoute>}
+          />
+          <Route
             path="/match-select"
             element={
               <ProtectedRoute>
@@ -642,7 +645,7 @@ function App() {
             path="/moba-match"
             element={
               <ProtectedRoute>
-                <MobaMatch />
+                <RiftPrep />
               </ProtectedRoute>
             }
           />

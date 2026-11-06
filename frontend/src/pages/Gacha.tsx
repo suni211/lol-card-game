@@ -598,7 +598,7 @@ export default function Gacha() {
                   {option.special && option.cost === 2500 && option.label.includes('월즈') && (
                     <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">
-                        25WW, 25WUD + 레어 이상 확정!
+                        2026 시즌 월즈 카드
                       </p>
                     </div>
                   )}

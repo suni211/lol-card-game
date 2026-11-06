@@ -312,20 +312,8 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     const card = cards[0];
 
-    // Get price limits (자동 생성 포함)
-    const priceInfo = await getOrCreatePlayerPrice(connection, card.player_id);
-
-    // Adjust price range based on enhancement level
-    const enhancementBonus = calculateEnhancementBonus(card.level);
-    const baseOverall = card.overall;
-    const enhancedOverall = baseOverall + enhancementBonus;
-    const priceMultiplier = enhancedOverall / baseOverall;
-
-    const price_floor = Math.floor(priceInfo.price_floor * priceMultiplier);
-    const price_ceiling = Math.floor(priceInfo.price_ceiling * priceMultiplier);
-
-    // User-set listing prices are independent from the estimated market price.
-    // The estimated floor/ceiling are informational only, not a selling restriction.
+    // Seller chooses their own price (1..1,000,000,000 P).
+    // Displayed market price is a reference, not a mandatory limit.
 
     // Check if card is already listed
     const [existing]: any = await connection.query(

@@ -44,8 +44,8 @@ export default function Gacha() {
       cost: 0,
       label: '일일 무료',
       probabilities: {
-        icon: 0.0001,
-        common: 94.8799,
+        icon: 0,
+        common: 94.88,
         rare: 5,
         epic: 0.1,
         legendary: 0.02,
@@ -56,8 +56,8 @@ export default function Gacha() {
       cost: 500,
       label: '기본',
       probabilities: {
-        icon: 0.0001,
-        common: 89.4399,
+        icon: 0,
+        common: 89.44,
         rare: 10,
         epic: 0.5,
         legendary: 0.06,
@@ -68,8 +68,8 @@ export default function Gacha() {
       cost: 1000,
       label: '고급',
       probabilities: {
-        icon: 0.0001,
-        common: 78.7799,
+        icon: 0,
+        common: 78.78,
         rare: 18,
         epic: 3,
         legendary: 0.22,
@@ -80,8 +80,8 @@ export default function Gacha() {
       cost: 1500,
       label: '프리미엄',
       probabilities: {
-        icon: 0.0001,
-        common: 68.4799,
+        icon: 0,
+        common: 68.48,
         rare: 25,
         epic: 6,
         legendary: 0.52,
@@ -92,43 +92,15 @@ export default function Gacha() {
       cost: 2000,
       label: '울트라',
       probabilities: {
-        icon: 0.0001,
-        common: 58.9799,
+        icon: 0,
+        common: 58.98,
         rare: 30,
         epic: 10,
         legendary: 1.02,
         gr: 0,
       },
     },
-    // Admin-only test packs
-    ...(user?.isAdmin ? [
-      {
-        cost: 0,
-        label: 'ICON 테스트팩',
-        probabilities: {
-          common: 0,
-          rare: 0,
-          epic: 0,
-          legendary: 0,
-          icon: 100,
-          gr: 0,
-        },
-        special: true,
-      },
-      {
-        cost: 0,
-        label: 'GR 테스트팩',
-        probabilities: {
-          common: 0,
-          rare: 0,
-          epic: 0,
-          legendary: 0,
-          icon: 0,
-          gr: 100,
-        },
-        special: true,
-      }
-    ] : []),
+
   ];
 
   const getTierColor = (tier: string) => {
@@ -210,7 +182,7 @@ export default function Gacha() {
   }, []);
 
   const gachaTypeFor = (option: GachaOption): string => {
-    if (option.label === 'ICON 테스트팩') return 'icon_test';
+    
     if (option.cost === 0) return 'free';
     if (option.cost === 500) return 'basic';
     if (option.cost === 1000) return 'premium';

@@ -76,11 +76,20 @@ class StrategyMatch(Match):
             for role,u,card in zip(ROLES,self.players(team),squads[team]):
                 u.player_id=card['id']
                 u.player_name=card['name']
+                u.player_overall=float(card['overall'])
                 # OVR scales engine attributes but does not replace nexus-based victory.
-                multiplier=max(.87,min(1.13,1+(float(card['overall'])-80)*.006))
+                multiplier=max(.78,min(1.25,1+(float(card['overall'])-85)*.007))
                 u.hp*=multiplier;u.maxhp*=multiplier;u.ad*=multiplier
                 u.mechanics=min(.99,u.mechanics*multiplier)
                 self.start_aggression[u.id]=u.aggression
+    def damage(self,a,b,power,magic=False,true=False,spell=False,hit_kind=None,source=None):
+        # Champion skill output grows continuously with the player's OVR.
+        # Basic attacks are already OVR-scaled via Unit.ad.
+        if spell and a.kind=='champion':
+            rating=getattr(a,'player_overall',85)
+            power*=max(.78,min(1.25,1+(rating-85)*.007))
+        return super().damage(a,b,power,magic=magic,true=true,spell=spell,hit_kind=hit_kind,source=source)
+
     def phase(self):
         return 'early' if self.t<900 else 'mid' if self.t<1800 else 'late'
     def step(self):

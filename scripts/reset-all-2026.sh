@@ -24,6 +24,10 @@ echo "Preparing campaign and infinite challenge game modes..."
 sudo mariadb < database/migrations/2026_game_modes.sql
 echo 'Preparing shop, titles, raid and referral compatibility...'
 sudo mariadb < database/migrations/2026_legacy_menu_compat.sql
+echo 'Restoring deck slot columns...'
+sudo mariadb < database/migrations/2026_deck_compat.sql
+echo 'Restoring agent cooldown table...'
+sudo mariadb < database/migrations/2026_agent_usage.sql
 echo 'Preparing lottery storage and one draw per day...'
 sudo mariadb < database/migrations/2026_lottery_daily.sql
 echo "Creating 2026 Worlds LIVE / WR / WRs cards..."
@@ -38,6 +42,10 @@ echo "Removing historical cards seeded by the original schema..."
 sudo mariadb < database/migrations/2026_fresh_only.sql
 echo "Initializing market prices for the 2026 cards..."
 sudo mariadb < database/migrations/2026_market_prices.sql
+echo 'Preparing market price alerts...'
+sudo mariadb < database/migrations/2026_price_alerts.sql
+echo 'Applying WRs OVR corrections...'
+sudo mariadb < database/migrations/2026_wrs_ovr_corrections.sql
 echo "Checking player pool and application database access..."
 sudo mariadb -e "SELECT season, COUNT(*) AS cards FROM lol_card_game.players GROUP BY season ORDER BY season; SELECT COUNT(*) AS prices FROM lol_card_game.player_market_prices;"
 echo "Fresh 2026 launch database ready. All old accounts have been deleted."

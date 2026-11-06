@@ -9,7 +9,7 @@ type Series = '26 LIVE' | '26WR' | '26WRs';
 interface RosterCard {
   id:number; name:string; team:string; position:string; region:string; season:Series;
   overall:number; base_overall:number; boost_amount:number;
-  image_url?:string; achievement?:string; evidence_url?:string;
+  image_url?:string; achievement?:string; evidence_url?:string; nationality?:string | null;
 }
 export default function AdminWorlds2026() {
   const { token } = useAuthStore();
@@ -19,6 +19,7 @@ export default function AdminWorlds2026() {
   const [boost,setBoost]=useState(0);
   const [achievement,setAchievement]=useState('');
   const [evidenceUrl,setEvidenceUrl]=useState('');
+  const [nationality,setNationality]=useState('');
   const [busy,setBusy]=useState(false);
   const [series,setSeries]=useState<Series|'ALL'>('ALL');
   const headers={Authorization:`Bearer ${token}`};
@@ -37,6 +38,7 @@ export default function AdminWorlds2026() {
   function choose(card:RosterCard) {
     setSelected(card.id);setBoost(card.boost_amount);setAchievement(card.achievement||'');
     setEvidenceUrl(card.evidence_url||'');
+    setNationality(card.nationality||'');
   }
   async function saveBoost() {
     if (!current || current.season!=='26WRs') return;
@@ -48,6 +50,20 @@ export default function AdminWorlds2026() {
       await refresh();
     } catch(e:any) {toast.error(e.response?.data?.error||'부스트 저장 실패');}
     finally {setBusy(false);}
+  }
+  async function saveNationality() {
+    if(!current) return;
+    const code=nationality.trim().toUpperCase();
+    if(code && !/^[A-Z]{2}$/.test(code)) {
+      toast.error('국적은 KR, CN 같은 두 글자 코드로 입력하세요.');return;
+    }
+    try{
+      setBusy(true);
+      await axios.post(`${API_URL}/admin/worlds2026/nationality/${current.id}`,{nationality:code},{headers});
+      toast.success('선수 국적 저장 완료 (해당 선수의 모든 시즌 카드에 반영)');
+      await refresh();
+    }catch(e:any){toast.error(e.response?.data?.error||'국적 저장 실패');}
+    finally{setBusy(false);}
   }
   async function uploadPhoto(file:File) {
     if(!current) return;
@@ -96,6 +112,17 @@ export default function AdminWorlds2026() {
           <img src={getSeriesLogo(current.season)} alt={current.season} className="w-44 h-14 object-contain"/>
           <h3 className="font-bold text-lg">{current.name} ({current.team}) · OVR {current.overall}</h3>
           {current.image_url&&<img src={current.image_url} alt={current.name} className="h-32 object-contain my-3"/>}
+          <div className="mt-4">
+            <label className="block mb-2 text-sm font-bold">국적 (ISO 2글자 · KR / CN / US 등)</label>
+            <div className="flex gap-2">
+              <input value={nationality} onChange={e=>setNationality(e.target.value.toUpperCase())}
+                maxLength={2} placeholder="KR" aria-label="선수 국적"
+                className="w-24 rounded border border-gray-400 p-2 text-black"/>
+              <button type="button" disabled={busy} onClick={saveNationality}
+                className="rounded bg-cyan-700 text-white px-5 py-2 disabled:opacity-50">국적 저장</button>
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">리그 국적이 아닌 선수 본인 국적입니다. 모든 2026 시리즈 카드에 동일하게 적용됩니다.</p>
+          </div>
           <label className="block mt-4 mb-2 text-sm font-bold">배경 투명 선수 사진 (PNG/WebP, 최대 2MB)</label>
           <input type="file" accept="image/png,image/webp" disabled={busy} onChange={e=>e.target.files?.[0]&&uploadPhoto(e.target.files[0])} className="text-sm w-full"/>
           {current.season==='26WRs'&&<>

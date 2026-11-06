@@ -20,6 +20,8 @@ echo "Creating 2026 Worlds LIVE / WR / WRs cards..."
 sudo mariadb < database/migrations/2026_live_worlds.sql
 echo "Adding all 2026 global tier-1 LIVE teams..."
 sudo mariadb < database/migrations/2026_global_tier1_live.sql
+echo "Applying 2026 player nationalities..."
+sudo mariadb < database/migrations/2026_player_nationalities.sql
 echo "Creating RIFT Manager games and draft tables..."
 sudo mariadb < database/migrations/rift_games.sql
 echo "Removing historical cards seeded by the original schema..."

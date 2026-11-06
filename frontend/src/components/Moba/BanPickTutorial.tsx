@@ -11,21 +11,21 @@ export default function BanPickTutorial({ onClose }: BanPickTutorialProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[80] p-3 sm:p-4 overflow-y-auto"
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-gray-800 rounded-xl p-6 max-w-2xl w-full"
+        className="bg-gray-800 rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col min-h-0"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex shrink-0 items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-white">밴픽 가이드</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-700">
             <X className="w-6 h-6 text-gray-400" />
           </button>
         </div>
-        <div className="space-y-4 text-gray-300">
+        <div className="space-y-4 text-gray-300 overflow-y-auto min-h-0 overscroll-contain pr-2 pb-2">
           <p>랭크전에서는 표준 5v5 드래프트 룰에 따라 밴픽을 진행합니다.</p>
           <div className="space-y-2">
             <div>

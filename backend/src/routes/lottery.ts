@@ -87,7 +87,7 @@ const REWARDS = {
     { type: 'points', value: 1000000, name: '1,000,000P' },
     { type: 'pack', minOverall: 110, name: '110+ 카드팩' },
     { type: 'pack', minOverall: 113, name: '113+ 카드팩' },
-    { type: 'icon', name: 'ICON 카드팩' },
+    { type: 'wrs', name: '26WRs 확정 카드' },
   ],
 };
 
@@ -322,15 +322,15 @@ router.post('/pick', authMiddleware, async (req: AuthRequest, res: Response) => 
         [selectedItem.reward.value, userId]
       );
       rewardResult.pointsGained = selectedItem.reward.value;
-    } else if (selectedItem.reward.type === 'pack' || selectedItem.reward.type === 'icon') {
+    } else if (selectedItem.reward.type === 'pack' || selectedItem.reward.type === 'wrs') {
       // Give card
       let query = '';
       let params: any[] = [];
 
-      if (selectedItem.reward.type === 'icon') {
-        query = `SELECT id, name, team, position, overall, region, season, salary FROM players WHERE season = 'ICON' ORDER BY RAND() LIMIT 1`;
+      if (selectedItem.reward.type === 'wrs') {
+        query = `SELECT id, name, team, position, overall, region, season, salary FROM players WHERE season = '26WRs' ORDER BY RAND() LIMIT 1`;
       } else {
-        query = `SELECT id, name, team, position, overall, region, season, salary FROM players WHERE overall >= ? AND season != 'ICON' ORDER BY RAND() LIMIT 1`;
+        query = `SELECT id, name, team, position, overall, region, season, salary FROM players WHERE overall >= ? AND season IN ('26 LIVE','26WR','26WRs') ORDER BY RAND() LIMIT 1`;
         params = [selectedItem.reward.minOverall];
       }
 

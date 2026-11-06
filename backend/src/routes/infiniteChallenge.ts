@@ -233,22 +233,27 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         [newStage, newHighest, reward, userId]
       );
 
-      // Check for active points boost
-      const [boostEffects]: any = await connection.query(`
-        SELECT si.effect_value
-        FROM item_usage_log iul
-        JOIN shop_items si ON iul.item_id = si.id
-        WHERE iul.user_id = ?
-          AND si.effect_type = 'points_boost'
-          AND iul.effect_expires_at > NOW()
-        LIMIT 1
-      `, [userId]);
-
-      // Apply boost multiplier
+      // Optional shop boost: an absent legacy shop table must not cancel a challenge victory.
       let finalReward = reward;
-      if (boostEffects.length > 0) {
-        const multiplier = parseFloat(boostEffects[0].effect_value);
-        finalReward = Math.floor(reward * multiplier);
+      try {
+        const [boostEffects]: any = await connection.query(`
+          SELECT si.effect_value
+          FROM item_usage_log iul
+          JOIN shop_items si ON iul.item_id = si.id
+          WHERE iul.user_id = ? AND si.effect_type = 'points_boost'
+            AND iul.effect_expires_at > NOW()
+          LIMIT 1
+        `, [userId]);
+        if (boostEffects.length > 0) {
+          const multiplier = Number(boostEffects[0].effect_value);
+          if (Number.isFinite(multiplier) && multiplier >= 1 && multiplier <= 10) {
+            finalReward = Math.floor(reward * multiplier);
+          }
+        }
+      } catch (boostError: any) {
+        // In a 2026 clean install, the legacy shop tables may not exist.
+        if (boostError?.code !== 'ER_NO_SUCH_TABLE') throw boostError;
+        console.warn('[Infinite Challenge] Legacy shop boosts unavailable; awarding normal points');
       }
 
       // Award points for this stage only
@@ -268,7 +273,7 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         `INSERT INTO infinite_challenge_matches
          (user_id, stage, ai_difficulty, user_score, ai_score, is_victory, total_damage, rewards_earned)
          VALUES (?, ?, ?, ?, ?, TRUE, ?, ?)`,
-        [userId, currentStage, calculateAIDifficulty(currentStage), userScore, aiScore, totalDamage || 0, reward]
+        [userId, currentStage, calculateAIDifficulty(currentStage), userScore, aiScore, totalDamage || 0, finalReward]
       );
 
       // Update leaderboard
@@ -283,7 +288,7 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
          ON DUPLICATE KEY UPDATE
          highest_stage = GREATEST(highest_stage, ?),
          total_rewards = total_rewards + ?`,
-        [weekStartStr, userId, newStage, reward, newStage, reward]
+        [weekStartStr, userId, newStage, finalReward, newStage, finalReward]
       );
 
       await connection.commit();
@@ -297,11 +302,11 @@ router.post('/complete-stage', authMiddleware, async (req: AuthRequest, res) => 
         success: true,
         data: {
           currentStage: newStage,
-          reward,
+          reward: finalReward,
           nextReward: calculateStageReward(newStage),
           aiDifficulty: calculateAIDifficulty(newStage),
         },
-        message: `스테이지 ${currentStage} 클리어! ${reward.toLocaleString()}P 획득!`,
+        message: `스테이지 ${currentStage} 클리어! ${finalReward.toLocaleString()}P 획득!`,
       });
     } else {
       // Defeat - end run

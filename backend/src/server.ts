@@ -16,7 +16,6 @@ import missionsRoutes from './routes/missions';
 import tradeRoutes from './routes/trade';
 import noticesRoutes, { setSocketIO } from './routes/notices';
 import profileRoutes from './routes/profile';
-import aiRoutes from './routes/ai';
 import riftRoutes from './routes/rift';
 import suggestionsRoutes from './routes/suggestions';
 import fusionRoutes from './routes/fusion';
@@ -46,7 +45,6 @@ import agentRoutes from './routes/agent';
 import lotteryRoutes from './routes/lottery';
 
 // Import matchmaking
-import { setupMobaMatch } from './socket/mobaMatch';
 import jwt from 'jsonwebtoken';
 
 // Import scheduler
@@ -121,7 +119,7 @@ app.use('/api/missions', missionsRoutes);
 app.use('/api/trade', tradeRoutes);
 app.use('/api/notices', noticesRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', (_req, res) => res.status(410).json({success:false,error:'기존 AI 수치형 매치는 종료되었습니다. /api/rift 를 이용하세요.'}));
 app.use('/api/rift', riftRoutes);
 app.use('/api/suggestions', suggestionsRoutes);
 app.use('/api/market', marketRoutes);
@@ -254,8 +252,7 @@ io.on('connection', (socket) => {
       // Send confirmation to this client
       socket.emit('auth_success', { userId: decoded.id });
 
-      // Setup MOBA match event handlers
-      setupMobaMatch(io, socket, decoded);
+      // Legacy socket-match engine disabled for fresh RIFT 2026 launch.
     } catch (error) {
       console.error('[Auth] Authentication error:', error);
       socket.emit('auth_error', { message: 'Invalid token' });

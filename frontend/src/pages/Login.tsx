@@ -1,19 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trophy, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
 
-declare global {
-  interface Window {
-    google: any;
-  }
-}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,39 +21,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [referralCode, setReferralCode] = useState('');
-
-  useEffect(() => {
-    // Load Google Sign-In script
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleSignIn,
-        });
-
-        window.google.accounts.id.renderButton(
-          document.getElementById('googleSignInButton'),
-          {
-            theme: 'outline',
-            size: 'large',
-            width: 400,
-            text: 'signin_with',
-            logo_alignment: 'left',
-          }
-        );
-      }
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   const handleGoogleSignIn = async (response: any) => {
     try {
@@ -257,7 +219,7 @@ export default function Login() {
 
           {/* Google Sign-In Button */}
           <div className="mb-6">
-            <div id="googleSignInButton" className="flex justify-center"></div>
+            <GoogleSignInButton onCredential={handleGoogleSignIn} text="signin_with" />
           </div>
 
           {/* Register Link */}

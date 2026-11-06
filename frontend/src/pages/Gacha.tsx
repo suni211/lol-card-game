@@ -7,6 +7,7 @@ import type { Player, GachaOption } from '../types';
 import { getPlayerImageUrl, getSeriesLogo } from '../utils/playerImage';
 import axios from 'axios';
 import { playSound } from '../utils/soundEffects';
+import GachaReveal from '../components/GachaReveal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -27,6 +28,7 @@ export default function Gacha() {
   const { user, token, updateUser } = useAuthStore();
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnCard, setDrawnCard] = useState<Player | null>(null);
+  const [reveal, setReveal] = useState<{ card: Player; count: 1 | 10 } | null>(null);
   const [drawnCards, setDrawnCards] = useState<Player[]>([]);
   const [showResult, setShowResult] = useState(false);
   const [show10Result, setShow10Result] = useState(false);
@@ -207,220 +209,83 @@ export default function Gacha() {
     fetchMileageStatus();
   }, []);
 
-  const handleDraw = async (option: GachaOption) => {
-    if (!user) {
-      toast.error('로그인이 필요합니다!');
-      return;
-    }
-
-    if (user.points < option.cost) {
-      toast.error('포인트가 부족합니다!');
-      return;
-    }
-
-    setIsDrawing(true);
-    setShowResult(false);
-
+  const gachaTypeFor = (option: GachaOption): string => {
+    if (option.label === 'ICON 테스트팩') return 'icon_test';
+    if (option.cost === 0) return 'free';
+    if (option.cost === 500) return 'basic';
+    if (option.cost === 1000) return 'premium';
+    if (option.cost === 1500) return 'ultra';
+    return 'mega';
+  };
+  const refreshAfterDraw = async () => {
     try {
-      // 가챠 타입 결정 (업데이트된 가격)
-      let gachaType = 'basic';
-      if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
-      else if (option.cost === 0) gachaType = 'free';
-      else if (option.cost === 500) gachaType = 'basic';
-      else if (option.cost === 1000) gachaType = 'premium';
-      else if (option.cost === 1500) gachaType = 'ultra';
-      else if (option.cost === 2000) gachaType = 'mega';
+      const response = await axios.get(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) updateUser(response.data.data);
+    } catch (error) {
+      console.error('포인트 동기화 실패:', error);
+    }
+    await fetchMileageStatus();
+  };
 
-      // 백엔드 API 호출
-      const response = await axios.post(
-        `${API_URL}/gacha/draw`,
-        { type: gachaType },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        const { player, isDuplicate, refundPoints } = response.data.data;
-
-        setDrawnCard(player);
-
-        // Play sound effect based on tier
-        playSound(player.tier);
-
-        // ICON 카드는 특수 컷신
-        if (player.tier === 'ICON') {
-          setTimeout(() => setRevealStep(1), 500);   // 암전 + 균열 효과
-          setTimeout(() => setRevealStep(2), 1500);  // ICON 텍스트
-          setTimeout(() => setRevealStep(3), 2500);  // Region (1초)
-          setTimeout(() => setRevealStep(4), 3500);  // Position (1초)
-          setTimeout(() => setRevealStep(5), 4500);  // Season (1초)
-          setTimeout(() => setRevealStep(6), 5500);  // Overall (1초)
-          setTimeout(() => setRevealStep(7), 7500);  // Name + Face (2초 후)
-          setTimeout(() => {
-            setRevealStep(8);  // Final card
-            setIsDrawing(false);
-            setShowResult(true);
-          }, 8500);
-        } else {
-          // 통일된 컷신 (GR, LEGENDARY, EPIC, RARE, COMMON 모두 동일)
-          // Region -> Position -> Season -> Overall -> Name+Face
-          setTimeout(() => setRevealStep(1), 500);   // Region (1초)
-          setTimeout(() => setRevealStep(2), 1500);  // Position (1초)
-          setTimeout(() => setRevealStep(3), 2500);  // Season (1초)
-          setTimeout(() => setRevealStep(4), 3500);  // Overall (1초)
-          setTimeout(() => setRevealStep(5), 5500);  // Name + Face (2초 후)
-          setTimeout(() => {
-            setRevealStep(6);  // Final card
-            setIsDrawing(false);
-            setShowResult(true);
-          }, 6500);
-        }
-
-        // 타이머 후 처리
-        const displayDelay = player.tier === 'ICON' ? 8500 : 6500;
-        setTimeout(async () => {
-
-          // 포인트 업데이트 - 백엔드에서 실제 업데이트된 유저 정보 가져오기
-          try {
-            const userResponse = await axios.get(`${API_URL}/auth/me`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (userResponse.data.success) {
-              updateUser(userResponse.data.data);
-            }
-          } catch (error) {
-            console.error('Failed to update user info:', error);
-          }
-
-          // 티어에 따라 다른 메시지
-          if (player.tier === 'GR') {
-            toast.success('👑 GR 카드 획득! 역대급 신인!', { duration: 5000 });
-          } else if (player.tier === 'ICON') {
-            toast.success('🏆 ICON 카드 획득! 전설의 선수!', { duration: 8000 });
-          } else if (player.tier === 'LEGENDARY') {
-            toast.success('🎉 레전드 카드 획득!', { duration: 5000 });
-          } else if (player.tier === 'EPIC') {
-            toast.success('⭐ 에픽 카드 획득!');
-          }
-
-          // 중복 카드 메시지
-          if (isDuplicate) {
-            toast(`중복 카드! ${refundPoints}P 환급받았습니다.`, {
-              icon: 'ℹ️',
-            });
-          }
-
-          // 마일리지 업데이트
-          fetchMileageStatus();
-
-          if (option.cost === 0) {
-            setDailyFreeUsed(true);
-          }
-
-          // Reset reveal step
-          setRevealStep(0);
-        }, displayDelay);
-      }
+  // All draws share the same dark five-stage reveal.
+  // Only the strongest card from 10 is shown; the API still grants all ten.
+  const handleDraw = async (option: GachaOption) => {
+    if (!user) return toast.error('로그인이 필요합니다!');
+    if (user.points < option.cost) return toast.error('포인트가 부족합니다!');
+    setIsDrawing(true);
+    setReveal(null);
+    try {
+      const response = await axios.post(`${API_URL}/gacha/draw`,
+        { type: gachaTypeFor(option) },
+        { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.data.success || !response.data.data?.player) throw Error('선수 정보를 받지 못했습니다.');
+      const { player, isDuplicate, refundPoints } = response.data.data;
+      playSound(player.tier);
+      setReveal({card: player, count: 1});
+      if (option.cost === 0) setDailyFreeUsed(true);
+      if (isDuplicate) toast(`중복 카드 · ${refundPoints}P 환급`, {icon:'ℹ️'});
+      void refreshAfterDraw();
     } catch (error: any) {
+      toast.error(error.response?.data?.error || error.message || '선수 카드 뽑기 실패');
+    } finally {
       setIsDrawing(false);
-      console.error('가챠 오류:', error);
-
-      if (error.response?.data?.error) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('카드 뽑기 중 오류가 발생했습니다.');
-      }
     }
   };
 
   const handleDraw10 = async (option: GachaOption) => {
-    if (!user) {
-      toast.error('로그인이 필요합니다!');
-      return;
-    }
-
-    const totalCost = option.cost * 10;
-    if (user.points < totalCost) {
-      toast.error('포인트가 부족합니다!');
-      return;
-    }
-
-    if (option.cost === 0) {
-      toast.error('무료 뽑기는 10연차를 사용할 수 없습니다!');
-      return;
-    }
-
+    if (!user) return toast.error('로그인이 필요합니다!');
+    if (option.cost === 0) return toast.error('무료 뽑기는 10연차를 사용할 수 없습니다.');
+    if (user.points < option.cost*10) return toast.error('포인트가 부족합니다!');
     setIsDrawing(true);
+    setReveal(null);
     setShow10Result(false);
-
+    setShowBestCardCutscene(false);
     try {
-      let gachaType = 'basic';
-      if (option.label === 'ICON 테스트팩') gachaType = 'icon_test';
-      else if (option.cost === 500) gachaType = 'basic';
-      else if (option.cost === 1000) gachaType = 'premium';
-      else if (option.cost === 1500) gachaType = 'ultra';
-      else if (option.cost === 2000) gachaType = 'mega';
-
-      const response = await axios.post(
-        `${API_URL}/gacha/draw-10`,
-        { type: gachaType },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        const { results, totalRefund } = response.data.data;
-
-        const cards = results.map((r: any) => r.player);
-        setDrawnCards(cards);
-
-        // 최고 OVR 카드 찾기
-        const highestCard = cards.reduce((max: Player, card: Player) =>
-          card.overall > max.overall ? card : max
-        , cards[0]);
-
-        setBestCard(highestCard);
-
-        // Play sound effect for best card
-        playSound(highestCard.tier);
-
-        setTimeout(() => {
-          setIsDrawing(false);
-          // 최고 OVR 카드 컷신 먼저 보여주기
-          setShowBestCardCutscene(true);
-
-          // 업데이트된 유저 정보 가져오기
-          axios.get(`${API_URL}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }).then((response) => {
-            if (response.data.success) {
-              updateUser(response.data.data);
-            }
-          });
-
-          const duplicateCount = results.filter((r: any) => r.isDuplicate).length;
-          if (duplicateCount > 0) {
-            toast(`중복 ${duplicateCount}장! ${totalRefund}P 환급받았습니다.`, {
-              icon: 'ℹ️',
-            });
-          }
-        }, 2000);
-      }
-    } catch (error: any) {
+      const response = await axios.post(`${API_URL}/gacha/draw-10`,
+        { type: gachaTypeFor(option) },
+        { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.data.success || !Array.isArray(response.data.data?.results)) throw Error('뽑기 결과가 올바르지 않습니다.');
+      const { results, totalRefund } = response.data.data;
+      if (results.length !== 10) throw Error('10장 결과를 받지 못했습니다.');
+      const cards: Player[] = results.map((entry: {player:Player}) => entry.player);
+      const seriesRank = (season?:string) => season==='26WRs'?3:season==='26WR'?2:1;
+      const champion = cards.reduce((best,card) =>
+        card.overall>best.overall ||
+        (card.overall===best.overall && seriesRank(card.season)>seriesRank(best.season))
+          ? card : best, cards[0]);
+      setDrawnCards(cards);
+      setBestCard(champion);
+      playSound(champion.tier);
+      setReveal({card: champion, count: 10});
+      const duplicateCount=results.filter((r:{isDuplicate:boolean})=>r.isDuplicate).length;
+      if (duplicateCount) toast(`중복 ${duplicateCount}장 · ${totalRefund}P 환급`, {icon:'ℹ️'});
+      void refreshAfterDraw();
+    } catch(error: any) {
+      toast.error(error.response?.data?.error || error.message || '10연차 실패');
+    } finally {
       setIsDrawing(false);
-      console.error('10연차 오류:', error);
-
-      if (error.response?.data?.error) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('10연차 중 오류가 발생했습니다.');
-      }
     }
   };
 
@@ -1906,6 +1771,10 @@ export default function Gacha() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {reveal && <GachaReveal key={`${reveal.card.id}-${reveal.count}`}
+          card={reveal.card} count={reveal.count} onClose={() => setReveal(null)} />}
       </AnimatePresence>
     </div>
   );

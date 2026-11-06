@@ -5,17 +5,9 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// Google Client ID (환경변수에서 가져오기)
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -23,39 +15,6 @@ export default function Register() {
   const [referralCode, setReferralCode] = useState('');
   const [referralValid, setReferralValid] = useState<boolean | null>(null);
   const [referralUsername, setReferralUsername] = useState('');
-
-  useEffect(() => {
-    // Load Google Sign-In script
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleSignIn,
-        });
-
-        window.google.accounts.id.renderButton(
-          document.getElementById('googleSignInButton'),
-          {
-            theme: 'outline',
-            size: 'large',
-            width: 400,
-            text: 'signup_with',
-            logo_alignment: 'left',
-          }
-        );
-      }
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   // Debounced referral code validation
   useEffect(() => {
@@ -226,7 +185,7 @@ export default function Register() {
 
           {/* Google Sign-In Button */}
           <div className="mb-6">
-            <div id="googleSignInButton" className="flex justify-center"></div>
+            <GoogleSignInButton onCredential={handleGoogleSignIn} text="signup_with" />
           </div>
 
           {/* Info Box */}

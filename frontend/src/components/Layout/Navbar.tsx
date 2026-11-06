@@ -41,65 +41,50 @@ export default function Navbar() {
 
   type NavStructureItem = NavItem | NavDropdown;
 
+  // Keep the primary navigation compact. All secondary destinations live in 5 groups.
   const navStructure: NavStructureItem[] = [
     { path: '/', label: '홈' },
-    { path: '/how-to-play', label: '게임 가이드' },
-    {
-      label: '카드',
-      items: [
-        { path: '/gacha', label: '뽑기' },
-        { path: '/fusion', label: '합성' },
-        { path: '/enhancement', label: '강화' },
-        { path: '/deck', label: '덱 편성' },
-        { path: '/coach', label: '코치' },
-        { path: '/card-collection', label: '도감' },
-      ]
-    },
-    {
-      label: '경기',
-      items: [
-        { path: '/match-select', label: 'MOBA 대전' },
-        { path: '/spectator', label: '관전' },
-        { path: '/friendly', label: '친선전' },
-        { path: '/ai-battle', label: 'AI 배틀' },
-        { path: '/campaign', label: '캠페인' },
-        { path: '/infinite-challenge', label: '무한도전' },
-      ]
-    },
-    { path: '/market', label: '이적시장' },
-    { path: '/raid', label: '레이드' },
-    { path: '/shop', label: '포인트 상점' },
-    { path: '/titles', label: '칭호' },
-    { path: '/ranking', label: '랭킹' },
-    { path: '/strategy-stats', label: '전략 통계' },
-    { path: '/champions', label: '챔피언 소개' },
-    {
-      label: '길드',
-      items: [
-        { path: '/guild', label: '길드' },
-        { path: '/clan-war', label: '길드전' },
-      ]
-    },
-    {
-      label: '미션/업적',
-      items: [
-        { path: '/missions', label: '미션' },
-        { path: '/achievements', label: '업적' },
-        { path: '/agent', label: '에이전트' },
-      ]
-    },
-    {
-      label: '이벤트',
-      items: [
-        { path: '/lottery', label: '럭키 드로우' },
-      ]
-    },
-    { path: '/trade', label: '트레이드' },
-    { path: '/coupon', label: '쿠폰' },
-    { path: '/packs', label: '팩 인벤토리' },
-    { path: '/settings', label: '설정' },
-    { path: '/notices', label: '공지사항' },
-    { path: '/suggestions', label: '건의사항' },
+    { label: '카드 관리', items: [
+      { path: '/gacha', label: '선수 뽑기' },
+      { path: '/card-collection', label: '카드 도감' },
+      { path: '/deck', label: '덱 편성' },
+      { path: '/enhancement', label: '강화' },
+      { path: '/fusion', label: '합성' },
+      { path: '/coach', label: '코치' },
+      { path: '/packs', label: '팩 인벤토리' },
+    ] },
+    { label: '대전', items: [
+      { path: '/match-select', label: 'MOBA AI 대전' },
+      { path: '/campaign', label: '캠페인' },
+      { path: '/infinite-challenge', label: '무한도전' },
+      { path: '/raid', label: '레이드' },
+      { path: '/spectator', label: '관전' },
+      { path: '/ranking', label: '랭킹' },
+      { path: '/strategy-stats', label: '전략 통계' },
+    ] },
+    { label: '거래·성장', items: [
+      { path: '/market', label: '이적시장' },
+      { path: '/trade', label: '유저 거래' },
+      { path: '/shop', label: '포인트 상점' },
+      { path: '/agent', label: '에이전트' },
+      { path: '/missions', label: '미션' },
+      { path: '/achievements', label: '업적' },
+      { path: '/titles', label: '칭호' },
+    ] },
+    { label: '커뮤니티', items: [
+      { path: '/guild', label: '길드' },
+      { path: '/clan-war', label: '길드전' },
+      { path: '/notices', label: '공지사항' },
+      { path: '/suggestions', label: '건의사항' },
+      { path: '/referral', label: '친구 추천' },
+    ] },
+    { label: '더보기', items: [
+      { path: '/lottery', label: '럭키드로우' },
+      { path: '/coupon', label: '쿠폰' },
+      { path: '/champions', label: '챔피언 소개' },
+      { path: '/how-to-play', label: '게임 가이드' },
+      { path: '/settings', label: '설정' },
+    ] },
   ];
 
   const isDropdownActive = (items: NavItem[]) => {
@@ -132,7 +117,7 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-center gap-1 lg:flex">
+          <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
             {navStructure.map((item, index) => {
               if ('items' in item) {
                 // Dropdown menu

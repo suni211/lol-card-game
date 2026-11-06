@@ -8,6 +8,7 @@ export interface Player {
   region: 'LCK' | 'LPL' | 'LEC' | 'LCS' | 'PCS' | 'VCS' | 'CBLOL' | 'LJL' | 'LLA';
   tier: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'ICON' | 'GR';
   season?: string; // 26 LIVE, 26WR, 26WRs
+  nationality?: string | null; // ISO country code: KR, CN, etc; NOT the competition region
   boostAmount?: number;
   baseOverall?: number;
   salary?: number; // 급여 (5-26 범위, 덱 급여 한도 100)

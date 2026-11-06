@@ -3,7 +3,7 @@ import { Save, Info, Target, Users, Map, X, Eye, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
-import { getPlayerImageUrl } from '../utils/playerImage';
+import { getPlayerImageUrl, getTeamLogoUrl, getSeriesLogo } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 
@@ -733,6 +733,12 @@ export default function Deck() {
 
                         {/* Card Info */}
                         <div className="flex-1 flex flex-col justify-between">
+                          <div className="flex items-center gap-2">
+                            <img src={getSeriesLogo(slot.card.player.season)} alt={slot.card.player.season || '26'}
+                              className="w-14 h-5 object-contain" />
+                            <img src={getTeamLogoUrl(slot.card.player.team)} alt={slot.card.player.team + ' 로고'}
+                              className="w-6 h-6 object-contain" onError={e => {e.currentTarget.style.display='none';}} />
+                          </div>
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <div className={`inline-block px-2 py-1 bg-gradient-to-r ${getTierColor(slot.card.player.tier)} rounded text-white text-xs font-bold`}>

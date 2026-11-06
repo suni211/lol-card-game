@@ -278,6 +278,8 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
           region: player.region,
           tier: player.tier, // Use tier calculated in SQL
           season: player.season,
+          nationality: player.nationality || null,
+          imageUrl: player.image_url || undefined,
           salary: player.salary,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,
@@ -467,6 +469,8 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           region: player.region,
           tier: player.tier, // Use tier calculated in SQL
           season: player.season,
+          nationality: player.nationality || null,
+          imageUrl: player.image_url || undefined,
           salary: player.salary,
           laning: player.laning || 50,
           teamfight: player.teamfight || 50,
@@ -574,6 +578,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
           ELSE 'LEGENDARY'
         END as tier,
         p.season,
+        p.nationality,
         p.image_url,
         p.laning,
         p.teamfight,
@@ -615,6 +620,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
           region: card.region,
           tier: card.tier,
           season: card.season,
+          nationality: card.nationality || null,
           salary: card.salary,
           imageUrl: card.image_url,
           laning: card.laning || 50,
@@ -680,6 +686,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
           ELSE 'LEGENDARY'
         END as tier,
         p.season,
+        p.nationality,
         p.image_url,
         p.laning,
         p.teamfight,
@@ -713,6 +720,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
           region: card.region,
           tier: card.tier,
           season: card.season,
+          nationality: card.nationality || null,
           salary: card.salary,
           imageUrl: card.image_url,
           laning: card.laning || 50,

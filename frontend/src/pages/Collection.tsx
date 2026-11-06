@@ -4,7 +4,7 @@ import { Search, Trash2, TrendingUp, Zap, X, Sparkles } from 'lucide-react';
 import type { UserCard } from '../types';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
-import { getPlayerImageUrl, getSeriesLogo } from '../utils/playerImage';
+import { getPlayerImageUrl, getSeriesLogo, getTeamLogoUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTeamColor, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 import toast from 'react-hot-toast';
@@ -427,6 +427,8 @@ export default function Collection() {
                         )}
                       </h3>
                       <p className="text-sm mb-3 flex items-center gap-2">
+                        <img src={getTeamLogoUrl(card.player.team)} alt={card.player.team + ' 로고'}
+                          className="w-7 h-7 object-contain" onError={e => {e.currentTarget.style.display='none';}} />
                         <span className={`${getTeamColor(card.player.team)} text-white px-2 py-0.5 rounded text-xs font-bold`}>
                           {card.player.team}
                         </span>

@@ -20,7 +20,7 @@ router.use(authMiddleware, async (req: AuthRequest, res: Response, next) => {
 router.get('/players', async (req, res) => {
   try {
     const [rows]: any = await pool.query(
-      `SELECT p.id,p.name,p.team,p.position,p.region,p.season,p.overall,p.image_url,
+      `SELECT p.id,p.name,p.team,p.position,p.region,p.season,p.overall,p.image_url,p.nationality,
           COALESCE(b.base_overall,p.overall) AS base_overall,
           COALESCE(b.boost_amount,0) AS boost_amount,b.achievement,b.evidence_url
        FROM players p LEFT JOIN worlds2026_live_boosts b ON b.player_id=p.id
@@ -35,6 +35,26 @@ router.get('/players', async (req, res) => {
 
 // Publish or retract a Worlds performance adjustment with an audit log.
 // Updating players.overall updates owned cards automatically via player_id.
+// A real nationality is a property of the player, shared by every 2026 card series.
+router.post('/nationality/:playerId', async (req: AuthRequest, res: Response) => {
+  const country=String(req.body.nationality || '').trim().toUpperCase();
+  if(country && !/^[A-Z]{2}$/.test(country))
+    return res.status(400).json({success:false,error:'국적은 ISO 두 글자 코드(KR, CN 등)로 입력해주세요.'});
+  try {
+    const [selected]:any=await pool.query(
+      "SELECT name,team FROM players WHERE id=? AND season IN ('26 LIVE','26WR','26WRs')",
+      [req.params.playerId]);
+    if(!selected.length) return res.status(404).json({success:false,error:'2026 선수 카드를 찾을 수 없습니다.'});
+    await pool.query(
+      "UPDATE players SET nationality=? WHERE name=? AND team=? AND season IN ('26 LIVE','26WR','26WRs')",
+      [country || null,selected[0].name,selected[0].team]);
+    res.json({success:true,data:{nationality:country || null}});
+  }catch(error) {
+    console.error('Player nationality update failed:',error);
+    res.status(500).json({success:false,error:'국적 저장 실패'});
+  }
+});
+
 router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
   const {playerId} = req.params;
   const {boost,achievement,evidenceUrl} = req.body;

@@ -76,7 +76,7 @@ export default function RiftPrep() {
     Boolean(d.top_card_id&&d.jungle_card_id&&d.mid_card_id&&d.adc_card_id&&d.support_card_id)
   ),[decks]);
   const selectedDeck=complete.find(d=>d.deck_slot===slot);
-  const myTurn = !!session?.draft.turn && session.draft.turn.team===session.you && session.status==='DRAFT';
+  const myTurn = session?.draft.turn?.team === session?.you && session?.status === 'DRAFT';
   const inviteUrl = session ? `${window.location.origin}/rift-prep?join=${session.id}` : '';
 
   const create=async()=>{
@@ -221,6 +221,16 @@ export default function RiftPrep() {
             </tr>)}</tbody>
           </table></div>
           <div className="text-xs text-slate-300">킬 / 오브젝트 / 구조물: {JSON.stringify(session.result.eventCounts||{})}</div>
+          <details className="rounded bg-slate-800 p-3">
+            <summary className="cursor-pointer font-bold">주요 장면 · 경기 이벤트</summary>
+            <div className="mt-3 max-h-72 overflow-y-auto text-sm space-y-1">
+              {(session.result.highlights||[]).slice(-40).map((event:any,i:number)=>
+                <p key={i} className="border-b border-slate-700 py-1">
+                  {Math.floor(Number(event.t||0)/60)}:{String(Math.floor(Number(event.t||0)%60)).padStart(2,'0')}
+                  {' · '}{event.type}{event.name?(' · '+event.name):''}
+                </p>)}
+            </div>
+          </details>
         </div>}
       </section>}
     </div>

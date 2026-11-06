@@ -22,6 +22,7 @@ import Gacha from './pages/Gacha';
 import Collection from './pages/Collection';
 import Deck from './pages/Deck';
 import AIBattle from './pages/AIBattle';
+import RiftPrematch from './pages/RiftPrematch';
 import Ranking from './pages/Ranking';
 import Missions from './pages/Missions';
 import Trade from './pages/Trade';
@@ -376,7 +377,7 @@ function App() {
             path="/ai-battle"
             element={
               <ProtectedRoute>
-                <AIBattle />
+                <RiftPrematch />
               </ProtectedRoute>
             }
           />
@@ -635,6 +636,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MatchSelect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rift-prematch"
+            element={
+              <ProtectedRoute>
+                <RiftPrematch />
               </ProtectedRoute>
             }
           />

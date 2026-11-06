@@ -148,7 +148,7 @@ async function openSinglePack(connection: any, userId: number, config: any) {
         `SELECT * FROM players
          WHERE overall >= ?
            AND overall <= ?
-           AND season IN ('26 LIVE','26WR')
+           AND season IN ('26 LIVE','26WR','26WRs')
          ORDER BY RAND()
          LIMIT 1`,
         [minOverall, maxOverall]
@@ -184,9 +184,6 @@ async function openSinglePack(connection: any, userId: number, config: any) {
 
 // Calculate tier based on overall and season
 function calculateTier(overall: number, season: string): string {
-  if (season === '26WRs') {
-    return 'ICON';
-  }
   if (overall >= 101) return 'LEGENDARY';
   if (overall >= 91) return 'EPIC';
   if (overall >= 81) return 'RARE';

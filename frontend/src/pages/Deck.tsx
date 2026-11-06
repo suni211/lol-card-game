@@ -18,6 +18,7 @@ interface Player {
   region: string;
   tier: string;
   season?: string;
+  imageUrl?: string;
   salary?: number;
   // 기존 4개 스탯
   laning?: number;

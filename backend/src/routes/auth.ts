@@ -182,11 +182,7 @@ router.post('/login', async (req, res) => {
 
     // Get user with equipped title
     const [users]: any = await pool.query(
-      `SELECT u.*, t.id as title_id, t.name as title_name, t.color as title_color,
-              t.icon as title_icon, t.rarity as title_rarity
-       FROM users u
-       LEFT JOIN titles t ON u.equipped_title_id = t.id
-       WHERE u.email = ?`,
+      'SELECT * FROM users WHERE email = ?',
       [email]
     );
 

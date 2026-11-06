@@ -121,7 +121,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-2">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
             <div className="flex items-center space-x-2">
@@ -132,7 +132,7 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center">
+          <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-center gap-1 lg:flex">
             {navStructure.map((item, index) => {
               if ('items' in item) {
                 // Dropdown menu
@@ -162,7 +162,7 @@ export default function Navbar() {
 
                     {/* Dropdown */}
                     {shouldShowDropdown(item.label) && (
-                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-lg py-2 w-auto min-w-[120px] border border-gray-200 dark:border-gray-700 z-50">
+                      <div className="absolute top-full left-0 mt-1 max-h-[65dvh] overflow-y-auto bg-white dark:bg-gray-800 shadow-xl rounded-lg py-2 w-auto min-w-[120px] border border-gray-200 dark:border-gray-700 z-50">
                         {item.items.map((subItem) => (
                           <Link
                             key={subItem.path}
@@ -243,6 +243,11 @@ export default function Navbar() {
                   <Gift className="w-5 h-5" />
                 </Link>
 
+                {user.isAdmin && (
+                  <Link to="/admin" className="rounded-lg px-2 py-1.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700">
+                    관리자
+                  </Link>
+                )}
                 {/* Profile */}
                 <Link
                   to="/profile"

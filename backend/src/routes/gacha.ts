@@ -170,9 +170,20 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       }
     }
 
+    if (players.length === 0 && tier !== 'ICON') {
+      // A 2026-only roster may have no 101+ regular cards.
+      // Choose the highest available 2026 non-Worlds-icon card, not an old season.
+      [players] = await connection.query(
+        `SELECT *, CASE WHEN overall<=80 THEN 'COMMON'
+                      WHEN overall<=90 THEN 'RARE'
+                      WHEN overall<=100 THEN 'EPIC' ELSE 'LEGENDARY' END AS tier
+         FROM players WHERE season IN ('26 LIVE','26WR')
+         ORDER BY overall DESC,RAND() LIMIT 1`
+      );
+    }
     if (players.length === 0) {
       await connection.rollback();
-      return res.status(500).json({ success: false, error: 'No players available' });
+      return res.status(500).json({ success: false, error: '26 시즌 선수 데이터가 없습니다.' });
     }
 
     const player = players[0];
@@ -1225,7 +1236,10 @@ router.delete('/dismantle/:cardId', authMiddleware, async (req: AuthRequest, res
   }
 });
 
-// Welcome Pack - Free pack containing only 25WW, 25WUD, and 19G2 cards
+// Legacy 2025 welcome packs are permanently disabled for the fresh 2026 game.
+router.post('/welcome-pack', authMiddleware, (_req, res) =>
+  res.status(410).json({success:false,error:'구시즌 웰컴팩은 종료되었습니다.'}));
+// Welcome Pack - legacy implementation kept for reference, unreachable.
 router.post('/welcome-pack', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();
 

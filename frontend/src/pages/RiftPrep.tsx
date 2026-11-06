@@ -32,6 +32,11 @@ const strategyFields = [
   { key: 'teamfight', title: '한타 전술', values: [['PROTECT','아군 보호'],['ENGAGE','선제 교전'],['KITE','거리 유지']] },
   { key: 'macro', title: '운영 목표', values: [['OBJECTIVE','오브젝트'],['VISION','시야 장악'],['SPLITPUSH','사이드 운영']] },
 ] as const;
+const phases = [
+  { label: '초반', help: '라인전 운영', field: strategyFields[0] },
+  { label: '중반', help: '시야 및 오브젝트', field: strategyFields[2] },
+  { label: '후반', help: '한타 판단', field: strategyFields[1] },
+] as const;
 const positions = ['TOP','JUNGLE','MID','ADC','SUPPORT'];
 
 export default function RiftPrep() {
@@ -42,6 +47,7 @@ export default function RiftPrep() {
   const [mode,setMode] = useState<Mode>('AI');
   const [slot,setSlot] = useState(Number(params.get('deck'))||1);
   const [plan,setPlan] = useState<Plan>({...defaults});
+  const [activePhase,setActivePhase] = useState(0);
   const [decks,setDecks] = useState<DeckInfo[]>([]);
   const [sessionId,setSessionId] = useState<string|null>(params.get('session'));
   const [inviteId,setInviteId] = useState<string|null>(params.get('join'));
@@ -157,12 +163,24 @@ export default function RiftPrep() {
         <section className="bg-slate-900 rounded-xl border border-slate-700 p-5 space-y-3 md:col-span-2">
           <h2 className="text-lg font-bold">2. 경기 전 전략 설정</h2>
           <p className="text-xs text-slate-400">라인·한타·운영을 직접 지정합니다. 시뮬레이션 엔진의 공격성 및 판단에 반영됩니다.</p>
-          {strategyFields.map(field=><div key={field.key} className="grid grid-cols-1 md:grid-cols-4 items-center gap-2">
-            <strong className="text-sm">{field.title}</strong>
-            {field.values.map(([value,label])=><button key={value}
-              className={`rounded-lg border px-3 py-2 text-sm ${plan[field.key]===value?'bg-indigo-700 border-cyan-300':'bg-slate-800 border-slate-700'}`}
-              onClick={()=>setPlan(p=>({...p,[field.key]:value}))}>{label}</button>)}
+          <div role="tablist" aria-label="경기 단계별 전술" className="grid grid-cols-3 gap-2">
+            {phases.map((phase,index)=><button key={phase.label}
+              role="tab" aria-selected={activePhase===index}
+              onClick={()=>setActivePhase(index)}
+              className={`rounded-lg border px-3 py-2 text-sm font-semibold ${activePhase===index?'bg-indigo-700 border-cyan-300':'bg-slate-800 border-slate-700'}`}>
+              {phase.label}<span className="block text-xs font-normal text-slate-300">{phase.help}</span>
+            </button>)}
+          </div>
+          {phases.map((phase,index)=>activePhase===index && <div key={phase.label} role="tabpanel" className="space-y-3 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+            <strong className="block text-sm">{phase.field.title}</strong>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {phase.field.values.map(([value,label])=><button key={value}
+                aria-pressed={plan[phase.field.key]===value}
+                className={`rounded-lg border px-3 py-3 text-sm ${plan[phase.field.key]===value?'bg-indigo-700 border-cyan-300':'bg-slate-800 border-slate-700'}`}
+                onClick={()=>setPlan(p=>({...p,[phase.field.key]:value}))}>{label}</button>)}
+            </div>
           </div>)}
+          <p className="text-xs text-slate-400">초반·중반·후반 선택값이 모두 저장되어 AI 시뮬레이션에 전달됩니다.</p>
           {!!sessionId && ['WAITING','DRAFT'].includes(session?.status||'') && <button onClick={()=>void savePlan()} disabled={busy} className="rounded bg-indigo-600 px-4 py-2">전략 저장</button>}
         </section>
       </div>

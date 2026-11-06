@@ -69,268 +69,96 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 });
 
-// Google OAuth Register/Login
+// Google Identity Services: verify ID token against this application's OAuth client.
+// Keep the stable Google subject bound to a user; do not trust a posted email alone.
 router.post('/google', async (req, res) => {
-  const connection = await pool.getConnection();
-
+  const { credential } = req.body || {};
+  if (typeof credential !== 'string' || credential.length < 100 || credential.length > 10000) {
+    return res.status(400).json({ success: false, error: 'Google 로그인 인증 정보가 없습니다.' });
+  }
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const secret = process.env.JWT_SECRET;
+  if (!clientId || !secret) {
+    return res.status(503).json({ success: false, error: 'Google 로그인 환경변수가 설정되지 않았습니다.' });
+  }
   try {
-    const { credential, referralCode } = req.body;
-
-    if (!credential) {
-      return res.status(400).json({ success: false, error: 'No credential provided' });
+    const { data: profile } = await axios.get('https://oauth2.googleapis.com/tokeninfo', {
+      params: { id_token: credential },
+      timeout: 8000,
+    });
+    const issuer = profile.iss;
+    const verified = profile.email_verified === true || profile.email_verified === 'true';
+    if (profile.aud !== clientId || !['accounts.google.com', 'https://accounts.google.com'].includes(issuer)
+      || !verified || !profile.sub || !profile.email || Number(profile.exp) * 1000 <= Date.now()) {
+      return res.status(401).json({ success: false, error: '유효하지 않은 Google 인증입니다.' });
     }
-
-    // Get client IP
-    const clientIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
-                     req.socket.remoteAddress ||
-                     'unknown';
-
-    // VPN/프록시 차단
-    const isVpn = await isVpnOrProxy(clientIp);
-    if (isVpn) {
-      return res.status(403).json({
-        success: false,
-        error: 'VPN/프록시 사용이 감지되었습니다.',
-        message: 'VPN 또는 프록시를 사용 중인 것으로 감지되어 접속이 차단되었습니다. VPN을 끄고 다시 시도해주세요.'
-      });
+    const email = String(profile.email).toLowerCase().trim();
+    const googleSub = String(profile.sub);
+    if (email.length > 100 || googleSub.length > 255) {
+      return res.status(401).json({ success: false, error: 'Google 계정 정보를 확인할 수 없습니다.' });
     }
-
-    // Verify Google token
-    const googleResponse = await axios.get(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
-    );
-
-    const { email, name, picture } = googleResponse.data;
-
-    if (!email) {
-      return res.status(400).json({ success: false, error: 'Failed to get email from Google' });
-    }
-
-    // Check if user exists
-    const [existing]: any = await connection.query(
-      'SELECT * FROM users WHERE email = ?',
-      [email]
-    );
-
-    let userId;
-    let username;
+    const connection = await pool.getConnection();
+    let userId: number;
     let isNewUser = false;
-
-    if (existing.length > 0) {
-      // User exists - login
-      const user = existing[0];
-      userId = user.id;
-      username = user.username;
-
-      // 로그인 IP 업데이트
-      await connection.query(
-        'UPDATE users SET last_login_ip = ?, last_login_at = NOW() WHERE id = ?',
-        [clientIp, userId]
-      );
-    } else {
-      // New user - register
-      isNewUser = true;
-
+    try {
       await connection.beginTransaction();
-
-      try {
-        // Validate referral code if provided
-        let referrerId = null;
-        let referrerIp = null;
-
-        if (referralCode) {
-          const [referrerUser]: any = await connection.query(
-            'SELECT id, referral_code, registration_ip FROM users WHERE referral_code = ?',
-            [referralCode]
-          );
-
-          if (referrerUser.length === 0) {
+      const [bySub]: any = await connection.query('SELECT id FROM users WHERE google_sub=? FOR UPDATE', [googleSub]);
+      if (bySub.length) {
+        userId = bySub[0].id;
+      } else {
+        const [byEmail]: any = await connection.query('SELECT id, google_sub FROM users WHERE email=? FOR UPDATE', [email]);
+        if (byEmail.length) {
+          if (byEmail[0].google_sub && byEmail[0].google_sub !== googleSub) {
             await connection.rollback();
-            return res.status(400).json({
-              success: false,
-              error: '유효하지 않은 추천 코드입니다.'
-            });
+            return res.status(409).json({ success: false, error: '다른 Google 계정에 연결된 이메일입니다.' });
           }
-
-          referrerId = referrerUser[0].id;
-          referrerIp = referrerUser[0].registration_ip;
-
-          // Check IP - must be different
-          if (referrerIp && referrerIp === clientIp) {
-            await connection.rollback();
-            return res.status(400).json({
-              success: false,
-              error: '동일한 IP에서는 추천인 가입이 불가능합니다.'
-            });
-          }
-
-          // Check if IP already used for registration
-          const [ipCheck]: any = await connection.query(
-            'SELECT id FROM users WHERE registration_ip = ?',
-            [clientIp]
+          userId = byEmail[0].id;
+          await connection.query('UPDATE users SET google_sub=? WHERE id=?', [googleSub, userId]);
+        } else {
+          isNewUser = true;
+          const username = ('google_' + googleSub.replace(/[^a-zA-Z0-9]/g, '').slice(-22)).slice(0, 50);
+          const randomPassword = await bcrypt.hash(require('crypto').randomBytes(32).toString('hex'), 10);
+          const [inserted]: any = await connection.query(
+            'INSERT INTO users (username,email,password,points,tier,rating,google_sub,welcome_packs_remaining) VALUES (?,?,?,10000,\'IRON\',1000,?,5)',
+            [username, email, randomPassword, googleSub]
           );
-
-          if (ipCheck.length > 0) {
-            await connection.rollback();
-            return res.status(400).json({
-              success: false,
-              error: '이미 가입된 IP입니다.'
-            });
-          }
+          userId = inserted.insertId;
+          await connection.query('INSERT INTO user_stats (user_id) VALUES (?)', [userId]);
         }
-
-        // Generate unique username from email
-        const baseUsername = email.split('@')[0];
-        let finalUsername = baseUsername;
-        let counter = 1;
-
-        // Check username uniqueness
-        while (true) {
-          const [usernameCheck]: any = await connection.query(
-            'SELECT id FROM users WHERE username = ?',
-            [finalUsername]
-          );
-
-          if (usernameCheck.length === 0) break;
-          finalUsername = `${baseUsername}${counter}`;
-          counter++;
-        }
-
-        username = finalUsername;
-
-        // Create user with random password (not used for Google login)
-        const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
-
-        // Generate referral code for new user
-        const newReferralCode = `${username.toUpperCase().substring(0, 8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-        const [result]: any = await connection.query(
-          `INSERT INTO users (username, email, password, points, tier, rating, registration_ip, referral_code, welcome_packs_remaining)
-           VALUES (?, ?, ?, 10000, "IRON", 1000, ?, ?, 0)`,
-          [username, email, randomPassword, clientIp, newReferralCode]
-        );
-
-        userId = result.insertId;
-
-        // Create user stats
-        await connection.query(
-          'INSERT INTO user_stats (user_id) VALUES (?)',
-          [userId]
-        );
-
-        // Create referral relationship if referral code was used
-        if (referrerId) {
-          const signupBonus = 5000;
-
-          console.log(`🎁 Processing referral signup: Referrer ID ${referrerId} -> New User ID ${userId}`);
-
-          // Insert referral record
-          const [referralResult]: any = await connection.query(
-            `INSERT INTO referrals (referrer_id, referred_id, referrer_ip, referred_ip, signup_bonus_points)
-             VALUES (?, ?, ?, ?, ?)`,
-            [referrerId, userId, referrerIp, clientIp, signupBonus]
-          );
-
-          const referralId = referralResult.insertId;
-
-          // Give signup bonus to referrer
-          await connection.query(
-            'UPDATE users SET points = points + ?, total_referrals = total_referrals + 1, total_referral_bonus = total_referral_bonus + ? WHERE id = ?',
-            [signupBonus, signupBonus, referrerId]
-          );
-
-          // Give signup bonus to referred user
-          await connection.query(
-            'UPDATE users SET points = points + ? WHERE id = ?',
-            [signupBonus, userId]
-          );
-
-          // Log the signup bonus
-          await connection.query(
-            `INSERT INTO referral_bonuses (referral_id, referrer_id, referred_id, bonus_type, referrer_bonus, referred_bonus)
-             VALUES (?, ?, ?, 'SIGNUP', ?, ?)`,
-            [referralId, referrerId, userId, signupBonus, signupBonus]
-          );
-
-          console.log(`✅ Referral bonus awarded: ${signupBonus}P to referrer ${referrerId} and new user ${userId}`);
-        }
-
-        await connection.commit();
-      } catch (error) {
-        await connection.rollback();
-        console.error('Registration transaction error:', error);
-        throw error;
       }
+      await connection.commit();
+    } catch (dbError) {
+      await connection.rollback();
+      throw dbError;
+    } finally {
+      connection.release();
     }
-
-    // Generate JWT token
-    const jwtSecret = (process.env.JWT_SECRET || 'your-secret-key') as string;
-    const jwtExpire = (process.env.JWT_EXPIRE || '7d') as string;
-    const token = jwt.sign(
-      { id: userId, username, email, isAdmin: false },
-      jwtSecret,
-      { expiresIn: jwtExpire }
-    );
-
-    // Get full user data with equipped title
     const [users]: any = await pool.query(
-      `SELECT u.*, t.id as title_id, t.name as title_name, t.color as title_color,
-              t.icon as title_icon, t.rarity as title_rarity
-       FROM users u
-       LEFT JOIN titles t ON u.equipped_title_id = t.id
-       WHERE u.id = ?`,
+      'SELECT id,username,email,points,tier,rating,is_admin,created_at,level,exp,total_exp FROM users WHERE id=? LIMIT 1',
       [userId]
     );
-
+    if (!users.length) return res.status(500).json({ success: false, error: '사용자 계정을 찾지 못했습니다.' });
     const user = users[0];
-
-    // Get guild info if user is in a guild
-    let guildInfo = null;
-    if (user.guild_id) {
-      const [guilds]: any = await pool.query(
-        'SELECT id, name, tag FROM guilds WHERE id = ?',
-        [user.guild_id]
-      );
-      if (guilds.length > 0) {
-        guildInfo = guilds[0];
-      }
-    }
-
-    const userData = {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      points: user.points,
-      tier: user.tier,
-      rating: user.rating,
-      isAdmin: user.is_admin === 1,
-      createdAt: user.created_at,
-      level: user.level || 1,
-      exp: user.exp || 0,
-      total_exp: user.total_exp || 0,
-      guild_id: user.guild_id || null,
-      guild_tag: guildInfo?.tag || null,
-      guild_name: guildInfo?.name || null,
-      equipped_title_id: user.title_id || null,
-      title_name: user.title_name || null,
-      title_color: user.title_color || null,
-      title_icon: user.title_icon || null,
-      title_rarity: user.title_rarity || null,
-    };
-
-    res.json({
+    const token = jwt.sign(
+      { id: user.id, username: user.username, email: user.email, isAdmin: Boolean(user.is_admin) },
+      secret, { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    );
+    return res.json({
       success: true,
-      message: existing.length > 0 ? 'Login successful!' : 'Registration successful!',
-      data: {
-        user: userData,
-        token
-      }
+      message: isNewUser ? 'Google 회원가입 성공!' : 'Google 로그인 성공!',
+      data: { token, user: {
+        id: user.id, username: user.username, email: user.email,
+        points: user.points, tier: user.tier, rating: user.rating,
+        isAdmin: Boolean(user.is_admin), createdAt: user.created_at,
+        level: user.level || 1, exp: user.exp || 0, total_exp: user.total_exp || 0
+      } }
     });
   } catch (error: any) {
-    console.error('Google OAuth error:', error);
-    res.status(500).json({ success: false, error: 'Google authentication failed' });
-  } finally {
-    connection.release();
+    console.error('Google login failed:', error?.response?.status || error?.code || error?.message);
+    if (error?.response?.status === 400) {
+      return res.status(401).json({ success: false, error: 'Google 인증이 만료되었거나 유효하지 않습니다.' });
+    }
+    return res.status(500).json({ success: false, error: 'Google 로그인 처리 중 오류가 발생했습니다.' });
   }
 });
 
@@ -438,13 +266,8 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.user?.id;
 
     const [users]: any = await pool.query(
-      `SELECT u.id, u.username, u.email, u.points, u.tier, u.rating, u.is_admin,
- u.created_at, u.level, u.exp, u.total_exp,
-              u.equipped_title_id, t.id as title_id, t.name as title_name, t.color as title_color,
-              t.icon as title_icon, t.rarity as title_rarity
-       FROM users u
-       LEFT JOIN titles t ON u.equipped_title_id = t.id
-       WHERE u.id = ?`,
+      `SELECT id,username,email,points,tier,rating,is_admin,created_at,level,exp,total_exp
+       FROM users WHERE id=?`,
       [userId]
     );
 

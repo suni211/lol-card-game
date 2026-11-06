@@ -77,18 +77,62 @@ class StrategyMatch(Match):
                 u.player_id=card['id']
                 u.player_name=card['name']
                 u.player_overall=float(card['overall'])
-                # OVR scales engine attributes but does not replace nexus-based victory.
-                multiplier=max(.78,min(1.25,1+(float(card['overall'])-85)*.007))
-                u.hp*=multiplier;u.maxhp*=multiplier;u.ad*=multiplier
-                u.mechanics=min(.99,u.mechanics*multiplier)
+                # OVR means a better *chance to notice and exploit* opportunities.
+                # Do NOT change HP, attack, spell damage, combat mechanics or dice rolls.
+                u.opportunity_chance=max(.15,min(.85,.15+(u.player_overall-50)*.010))
+                u.next_opportunity_check=120.
+                u.opportunity_target=-1
+                u.opportunity_until=0.
                 self.start_aggression[u.id]=u.aggression
-    def damage(self,a,b,power,magic=False,true=False,spell=False,hit_kind=None,source=None):
-        # Champion skill output grows continuously with the player's OVR.
-        # Basic attacks are already OVR-scaled via Unit.ad.
-        if spell and a.kind=='champion':
-            rating=getattr(a,'player_overall',85)
-            power*=max(.78,min(1.25,1+(rating-85)*.007))
-        return super().damage(a,b,power,magic=magic,true=true,spell=spell,hit_kind=hit_kind,source=source)
+
+    def opportunity_target(self,u):
+        # One observable window per scan: an exposed, low-HP enemy, adequate
+        # allies, no protective enemy tower, and a healthy champion.
+        # No spontaneous kills, artificial buffs or omniscient information.
+        if not u.alive or u.hp/u.maxhp<.60:
+            return None
+        plan=self.plans[u.team].get('kind')
+        if plan in ('수비','넥서스 공략','오브젝트','강타 스틸','웨이브 공성'):
+            return None
+        exposed=[]
+        for target in self.nearby(u.pos,75):
+            if target.kind!='champion' or target.team!=1-u.team or not self.visible(u.team,target):
+                continue
+            if target.hp/target.maxhp>.73:
+                continue
+            if any(t.kind=='tower' and t.team==target.team and t.alive
+                   for t in self.nearby(target.pos,55)):
+                continue
+            allies,hostiles=self.combat_balance(u,target)
+            if allies>=hostiles*1.2 and allies>0:
+                exposed.append(target)
+        return min(exposed,key=lambda target:(target.hp/target.maxhp,abs(target.pos[0]-u.pos[0])+abs(target.pos[1]-u.pos[1])),default=None)
+
+    def goal(self,u):
+        # A better player has a better probability of spotting an objectively
+        # favourable opening. All players scan equally often; the roll alone
+        # is OVR dependent. Lower OVR is not penalized with reduced damage.
+        target=None
+        if self.t<u.opportunity_until and u.opportunity_target>=0:
+            previous=self.units[u.opportunity_target]
+            if previous.alive and self.visible(u.team,previous) and previous.hp/previous.maxhp<.85:
+                target=self.opportunity_target(u)
+                if target and target.id!=previous.id:
+                    target=None
+        if target is None and self.t>=u.next_opportunity_check:
+            u.next_opportunity_check=self.t+8.
+            potential=self.opportunity_target(u)
+            if potential and self.rng.random()<u.opportunity_chance:
+                target=potential
+                u.opportunity_target=target.id
+                u.opportunity_until=self.t+5.
+                self.log('opportunity',unit=u.id,team=u.team,target=target.id,
+                         kind='gank' if u.role=='JUNGLE' else 'teamfight',
+                         overall=round(u.player_overall))
+        if target:
+            u.intent='갱킹' if u.role=='JUNGLE' else '합류'
+            return target.pos
+        return super().goal(u)
 
     def phase(self):
         return 'early' if self.t<900 else 'mid' if self.t<1800 else 'late'
@@ -134,7 +178,7 @@ def main():
     while match.winner is None and match.t<seconds:
         match.step()
     result=match.result()
-    featured=[event for event in match.events if event['type'] in ('kill','objective','structure','victory')]
+    featured=[event for event in match.events if event['type'] in ('kill','objective','structure','victory','opportunity')]
     print(json.dumps(dict(result=result,bans=all_bans,roster=roster,
                           strategies=strategies,
                           timeline=featured[-150:],

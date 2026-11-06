@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';

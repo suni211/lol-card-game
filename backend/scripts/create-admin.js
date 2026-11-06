@@ -1,85 +1,42 @@
-// Create admin account script
-const bcrypt = require('bcrypt');
+// Fresh launch: administrator credentials must be explicitly supplied.
+// Usage: ADMIN_USERNAME=owner ADMIN_EMAIL=owner@example.com ADMIN_PASSWORD='...' node scripts/create-admin.js
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
-async function createAdmin() {
-  const connection = await mysql.createConnection({
+async function main() {
+  const username = process.env.ADMIN_USERNAME;
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!username || !email || !password || password.length < 12) {
+    throw new Error('Set ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD (at least 12 characters).');
+  }
+  if (!/^[a-zA-Z0-9_]{3,40}$/.test(username) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('Invalid admin username or email');
+  }
+  const cx = await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'lol_card_game',
   });
-
   try {
-    // Admin credentials
-    const adminEmail = 'admin@berrple.com';
-    const adminUsername = 'admin';
-    const adminPassword = 'admin123';
-
-    // Check if admin already exists
-    const [existingAdmin] = await connection.query(
-      'SELECT id, username, email, is_admin FROM users WHERE email = ? OR username = ?',
-      [adminEmail, adminUsername]
-    );
-
-    if (existingAdmin.length > 0) {
-      console.log('⚠️  Admin account already exists:');
-      console.table(existingAdmin);
-      console.log('');
-      console.log('Deleting and recreating...');
-
-      // Delete existing admin
-      await connection.query(
-        'DELETE FROM users WHERE email = ? OR username = ?',
-        [adminEmail, adminUsername]
-      );
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-
-    // Create admin user (removed is_email_verified and registration_ip - not in schema)
-    const [result] = await connection.query(
-      `INSERT INTO users
-      (username, email, password, points, tier, rating, is_admin)
-      VALUES (?, ?, ?, 999999, 'CHALLENGER', 9999, TRUE)`,
-      [adminUsername, adminEmail, hashedPassword]
-    );
-
-    const userId = result.insertId;
-
-    // Create user stats for admin
-    await connection.query(
-      `INSERT INTO user_stats (user_id, total_matches, wins, losses, current_streak, longest_win_streak)
-       VALUES (?, 0, 0, 0, 0, 0)
-       ON DUPLICATE KEY UPDATE user_id = user_id`,
-      [userId]
-    );
-
-    console.log('✅ Admin account created successfully!');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📧 Email:    admin@berrple.com');
-    console.log('👤 Username: admin');
-    console.log('🔑 Password: admin123');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('');
-    console.log('⚠️  Please keep these credentials safe!');
-
-    // Verify
-    const [verify] = await connection.query(
-      'SELECT id, username, email, is_admin, points, rating, tier FROM users WHERE id = ?',
-      [userId]
-    );
-    console.log('');
-    console.log('Verified account:');
-    console.table(verify);
-
-  } catch (error) {
-    console.error('❌ Error creating admin account:', error);
+    await cx.beginTransaction();
+    const [existing] = await cx.query('SELECT id FROM users WHERE username=? OR email=?', [username,email]);
+    if (existing.length) throw new Error('Username/email already exists. No existing account was overwritten.');
+    const hash = await bcrypt.hash(password, 12);
+    const [created] = await cx.query(
+      'INSERT INTO users (username,email,password,points,tier,rating,is_admin) VALUES (?,?,?,1000,\'IRON\',1000,TRUE)',
+      [username,email,hash]);
+    await cx.query('INSERT INTO user_stats (user_id) VALUES (?)',[created.insertId]);
+    await cx.commit();
+    console.log('New administrator created:',username,'(id:',created.insertId,')');
+  } catch(error) {
+    await cx.rollback();
+    throw error;
   } finally {
-    await connection.end();
+    await cx.end();
   }
 }
-
-createAdmin();
+main().catch(error=>{console.error(error.message);process.exitCode=1;});

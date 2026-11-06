@@ -152,8 +152,8 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-[55] overflow-y-auto
-          lg:static lg:block ${isMobileOpen ? 'block' : 'hidden lg:block'}`}
+        className={`fixed top-0 right-0 h-[100dvh] w-64 shrink-0 min-h-0 overscroll-contain overflow-x-hidden overflow-y-auto bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-[55]
+          lg:sticky lg:top-0 lg:self-start lg:block ${isMobileOpen ? 'block' : 'hidden lg:block'}`}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">

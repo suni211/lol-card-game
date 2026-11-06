@@ -32,7 +32,8 @@ CREATE TABLE players (
     team VARCHAR(50) NOT NULL,
     position ENUM('TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT') NOT NULL,
     overall INT NOT NULL CHECK (overall >= 50 AND overall <= 120),
-    region ENUM('LCK', 'LTA', 'LPL', 'LEC', 'LCP') NOT NULL,
+    region ENUM('LCK', 'LTA', 'LPL', 'LEC', 'LCP', 'LCS', 'CBLOL') NOT NULL,
+    tier ENUM('COMMON', 'RARE', 'EPIC', 'LEGENDARY', 'ICON', 'GR') NOT NULL DEFAULT 'COMMON',
     season VARCHAR(20),
     market_value INT DEFAULT 0,
     image_url VARCHAR(255),
@@ -504,7 +505,7 @@ CREATE TABLE IF NOT EXISTS user_collected_cards (
 -- 도감 달성 보상 (마일스톤)
 CREATE TABLE IF NOT EXISTS collection_milestones (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    required_cards INT NOT NULL UNIQUE, -- 필요한 카드 수
+    required_cards INT NOT NULL, -- same threshold can appear in different milestone categories
     reward_points INT NOT NULL, -- 보상 포인트
     milestone_type ENUM('TOTAL', 'TIER', 'SEASON', 'TEAM') DEFAULT 'TOTAL',
     filter_value VARCHAR(50), -- TIER면 'LEGENDARY', SEASON이면 '2024', TEAM이면 'T1' 등
@@ -536,8 +537,8 @@ INSERT INTO collection_milestones (required_cards, reward_points, milestone_type
 (500, 12000, 'TOTAL', '도감 500장 달성'),
 (5, 200, 'TIER', 'LEGENDARY 티어 5장 달성'),
 (10, 500, 'TIER', 'LEGENDARY 티어 10장 달성'),
-(5, 300, 'SEASON', '19G2 시즌 5장 달성'),
-(10, 700, 'SEASON', '19G2 시즌 10장 달성'),
+(5, 300, 'SEASON', '26 LIVE 시즌 5장 달성'),
+(10, 700, 'SEASON', '26 LIVE 시즌 10장 달성'),
 (5, 250, 'TEAM', 'T1 팀 5장 달성'),
 (10, 600, 'TEAM', 'T1 팀 10장 달성');
 
@@ -545,7 +546,7 @@ INSERT INTO collection_milestones (required_cards, reward_points, milestone_type
 UPDATE collection_milestones SET filter_value = 'LEGENDARY' WHERE milestone_type = 'TIER';
 
 -- 시즌별 마일스톤 추가
-UPDATE collection_milestones SET filter_value = '19G2' WHERE milestone_type = 'SEASON';
+UPDATE collection_milestones SET filter_value = '26 LIVE' WHERE milestone_type = 'SEASON';
 
 -- 팀별 마일스톤 추가
 UPDATE collection_milestones SET filter_value = 'T1' WHERE milestone_type = 'TEAM';

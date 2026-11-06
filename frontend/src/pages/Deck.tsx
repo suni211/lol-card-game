@@ -3,7 +3,7 @@ import { Save, Info, Target, Users, Map, X, Eye, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
-import { getPlayerImageUrl, getSeriesLogo } from '../utils/playerImage';
+import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 

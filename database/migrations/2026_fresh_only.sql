@@ -3,6 +3,11 @@
 -- STRICTLY the three 2026 series.
 USE lol_card_game;
 
+-- Strict new-project initialization. Accounts, passwords, stats and owned cards
+-- must all be empty (no legacy user carries over).
+DELETE FROM users;
+ALTER TABLE users AUTO_INCREMENT = 1;
+
 -- Original schema.sql contains historical Worlds seeds and reward definitions.
 -- Remove stale coupons referring to those players before deleting cards.
 UPDATE coupons SET reward_player_id=NULL WHERE reward_player_id IS NOT NULL;

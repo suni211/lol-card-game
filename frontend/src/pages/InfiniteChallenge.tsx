@@ -15,6 +15,7 @@ const InfiniteChallenge: React.FC = () => {
   const { user, token } = useAuthStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [progress, setProgress] = useState<InfiniteChallengeProgress | null>(null);
   const [leaderboard, setLeaderboard] = useState<InfiniteChallengeLeaderboard[]>([]);
   const [isDuplicateTab, setIsDuplicateTab] = useState(false);
@@ -94,6 +95,7 @@ const InfiniteChallenge: React.FC = () => {
 
     try {
       setLoading(true);
+      setLoadError('');
 
       // Fetch progress
       const progressRes = await axios.get(`${API_URL}/infinite-challenge/progress`, {
@@ -108,7 +110,9 @@ const InfiniteChallenge: React.FC = () => {
       setLeaderboard(leaderboardRes.data.data);
     } catch (error: any) {
       console.error('Failed to fetch infinite challenge data:', error);
-      toast.error('데이터를 불러오는데 실패했습니다');
+      const message = error.response?.data?.error || '무한도전 데이터를 불러올 수 없습니다.';
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -182,6 +186,17 @@ const InfiniteChallenge: React.FC = () => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  if (loadError || !progress) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">무한도전을 열 수 없습니다</h1>
+        <p role="alert" className="mb-4 text-red-600">{loadError || '진행 정보를 찾을 수 없습니다.'}</p>
+        <p className="mb-5 text-sm text-gray-500">서버 데이터베이스의 무한도전 테이블을 확인해주세요.</p>
+        <button onClick={() => void fetchData()} className="rounded-lg bg-purple-600 px-6 py-2 text-white">다시 시도</button>
       </div>
     );
   }

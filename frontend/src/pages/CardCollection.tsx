@@ -16,7 +16,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Player {
   id: number;
@@ -69,6 +69,7 @@ export default function CardCollection() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [tierProgress, setTierProgress] = useState<Progress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,6 +98,7 @@ export default function CardCollection() {
   const fetchCollection = async () => {
     try {
       setLoading(true);
+      setLoadError('');
 
       const params: any = {};
       if (filterTier) params.tier = filterTier;
@@ -116,7 +118,9 @@ export default function CardCollection() {
       }
     } catch (error: any) {
       console.error('Fetch collection error:', error);
-      toast.error('도감 정보를 불러오는데 실패했습니다.');
+      const message = error.response?.data?.error || '도감 정보를 불러오는데 실패했습니다.';
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -221,6 +225,16 @@ export default function CardCollection() {
   const collectionRate = stats.total_count > 0
     ? ((stats.collected_count / stats.total_count) * 100).toFixed(1)
     : '0.0';
+
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">도감 연결 오류</h1>
+        <p className="mb-5 text-red-500" role="alert">{loadError}</p>
+        <button onClick={() => void fetchCollection()} className="rounded-lg bg-purple-600 px-6 py-3 font-bold text-white">다시 시도</button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

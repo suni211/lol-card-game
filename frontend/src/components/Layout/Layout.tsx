@@ -11,7 +11,7 @@ import { useLayoutStore } from '../../store/layoutStore';
 import { useMatchNotificationStore } from '../../store/matchNotificationStore';
 import { Swords, XCircle } from 'lucide-react';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
 
 interface NoticePopup {
   id: number;
@@ -122,8 +122,8 @@ export default function Layout() {
         </div>
       ) : (
         // Sidebar Layout (오른쪽)
-        <div className="flex">
-          <div className="flex-1 flex flex-col">
+        <div className="flex min-h-screen min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col">
             <main className="flex-1">
               <Outlet />
             </main>

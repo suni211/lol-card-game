@@ -17,7 +17,7 @@ import { getPlayerImageUrl } from '../utils/playerImage';
 import { calculateEnhancementBonus, getPositionColor } from '../utils/cardHelpers';
 import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Player {
   id: number;
@@ -82,7 +82,7 @@ const AGENT_CONFIGS: Record<string, AgentConfig> = {
       { type: 'pack', value: '108+ OVR 확정팩', chance: 1.5 },
       { type: 'pack', value: '109+ OVR 확정팩', chance: 0.2 },
       { type: 'points', value: 300000, chance: 0.07999153 },
-      { type: 'pack', value: 'ICON 5강 확정팩', chance: 0.00000947 },
+      { type: 'pack', value: '26WRs 5강 확정팩', chance: 0.00000947 },
     ]
   },
   weekly: {
@@ -96,8 +96,8 @@ const AGENT_CONFIGS: Record<string, AgentConfig> = {
       { type: 'points', value: 10000, chance: 5.3 },
       { type: 'points', value: 20000, chance: 3.5 },
       { type: 'pack', value: '101+ OVR 확정팩', chance: 0.77 },
-      { type: 'pack', value: '103+ OVR ICON 포함 팩', chance: 0.4221 },
-      { type: 'pack', value: '110+ OVR ICON 포함 팩', chance: 0.0079 },
+      { type: 'pack', value: '103+ OVR 26WRs 포함 팩', chance: 0.4221 },
+      { type: 'pack', value: '110+ OVR 26WRs 포함 팩', chance: 0.0079 },
     ]
   },
   monthly: {

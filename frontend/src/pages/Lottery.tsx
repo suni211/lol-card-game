@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface LotteryNumber {
   number: number;
@@ -37,6 +37,7 @@ export default function Lottery() {
   const [pickedCount, setPicked] = useState(0);
   const [ticketCost, setTicketCost] = useState(25000);
   const [loading, setLoading] = useState(true);
+  const [drawOpen, setDrawOpen] = useState(false);
   const [picking, setPicking] = useState(false);
   const [result, setResult] = useState<LotteryResult | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -46,6 +47,12 @@ export default function Lottery() {
   useEffect(() => {
     fetchBoard();
     fetchHistory();
+    const checkAvailability = () => axios.get(`${API_URL}/lottery/availability`)
+      .then(r => setDrawOpen(Boolean(r.data?.data?.isOpen)))
+      .catch(() => setDrawOpen(false));
+    void checkAvailability();
+    const interval = window.setInterval(() => void checkAvailability(), 30000);
+    return () => window.clearInterval(interval);
   }, []);
 
   const fetchBoard = async () => {
@@ -84,6 +91,7 @@ export default function Lottery() {
 
   const handlePick = async (number: number) => {
     if (picking) return;
+    if (!drawOpen) { toast.error('럭키드로우는 매일 오후 8시~9시(KST)에만 참여할 수 있습니다.'); return; }
 
     const item = board.find(b => b.number === number);
     if (item?.picked) {
@@ -190,7 +198,7 @@ export default function Lottery() {
             럭키 드로우
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-            1~49번 중 하나를 선택하여 보상을 획득하세요!
+            매일 한국시간 오후 8시~9시 동안 1~49번 중 하나를 선택할 수 있습니다.
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow">
             <span className="text-sm text-gray-600 dark:text-gray-400">뽑기권 가격:</span>
@@ -255,7 +263,7 @@ export default function Lottery() {
               번호 선택
             </h2>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              선택: {pickedCount} / 49
+              {drawOpen ? '참여 가능' : '현재 참여 불가 · 20:00~21:00 KST'} · 선택: {pickedCount} / 49
             </span>
           </div>
 
@@ -264,7 +272,7 @@ export default function Lottery() {
               <motion.button
                 key={item.number}
                 onClick={() => handlePick(item.number)}
-                disabled={item.picked || picking}
+                disabled={item.picked || picking || !drawOpen}
                 whileHover={!item.picked ? { scale: 1.05 } : {}}
                 whileTap={!item.picked ? { scale: 0.95 } : {}}
                 className={`

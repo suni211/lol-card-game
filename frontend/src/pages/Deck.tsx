@@ -416,7 +416,7 @@ export default function Deck() {
       }
     } catch (error: any) {
       console.error('Save deck error:', error);
-      toast.error('덱 저장에 실패했습니다');
+      toast.error(error.response?.data?.error || (error.response?.status === 500 ? '서버 덱 저장 오류입니다. 데이터베이스 컬럼 및 서버 로그를 확인하세요.' : '덱 저장에 실패했습니다.'));
     } finally {
       setSaving(false);
     }

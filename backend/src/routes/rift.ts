@@ -215,6 +215,17 @@ router.post('/sessions', async (req: AuthRequest, res: Response) => {
     res.status(400).json({ success: false, error: error.message });
   }
 });
+router.get('/sessions/:id/invite', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) throw new Error('Invalid session');
+    const [r]: any = await pool.query(
+      "SELECT id, mode, status, owner_id FROM rift_games WHERE id=? LIMIT 1", [req.params.id]);
+    if (!r.length || r[0].mode !== 'PVP' || r[0].status !== 'WAITING') {
+      return res.status(404).json({ success: false, error: '초대가 종료되었습니다.' });
+    }
+    res.json({ success: true, data: { id: Number(r[0].id), ownerId: Number(r[0].owner_id), status: r[0].status } });
+  } catch (error: any) { res.status(400).json({success:false,error:error.message}); }
+});
 router.post('/sessions/:id/join', async (req: AuthRequest, res: Response) => {
   const userId = req.user!.id;
   const slot = validSlot(req.body.deckSlot);

@@ -38,6 +38,7 @@ export default function Lottery() {
   const [ticketCost, setTicketCost] = useState(25000);
   const [loading, setLoading] = useState(true);
   const [drawOpen, setDrawOpen] = useState(false);
+  const [alreadyPlayed, setAlreadyPlayed] = useState(false);
   const [picking, setPicking] = useState(false);
   const [result, setResult] = useState<LotteryResult | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -47,8 +48,13 @@ export default function Lottery() {
   useEffect(() => {
     fetchBoard();
     fetchHistory();
-    const checkAvailability = () => axios.get(`${API_URL}/lottery/availability`)
-      .then(r => setDrawOpen(Boolean(r.data?.data?.isOpen)))
+    const checkAvailability = () => axios.get(`${API_URL}/lottery/availability`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => {
+        setDrawOpen(Boolean(r.data?.data?.isOpen));
+        setAlreadyPlayed(Boolean(r.data?.data?.alreadyPlayed));
+      })
       .catch(() => setDrawOpen(false));
     void checkAvailability();
     const interval = window.setInterval(() => void checkAvailability(), 30000);
@@ -91,7 +97,7 @@ export default function Lottery() {
 
   const handlePick = async (number: number) => {
     if (picking) return;
-    if (!drawOpen) { toast.error('럭키드로우는 매일 오후 8시~9시(KST)에만 참여할 수 있습니다.'); return; }
+    if (!drawOpen) { toast.error(alreadyPlayed ? '오늘은 이미 참여했습니다. 내일 오후 8시에 다시 참여하세요.' : '럭키드로우는 매일 오후 8시~9시(KST)에만 참여할 수 있습니다.'); return; }
 
     const item = board.find(b => b.number === number);
     if (item?.picked) {
@@ -110,6 +116,8 @@ export default function Lottery() {
       if (response.data.success) {
         setResult(response.data.data);
         setShowResult(true);
+        setDrawOpen(false);
+        setAlreadyPlayed(true);
 
         // Update user points
         const userResponse = await axios.get(`${API_URL}/auth/me`, {
@@ -198,7 +206,7 @@ export default function Lottery() {
             럭키 드로우
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-            매일 한국시간 오후 8시~9시 동안 1~49번 중 하나를 선택할 수 있습니다.
+            매일 한국시간 오후 8시~9시, 계정당 하루 한 번만 뽑을 수 있습니다.
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow">
             <span className="text-sm text-gray-600 dark:text-gray-400">뽑기권 가격:</span>
@@ -263,7 +271,7 @@ export default function Lottery() {
               번호 선택
             </h2>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {drawOpen ? '참여 가능' : '현재 참여 불가 · 20:00~21:00 KST'} · 선택: {pickedCount} / 49
+              {alreadyPlayed ? '오늘 참여 완료 · 내일 20:00 재참여' : drawOpen ? '오늘 1회 참여 가능' : '운영 시간 20:00~21:00 KST'} · 선택: {pickedCount} / 49
             </span>
           </div>
 

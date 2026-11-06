@@ -276,7 +276,8 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.user!.id;
     const { cardId, price } = req.body;
 
-    if (!cardId || !price || price < 0) {
+    if (!Number.isSafeInteger(Number(cardId)) || Number(cardId) < 1 ||
+        !Number.isSafeInteger(Number(price)) || Number(price) < 1 || Number(price) > 1000000000) {
       await connection.rollback();
       return res.status(400).json({
         success: false,
@@ -323,14 +324,8 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     const price_floor = Math.floor(priceInfo.price_floor * priceMultiplier);
     const price_ceiling = Math.floor(priceInfo.price_ceiling * priceMultiplier);
 
-    // Validate price range
-    if (price < price_floor || price > price_ceiling) {
-      await connection.rollback();
-      return res.status(400).json({
-        success: false,
-        error: `가격은 ${price_floor}P ~ ${price_ceiling}P 사이여야 합니다.`,
-      });
-    }
+    // User-set listing prices are independent from the estimated market price.
+    // The estimated floor/ceiling are informational only, not a selling restriction.
 
     // Check if card is already listed
     const [existing]: any = await connection.query(

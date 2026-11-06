@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useMatchNotificationStore } from '../../store/matchNotificationStore';
 import { Swords, XCircle } from 'lucide-react';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+const SOCKET_URL = import.meta.env.PROD ? window.location.origin : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
 
 interface NoticePopup {
   id: number;

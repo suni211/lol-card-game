@@ -95,7 +95,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
          WHERE user_id = ?
          AND cost = 0
          AND DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+09:00'))
-         AND player_id NOT IN (SELECT id FROM players WHERE season IN ('25WW', '25WUD', '19G2'))`,
+         AND player_id NOT IN (SELECT id FROM players WHERE season NOT IN ('26 LIVE', '26WR', '26WRs'))`,
         [userId]
       );
 
@@ -144,7 +144,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         // ICON cards ALWAYS have tier = 'ICON' regardless of overall stat
         [players] = await connection.query(
           `SELECT *, 'ICON' as tier
-           FROM players WHERE season = 'ICON' ORDER BY RAND() LIMIT 1`
+           FROM players WHERE season = '26WRs' ORDER BY RAND() LIMIT 1`
         );
       }
 
@@ -153,7 +153,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         [players] = await connection.query(
           `SELECT *,
            CASE
-             WHEN season = 'ICON' THEN 'ICON'
+             WHEN season = '26WRs' THEN 'ICON'
              WHEN overall <= 80 THEN 'COMMON'
              WHEN overall <= 90 THEN 'RARE'
              WHEN overall <= 100 THEN 'EPIC'
@@ -161,13 +161,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
            END as tier
            FROM players
            WHERE overall >= ?
-             AND overall <= ?
-             AND season != '17SSG'
-             AND season != 'ICON'
-             AND name NOT LIKE 'ICON%'
-             AND name NOT LIKE '17SSG%'
-             AND name NOT LIKE '25WW%'
-             AND name NOT LIKE '25WUD%'
+              AND overall <= ?
+             AND season IN ('26 LIVE','26WR','26WRs')
+              AND season != '26WRs'
            ORDER BY RAND() LIMIT 1`,
           [minOverall, maxOverall]
         );
@@ -372,7 +368,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           // ICON cards ALWAYS have tier = 'ICON' regardless of overall stat
           [players] = await connection.query(
             `SELECT *, 'ICON' as tier
-             FROM players WHERE season = 'ICON' ORDER BY RAND() LIMIT 1`
+             FROM players WHERE season = '26WRs' ORDER BY RAND() LIMIT 1`
           );
         }
 
@@ -381,7 +377,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           [players] = await connection.query(
             `SELECT *,
              CASE
-               WHEN season = 'ICON' THEN 'ICON'
+               WHEN season = '26WRs' THEN 'ICON'
                WHEN overall <= 80 THEN 'COMMON'
                WHEN overall <= 90 THEN 'RARE'
                WHEN overall <= 100 THEN 'EPIC'
@@ -389,13 +385,9 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
              END as tier
              FROM players
              WHERE overall >= ?
-               AND overall <= ?
-               AND season != '17SSG'
-               AND season != 'ICON'
-               AND name NOT LIKE 'ICON%'
-               AND name NOT LIKE '17SSG%'
-               AND name NOT LIKE '25WW%'
-               AND name NOT LIKE '25WUD%'
+              AND overall <= ?
+               AND season IN ('26 LIVE','26WR','26WRs')
+              AND season != '26WRs'
              ORDER BY RAND() LIMIT 1`,
             [minOverall, maxOverall]
           );

@@ -72,18 +72,32 @@ function engine(input: object, maxMs = 20000): Promise<any> {
 async function ownedDeckCards(userId: number, slot: number): Promise<any[]> {
   const [decks]: any = await pool.query(
     'SELECT * FROM decks WHERE user_id=? AND deck_slot=? LIMIT 1', [userId, slot]);
-  if (!decks.length) throw new Error('덱이 없습니다.');
-  const cards: any[] = [];
-  for (const role of ROLES) {
-    const id = decks[0][role.toLowerCase() + '_card_id'];
-    if (!id) throw new Error('5개 포지션을 모두 채워야 합니다.');
-    const [rows]: any = await pool.query(
-      'SELECT p.id,p.name,p.position,p.overall FROM user_cards uc JOIN players p ON uc.player_id=p.id WHERE uc.id=? AND uc.user_id=? AND p.position=? LIMIT 1',
-      [id, userId, role]);
-    if (!rows.length) throw new Error(role + ' 선수 카드 소유권이나 포지션을 확인하세요.');
-    cards.push(rows[0]);
+  if (!decks.length) throw new Error('덱이 없습니다. 선수 카드 5장을 덱에 저장해주세요.');
+
+  // The five deck slots represent match roles, not the players' original
+  // card positions. Off-position players are allowed for AI matches.
+  const ids = ROLES.map(role => decks[0][role.toLowerCase() + '_card_id']);
+  if (ids.some(id => !id)) throw new Error('포지션과 관계없이 서로 다른 선수 카드 5장을 덱에 배치해주세요.');
+  if (new Set(ids.map(Number)).size !== ROLES.length) {
+    throw new Error('같은 카드가 여러 슬롯에 배치되었습니다. 선수 카드 5장이 필요합니다.');
   }
-  return cards;
+  const [rows]: any = await pool.query(
+    `SELECT uc.id AS card_id, p.id, p.name, p.position, p.overall
+     FROM user_cards uc
+     JOIN players p ON p.id = uc.player_id
+     WHERE uc.user_id = ? AND uc.id IN (?)`,
+    [userId, ids]
+  );
+  if (rows.length !== ROLES.length) {
+    throw new Error('덱의 선수 카드 5장을 모두 보유하고 있는지 확인하세요.');
+  }
+  const byId = new Map<number, any>(rows.map((row: any) => [Number(row.card_id), row]));
+  return ROLES.map((role, index) => {
+    const player = byId.get(Number(ids[index]));
+    if (!player) throw new Error('선수 카드 정보를 찾을 수 없습니다.');
+    return { id: player.id, name: player.name, overall: player.overall,
+      position: role, original_position: player.position };
+  });
 }
 async function opponentCards(): Promise<any[]> {
   const result = [];

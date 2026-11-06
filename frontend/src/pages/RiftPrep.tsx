@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { Swords, BrainCircuit, ShieldCheck, Copy, Trophy, ArrowRight } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 const ASSETS = API_URL.replace(/\/api\/?$/, '');
 type Mode = 'AI' | 'PVP';
 type Plan = { laning: string; teamfight: string; macro: string };

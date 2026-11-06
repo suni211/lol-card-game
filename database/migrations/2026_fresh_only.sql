@@ -7,6 +7,7 @@ USE lol_card_game;
 -- must all be empty (no legacy user carries over).
 DELETE FROM users;
 ALTER TABLE users AUTO_INCREMENT = 1;
+ALTER TABLE users MODIFY COLUMN welcome_packs_remaining INT DEFAULT 0;
 
 -- Original schema.sql contains historical Worlds seeds and reward definitions.
 -- Remove stale coupons referring to those players before deleting cards.

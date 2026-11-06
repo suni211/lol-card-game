@@ -296,6 +296,54 @@ router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: A
   } finally {connection.release();}
 });
 
+// Explicit nationality editing: nationality must reflect the actual player, not the league region.
+router.put('/player-nationality/:id', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const playerId=Number(req.params.id);
+  const nationality=String(req.body?.nationality || '').trim().toUpperCase();
+  if(!Number.isSafeInteger(playerId)||playerId<1||!/^[A-Z]{2}$/.test(nationality)) {
+    return res.status(400).json({success:false,error:'선수 ID와 두 글자 국적 코드(예: KR)를 입력하세요.'});
+  }
+  const conn=await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [players]:any=await conn.query('SELECT id,name,season,nationality FROM players WHERE id=? FOR UPDATE',[playerId]);
+    if(!players.length){
+      await conn.rollback();
+      return res.status(404).json({success:false,error:'해당 카드를 찾을 수 없습니다.'});
+    }
+    await conn.query('UPDATE players SET nationality=? WHERE id=?',[nationality,playerId]);
+    await conn.query(
+      'INSERT INTO admin_logs (admin_id,action,target_user_id,details) VALUES (?,?,NULL,?)',
+      [req.user!.id,'UPDATE_PLAYER_NATIONALITY',
+        JSON.stringify({playerId,name:players[0].name,season:players[0].season,
+          previous:players[0].nationality,newNationality:nationality})]
+    );
+    await conn.commit();
+    return res.json({success:true,message:`${players[0].name} 국적 ${nationality} 저장 완료`});
+  } catch(error){
+    await conn.rollback();
+    console.error('Player nationality update error:',error);
+    return res.status(500).json({success:false,error:'국적 저장 실패. nationality 컬럼 마이그레이션을 확인하세요.'});
+  } finally {conn.release();}
+});
+
+router.get('/missing-nationalities', authMiddleware, adminMiddleware, async (_req, res) => {
+  try {
+    const [players]:any=await pool.query(
+      `SELECT id,name,team,season,position FROM players
+       WHERE nationality IS NULL OR nationality=''
+       ORDER BY region,team,name,season LIMIT 500`
+    );
+    const [[count]]:any=await pool.query(
+      "SELECT COUNT(*) AS total FROM players WHERE nationality IS NULL OR nationality=''"
+    );
+    return res.json({success:true,data:{total:count.total,players}});
+  } catch(error) {
+    console.error('Missing nationalities error:',error);
+    return res.status(500).json({success:false,error:'국적 데이터 점검 실패'});
+  }
+});
+
 // 카드 지급
 router.post('/give-card', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();

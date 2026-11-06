@@ -80,6 +80,26 @@ router.get('/opponents',async(_req,res:Response)=>{
     res.json({success:true,data:{teams:rows.map((r:any)=>r.team),engineReady:statusAvailable()}});
   }catch(err){res.status(500).json({success:false,error:'선수 DB를 조회할 수 없습니다.'});}
 });
+
+router.post('/starter',async(req:AuthRequest,res:Response)=>{
+  const connection=await pool.getConnection();
+  try{
+    await connection.beginTransaction();
+    const [existing]:any=await connection.query('SELECT id FROM user_cards WHERE user_id=? LIMIT 1 FOR UPDATE',[req.user!.id]);
+    if(existing.length){await connection.rollback();return res.status(409).json({success:false,error:'이미 선수 카드를 보유하고 있습니다.'});}
+    const granted=[];
+    for(const role of ROLES){
+      const [cards]:any=await connection.query(
+        "SELECT id FROM players WHERE season='26 LIVE' AND position=? AND overall BETWEEN 60 AND 80 ORDER BY RAND() LIMIT 1",
+        [role]);
+      if(!cards.length)throw Error('초기 카드 로스터가 없습니다: '+role);
+      await connection.query('INSERT INTO user_cards (user_id,player_id,level) VALUES (?,?,0)',[req.user!.id,cards[0].id]);
+      granted.push(cards[0].id);
+    }
+    await connection.commit();res.json({success:true,data:{granted}});
+  }catch(err:any){await connection.rollback();res.status(500).json({success:false,error:err.message});}
+  finally{connection.release();}
+});
 router.post('/preview',async(req:AuthRequest,res:Response)=>{
   try{
     const [own,enemy]=await getLineups(req.user!.id,req.body.cardIds,req.body.enemyTeam);
@@ -101,7 +121,7 @@ router.post('/start',async(req:AuthRequest,res:Response)=>{
       throw Error('밴 3명과 각 포지션의 챔피언 픽 5개가 필요합니다.');
     const permitted=(p:any)=>p&&['early','mid','late'].every(phase=>
       (phase==='early'?['LANE','OBJECTIVE']:['MACRO','TEAMFIGHT','OBJECTIVE']).includes(p[phase]));
-    if(!permitted(strategies)||!Array.isArray(strategies)||!permitted(strategies[0])||!permitted(strategies[1]))
+    if(!Array.isArray(strategies)||strategies.length!==2||!permitted(strategies[0])||!permitted(strategies[1]))
       throw Error('초반·중반·후반 전략을 선택하세요.');
     if([...jobs.values()].some(j=>j.owner===req.user!.id&&(j.status==='QUEUED'||j.status==='RUNNING')))
       throw Error('이미 진행 중인 경기가 있습니다.');

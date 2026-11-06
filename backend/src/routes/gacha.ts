@@ -405,9 +405,18 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         }
       }
 
+      if (players.length === 0 && tier !== 'ICON') {
+        [players] = await connection.query(
+          `SELECT *, CASE WHEN overall<=80 THEN 'COMMON'
+                          WHEN overall<=90 THEN 'RARE'
+                          WHEN overall<=100 THEN 'EPIC' ELSE 'LEGENDARY' END AS tier
+           FROM players WHERE season IN ('26 LIVE','26WR')
+           ORDER BY overall DESC,RAND() LIMIT 1`
+        );
+      }
       if (players.length === 0) {
         await connection.rollback();
-        return res.status(500).json({ success: false, error: 'No players available' });
+        return res.status(500).json({ success: false, error: '26 시즌 선수 데이터가 없습니다.' });
       }
 
       const player = players[0];

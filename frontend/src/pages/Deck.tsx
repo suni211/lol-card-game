@@ -217,7 +217,7 @@ export default function Deck() {
   const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
 
   // Helper function to calculate card OVR with position penalty
-  const calculateCardOVR = (card: UserCard, position: string) => {
+  const calculateCardOVR = (card: UserCard, _position: string) => {
     const enhancementBonus = calculateEnhancementBonus(card.level);
     const cardData = {
       position: card.player.position,
@@ -226,8 +226,7 @@ export default function Deck() {
       level: card.level
     };
     const baseStat = calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
-    const positionMatch = card.player.position === position;
-    return positionMatch ? baseStat : baseStat - 10;
+    return baseStat;
   };
 
   // 필터링 및 정렬된 카드 목록을 미리 계산 (성능 최적화)
@@ -674,7 +673,7 @@ export default function Deck() {
             <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
               <p>• 각 포지션을 클릭하여 카드를 선택하세요</p>
-              <p>• 잘못된 포지션에 배치하면 **OVR -10 페널티**가 적용됩니다</p>
+              <p>• 선수 카드 5장만 채우면 포지션이 달라도 AI 매치에 참가할 수 있습니다</p>
               <p>• 전략을 선택하면 경기에서 보너스를 받을 수 있습니다</p>
             </div>
           </div>
@@ -769,7 +768,7 @@ export default function Deck() {
                             </p>
                             {slot.card.player.position !== slot.position && (
                               <span className="text-xs text-orange-600 dark:text-orange-400 font-bold bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">
-                                -10 페널티
+                                포지션 자유
                               </span>
                             )}
                           </div>
@@ -1065,7 +1064,7 @@ export default function Deck() {
                                 </span>
                                 {!positionMatch && (
                                   <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
-                                    -10 페널티
+                                    포지션 자유
                                   </span>
                                 )}
                               </div>

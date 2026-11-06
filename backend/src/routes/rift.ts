@@ -243,7 +243,7 @@ router.post('/sessions/:id/join', async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ success: false, error: '참가할 수 없는 경기입니다.' });
       }
       const plans = decode(g.strategies_json, [PLAN_DEFAULT, null]);
-      const teams = decode(g.teams_json, [[], null]);
+      const teams = decode<Array<any[] | null>>(g.teams_json, [[], null]);
       plans[1] = plan; teams[1] = cards;
       await cx.query(
         "UPDATE rift_games SET opponent_id=?,opponent_deck_slot=?,status='DRAFT',strategies_json=?,teams_json=? WHERE id=?",

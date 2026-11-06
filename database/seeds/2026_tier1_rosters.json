@@ -1,0 +1,2153 @@
+{
+  "season": "2026",
+  "series": "26 LIVE",
+  "cutoff": "2026-11-06",
+  "leagues": [
+    "LCK",
+    "LPL",
+    "LEC",
+    "LCS",
+    "CBLOL",
+    "LCP"
+  ],
+  "coverage": {
+    "teams": 60,
+    "startingLineupCards": 300,
+    "worldsTeams": 19,
+    "additionalTeams": 41,
+    "additionalCards": 205
+  },
+  "note": "2026 season Tier-1 teams; includes 2 invited ERL squads in LEC Versus and 2 LPL Split-1 squads no longer active in Summer. Game card ratings are estimates, not official player performance. Rosters can change throughout the year; historical participation is retained.",
+  "rosters": [
+    {
+      "region": "LCK",
+      "teams": [
+        {
+          "code": "BFX",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Clear",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Raptor",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "VicLa",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Diable",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Kellin",
+              "ovr": 79,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "BRO",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Casting",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "GIDEON",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Loki",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Teddy",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Namgung",
+              "ovr": 71,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "DK",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Siwoo",
+              "ovr": 87,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Lucid",
+              "ovr": 88,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "ShowMaker",
+              "ovr": 88,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Smash",
+              "ovr": 92,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Career",
+              "ovr": 92,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "DNS",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "DuDu",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Pyosik",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Clozer",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Deokdam",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Peter",
+              "ovr": 77,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "GEN.G",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Kiin",
+              "ovr": 93,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Canyon",
+              "ovr": 91,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Chovy",
+              "ovr": 93,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Ruler",
+              "ovr": 95,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Duro",
+              "ovr": 91,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "HLE",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Zeus",
+              "ovr": 90,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Kanavi",
+              "ovr": 83,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Zeka",
+              "ovr": 86,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Gumayusi",
+              "ovr": 91,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Delight",
+              "ovr": 85,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "KRX",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Rich",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Vincenzo",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Ucal",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Jiwoo",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Andil",
+              "ovr": 75,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "KT",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "PerfecT",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Cuzz",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Bdd",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Aiming",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Effort",
+              "ovr": 84,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "NS",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Kingen",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Sponge",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Scout",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Taeyoon",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Lehends",
+              "ovr": 77,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "T1",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Doran",
+              "ovr": 90,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Oner",
+              "ovr": 93,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Faker",
+              "ovr": 95,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Peyz",
+              "ovr": 92,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Keria",
+              "ovr": 93,
+              "provisional": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "region": "LPL",
+      "teams": [
+        {
+          "code": "AL",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Breathe",
+              "ovr": 80,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Tarzan",
+              "ovr": 83,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Shanks",
+              "ovr": 84,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Hope",
+              "ovr": 81,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Kael",
+              "ovr": 82,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "BLG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Bin",
+              "ovr": 92,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Xun",
+              "ovr": 90,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Knight",
+              "ovr": 88,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Viper",
+              "ovr": 92,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "ON",
+              "ovr": 85,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "EDG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Zdz",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Xiaohao",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Angel",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Leave",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Parukia",
+              "ovr": 74,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "IG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "TheShy",
+              "ovr": 85,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Wei",
+              "ovr": 85,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Rookie",
+              "ovr": 85,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "JiaQi",
+              "ovr": 90,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Meiko",
+              "ovr": 84,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "JDG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Xiaoxu",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "JunJia",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "HongQ",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "GALA",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Vampire",
+              "ovr": 84,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "LGD",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Burdol",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Heng",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Tangyuan",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Shaoye",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "ycx",
+              "ovr": 70,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "LNG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Sheer",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Croco",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "BuLLDoG",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "1xn",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "MISSING",
+              "ovr": 77,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "NIP",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "HOYA",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Guwon",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Care",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Assum",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Zhuo",
+              "ovr": 75,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "OMG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Hery",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Juhan",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "haichao",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Starry",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Moham",
+              "ovr": 71,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "TES",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "369",
+              "ovr": 85,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Tian",
+              "ovr": 85,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Creme",
+              "ovr": 84,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "JackeyLove",
+              "ovr": 87,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Zhuo",
+              "ovr": 88,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "TT",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Keshi",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Junhao",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Heru",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Ryan3",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Feather",
+              "ovr": 71,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "UP",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Liangchen",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Grizzly",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Saber",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Hena",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Xiaoxia",
+              "ovr": 69,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "WBG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Zika",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Jiejie",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Xiaohu",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Elk",
+              "ovr": 84,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Hang",
+              "ovr": 84,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "WE",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Cube",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Monki",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Karis",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "About",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Erha",
+              "ovr": 73,
+              "provisional": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "region": "LEC",
+      "teams": [
+        {
+          "code": "FNC",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Empyros",
+              "ovr": 80,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Razork",
+              "ovr": 80,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Vladi",
+              "ovr": 80,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Upset",
+              "ovr": 80,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Lospa",
+              "ovr": 80,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "G2",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "BrokenBlade",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "SkewMond",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Caps",
+              "ovr": 82,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Hans Sama",
+              "ovr": 78,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Labrov",
+              "ovr": 77,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "GX",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Lot",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "ISMA",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Jackies",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Noah",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Jun",
+              "ovr": 76,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "KC",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Canna",
+              "ovr": 84,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Yike",
+              "ovr": 77,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "kyeahoo",
+              "ovr": 77,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Caliste",
+              "ovr": 82,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Busio",
+              "ovr": 80,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "KCB",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Tao",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Yukino",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Kamiloo",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Hazel",
+              "ovr": 71,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Prime",
+              "ovr": 71,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "LR",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Thebausffs",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Velja",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Nemesis",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Crownie",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Rekkles",
+              "ovr": 73,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "MKOI",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Myrwn",
+              "ovr": 75,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Elyoya",
+              "ovr": 77,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Jojopyun",
+              "ovr": 77,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Supa",
+              "ovr": 74,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Alvaro",
+              "ovr": 76,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "NAVI",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Maynter",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Rhilech",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Poby",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Hans SamD",
+              "ovr": 76,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Parus",
+              "ovr": 76,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "SHFT",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Rooster",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Boukada",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "nuc",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Paduck",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Trymbi",
+              "ovr": 74,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "SK",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Wunder",
+              "ovr": 72,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Skeanz",
+              "ovr": 72,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "LIDER",
+              "ovr": 72,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Jopa",
+              "ovr": 72,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Mikyx",
+              "ovr": 72,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "TH",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Tracyn",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Sheo",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Serin",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Ice",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Stend",
+              "ovr": 73,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "VIT",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Naak Nako",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Lyncas",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Humanoid",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Carzzy",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Fleshy",
+              "ovr": 77,
+              "provisional": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "region": "LCS",
+      "teams": [
+        {
+          "code": "C9",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Thanatos",
+              "ovr": 73,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Blaber",
+              "ovr": 72,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Loki",
+              "ovr": 74,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Tactical",
+              "ovr": 72,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Vulcan",
+              "ovr": 71,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "DIG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Photon",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "eXyu",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Palafox",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "FBI",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "IgNar",
+              "ovr": 74,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "DSG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Castle",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "KryRa",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Calime",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Sajed",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Lyonz",
+              "ovr": 70,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "FLY",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Gakgos",
+              "ovr": 82,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Gryffinn",
+              "ovr": 82,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Quad",
+              "ovr": 82,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Massu",
+              "ovr": 82,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Cryogen",
+              "ovr": 82,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "LYON",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Dhokla",
+              "ovr": 77,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Inspired",
+              "ovr": 82,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Saint",
+              "ovr": 71,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Berserker",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Isles",
+              "ovr": 74,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "SEN",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Impact",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "HamBak",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "DARKWINGS",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Rahel",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Huhi",
+              "ovr": 75,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "SR",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Fudge",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Contractz",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Zinie",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Bvoy",
+              "ovr": 73,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Ceos",
+              "ovr": 73,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "TLAW",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Morgan",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Josedeodo",
+              "ovr": 65,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Quid",
+              "ovr": 75,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Yeon",
+              "ovr": 76,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "CoreJJ",
+              "ovr": 73,
+              "provisional": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "region": "CBLOL",
+      "teams": [
+        {
+          "code": "FUR",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Guigo",
+              "ovr": 63,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Tatu",
+              "ovr": 64,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Tutsz",
+              "ovr": 62,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Ayu",
+              "ovr": 63,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Jojo",
+              "ovr": 62,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "FX",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Zothve",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Peach",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "cody",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "BAO",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Momochi",
+              "ovr": 70,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "LEV",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Devost",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Booki",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Enga",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Strensh",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Shiku",
+              "ovr": 70,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "LOS",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Zest",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Curse",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Feisty",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Duduhh",
+              "ovr": 79,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Ackerman",
+              "ovr": 67,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "LOUD",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "xyno",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Sinatra",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Kaze",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Rabelo",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "uZent",
+              "ovr": 74,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "PAIN",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Boal",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Cariok",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Namiru",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Hena",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Ceos",
+              "ovr": 74,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "RED",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "zynts",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "STEPZ",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Fuuu",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Morttheus",
+              "ovr": 77,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Manel",
+              "ovr": 77,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "VKS",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "zekas",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Disamis",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Mireu",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Jeskla",
+              "ovr": 75,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "scamber",
+              "ovr": 75,
+              "provisional": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "region": "LCP",
+      "teams": [
+        {
+          "code": "CFO",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Rest",
+              "ovr": 74,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Shad0w",
+              "ovr": 75,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "POUT",
+              "ovr": 77,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Doggo",
+              "ovr": 80,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Kino",
+              "ovr": 77,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "DCG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Flauren",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "POP9",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "HongSuo",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Feng",
+              "ovr": 70,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "ShiauC",
+              "ovr": 70,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "DFM",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Momo",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Citrus",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Keine",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Kakkun",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Gaeng",
+              "ovr": 69,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "GAM",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Kiaya",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Draktharr",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Aress",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Artemis",
+              "ovr": 79,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Taki",
+              "ovr": 79,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "GZ",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "1Jiang",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Husha",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "JimieN",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Shunn",
+              "ovr": 69,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Orca",
+              "ovr": 69,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "MVK",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Kratos",
+              "ovr": 65,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Gury",
+              "ovr": 65,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Chika",
+              "ovr": 67,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Harky",
+              "ovr": 67,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "SiuLoong",
+              "ovr": 64,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "code": "SHG",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Evi",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Van",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "MID",
+              "name": "Aria",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "ADC",
+              "name": "Marble",
+              "ovr": 74,
+              "provisional": true
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Vsta",
+              "ovr": 74,
+              "provisional": true
+            }
+          ]
+        },
+        {
+          "code": "TSW",
+          "players": [
+            {
+              "position": "TOP",
+              "name": "Pun",
+              "ovr": 71,
+              "provisional": false
+            },
+            {
+              "position": "JUNGLE",
+              "name": "Hizto",
+              "ovr": 72,
+              "provisional": false
+            },
+            {
+              "position": "MID",
+              "name": "Dire",
+              "ovr": 70,
+              "provisional": false
+            },
+            {
+              "position": "ADC",
+              "name": "Eddie",
+              "ovr": 71,
+              "provisional": false
+            },
+            {
+              "position": "SUPPORT",
+              "name": "Bie",
+              "ovr": 73,
+              "provisional": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

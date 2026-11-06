@@ -7,7 +7,7 @@ import { getPlayerImageUrl, getTeamLogoUrl, getSeriesLogo } from '../utils/playe
 import { calculateEnhancementBonus, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Player {
   id: number;

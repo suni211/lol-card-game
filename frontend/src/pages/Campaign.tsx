@@ -36,6 +36,7 @@ export default function Campaign() {
   const navigate = useNavigate();
   const [stages, setStages] = useState<RegionStages>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('LCP');
 
   useEffect(() => {
@@ -44,12 +45,16 @@ export default function Campaign() {
 
   const fetchStages = async () => {
     try {
+      setLoading(true);
+      setLoadError('');
       const response = await axios.get(`${API_URL}/campaign/stages`);
       if (response.data.success) {
         setStages(response.data.data);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || '스테이지 로드 실패');
+      const message = error.response?.data?.error || '스테이지 데이터를 불러올 수 없습니다.';
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -81,6 +86,17 @@ export default function Campaign() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">캠페인을 열 수 없습니다</h1>
+        <p role="alert" className="mb-4 text-red-600">{loadError}</p>
+        <p className="mb-5 text-sm text-gray-500">서버 데이터베이스와 캠페인 테이블 구성을 확인해주세요.</p>
+        <button onClick={() => void fetchStages()} className="rounded-lg bg-blue-600 px-6 py-2 text-white">다시 시도</button>
       </div>
     );
   }

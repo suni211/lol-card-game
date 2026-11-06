@@ -2,12 +2,10 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import Navbar from './Navbar';
-import Sidebar from './Sidebar';
 import Footer from './Footer';
 import ChatPopup from '../Chat/ChatPopup';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useLayoutStore } from '../../store/layoutStore';
 import { useMatchNotificationStore } from '../../store/matchNotificationStore';
 import { Swords, XCircle } from 'lucide-react';
 
@@ -22,7 +20,7 @@ interface NoticePopup {
 }
 
 export default function Layout() {
-  const { layoutType } = useLayoutStore();
+  const layoutType = 'navbar';
   const navigate = useNavigate();
   const { notification: matchNotification, setNotification } = useMatchNotificationStore();
   const [noticePopup, setNoticePopup] = useState<NoticePopup | null>(null);
@@ -111,27 +109,13 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {layoutType === 'navbar' ? (
-        // Navbar Layout (위쪽)
-        <div className="flex flex-col">
-          <Navbar />
-          <main className="flex-1">
-            <Outlet />
-          </main>
-          <Footer />
-        </div>
-      ) : (
-        // Sidebar Layout (오른쪽)
-        <div className="flex min-h-screen min-w-0">
-          <div className="flex-1 min-w-0 flex flex-col">
-            <main className="flex-1">
-              <Outlet />
-            </main>
-            <Footer />
-          </div>
-          <Sidebar />
-        </div>
-      )}
+      <div className="flex min-h-screen min-w-0 flex-col">
+        <Navbar />
+        <main className="min-w-0 flex-1">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
 
       {/* Happy Hour Banner */}
       <AnimatePresence>

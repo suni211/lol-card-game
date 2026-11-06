@@ -6,7 +6,7 @@ export function getSeriesLogo(season?: string): string {
   return '/series/26-live.svg';
 }
 export function getPlayerImageUrl(playerName: string, season: string = '26 LIVE', _tier?: string, imageUrl?: string): string {
-  if (imageUrl && (/^\/player-images\/2026-\d+\.(png|webp)$/.test(imageUrl) || imageUrl.startsWith('/players/'))) return imageUrl;
+  if (imageUrl && (/^\/player-images\/2026-\d+\.(png|webp)$/.test(imageUrl) || imageUrl.startsWith('/players/'))) return imageUrl.startsWith('/player-images/') ? imageUrl : imageUrl;
   const cleanName=playerName.trim().replace(/[^\p{L}\p{N} _-]/gu,'');
   const prefix=season === '26WRs' ? '26WRs' : season === '26WR' ? '26WR' : '26';
   return `/players/${prefix}_${cleanName}.png`;

@@ -331,8 +331,8 @@ export default function Collection() {
                 <option value="LPL">LPL</option>
                 <option value="LEC">LEC</option>
                 <option value="LCS">LCS</option>
-                <option value="PCS">PCS</option>
-                <option value="VCS">VCS</option>
+                <option value="CBLOL">CBLOL</option>
+                <option value="LCP">LCP</option>
               </select>
             </div>
           </div>

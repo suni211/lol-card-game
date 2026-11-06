@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import AdminWorlds2026 from '../components/AdminWorlds2026';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface AdminLog {
   id: number;
@@ -36,6 +36,10 @@ export default function Admin() {
   const [playerName, setPlayerName] = useState('');
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [enhancementLevel, setEnhancementLevel] = useState('0');
+  const [editOverall, setEditOverall] = useState('');
+  const [overallSearch, setOverallSearch] = useState('');
+  const [overallCandidates, setOverallCandidates] = useState<Player[]>([]);
+  const [overallPlayerId, setOverallPlayerId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -230,6 +234,30 @@ export default function Admin() {
     }
   };
 
+  const searchOverallCandidates = async () => {
+    if (overallSearch.trim().length < 2) return toast.error('선수 이름을 2글자 이상 입력하세요.');
+    try {
+      const r = await axios.get(`${API_URL}/admin/search-players`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { q: overallSearch.trim() },
+      });
+      setOverallCandidates(r.data.data || []);
+    } catch(e:any) { toast.error(e.response?.data?.error || '선수 조회 실패'); }
+  };
+  const saveOverall = async () => {
+    const overall = Number(editOverall);
+    if (!overallPlayerId || !Number.isSafeInteger(overall) || overall < 1 || overall > 150) {
+      return toast.error('카드와 OVR 1~150을 선택해주세요.');
+    }
+    try {
+      const r = await axios.put(`${API_URL}/admin/player-overall/${overallPlayerId}`,
+        { overall }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(r.data.message);
+      void searchOverallCandidates();
+      fetchLogs();
+    } catch(e:any) { toast.error(e.response?.data?.error || 'OVR 저장 실패'); }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ko-KR');
   };
@@ -267,6 +295,33 @@ export default function Admin() {
           </p>
         </motion.div>
 
+        <div className="mb-8 rounded-xl border border-blue-300 bg-white p-6 shadow-lg dark:border-blue-900 dark:bg-gray-800">
+          <h2 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">선수 OVR 편집</h2>
+          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">선수명으로 검색한 뒤 팀·시즌·포지션을 확인하고 정확한 카드 하나만 수정합니다.</p>
+          <div className="flex flex-wrap gap-2">
+            <input aria-label="OVR 변경 선수 검색" value={overallSearch} onChange={e=>setOverallSearch(e.target.value)}
+              placeholder="예: Ruler, Chovy" className="min-w-[180px] flex-1 rounded-md border p-3 text-gray-900"/>
+            <button onClick={()=>void searchOverallCandidates()} className="rounded-md bg-blue-600 px-5 py-3 font-bold text-white">검색</button>
+          </div>
+          {!!overallCandidates.length && <select aria-label="변경할 선수 카드" value={overallPlayerId||''}
+              onChange={e=>{
+                const id=Number(e.target.value);
+                setOverallPlayerId(id||null);
+                const player=overallCandidates.find(p=>p.id===id);
+                setEditOverall(player?String(player.overall):'');
+              }}
+              className="mt-3 w-full rounded-md border bg-white p-3 text-gray-900">
+            <option value="">카드 선택 (팀 / 시즌 / 포지션)</option>
+            {overallCandidates.map(p=><option key={p.id} value={p.id}>{p.name} · {p.team} · {p.season} · {p.position} · 현재 OVR {p.overall}</option>)}
+          </select>}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input aria-label="새 OVR" type="number" min={1} max={150} value={editOverall}
+              onChange={e=>setEditOverall(e.target.value)} placeholder="새 OVR"
+              className="w-32 rounded-md border p-3 text-gray-900"/>
+            <button onClick={()=>void saveOverall()} disabled={!overallPlayerId}
+              className="rounded-md bg-emerald-600 px-6 py-3 font-bold text-white disabled:opacity-50">OVR 저장</button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-8">
           {/* Point Management */}
           <motion.div

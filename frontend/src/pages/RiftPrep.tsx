@@ -39,7 +39,7 @@ export default function RiftPrep() {
   const [params] = useSearchParams();
   const { token } = useAuthStore();
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
-  const [mode,setMode] = useState<Mode>(params.get('mode')==='PVP'?'PVP':'AI');
+  const [mode,setMode] = useState<Mode>('AI');
   const [slot,setSlot] = useState(Number(params.get('deck'))||1);
   const [plan,setPlan] = useState<Plan>({...defaults});
   const [decks,setDecks] = useState<DeckInfo[]>([]);
@@ -136,10 +136,9 @@ export default function RiftPrep() {
         <section className="bg-slate-900 rounded-xl border border-slate-700 p-5 space-y-4">
           <h2 className="text-lg font-bold">1. 대전과 덱</h2>
           <div className="flex gap-2">
-            {(['AI','PVP'] as Mode[]).map(m=><button key={m} disabled={!!sessionId} onClick={()=>setMode(m)} className={`flex-1 rounded-lg p-3 border ${mode===m?'border-cyan-400 bg-cyan-950':'border-slate-700'}`}>
-              {m==='AI'?<BrainCircuit className="inline mr-1 h-4 w-4"/>:<Swords className="inline mr-1 h-4 w-4"/>}
-              {m==='AI'?'AI 매치':'PvP 매치'}
-            </button>)}
+            <div className="flex-1 rounded-lg border border-cyan-400 bg-cyan-950 p-3 text-center">
+              <BrainCircuit className="mr-1 inline h-4 w-4"/> AI 매치 · 전술 선택
+            </div>
           </div>
           <label className="text-sm">5인 선수 카드 덱</label>
           <select value={slot} onChange={e=>setSlot(Number(e.target.value))} disabled={!!sessionId} className="w-full rounded-lg bg-slate-800 p-3">

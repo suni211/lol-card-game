@@ -578,6 +578,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
           ELSE 'LEGENDARY'
         END as tier,
         p.season,
+        p.nationality,
         p.image_url,
         p.laning,
         p.teamfight,
@@ -620,7 +621,6 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
           tier: card.tier,
           season: card.season,
           nationality: card.nationality || null,
-          imageUrl: card.image_url || undefined,
           salary: card.salary,
           imageUrl: card.image_url,
           laning: card.laning || 50,
@@ -686,6 +686,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
           ELSE 'LEGENDARY'
         END as tier,
         p.season,
+        p.nationality,
         p.image_url,
         p.laning,
         p.teamfight,
@@ -720,7 +721,6 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
           tier: card.tier,
           season: card.season,
           nationality: card.nationality || null,
-          imageUrl: card.image_url || undefined,
           salary: card.salary,
           imageUrl: card.image_url,
           laning: card.laning || 50,

@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { calculateEnhancementBonus, getTierColor, getTeamColor, getPositionColor } from '../utils/cardHelpers';
 import MegaphoneShop from '../components/MegaphoneShop';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface MarketListing {
   listing_id: number;
@@ -325,8 +325,8 @@ export default function Market() {
   const handleListForSale = async () => {
     if (!selectedCard) return;
 
-    if (sellPrice < priceRange.floor || sellPrice > priceRange.ceiling) {
-      toast.error(`가격은 ${priceRange.floor}P ~ ${priceRange.ceiling}P 사이여야 합니다`);
+    if (!Number.isSafeInteger(sellPrice) || sellPrice < 1 || sellPrice > 1000000000) {
+      toast.error('판매 가격은 1P~10억P 사이의 정수로 입력해주세요.');
       return;
     }
 
@@ -1231,11 +1231,11 @@ export default function Market() {
                     value={sellPrice}
                     onChange={(e) => setSellPrice(parseInt(e.target.value) || 0)}
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                    min={priceRange.floor}
-                    max={priceRange.ceiling}
+                    min={1}
+                    max={1000000000}
                   />
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    가격 범위: {priceRange.floor.toLocaleString()}P ~ {priceRange.ceiling.toLocaleString()}P
+                    참고 시세 범위: {priceRange.floor.toLocaleString()}P ~ {priceRange.ceiling.toLocaleString()}P · 판매가는 자유롭게 정할 수 있습니다.
                   </p>
                   {sellPrice > 0 && (
                     <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">

@@ -104,7 +104,7 @@ export default function MatchSelect() {
       return;
     }
 
-    navigate(`/moba-match?type=${type}&deck=${selectedDeck}`);
+    navigate(`/rift-prep?mode=PVP&deck=${selectedDeck}`);
   };
 
   const selectedDeckInfo = decks.find(d => d.slot === selectedDeck);

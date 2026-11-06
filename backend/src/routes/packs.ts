@@ -130,7 +130,7 @@ async function openSinglePack(connection: any, userId: number, config: any) {
     if (config.iconOnly) {
       [players] = await connection.query(
         `SELECT * FROM players
-         WHERE season = 'ICON'
+         WHERE season = '26WRs'
          ORDER BY RAND()
          LIMIT 1`
       );
@@ -152,11 +152,7 @@ async function openSinglePack(connection: any, userId: number, config: any) {
         `SELECT * FROM players
          WHERE overall >= ?
            AND overall <= ?
-           AND season != 'ICON'
-           AND name NOT LIKE 'ICON%'
-           AND name NOT LIKE '17SSG%'
-           AND name NOT LIKE '25WW%'
-           AND name NOT LIKE '25WUD%'
+           AND season IN ('26 LIVE','26WR')
          ORDER BY RAND()
          LIMIT 1`,
         [minOverall, maxOverall]
@@ -192,7 +188,7 @@ async function openSinglePack(connection: any, userId: number, config: any) {
 
 // Calculate tier based on overall and season
 function calculateTier(overall: number, season: string): string {
-  if (season === 'ICON' || (season && season.startsWith('ICON'))) {
+  if (season === '26WRs') {
     return 'ICON';
   }
   if (overall >= 101) return 'LEGENDARY';

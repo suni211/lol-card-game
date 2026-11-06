@@ -99,7 +99,7 @@ const getDeckBySlot = async (req: AuthRequest, res: express.Response) => {
           p.region,
           p.salary,
           CASE
-            WHEN p.season = 'ICON' THEN 'ICON'
+            WHEN p.season = '26WRs' THEN 'ICON'
             WHEN p.overall <= 80 THEN 'COMMON'
             WHEN p.overall <= 90 THEN 'RARE'
             WHEN p.overall <= 100 THEN 'EPIC'
@@ -200,7 +200,7 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         p.season,
         p.salary,
         CASE
-          WHEN p.season = 'ICON' THEN 'ICON'
+          WHEN p.season = '26WRs' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -282,7 +282,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
           p.overall,
           p.region,
           CASE
-            WHEN p.season = 'ICON' THEN 'ICON'
+            WHEN p.season = '26WRs' THEN 'ICON'
             WHEN p.overall <= 80 THEN 'COMMON'
             WHEN p.overall <= 90 THEN 'RARE'
             WHEN p.overall <= 100 THEN 'EPIC'
@@ -715,7 +715,7 @@ router.get('/presets', authMiddleware, async (req: AuthRequest, res) => {
               p.position,
               p.overall,
               CASE
-                WHEN p.season = 'ICON' THEN 'ICON'
+                WHEN p.season = '26WRs' THEN 'ICON'
                 WHEN p.overall <= 80 THEN 'COMMON'
                 WHEN p.overall <= 90 THEN 'RARE'
                 WHEN p.overall <= 100 THEN 'EPIC'

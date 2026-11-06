@@ -4,7 +4,7 @@ import { Search, Trash2, TrendingUp, Zap, X, Sparkles } from 'lucide-react';
 import type { UserCard } from '../types';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
-import { getPlayerImageUrl } from '../utils/playerImage';
+import { getPlayerImageUrl, getSeriesLogo } from '../utils/playerImage';
 import { calculateEnhancementBonus, getTeamColor, getTierColor as getTierColorHelper, getPositionColor as getPositionColorHelper } from '../utils/cardHelpers';
 import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 import toast from 'react-hot-toast';
@@ -381,7 +381,7 @@ export default function Collection() {
                   transition={{ delay: index * 0.05 }}
                   className="group"
                 >
-                  <div className={`bg-gradient-to-br ${getTierColor(card.player.tier)} p-1 rounded-xl shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2`}>
+                  <div className={`bg-gradient-to-br ${getTierColor(card.player.season || card.player.tier)} p-1 rounded-xl shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2`}>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                       {/* Card Header */}
                       <div className="flex justify-between items-start mb-3">
@@ -399,9 +399,9 @@ export default function Collection() {
                       {/* Player Image */}
                       <div className="w-full h-40 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
                         <img
-                          src={getPlayerImageUrl(card.player.name)}
+                          src={getPlayerImageUrl(card.player.name, card.player.season, card.player.tier, card.player.imageUrl)}
                           alt={card.player.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
@@ -416,6 +416,7 @@ export default function Collection() {
                         />
                       </div>
 
+                      <img src={getSeriesLogo(card.player.season)} alt={card.player.season || '26 LIVE'} className="w-32 h-10 object-contain mb-2" />
                       {/* Player Info */}
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                         {card.player.name}

@@ -723,7 +723,7 @@ export default function Deck() {
                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex gap-3">
                         {/* Player Face */}
                         <img
-                          src={getPlayerImageUrl(slot.card.player.name, slot.card.player.season, slot.card.player.tier)}
+                          src={getPlayerImageUrl(slot.card.player.name, slot.card.player.season, slot.card.player.tier, slot.card.player.imageUrl)}
                           alt={slot.card.player.name}
                           className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
                           onError={(e) => {
@@ -1019,7 +1019,7 @@ export default function Deck() {
                             {/* Player Image */}
                             <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center relative">
                               <img
-                                src={getPlayerImageUrl(card.player.name)}
+                                src={getPlayerImageUrl(card.player.name, card.player.season, card.player.tier, card.player.imageUrl)}
                                 alt={card.player.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -1124,7 +1124,7 @@ export default function Deck() {
             <div className="flex items-start justify-between mb-6">
               <div className="flex gap-4 flex-1">
                 <img
-                  src={getPlayerImageUrl(detailCard.player.name, detailCard.player.season, detailCard.player.tier)}
+                  src={getPlayerImageUrl(detailCard.player.name, detailCard.player.season, detailCard.player.tier, detailCard.player.imageUrl)}
                   alt={detailCard.player.name}
                   className="w-24 h-24 rounded-lg object-cover"
                   onError={(e) => {

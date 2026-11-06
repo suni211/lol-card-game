@@ -4,6 +4,7 @@ import { Shield, DollarSign, Minus, FileText, AlertCircle, CreditCard } from 'lu
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
+import AdminWorlds2026 from '../components/AdminWorlds2026';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -484,6 +485,7 @@ export default function Admin() {
             </div>
           </motion.div>
 
+          <AdminWorlds2026 />
           {/* Admin Logs */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}

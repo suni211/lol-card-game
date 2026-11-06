@@ -1,32 +1,14 @@
-/**
- * Get player image URL based on season and player name
- * Format: /players/25_선수이름.png or /players/ICON_선수이름.png
- */
-export function getPlayerImageUrl(playerName: string, season: string = '25', tier?: string): string {
-  // Remove leading/trailing spaces but keep internal spaces
-  let cleanName = playerName.trim();
-
-  // ICON tier - keep [ICON] prefix in filename
-  if (tier === 'ICON' || season === 'ICON') {
-    return `/players/ICON_${cleanName}.png`;
-  }
-
-  // NR tier - keep [NR] prefix in filename
-  if (season === 'NR') {
-    return `/players/NR_${cleanName}.png`;
-  }
-
-  // GR tier uses _gr.png suffix
-  if (tier === 'GR' || season === 'GR') {
-    return `/players/${cleanName.replace('GR ', '')}_gr.png`;
-  }
-
-  return `/players/${season}_${cleanName}.png`;
+/** 2026 season series assets and transparent cut-out portraits. */
+export type Series2026 = '26 LIVE' | '26WR' | '26WRs';
+export function getSeriesLogo(season?: string): string {
+  if (season === '26WRs') return '/series/26-wrs.svg';
+  if (season === '26WR') return '/series/26-wr.svg';
+  return '/series/26-live.svg';
 }
-
-/**
- * Get fallback placeholder for missing player images
- */
-export function getPlayerPlaceholder(): string {
-  return '/players/placeholder.png';
+export function getPlayerImageUrl(playerName: string, season: string = '26 LIVE', _tier?: string, imageUrl?: string): string {
+  if (imageUrl && (/^\/player-images\/2026-\d+\.(png|webp)$/.test(imageUrl) || imageUrl.startsWith('/players/'))) return imageUrl.startsWith('/player-images/') ? imageUrl : imageUrl;
+  const cleanName=playerName.trim().replace(/[^\p{L}\p{N} _-]/gu,'');
+  const prefix=season === '26WRs' ? '26WRs' : season === '26WR' ? '26WR' : '26';
+  return `/players/${prefix}_${cleanName}.png`;
 }
+export function getPlayerPlaceholder() { return '/players/placeholder.png'; }

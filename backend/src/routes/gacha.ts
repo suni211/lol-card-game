@@ -95,7 +95,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
          WHERE user_id = ?
          AND cost = 0
          AND DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+09:00'))
-         AND player_id NOT IN (SELECT id FROM players WHERE season IN ('25WW', '25WUD', '19G2'))`,
+         AND player_id NOT IN (SELECT id FROM players WHERE season NOT IN ('26 LIVE', '26WR', '26WRs'))`,
         [userId]
       );
 
@@ -132,19 +132,19 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
     } else {
       // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
-      // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON, 19G2
-      // Excludes: 17SSG, 25WW, 25WUD
+      // Includes only 26 LIVE and 26WR for normal rarity draws
+      // 26WRs remains available via the ICON rarity draw
       // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
       let minOverall = 1, maxOverall = 80;
       if (tier === 'RARE') { minOverall = 81; maxOverall = 90; }
       else if (tier === 'EPIC') { minOverall = 91; maxOverall = 100; }
       else if (tier === 'LEGENDARY') { minOverall = 101; maxOverall = 999; }
       else if (tier === 'ICON') {
-        // ICON tier: special handling - query by season = 'ICON'
+        // ICON tier: special handling - query by season = '26WRs'
         // ICON cards ALWAYS have tier = 'ICON' regardless of overall stat
         [players] = await connection.query(
           `SELECT *, 'ICON' as tier
-           FROM players WHERE season = 'ICON' ORDER BY RAND() LIMIT 1`
+           FROM players WHERE season = '26WRs' ORDER BY RAND() LIMIT 1`
         );
       }
 
@@ -153,7 +153,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
         [players] = await connection.query(
           `SELECT *,
            CASE
-             WHEN season = 'ICON' THEN 'ICON'
+             WHEN season = '26WRs' THEN 'ICON'
              WHEN overall <= 80 THEN 'COMMON'
              WHEN overall <= 90 THEN 'RARE'
              WHEN overall <= 100 THEN 'EPIC'
@@ -161,13 +161,9 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
            END as tier
            FROM players
            WHERE overall >= ?
-             AND overall <= ?
-             AND season != '17SSG'
-             AND season != 'ICON'
-             AND name NOT LIKE 'ICON%'
-             AND name NOT LIKE '17SSG%'
-             AND name NOT LIKE '25WW%'
-             AND name NOT LIKE '25WUD%'
+              AND overall <= ?
+             AND season IN ('26 LIVE','26WR','26WRs')
+              AND season != '26WRs'
            ORDER BY RAND() LIMIT 1`,
           [minOverall, maxOverall]
         );
@@ -360,19 +356,19 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
       } else {
         // Regular packs - All seasons EXCEPT 17SSG (17SSG cards no longer obtainable)
-        // Includes: 25, RE, 25HW, 25MSI, GR, T1, 18WC, ICON, 19G2
-        // Excludes: 17SSG, 25WW, 25WUD
+        // Includes only 26 LIVE and 26WR for normal rarity draws
+        // 26WRs remains available via the ICON rarity draw
         // Tier calculated from overall: 1-80=COMMON, 81-90=RARE, 91-100=EPIC, 101+=LEGENDARY
         let minOverall = 1, maxOverall = 80;
         if (tier === 'RARE') { minOverall = 81; maxOverall = 90; }
         else if (tier === 'EPIC') { minOverall = 91; maxOverall = 100; }
         else if (tier === 'LEGENDARY') { minOverall = 101; maxOverall = 999; }
         else if (tier === 'ICON') {
-          // ICON tier: special handling - query by season = 'ICON'
+          // ICON tier: special handling - query by season = '26WRs'
           // ICON cards ALWAYS have tier = 'ICON' regardless of overall stat
           [players] = await connection.query(
             `SELECT *, 'ICON' as tier
-             FROM players WHERE season = 'ICON' ORDER BY RAND() LIMIT 1`
+             FROM players WHERE season = '26WRs' ORDER BY RAND() LIMIT 1`
           );
         }
 
@@ -381,7 +377,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
           [players] = await connection.query(
             `SELECT *,
              CASE
-               WHEN season = 'ICON' THEN 'ICON'
+               WHEN season = '26WRs' THEN 'ICON'
                WHEN overall <= 80 THEN 'COMMON'
                WHEN overall <= 90 THEN 'RARE'
                WHEN overall <= 100 THEN 'EPIC'
@@ -389,13 +385,9 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
              END as tier
              FROM players
              WHERE overall >= ?
-               AND overall <= ?
-               AND season != '17SSG'
-               AND season != 'ICON'
-               AND name NOT LIKE 'ICON%'
-               AND name NOT LIKE '17SSG%'
-               AND name NOT LIKE '25WW%'
-               AND name NOT LIKE '25WUD%'
+              AND overall <= ?
+               AND season IN ('26 LIVE','26WR','26WRs')
+              AND season != '26WRs'
              ORDER BY RAND() LIMIT 1`,
             [minOverall, maxOverall]
           );
@@ -555,7 +547,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         p.region,
         p.salary,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -661,7 +653,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
         p.region,
         p.salary,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -785,7 +777,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     const [cards]: any = await pool.query(
       `SELECT uc.*, p.name as player_name,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -886,7 +878,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     const [cards]: any = await connection.query(
       `SELECT uc.*, p.name as player_name,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -1271,7 +1263,7 @@ router.post('/welcome-pack', authMiddleware, async (req: AuthRequest, res) => {
          ELSE 'LEGENDARY'
        END as tier
        FROM players
-       WHERE season IN ('25WW', '25WUD', '19G2')
+       WHERE season IN ('26 LIVE', '26WR', '26WRs')
        ORDER BY RAND()
        LIMIT 1`
     );

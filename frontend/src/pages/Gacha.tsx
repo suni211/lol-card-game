@@ -4,6 +4,7 @@ import { Sparkles, Trophy, Info, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import type { Player, GachaOption } from '../types';
+import { getPlayerImageUrl, getSeriesLogo } from '../utils/playerImage';
 import axios from 'axios';
 import { playSound } from '../utils/soundEffects';
 
@@ -133,7 +134,7 @@ export default function Gacha() {
       case 'GR':
         return 'from-pink-500 via-rose-500 to-red-600';
       case 'ICON':
-        return 'from-cyan-400 via-blue-500 to-indigo-600';
+        return 'from-amber-300 via-yellow-500 to-sky-700';
       case 'LEGENDARY':
         return 'from-yellow-400 to-orange-500';
       case 'EPIC':
@@ -1172,7 +1173,7 @@ export default function Gacha() {
                       </div>
                       <div className="text-gray-300 text-2xl mb-4">{drawnCard.team} • {drawnCard.position}</div>
                       <img
-                        src={`/players/${drawnCard.name}.png`}
+                        src={getPlayerImageUrl(drawnCard.name, drawnCard.season, drawnCard.tier, drawnCard.imageUrl)}
                         alt={drawnCard.name}
                         className="w-48 h-48 object-contain mx-auto"
                         onError={(e) => {
@@ -1219,8 +1220,8 @@ export default function Gacha() {
                   {false && (
                     <>
                       {/* Multiple layered glows for ICON */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-400 to-pink-500 rounded-2xl blur-3xl opacity-90 animate-pulse"></div>
-                      <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 rounded-2xl blur-2xl opacity-60"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-amber-500 to-sky-700 rounded-2xl blur-3xl opacity-90 animate-pulse"></div>
+                      <div className="absolute -inset-2 bg-gradient-to-r from-sky-400 via-yellow-400 to-amber-600 rounded-2xl blur-2xl opacity-60"></div>
                       {/* Screen flash effect */}
                       <motion.div
                         className="fixed inset-0 bg-white pointer-events-none"
@@ -1241,6 +1242,7 @@ export default function Gacha() {
                     } rounded-2xl blur-3xl opacity-75 animate-pulse`}></div>
                   )}
 
+                  <img src={getSeriesLogo(drawnCard.season)} alt={drawnCard.season || '26 LIVE'} className="w-40 h-12 object-contain mx-auto mb-3 relative z-10" />
                   <div className={`relative w-48 h-64 bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl shadow-2xl p-1`}>
                     <div className="w-full h-full bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center">
                       <div className="text-center">
@@ -1270,7 +1272,7 @@ export default function Gacha() {
                     </div>
                     <div className="text-yellow-200 text-3xl mb-4">{drawnCard.team} • {drawnCard.position}</div>
                     <img
-                      src={`/players/${drawnCard.name}.png`}
+                      src={getPlayerImageUrl(drawnCard.name, drawnCard.season, drawnCard.tier, drawnCard.imageUrl)}
                       alt={drawnCard.name}
                       className="w-64 h-64 object-contain mx-auto"
                       onError={(e) => {
@@ -1291,8 +1293,8 @@ export default function Gacha() {
                   className="relative"
                 >
                   {/* Multiple layered glows for ICON */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-400 to-pink-500 rounded-2xl blur-3xl opacity-90 animate-pulse"></div>
-                  <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 rounded-2xl blur-2xl opacity-60"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-amber-500 to-sky-700 rounded-2xl blur-3xl opacity-90 animate-pulse"></div>
+                  <div className="absolute -inset-2 bg-gradient-to-r from-sky-400 via-yellow-400 to-amber-600 rounded-2xl blur-2xl opacity-60"></div>
                   {/* Screen flash effect */}
                   <motion.div
                     className="fixed inset-0 bg-white pointer-events-none"
@@ -1301,6 +1303,7 @@ export default function Gacha() {
                     transition={{ duration: 0.5 }}
                   />
 
+                  <img src={getSeriesLogo(drawnCard.season)} alt={drawnCard.season || '26 LIVE'} className="w-40 h-12 object-contain mx-auto mb-3 relative z-10" />
                   <div className={`relative w-48 h-64 bg-gradient-to-br ${getTierColor(drawnCard.tier)} rounded-2xl shadow-2xl p-1`}>
                     <div className="w-full h-full bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center">
                       <div className="text-center">
@@ -1341,7 +1344,7 @@ export default function Gacha() {
                   {/* Outer glow */}
                   <div className={`absolute -inset-4 bg-gradient-to-r ${
                     drawnCard.tier === 'ICON'
-                      ? 'from-red-500 via-yellow-400 to-pink-500'
+                      ? 'from-yellow-300 via-amber-500 to-sky-700'
                       : drawnCard.tier === 'LEGENDARY'
                       ? 'from-yellow-400 via-orange-500 to-yellow-400'
                       : 'from-purple-400 via-pink-500 to-purple-400'
@@ -1349,7 +1352,7 @@ export default function Gacha() {
 
                   {/* Additional glow for ICON */}
                   {drawnCard.tier === 'ICON' && (
-                    <div className="absolute -inset-6 bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 rounded-3xl blur-3xl opacity-50 animate-pulse"></div>
+                    <div className="absolute -inset-6 bg-gradient-to-r from-sky-400 via-yellow-400 to-amber-600 rounded-3xl blur-3xl opacity-50 animate-pulse"></div>
                   )}
 
                   {/* Left side particles for modal - more natural cascade */}

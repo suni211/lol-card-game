@@ -21,6 +21,7 @@ import suggestionsRoutes from './routes/suggestions';
 import fusionRoutes from './routes/fusion';
 import achievementsRoutes from './routes/achievements';
 import adminRoutes, { setSocketIOForAdmin } from './routes/admin';
+import worlds2026Routes from './routes/worlds2026';
 import marketRoutes from './routes/market';
 import couponRoutes, { setSocketIOForCoupon } from './routes/coupon';
 import packsRoutes from './routes/packs';
@@ -106,7 +107,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Body parser
-app.use(express.json());
+app.use(express.json({ limit: '3mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
@@ -125,6 +126,8 @@ app.use('/api/market', marketRoutes);
 app.use('/api/fusion', fusionRoutes);
 app.use('/api/achievements', achievementsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/worlds2026', worlds2026Routes);
+app.use('/player-images', express.static(path.resolve(__dirname, '../uploads/players'), { fallthrough: false }));
 app.use('/api/coupon', couponRoutes);
 app.use('/api/packs', packsRoutes);
 app.use('/api/shop', shopRoutes);

@@ -16,7 +16,7 @@ interface PackReward {
   value: string;
   minOverall?: number;
   excludeIcon?: boolean;
-  iconOnly?: boolean;
+  wrsOnly?: boolean;
   includeIcon?: boolean;
   minLevel?: number;
   chance: number;
@@ -40,7 +40,7 @@ const AGENT_TYPES = {
       { type: 'pack' as const, value: '108+ OVR 확정팩', minOverall: 108, excludeIcon: true, chance: 1.5 },
       { type: 'pack' as const, value: '109+ OVR 확정팩', minOverall: 109, excludeIcon: true, chance: 0.2 },
       { type: 'points' as const, value: 300000, chance: 0.07999153 },
-      { type: 'pack' as const, value: 'ICON 5강 확정팩', iconOnly: true, minLevel: 5, chance: 0.00000947 },
+      { type: 'pack' as const, value: '26WRs 5강 확정팩', wrsOnly: true, minLevel: 5, chance: 0.00000947 },
     ]
   },
   weekly: {
@@ -54,8 +54,8 @@ const AGENT_TYPES = {
       { type: 'points' as const, value: 10000, chance: 5.3 },
       { type: 'points' as const, value: 20000, chance: 3.5 },
       { type: 'pack' as const, value: '101+ OVR 확정팩', minOverall: 101, includeIcon: true, chance: 0.77 },
-      { type: 'pack' as const, value: '103+ OVR ICON 포함 팩', minOverall: 103, includeIcon: true, chance: 0.4221 },
-      { type: 'pack' as const, value: '110+ OVR ICON 포함 팩', minOverall: 110, includeIcon: true, chance: 0.0079 },
+      { type: 'pack' as const, value: '103+ OVR 26WRs 포함 팩', minOverall: 103, includeIcon: true, chance: 0.4221 },
+      { type: 'pack' as const, value: '110+ OVR 26WRs 포함 팩', minOverall: 110, includeIcon: true, chance: 0.0079 },
     ]
   },
   monthly: {
@@ -259,10 +259,10 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
 
       if (packReward.excludeIcon) {
         query += ' AND p.season != ?';
-        params.push('ICON');
+        params.push('26WRs');
       }
 
-      if (packReward.iconOnly) {
+      if (packReward.wrsOnly) {
         query += ' AND p.season = ?';
         params.push('ICON');
       }

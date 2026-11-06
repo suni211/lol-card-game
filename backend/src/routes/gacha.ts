@@ -140,7 +140,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
       else if (tier === 'EPIC') { minOverall = 91; maxOverall = 100; }
       else if (tier === 'LEGENDARY') { minOverall = 101; maxOverall = 999; }
       else if (tier === 'ICON') {
-        // ICON tier: special handling - query by season = 'ICON'
+        // ICON tier: special handling - query by season = '26WRs'
         // ICON cards ALWAYS have tier = 'ICON' regardless of overall stat
         [players] = await connection.query(
           `SELECT *, 'ICON' as tier
@@ -364,7 +364,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
         else if (tier === 'EPIC') { minOverall = 91; maxOverall = 100; }
         else if (tier === 'LEGENDARY') { minOverall = 101; maxOverall = 999; }
         else if (tier === 'ICON') {
-          // ICON tier: special handling - query by season = 'ICON'
+          // ICON tier: special handling - query by season = '26WRs'
           // ICON cards ALWAYS have tier = 'ICON' regardless of overall stat
           [players] = await connection.query(
             `SELECT *, 'ICON' as tier
@@ -547,7 +547,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         p.region,
         p.salary,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -653,7 +653,7 @@ router.get('/user-cards/:username', authMiddleware, async (req: AuthRequest, res
         p.region,
         p.salary,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -777,7 +777,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     const [cards]: any = await pool.query(
       `SELECT uc.*, p.name as player_name,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'
@@ -878,7 +878,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     const [cards]: any = await connection.query(
       `SELECT uc.*, p.name as player_name,
         CASE
-          WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
+          WHEN p.season = '26WRs' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
           WHEN p.overall <= 90 THEN 'RARE'
           WHEN p.overall <= 100 THEN 'EPIC'

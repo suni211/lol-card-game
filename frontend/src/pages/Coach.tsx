@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Star, Trophy, Users, Target, Zap, TrendingUp, ArrowUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Coach {
   id: number;
@@ -53,6 +53,7 @@ export default function Coach() {
   const [activeCoach, setActiveCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'my' | 'all'>('my');
+  const [drawing, setDrawing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -83,6 +84,22 @@ export default function Coach() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const drawCoach = async () => {
+    if (drawing) return;
+    if (!window.confirm('5,000P로 실제 LoL 코치 1명을 스카우트하시겠습니까? (1~5성)')) return;
+    setDrawing(true);
+    try {
+      const r = await axios.post(`${API_URL}/coach/draw`,{},{
+        headers:{Authorization:`Bearer ${token}`},
+      });
+      toast.success(r.data.message);
+      setView('my');
+      await fetchData();
+    } catch(e:any) {
+      toast.error(e.response?.data?.error || '코치 스카우트 실패');
+    } finally { setDrawing(false); }
   };
 
   const activateCoach = async (coachId: number) => {
@@ -271,9 +288,17 @@ export default function Coach() {
           코치 관리
         </h1>
         <p className="text-white/60 mb-6">
-          코치를 활성화하면 팀이 더욱 강력해집니다. 카드 강화 시 확률적으로 코치를 획득할 수 있습니다.
+          실제 LoL 코칭스태프를 스카우트하세요. 게임 내 희귀도는 1~5성으로 구분됩니다.
         </p>
 
+        <div className="mb-6 rounded-xl border border-purple-500/40 bg-gray-900 p-5 text-white">
+          <h2 className="mb-2 text-xl font-bold">코치 스카우트 · 1~5성</h2>
+          <p className="mb-3 text-sm text-gray-300">실제 코치 및 감독 목록에서 미보유 코치 1명을 획득합니다. 등급은 게임 내 희귀도이며 실제 실력 순위가 아닙니다.</p>
+          <button onClick={()=>void drawCoach()} disabled={drawing}
+            className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 font-bold disabled:opacity-40">
+            {drawing?'스카우트 진행 중...':'5,000P로 코치 1명 뽑기'}
+          </button>
+        </div>
         {/* Active Coach Display */}
         {activeCoach && (
           <motion.div

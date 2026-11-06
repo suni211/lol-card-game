@@ -97,7 +97,7 @@ export default function MatchSelect() {
     }
   };
 
-  const startMatch = (type: 'RANKED' | 'NORMAL') => {
+  const startMatch = (_type: 'RANKED' | 'NORMAL') => {
     const deck = decks.find(d => d.slot === selectedDeck);
     if (!deck?.isComplete) {
       toast.error('완성된 덱을 선택해주세요.');

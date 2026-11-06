@@ -4,6 +4,24 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// Lottery draws are permitted only during 20:00-20:59 Asia/Seoul.
+// Use the server clock so clients cannot bypass the window.
+const isLotteryOpen = () => {
+  const hour = Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul', hour: '2-digit', hourCycle: 'h23',
+  }).format(new Date()));
+  return hour === 20;
+};
+
+router.get('/availability', (_req, res) => {
+  res.json({ success: true, data: {
+    isOpen: isLotteryOpen(),
+    timeZone: 'Asia/Seoul',
+    start: '20:00',
+    end: '21:00',
+  } });
+});
+
 // Lottery configuration
 const TICKET_COST = 25000; // 2만 5천 포인트
 const TOTAL_NUMBERS = 49;
@@ -187,6 +205,7 @@ router.get('/board', authMiddleware, async (req: AuthRequest, res: Response) => 
 
 // Pick a number
 router.post('/pick', authMiddleware, async (req: AuthRequest, res: Response) => {
+  if (!isLotteryOpen()) return res.status(403).json({ success: false, error: '럭키드로우는 매일 한국시간 오후 8시부터 9시 전까지만 참여할 수 있습니다.' });
   const connection = await pool.getConnection();
 
   try {

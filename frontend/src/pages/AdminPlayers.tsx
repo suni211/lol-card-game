@@ -20,6 +20,10 @@ type Player = {
   season: string; overall: number; nationality: string | null; image_url: string | null;
   cs:number;teamfight:number;laning:number;shotcalling:number;mental:number;clutch:number;
 };
+type PhotoImportJob = {
+  running:boolean; startedAt:string|null; finishedAt:string|null;
+  saved:number; skipped:number; failed:number; last:string; error:string|null;
+};
 type Directory = {
   players: Player[]; page: number; total: number; totalPages: number;
   limit: number; missingCount: number; missingPhotoCount: number;
@@ -59,6 +63,30 @@ export default function AdminPlayers() {
   const [nationality,setNationality] = useState('');
   const [applyAll,setApplyAll] = useState(true);
   const [photoAll,setPhotoAll] = useState(true);
+  const [autoPhotos,setAutoPhotos] = useState<PhotoImportJob|null>(null);
+  const [photoStarting,setPhotoStarting] = useState(false);
+  useEffect(()=>{
+    let mounted=true;
+    const check=async()=>{
+      try{
+        const r=await axios.get(`${API_URL}/admin/worlds2026/photos/auto-status`,{headers});
+        if(mounted)setAutoPhotos(r.data.data);
+      }catch(error){ console.warn('자동 사진 등록 상태 조회 실패',error); }
+    };
+    void check();
+    const timer=setInterval(()=>{void check();},4000);
+    return ()=>{mounted=false;clearInterval(timer);};
+  },[headers]);
+  const startAutoPhotoImport=async()=>{
+    setPhotoStarting(true);
+    try{
+      const r=await axios.post(`${API_URL}/admin/worlds2026/photos/auto-import`,{},{headers});
+      setAutoPhotos(r.data.data);
+      toast.success('전체 선수 사진 자동 등록을 시작했습니다.');
+    }catch(e:any){toast.error(apiError(e,'자동 사진 등록을 시작할 수 없습니다.'));}
+    finally{setPhotoStarting(false);}
+  };
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -157,11 +185,27 @@ export default function AdminPlayers() {
           <h1 className="text-3xl font-black">전체 선수 카드 관리</h1>
           <p className="mt-2 text-sm text-slate-400">전체 선수 목록 · OVR 및 6스탯 수정 · 국적 및 선수 사진 관리</p>
         </div>
-        <button onClick={()=>void load()} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 hover:bg-slate-800">
-          <RefreshCw size={16}/>새로고침
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={()=>void startAutoPhotoImport()} disabled={photoStarting||!!autoPhotos?.running}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 font-bold hover:bg-emerald-600 disabled:opacity-50">
+            <ImagePlus size={17}/>{autoPhotos?.running?'자동 등록 중':'전체 선수 사진 자동 등록'}
+          </button>
+          <button onClick={()=>void load()} disabled={busy}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 hover:bg-slate-800">
+            <RefreshCw size={16}/>새로고침
+          </button>
+        </div>
       </header>
       {user && !user.isAdmin && <p className="rounded-lg border border-red-600 bg-red-950 p-4">관리자 권한이 필요합니다.</p>}
+      {autoPhotos?.startedAt && <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm">
+        <strong className="text-emerald-300">나무위키 사진 자동 등록 {autoPhotos.running?'진행 중':'작업 종료'}</strong>
+        <p className="mt-2 text-slate-300">
+          저장 {autoPhotos.saved}명 · 찾지 못함 {autoPhotos.skipped}명 · 오류 {autoPhotos.failed}명
+        </p>
+        <p className="mt-1 truncate text-xs text-slate-500">{autoPhotos.last}</p>
+        {autoPhotos.error && <p role="alert" className="mt-2 text-red-300">{autoPhotos.error}</p>}
+        <p className="mt-2 text-xs text-slate-400">사진이 확인되지 않은 선수는 기존 이미지 그대로 남습니다. 작업 종료 후 새로고침하세요.</p>
+      </div>}
       {error && <p role="alert" className="rounded-lg border border-red-700 bg-red-950 p-4 text-red-200">{error}</p>}
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">전체 검색 결과</p><p className="mt-1 text-2xl font-black">{data?.total?.toLocaleString() ?? '-'}</p></div>

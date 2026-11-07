@@ -96,6 +96,21 @@ export default function Market() {
     }catch(e:any){toast.error(e.response?.data?.error||'판매 등록 실패');}
     finally{setBusy(false);}
   };
+  const editPrice=async(l:OwnListing)=>{
+    const raw=window.prompt(l.name+' +'+l.level+'강 새 판매가격 (P)',String(l.listing_price));
+    if(raw===null)return;
+    const amount=Number(raw.trim());
+    if(!Number.isSafeInteger(amount)||amount<1||amount>maxPrice(l.level)){
+      toast.error('판매 가격은 1P부터 '+points(maxPrice(l.level))+'까지 가능합니다.');return;
+    }
+    setBusy(true);
+    try{
+      await axios.patch(API_URL+'/market/listing/'+l.listing_id+'/price',{price:amount},{headers});
+      toast.success('판매 가격을 변경했습니다.');
+      await load();
+    }catch(e:any){toast.error(e.response?.data?.error||'판매 가격 변경 실패');}
+    finally{setBusy(false);}
+  };
   const cancel = async(id:number)=>{
     if(!window.confirm('판매 등록을 취소하시겠습니까?'))return;
     setBusy(true);
@@ -226,6 +241,7 @@ export default function Market() {
           <div className="space-y-2">{activeOwn.map(l=><div key={l.listing_id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-800 p-3 text-sm">
             <span>{l.name} · {l.overall} OVR · +{l.level}강</span>
             <div className="flex items-center gap-3"><strong className="text-amber-300">{points(l.listing_price)}</strong>
+              <button onClick={()=>void editPrice(l)} disabled={busy} className="rounded bg-sky-700 px-3 py-2 disabled:opacity-40">가격 수정</button>
               <button onClick={()=>void cancel(l.listing_id)} disabled={busy} className="flex items-center gap-1 rounded bg-red-800 px-3 py-2 disabled:opacity-40">
                 <Trash2 className="h-4 w-4"/>판매 취소</button></div>
           </div>)}</div>}

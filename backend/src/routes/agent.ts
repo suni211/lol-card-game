@@ -251,7 +251,7 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response) =
       // Generate card based on reward criteria
       const packReward = selectedReward as PackReward;
       let query = `
-        SELECT p.id, p.name, p.team, p.position, p.overall, p.region, p.season, p.salary
+        SELECT p.id, p.name, p.team, p.position, p.overall, p.region, p.season, p.salary, p.image_url AS imageUrl
         FROM players p
         WHERE p.overall >= ?
       `;

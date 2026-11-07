@@ -324,11 +324,28 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     // Create listing
-    const [result]: any = await connection.query(
-      `INSERT INTO market_transactions (player_id, seller_id, card_id, listing_price,enhancement_level)
-      VALUES (?, ?, ?, ?,?)`,
-      [card.player_id, userId, cardId, price,Number(card.level)||0]
-    );
+    // Backward compatibility: existing deployments may be missing the grade
+    // migration. A listing must still be possible; current grade remains
+    // available from user_cards.level until the additive migration is applied.
+    let result: any;
+    try {
+      [result] = await connection.query(
+        `INSERT INTO market_transactions (player_id, seller_id, card_id, listing_price, enhancement_level)
+         VALUES (?, ?, ?, ?, ?)`,
+        [card.player_id, userId, cardId, price, Number(card.level) || 0]
+      );
+    } catch (insertError: any) {
+      if (insertError?.code !== 'ER_BAD_FIELD_ERROR' ||
+          !String(insertError?.sqlMessage || insertError?.message || '').includes('enhancement_level')) {
+        throw insertError;
+      }
+      console.warn('[Market] Missing market_transactions.enhancement_level; using legacy insert. Apply database/migrations/2026_market_favorites_grade.sql.');
+      [result] = await connection.query(
+        `INSERT INTO market_transactions (player_id, seller_id, card_id, listing_price)
+         VALUES (?, ?, ?, ?)`,
+        [card.player_id, userId, cardId, price]
+      );
+    }
 
     const listingId = result.insertId;
 
@@ -337,7 +354,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     let buyerUsername: string | null = null;
 
     await connection.commit();
-    notifyMarket();
+    try { notifyMarket(); } catch(e) { console.error('Market listing notification:',e); }
     await updateMissionProgress(userId,'market_list',1).catch(e=>console.error('Market listing mission:',e));
 
     if (autoSold) {
@@ -354,8 +371,8 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     }
   } catch (error: any) {
     await connection.rollback();
-    console.error('List card error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+    console.error('List card error:', {code:error?.code,sqlMessage:error?.sqlMessage,message:error?.message});
+    res.status(500).json({ success: false, error: '매물 등록 처리 중 오류가 발생했습니다. 서버의 List card error 로그를 확인하세요.' });
   } finally {
     connection.release();
   }

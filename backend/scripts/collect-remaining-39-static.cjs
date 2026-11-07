@@ -13,6 +13,29 @@ const {findNamuFilePhoto}=require('./verified-namu-files.cjs');
 const players=require('./remaining-39-player-portraits.cjs');
 const outDir=path.resolve(__dirname,'../../frontend/public/players');
 const reportPath=path.resolve(__dirname,'../../remaining-39-photo-sources.csv');
+// Independently verified portraits for players lacking a matching wiki file.
+const verifiedPortraits={
+ 'DSG:KryRa':[{
+   page:'https://www.sheepesports.com/en/lol/articles/dsg-kryra-today-could-be-a-reality-check-for-me-which-will-help-i-will-learn-a-lot-from-this/en',
+   url:'https://cdn.sanity.io/images/9rqbl8zs/production/e2031673a364c71ea9879b05fc6dbace01892040-1920x1080.webp'
+ }],
+ 'FUR:Jojo':[{
+   page:'https://x.com/jojooolol',
+   url:'https://pbs.twimg.com/profile_images/1935471276065251328/GTC_zHkt_400x400.jpg'
+ }],
+ 'LNG:Sheer':[{
+   page:'https://lol.fandom.com/wiki/Sheer',
+   url:'https://cdn-api.pandascore.co/images/player/image/51648/fpx_sheer_2025_split_1.png'
+ }],
+ 'LR:Thebausffs':[{
+   page:'https://liquipedia.net/leagueoflegends/Thebausffs',
+   url:'https://liquipedia.net/commons/images/b/ba/Thebausffs_LEC2021.jpg'
+ },{
+   page:'https://www.sheepesports.com/articles/lr-thebausffs-we-didn-t-start-los-ratones-just-to-have-fun-we-made-it-to-win-everything/en',
+   url:'https://cdn.sanity.io/images/9rqbl8zs/production/de9200bdaf520b765543771281ab25b6d1450268-1920x1080.webp'
+ }]
+};
+const exactExternalUrls=new Set(Object.values(verifiedPortraits).flatMap(v=>v.map(x=>x.url)));
 const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
 const sleep=n=>new Promise(r=>setTimeout(r,n));
 const namuHost=u=>{
@@ -23,11 +46,14 @@ const namuHost=u=>{
  }catch{return false;}
 };
 async function download(url){
- if(!leaguepediaHost(url)&&!namuHost(url))throw Error('UNTRUSTED_IMAGE_HOST');
+ if(!leaguepediaHost(url)&&!namuHost(url)&&!exactExternalUrls.has(url))throw Error('UNTRUSTED_IMAGE_HOST');
  const r=await axios.get(url,{responseType:'arraybuffer',
   maxContentLength:5242880,timeout:18000,maxRedirects:2,
   headers:{'User-Agent':'Mozilla/5.0','Referer':
-   leaguepediaHost(url)?'https://lol.fandom.com/':'https://www.namu.moe/'}
+   leaguepediaHost(url)?'https://lol.fandom.com/':
+   url.startsWith('https://liquipedia.net/')?'https://liquipedia.net/':
+   url.startsWith('https://cdn-api.pandascore.co/')?'https://pandascore.co/':
+   'https://www.namu.moe/'}
  });
  const b=Buffer.from(r.data);
  if(b.length>5242880||b.length<1500)throw Error('PHOTO_EMPTY_OR_OVERSIZE');
@@ -65,6 +91,10 @@ async function run(){
    const fallback=await findNamuFilePhoto(p.name,p.team);
    if(!fallback.error)found=fallback;
   }
+  if(found.error&&verifiedPortraits[p.team+':'+p.name]){
+   const options=verifiedPortraits[p.team+':'+p.name];
+   found={page:options[0].page,portrait:{url:options[0].url},alternatives:options};
+  }
   if(found.error){
    missing++;
    console.log('MISSING '+p.team+' / '+p.name+' '+found.error);
@@ -72,7 +102,17 @@ async function run(){
    continue;
   }
   try{
-   const png=await download(found.portrait.url);
+   const attempts=found.alternatives||[{page:found.page,url:found.portrait.url}];
+   let png=null,lastFailure=null;
+   for(const option of attempts){
+    try{
+     png=await download(option.url);
+     found.page=option.page;
+     found.portrait.url=option.url;
+     break;
+    }catch(e){lastFailure=e;}
+   }
+   if(!png)throw lastFailure||new Error('PHOTO_DOWNLOAD_UNAVAILABLE');
    await fs.mkdir(outDir,{recursive:true});
    for(const file of names){
     const destination=path.join(outDir,file);

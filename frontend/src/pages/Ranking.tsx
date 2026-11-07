@@ -93,10 +93,20 @@ export default function Ranking() {
     if(token) void fetchMyRank();
     // Rankings are based on committed competitive matches. Avoid stale tabs.
     const refresh=window.setInterval(()=>{
+      if(document.visibilityState==='visible'){
+        void fetchRankings();
+        if(token) void fetchMyRank();
+      }
+    },20000);
+    const onUpdate=()=>{
       void fetchRankings();
       if(token) void fetchMyRank();
-    },20000);
-    return ()=>window.clearInterval(refresh);
+    };
+    window.addEventListener('lcg:ranking-updated',onUpdate);
+    return ()=>{
+      window.clearInterval(refresh);
+      window.removeEventListener('lcg:ranking-updated',onUpdate);
+    };
   }, [token]);
 
   const fetchTopDecks = async () => {

@@ -269,6 +269,11 @@ function App() {
       });
     });
 
+    // Other players can list, buy and cancel cards while this tab is open.
+    socket.on('market_update', () => {
+      window.dispatchEvent(new Event('lcg:data-updated'));
+    });
+
     // User data updates
     socket.on('user_update', (updatedUser: any) => {
       if (updatedUser) {
@@ -304,6 +309,7 @@ function App() {
       socket.off('auth_error');
       socket.off('online_users');
       socket.off('pointsUpdate');
+      socket.off('market_update');
       socket.off('user_update');
       socket.off('moba_match_notification');
 

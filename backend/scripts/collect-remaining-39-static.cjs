@@ -27,6 +27,10 @@ const verifiedPortraits={
    page:'https://lol.fandom.com/wiki/Sheer',
    url:'https://cdn-api.pandascore.co/images/player/image/51648/fpx_sheer_2025_split_1.png'
  }],
+ 'VKS:zekas':[{
+   page:'https://lolesports.com/en-US/teams/vivo-keyd',
+   url:'https://am-a.akamaihd.net/image?resize=750:&f=http%3A%2F%2Fstatic.lolesports.com%2Fplayers%2F1785142363013_VKS_Zekas-1copy.png'
+ }],
  'LR:Thebausffs':[{
    page:'https://liquipedia.net/leagueoflegends/Thebausffs',
    url:'https://liquipedia.net/commons/images/b/ba/Thebausffs_LEC2021.jpg'
@@ -53,6 +57,7 @@ async function download(url){
    leaguepediaHost(url)?'https://lol.fandom.com/':
    url.startsWith('https://liquipedia.net/')?'https://liquipedia.net/':
    url.startsWith('https://cdn-api.pandascore.co/')?'https://pandascore.co/':
+   url.startsWith('https://am-a.akamaihd.net/')?'https://lolesports.com/':
    'https://www.namu.moe/'}
  });
  const b=Buffer.from(r.data);

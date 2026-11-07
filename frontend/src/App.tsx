@@ -32,6 +32,7 @@ import Fusion from './pages/Fusion';
 import Enhancement from './pages/Enhancement';
 import Achievements from './pages/Achievements';
 import Admin from './pages/Admin';
+import AdminPlayers from './pages/AdminPlayers';
 import Market from './pages/Market';
 import Coupon from './pages/Coupon';
 import AdminCoupon from './pages/AdminCoupon';
@@ -443,6 +444,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/admin/players" element={<ProtectedRoute><AdminPlayers /></ProtectedRoute>} />
           <Route
             path="/market"
             element={

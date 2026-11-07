@@ -115,8 +115,8 @@ export default function AdminPlayers() {
   const saveOverall = async () => {
     if(!selected)return;
     const value = Number(overall);
-    if(!Number.isSafeInteger(value)||value<50||value>120){
-      return toast.error('OVR은 50~120 사이의 정수로 입력해주세요.');
+    if(!Number.isSafeInteger(value)||value<50||value>130){
+      return toast.error('OVR은 50~130 사이의 정수로 입력해주세요.');
     }
     setBusy(true);
     try {

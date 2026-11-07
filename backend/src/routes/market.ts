@@ -3,6 +3,9 @@ import pool from '../config/database';
 import {updateMissionProgress} from '../utils/missionTracker';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { calculateEnhancementBonus } from '../utils/enhancement';
+import { io, emitPointUpdate } from '../server';
+
+const notifyMarket = () => io.emit('market_update', {updatedAt: Date.now()});
 
 const router = express.Router();
 
@@ -334,6 +337,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     let buyerUsername: string | null = null;
 
     await connection.commit();
+    notifyMarket();
     await updateMissionProgress(userId,'market_list',1).catch(e=>console.error('Market listing mission:',e));
 
     if (autoSold) {
@@ -519,6 +523,17 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
     }
 
     await connection.commit();
+    notifyMarket();
+    // Push new balances to both parties, including every logged-in tab.
+    try {
+      const [balances]: any = await pool.query(
+        'SELECT id,points,level,exp FROM users WHERE id IN (?,?)',
+        [userId,listing.seller_id]
+      );
+      for (const balance of balances) {
+        emitPointUpdate(Number(balance.id),Number(balance.points),Number(balance.level),Number(balance.exp));
+      }
+    } catch (syncError) { console.error('Market points push failed:',syncError); }
     await Promise.allSettled([
       updateMissionProgress(userId,'market_buy',1),
       updateMissionProgress(Number(listing.seller_id),'market_sell',1)
@@ -566,6 +581,7 @@ router.patch('/listing/:listingId/price',authMiddleware,async(req:AuthRequest,re
     }
     await conn.query('UPDATE market_transactions SET listing_price=? WHERE id=?',[price,listingId]);
     await conn.commit();
+    notifyMarket();
     return res.json({success:true,data:{listingId,price},message:'매물 가격을 변경했습니다.'});
   }catch(e){try{await conn.rollback();}catch{}console.error('Market price edit:',e);
     return res.status(500).json({success:false,error:'매물 가격 변경 실패'});}
@@ -614,6 +630,7 @@ router.delete('/listing/:listingId', authMiddleware, async (req: AuthRequest, re
     );
 
     await connection.commit();
+    notifyMarket();
 
     res.json({
       success: true,

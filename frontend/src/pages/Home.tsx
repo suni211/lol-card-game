@@ -19,9 +19,9 @@ export default function Home() {
     },
     {
       icon: <Swords className="w-10 h-10" />,
-      title: '전략 대전',
+      title: '경쟁전',
       description: '선수 카드 5명으로 경쟁전 3판 2선승제에 도전하세요',
-      link: '/match-select',
+      link: '/competitive',
       gradient: 'from-red-500 via-rose-600 to-pink-600',
       bgGlow: 'shadow-red-500/50',
     },
@@ -168,9 +168,9 @@ export default function Home() {
                     카드 뽑기
                   </PremiumButton>
                 </Link>
-                <Link to="/match-select">
+                <Link to="/competitive">
                   <PremiumButton variant="primary" size="lg" icon={<Swords className="w-6 h-6" />}>
-                    대전 시작
+                    경쟁전 시작
                   </PremiumButton>
                 </Link>
               </motion.div>

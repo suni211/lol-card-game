@@ -83,7 +83,7 @@ async function run(){
   if(already){
    existing++;
    const old=prior.get(p.team+'|'+p.name);
-   lines.push([p.team,p.name,'EXISTING',old?.[4]||'',old?.[5]||'','']);
+   lines.push([p.team,p.name,'EXISTING',(old?.[4]||'').replace(/File%3AFile%3A/i,'File%3A'),old?.[5]||'','']);
    continue;
   }
   let found=await findLeaguepediaPhoto(p.name,p.team);

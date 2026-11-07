@@ -15,7 +15,7 @@ const GACHA_OPTIONS = {
   premium: { cost: 1000, probabilities: { icon: 0, legendary: 0.22, epic: 3, rare: 18, common: 78.78 } },
   ultra: { cost: 1500, probabilities: { icon: 0, legendary: 0.52, epic: 6, rare: 25, common: 68.48 } },
   mega: { cost: 2000, probabilities: { icon: 0, legendary: 1.02, epic: 10, rare: 30, common: 58.98 } },
-  wr_2026: { cost: 2000, probabilities: { icon: 0, legendary: 0, epic: 0, rare: 0, common: 100 }, special: 'WR_2026' },
+  wr_2026: { cost: 5000, probabilities: { icon: 0, legendary: 0, epic: 0, rare: 0, common: 100 }, special: 'WR_2026' },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5.01, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
 };
 

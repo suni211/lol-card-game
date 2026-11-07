@@ -63,6 +63,13 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
   const [busy,setBusy]=useState(false);
   const [detailError,setDetailError]=useState('');
   const [loadError,setLoadError]=useState('');
+  const [refreshTick,setRefreshTick] = useState(0);
+  useEffect(()=>{
+    const refresh=()=>{ if(document.visibilityState==='visible') setRefreshTick(t=>t+1); };
+    const timer=window.setInterval(refresh,15000);
+    window.addEventListener('lcg:data-updated',refresh);
+    return ()=>{window.clearInterval(timer);window.removeEventListener('lcg:data-updated',refresh);};
+  },[]);
   const choose=(p:Player,nextGrade:number=grade)=>{
     setSelected(p);setGrade(nextGrade);setDetail(null);setDetailError('');
   };
@@ -80,7 +87,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
     if(out[3].status==='fulfilled')setFavorites(out[3].value.data.data||[]);
     if(out[4].status==='fulfilled')setTrades(out[4].value.data.data||[]);
   },[headers]);
-  useEffect(()=>{void refreshMeta();},[refreshMeta]);
+  useEffect(()=>{void refreshMeta();},[refreshMeta,refreshTick]);
   useEffect(()=>{
     let active=true;
     const timer=setTimeout(async()=>{
@@ -95,7 +102,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
       }finally{if(active)setLoading(false);}
     },250);
     return ()=>{active=false;clearTimeout(timer);};
-  },[search,team,season,grade,sort,headers]);
+  },[search,team,season,grade,sort,headers,refreshTick]);
   useEffect(()=>{
     let active=true;
     if(search.trim().length<1){setSuggestions([]);return;}
@@ -115,7 +122,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
       .then(r=>{if(active)setDetail(r.data.data);})
       .catch(e=>{if(active)setDetailError(e.response?.data?.error||'선수 시세를 불러오지 못했습니다.');});
     return ()=>{active=false;};
-  },[selected,grade,headers]);
+  },[selected,grade,headers,refreshTick]);
   const isFavorite=selected&&favorites.some(f=>Number(f.player_id)===Number(selected.player_id||selected.id)&&Number(f.enhancement_level)===grade);
   const favorite=async()=>{
     if(!selected)return;

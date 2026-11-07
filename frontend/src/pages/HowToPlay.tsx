@@ -11,16 +11,16 @@ const sections = [
     content: '포지션에 관계없이 서로 다른 선수 카드 5명이 있으면 AI 매치와 경쟁전을 시작할 수 있습니다. 덱을 편성해두면 해당 카드를 우선 출전시키고, 비어 있는 자리는 보유 카드로 자동 충원됩니다.',
   },
   {
-    title: '3. AI 매치와 경쟁전 · OVR 가위바위보',
+    title: '3. AI 매치와 경쟁전',
     content: 'AI 매치 또는 경쟁전을 선택하고 매 판 가위·바위·보를 냅니다. 서버가 무작위로 상대 선택을 정하며, 먼저 2승을 거두면 최종 승리합니다. 최대 3판 진행합니다.',
   },
   {
-    title: '4. OVR 판정과 보상',
+    title: '4. 승패 판정과 보상',
     content: '출전 선수 5명의 OVR과 카드 강화 수치를 합산해 전력을 정합니다. 가위바위보 승자는 해당 판의 전력에 25% 보너스, 패자는 25% 페널티를 받습니다. 이후 서버 무작위 보정이 더해져 높은 OVR로 불리한 가위바위보 결과도 뒤집을 수 있습니다. 경쟁전은 시리즈 종료 후 랭크 점수에 반영됩니다.',
   },
   {
     title: '5. 캠페인과 무한도전',
-    content: '캠페인과 무한도전은 별도의 게임 모드입니다. OVR 가위바위보 매치는 AI 매치와 경쟁전에만 적용됩니다.',
+    content: '캠페인과 무한도전은 별도의 게임 모드입니다. 가위바위보 방식은 AI 매치와 경쟁전에만 적용됩니다.',
   },
 ] as const;
 
@@ -50,7 +50,7 @@ export default function HowToPlay() {
               <ShieldCheck className="h-4 w-4" /> 덱 편성
             </Link>
             <Link to="/match-select" className="flex items-center justify-center gap-2 rounded-lg bg-cyan-600 p-3 text-center font-semibold text-white hover:bg-cyan-500">
-              <Target className="h-4 w-4" / > OVR 가위바위보 대전
+              <Target className="h-4 w-4" /> 경쟁전
             </Link>
             <Link to="/campaign" className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 p-3 text-center font-semibold text-white hover:bg-indigo-500">
               <Trophy className="h-4 w-4" /> 캠페인

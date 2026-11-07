@@ -1127,6 +1127,10 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     await connection.commit();
+    await Promise.allSettled([
+      updateMissionProgress(userId,'enhance_attempt',1),
+      ...(isSuccess ? [updateMissionProgress(userId,'enhance_success',1)] : [])
+    ]);
 
     res.json({
       success: true,

@@ -11,6 +11,16 @@ const asInt=(value:unknown,min:number,max:number,fallback:number)=>{
 const fmtSeason=(x:unknown)=>typeof x==='string'?x.trim().slice(0,35):'';
 const fmtSearch=(x:unknown)=>typeof x==='string'?x.trim().slice(0,70):'';
 
+router.get('/teams',async(_req,res)=>{
+  try{
+    const [rows]:any=await pool.query(
+      `SELECT team,COUNT(*) AS cards FROM players
+       WHERE season IN ('26 LIVE','26WR','26WRs')
+       GROUP BY team ORDER BY team ASC`);
+    return res.json({success:true,data:rows});
+  }catch(e){console.error('Market teams:',e);return res.status(500).json({success:false,error:'팀컬러 목록 조회 실패'});}
+});
+
 router.get('/popular',async(_req,res)=>{
   try{
     // Count real completed purchases; listing activity is a secondary tie break.

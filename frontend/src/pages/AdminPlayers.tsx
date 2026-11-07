@@ -22,7 +22,7 @@ type Player = {
 };
 type Directory = {
   players: Player[]; page: number; total: number; totalPages: number;
-  limit: number; missingCount: number;
+  limit: number; missingCount: number; missingPhotoCount: number;
 };
 const seasons = ['ALL','26 LIVE','26WR','26WRs'];
 const regions = ['ALL','LCK','LPL','LEC','LCS','CBLOL','LCP','LTA'];
@@ -51,6 +51,7 @@ export default function AdminPlayers() {
   const [season,setSeason] = useState('ALL');
   const [region,setRegion] = useState('ALL');
   const [missingOnly,setMissingOnly] = useState(false);
+  const [missingPhotoOnly,setMissingPhotoOnly] = useState(false);
   const [page,setPage] = useState(1);
   const [selected,setSelected] = useState<Player|null>(null);
   const [overall,setOverall] = useState('90');
@@ -64,13 +65,13 @@ export default function AdminPlayers() {
     setError('');
     try {
       const r = await axios.get(`${API_URL}/admin/player-directory`,{
-        headers,params:{page,limit:50,q:query,season,region,missing:missingOnly?'1':'0'}
+        headers,params:{page,limit:50,q:query,season,region,missing:missingOnly?'1':'0',missingPhoto:missingPhotoOnly?'1':'0'}
       });
       setData(r.data.data);
     } catch(e:any) {
       setError(apiError(e,'전체 선수 목록을 불러오지 못했습니다.'));
     } finally {setLoading(false);}
-  },[headers,page,query,season,region,missingOnly]);
+  },[headers,page,query,season,region,missingOnly,missingPhotoOnly]);
   useEffect(()=>{void load();},[load]);
 
   const choose = (p:Player) => {
@@ -162,9 +163,10 @@ export default function AdminPlayers() {
       </header>
       {user && !user.isAdmin && <p className="rounded-lg border border-red-600 bg-red-950 p-4">관리자 권한이 필요합니다.</p>}
       {error && <p role="alert" className="rounded-lg border border-red-700 bg-red-950 p-4 text-red-200">{error}</p>}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">전체 검색 결과</p><p className="mt-1 text-2xl font-black">{data?.total?.toLocaleString() ?? '-'}</p></div>
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">국적 미등록 카드</p><p className="mt-1 text-2xl font-black text-amber-300">{data?.missingCount?.toLocaleString() ?? '-'}</p></div>
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">사진 미등록 카드</p><p className="mt-1 text-2xl font-black text-rose-300">{data?.missingPhotoCount?.toLocaleString() ?? '-'}</p></div>
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">현재 페이지</p><p className="mt-1 text-2xl font-black">{page} / {data?.totalPages ?? 1}</p></div>
       </div>
       <section className="rounded-xl border border-slate-700 bg-slate-900 p-4">
@@ -189,6 +191,10 @@ export default function AdminPlayers() {
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 px-3 py-3 text-xs">
             <input type="checkbox" checked={missingOnly} onChange={e=>{setMissingOnly(e.target.checked);setPage(1);}}/>
             국적 미등록만
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 px-3 py-3 text-xs">
+            <input type="checkbox" checked={missingPhotoOnly} onChange={e=>{setMissingPhotoOnly(e.target.checked);setPage(1);}}/>
+            사진 미등록만
           </label>
         </div>
       </section>

@@ -381,22 +381,43 @@ router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: A
   try {
     await connection.beginTransaction();
     const [players]:any = await connection.query(
-      'SELECT id,name,team,season,overall FROM players WHERE id=? FOR UPDATE',
+      `SELECT p.id,p.name,p.team,p.season,p.overall,
+              COALESCE(b.boost_amount,0) AS boost_amount
+       FROM players p LEFT JOIN worlds2026_live_boosts b ON b.player_id=p.id
+       WHERE p.id=? FOR UPDATE`,
       [playerId]
     );
     if (!players.length) {
       await connection.rollback();
       return res.status(404).json({success:false,error:'선수 카드를 찾을 수 없습니다.'});
     }
-    await connection.query('UPDATE players SET overall=? WHERE id=?',[overall,playerId]);
+    // For 26WRs the number entered by the admin is the NEW BASE OVR.
+    // The active boost is preserved and added on top of the edited base.
+    const boost = players[0].season === '26WRs'
+      ? Number(players[0].boost_amount || 0) : 0;
+    const finalOverall = overall + boost;
+    if (finalOverall < 50 || finalOverall > 160) {
+      await connection.rollback();
+      return res.status(400).json({success:false,error:'라이브 부스트 포함 최종 OVR은 50~160이어야 합니다.'});
+    }
+    if (players[0].season === '26WRs') {
+      await connection.query(
+        `INSERT INTO worlds2026_live_boosts (player_id,base_overall,boost_amount,updated_by)
+         VALUES (?,?,?,?)
+         ON DUPLICATE KEY UPDATE base_overall=VALUES(base_overall),updated_by=VALUES(updated_by)`,
+        [playerId,overall,boost,req.user!.id]
+      );
+    }
+    await connection.query('UPDATE players SET overall=? WHERE id=?',[finalOverall,playerId]);
     await connection.query(
       'INSERT INTO admin_logs (admin_id,action,target_user_id,details) VALUES (?,?,NULL,?)',
       [req.user!.id,'UPDATE_PLAYER_OVERALL',
        JSON.stringify({playerId,name:players[0].name,team:players[0].team,
-         season:players[0].season,oldOverall:players[0].overall,newOverall:overall})]
+         season:players[0].season,oldOverall:players[0].overall,
+         newBaseOverall:overall,liveBoost:boost,newOverall:finalOverall})]
     );
     await connection.commit();
-    return res.json({success:true,message:`${players[0].name} ${players[0].season} OVR ${overall} 적용 완료`});
+    return res.json({success:true,message:`${players[0].name} ${players[0].season} 기준 OVR ${overall} + 라이브 ${boost} = ${finalOverall} 적용 완료`,data:{overall:finalOverall,baseOverall:overall,boost}});
   } catch(error) {
     await connection.rollback();
     console.error('Admin update player overall error:',error);

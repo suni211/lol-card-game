@@ -202,6 +202,7 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         p.salary,
         p.nationality,
         p.image_url,
+        COALESCE(wlb.boost_amount,0) AS live_boost,
         CASE
           WHEN p.season = 'ICON' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -211,6 +212,7 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         END as tier
       FROM user_cards uc
       JOIN players p ON uc.player_id = p.id
+      LEFT JOIN worlds2026_live_boosts wlb ON wlb.player_id=p.id
       WHERE uc.user_id = ?
       ORDER BY p.overall DESC, p.name ASC`,
       [userId]
@@ -234,6 +236,7 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         nationality: card.nationality,
         image_url: card.image_url,
         imageUrl: card.image_url,
+        live_boost: Number(card.live_boost)||0,
         tier: card.tier
       }
     }));

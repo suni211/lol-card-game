@@ -22,6 +22,7 @@ import Gacha from './pages/Gacha';
 import Collection from './pages/Collection';
 import Deck from './pages/Deck';
 import OvrMatch from './pages/OvrMatch';
+import CompetitivePvP from './pages/CompetitivePvP';
 import Ranking from './pages/Ranking';
 import Missions from './pages/Missions';
 import Trade from './pages/Trade';
@@ -633,7 +634,7 @@ function App() {
           <Route path="/rift-prep" element={<Navigate to="/ai-match" replace />} />
           <Route path="/ovr-match" element={<ProtectedRoute><OvrMatch /></ProtectedRoute>} />
           <Route path="/match-select" element={<Navigate to="/competitive" replace />} />
-          <Route path="/competitive" element={<ProtectedRoute><OvrMatch /></ProtectedRoute>} />
+          <Route path="/competitive" element={<ProtectedRoute><CompetitivePvP /></ProtectedRoute>} />
           <Route path="/ai-match" element={<ProtectedRoute><OvrMatch /></ProtectedRoute>} />
           <Route
             path="/moba-match"

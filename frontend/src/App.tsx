@@ -140,6 +140,64 @@ function App() {
     }
   }, [theme]);
 
+  // Keep the header balance, rating and profile consistent even when a route
+  // updates the database without publishing a Socket.IO event.
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    let active = true;
+    let running = false;
+    let lastFetch = 0;
+    const syncAccount = async (force = false) => {
+      if (!active || running || document.visibilityState === 'hidden') return;
+      if (!force && Date.now() - lastFetch < 3000) return;
+      running = true;
+      lastFetch = Date.now();
+      try {
+        const response = await axios.get('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { t: Date.now() },
+        });
+        if (active && response.data?.success && response.data?.data) {
+          updateUser(response.data.data);
+        }
+      } catch (error) {
+        console.warn('[AccountSync] Failed to refresh account', error);
+      } finally {
+        running = false;
+      }
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') void syncAccount(true); };
+    const onUpdated = () => { void syncAccount(true); };
+    void syncAccount(true);
+    const timer = window.setInterval(() => { void syncAccount(); }, 10000);
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('lcg:data-updated', onUpdated);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('lcg:data-updated', onUpdated);
+    };
+  }, [isAuthenticated, token, updateUser]);
+
+  // After a successful mutation, notify page views and refresh the account.
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    const interceptor = axios.interceptors.response.use((response) => {
+      const method = (response.config?.method || 'get').toLowerCase();
+      const url = String(response.config?.url || '');
+      if (['post', 'put', 'patch', 'delete'].includes(method) &&
+          !url.includes('/auth/login') && !url.includes('/auth/google') &&
+          response.data?.success !== false) {
+        window.dispatchEvent(new Event('lcg:data-updated'));
+      }
+      return response;
+    });
+    return () => { axios.interceptors.response.eject(interceptor); };
+  }, [isAuthenticated, token]);
+
   // Real-time updates via Socket.IO (CENTRALIZED - only one connection per app)
   useEffect(() => {
     if (!isAuthenticated || !token) return;

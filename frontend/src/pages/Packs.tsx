@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import CountryFlag from '../components/CountryFlag';
+import { getPlayerImageUrl } from '../utils/playerImage';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
@@ -23,6 +24,7 @@ interface OpenedCard {
   overall: number;
   season: string;
   nationality?: string | null;
+  imageUrl?: string | null;
   tier: string;
   level: number;
 }
@@ -339,6 +341,12 @@ export default function Packs() {
                     <div className="mb-4 flex justify-center text-gray-700 dark:text-gray-200">
                       <CountryFlag code={bestCard.nationality} size="lg" showCode showName />
                     </div>
+                    <img
+                      src={getPlayerImageUrl(bestCard.name, bestCard.season, bestCard.tier, bestCard.imageUrl || undefined)}
+                      alt={bestCard.name}
+                      className="mx-auto mb-5 h-44 w-full object-contain"
+                      onError={e=>{e.currentTarget.style.display='none';}}
+                    />
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -439,6 +447,12 @@ export default function Packs() {
                       <div className="my-2 flex justify-center text-xs text-gray-700 dark:text-white">
                         <CountryFlag code={card.nationality} size="sm" showCode />
                       </div>
+                      <img
+                        src={getPlayerImageUrl(card.name,card.season,card.tier,card.imageUrl || undefined)}
+                        alt={card.name}
+                        className="my-2 h-24 w-full object-contain"
+                        onError={e=>{e.currentTarget.style.display='none';}}
+                      />
                       <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                         {card.team}
                       </div>

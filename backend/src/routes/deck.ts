@@ -232,6 +232,7 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         salary: card.salary,
         nationality: card.nationality,
         image_url: card.image_url,
+        imageUrl: card.image_url,
         tier: card.tier
       }
     }));

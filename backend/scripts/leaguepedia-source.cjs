@@ -167,7 +167,7 @@ async function findLeaguepediaPhoto(name,team){
   }
   best=choose(indexed,codes,names);
   if(best?.info)return {page:'https://lol.fandom.com/wiki/'+
-    encodeURIComponent(('File:'+best.title).replace(/ /g,'_')),
+    encodeURIComponent((/^File:/i.test(best.title)?best.title:'File:'+best.title).replace(/ /g,'_')),
     portrait:{url:best.info.url,alt:best.title},origin:'leaguepedia'};
   if(best?.error)return {error:best.error,sourceError:false};
   // Try known JPG/WebP and 2025 file title variants even when the index fails.

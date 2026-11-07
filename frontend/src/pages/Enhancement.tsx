@@ -47,7 +47,10 @@ interface EnhancementPreview {
 }
 
 const isMatchingMaterial=(target:Card,material:Card)=>
-  (target.playerId===material.playerId&&target.level===material.level) ||
+  (((target.playerId===material.playerId)||
+    (target.player.name.toLocaleLowerCase()===material.player.name.toLocaleLowerCase() &&
+     target.player.team.toLocaleLowerCase()===material.player.team.toLocaleLowerCase()))
+    && target.level===material.level) ||
   target.player.overall===material.player.overall;
 
 export default function Enhancement() {

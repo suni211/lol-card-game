@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { getSeriesLogo } from '../utils/playerImage';
 import { useAuthStore } from '../store/authStore';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD?'/api':(import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 type Player2026 = {
   id:number; name:string; team:string; position:string; season:string;
   overall:number; base_overall:number; boost_amount:number;
@@ -37,7 +37,7 @@ export default function Worlds2026Admin() {
   ),[players,season,query]);
   const saveBoost=async(p:Player2026)=>{
     const boost=Number(boosts[p.id]);
-    if (!Number.isInteger(boost)||boost<0||boost>15){toast.error('부스트는 0~15 사이 정수입니다.');return;}
+    if (!Number.isInteger(boost)||boost< -15||boost>15){toast.error('부스트는 -15~+15 사이 정수입니다.');return;}
     try {
       setBusy(p.id);
       await axios.post(`${API_URL}/admin/worlds2026/boost/${p.id}`,{
@@ -94,7 +94,7 @@ export default function Worlds2026Admin() {
               <h2 className="font-bold text-lg">{p.name}</h2>
               <p className="text-sm text-slate-400">{p.team} · {p.position}</p>
               <div className="text-2xl font-black text-yellow-300 mt-2">{p.overall} <span className="text-sm font-normal text-slate-400">OVR</span></div>
-              <p className="text-xs text-slate-400">기본 {p.base_overall} / 라이브 +{p.boost_amount}</p>
+              <p className="text-xs text-slate-400">기본 {p.base_overall} / 라이브 {p.boost_amount>0?'+':''}{p.boost_amount}</p>
               <label className="mt-3 block cursor-pointer rounded border border-slate-600 p-2 text-sm text-center">
                 투명 사진 PNG/WebP 업로드
                 <input className="hidden" type="file" accept="image/png,image/webp" disabled={busy===p.id} onChange={e=>{void uploadPhoto(p,e.target.files?.[0]);e.currentTarget.value='';}}/>
@@ -102,8 +102,8 @@ export default function Worlds2026Admin() {
             </div>
           </div>
           {p.season==='26WRs' && <div className="mt-4 grid gap-2">
-            <label className="text-sm font-semibold">라이브 부스트 (+0~15 OVR)</label>
-            <input type="number" min={0} max={15} value={boosts[p.id]??'0'} onChange={e=>setBoosts({...boosts,[p.id]:e.target.value})} className="w-full rounded bg-slate-800 px-3 py-2"/>
+            <label className="text-sm font-semibold">라이브 OVR 변동 (-15~+15)</label>
+            <input type="number" min={-15} max={15} value={boosts[p.id]??'0'} onChange={e=>setBoosts({...boosts,[p.id]:e.target.value})} className="w-full rounded bg-slate-800 px-3 py-2"/>
             <input placeholder="경기 성과 (예: 8강 MVP, 승리 기여)" value={achievements[p.id]||''} onChange={e=>setAchievements({...achievements,[p.id]:e.target.value})} className="w-full rounded bg-slate-800 px-3 py-2"/>
             <input type="url" placeholder="성적 증빙 HTTPS 링크 (선택)" value={evidence[p.id]||''} onChange={e=>setEvidence({...evidence,[p.id]:e.target.value})} className="w-full rounded bg-slate-800 px-3 py-2"/>
             <button disabled={busy===p.id} onClick={()=>void saveBoost(p)} className="rounded-lg bg-amber-500 py-2 font-bold text-slate-950 disabled:opacity-50">라이브 부스트 적용</button>

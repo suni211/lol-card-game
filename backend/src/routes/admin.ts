@@ -318,8 +318,8 @@ router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: A
   const playerId = Number(req.params.id);
   const overall = Number(req.body?.overall);
   if (!Number.isSafeInteger(playerId) || playerId < 1 ||
-      !Number.isSafeInteger(overall) || overall < 1 || overall > 150) {
-    return res.status(400).json({success:false,error:'선수 ID 또는 OVR이 올바르지 않습니다. (1~150)'});
+      !Number.isSafeInteger(overall) || overall < 50 || overall > 120) {
+    return res.status(400).json({success:false,error:'선수 ID 또는 OVR이 올바르지 않습니다. (50~120)'});
   }
   const connection = await pool.getConnection();
   try {

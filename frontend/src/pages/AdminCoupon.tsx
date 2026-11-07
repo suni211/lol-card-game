@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { Plus, Trash2, Users, Clock, CheckCircle, XCircle } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Coupon {
   id: number;
@@ -114,7 +114,7 @@ export default function AdminCoupon() {
         });
         fetchCoupons();
       } else {
-        alert(`오류: ${data.error}`);
+        alert(`쿠폰 생성 실패: ${data.error || `HTTP ${response.status}`}`);
       }
     } catch (error) {
       alert('서버 오류가 발생했습니다');

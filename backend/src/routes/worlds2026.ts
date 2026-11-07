@@ -6,7 +6,7 @@ import path from 'path';
 
 const router = express.Router();
 const SERIES = ['26 LIVE', '26WR', '26WRs'] as const;
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 // Every endpoint enforces is_admin in the database: knowing a JWT is not sufficient.
 router.use(authMiddleware, async (req: AuthRequest, res: Response, next) => {
@@ -105,35 +105,62 @@ router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
   } finally {connection.release();}
 });
 
-// PNG / WebP photographs with transparent backgrounds may be uploaded in the admin UI.
-// Only signature-validated images are written; no arbitrary file paths or remote URL fetch.
-router.post('/photo/:playerId', async (req: AuthRequest, res: Response) => {
-  const {dataUrl} = req.body;
-  if (typeof dataUrl !== 'string' || dataUrl.length > MAX_IMAGE_BYTES*1.4+100 ||
-      !/^data:image\/(png|webp);base64,[A-Za-z0-9+/=]+$/.test(dataUrl)) {
-    return res.status(400).json({success:false,error:'2MB 이하 PNG/WebP 파일만 등록할 수 있습니다.'});
+// Upload binary PNG, JPEG or WebP directly. Base64 JSON previously hit the global
+// 3MB Express body limit and /player-images was not necessarily routed by Nginx.
+const uploadParser = express.raw({
+  type: ['image/png','image/jpeg','image/webp','application/octet-stream'],
+  limit: '6mb'
+});
+router.post('/photo/:playerId', uploadParser, async (req: AuthRequest, res: Response) => {
+  const playerId = Number(req.params.playerId);
+  if (!Number.isSafeInteger(playerId) || playerId < 1) {
+    return res.status(400).json({ success: false, error: '올바른 선수 ID가 아닙니다.' });
   }
-  const [players]:any = await pool.query(
-    "SELECT id FROM players WHERE id=? AND season IN ('26 LIVE','26WR','26WRs')",[req.params.playerId]);
-  if (!players.length) return res.status(404).json({success:false,error:'2026 선수를 찾을 수 없습니다.'});
-  const [,kind,payload] = /^data:image\/(png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl)!;
-  const data=Buffer.from(payload,'base64');
-  const png=data.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
-  const webp=data.subarray(0,4).toString()==='RIFF' && data.subarray(8,12).toString()==='WEBP';
-  if (!data.length || data.length > MAX_IMAGE_BYTES || (kind==='png'&&!png) || (kind==='webp'&&!webp)) {
-    return res.status(400).json({success:false,error:'이미지 형식 또는 크기가 올바르지 않습니다.'});
+  let data: Buffer;
+  if (Buffer.isBuffer(req.body)) {
+    data = req.body;
+  } else if (typeof req.body?.dataUrl === 'string' &&
+      /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(req.body.dataUrl)) {
+    // Compatibility with already-open old admin browser tabs.
+    data = Buffer.from(req.body.dataUrl.split(',')[1], 'base64');
+  } else {
+    return res.status(400).json({
+      success: false, error: 'PNG / JPG / WebP 이미지를 선택해 업로드하세요.'
+    });
   }
+  const png = data.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+  const webp = data.subarray(0,4).toString()==='RIFF' && data.subarray(8,12).toString()==='WEBP';
+  const jpeg = data.length > 4 && data[0]===0xff && data[1]===0xd8 &&
+    data[data.length-2]===0xff && data[data.length-1]===0xd9;
+  if (!data.length || data.length > MAX_IMAGE_BYTES || (!png && !webp && !jpeg)) {
+    return res.status(400).json({
+      success: false, error: '5MB 이하의 올바른 PNG / JPG / WebP 이미지만 등록할 수 있습니다.'
+    });
+  }
+  const extension = png ? 'png' : webp ? 'webp' : 'jpg';
   try {
-    const dir=path.resolve(__dirname,'../../uploads/players');
+    const [players]:any = await pool.query(
+      'SELECT id FROM players WHERE id=?', [playerId]
+    );
+    if (!players.length) return res.status(404).json({
+      success: false, error: '선수를 찾을 수 없습니다.'
+    });
+    const dir = path.resolve(__dirname,'../../uploads/players');
     await fs.mkdir(dir,{recursive:true});
-    const file=`2026-${Number(req.params.playerId)}.${kind}`;
-    await fs.writeFile(path.join(dir,file),data);
-    const imageUrl=`/player-images/${file}`;
-    await pool.query('UPDATE players SET image_url=? WHERE id=?',[imageUrl,req.params.playerId]);
-    res.json({success:true,data:{imageUrl}});
-  } catch(error) {
-    console.error('worlds2026 photo:',error);
-    res.status(500).json({success:false,error:'사진 저장 실패'});
+    const filename = `2026-${playerId}.${extension}`;
+    await fs.writeFile(path.join(dir,filename),data);
+    // /api/ is already reverse proxied to this Express backend by Nginx.
+    // A versioned path busts browser cache after replacing the same image.
+    const imageUrl = `/api/player-images/${filename}?v=${Date.now()}`;
+    await pool.query('UPDATE players SET image_url=? WHERE id=?',[imageUrl,playerId]);
+    return res.json({success:true,data:{imageUrl}});
+  } catch(error:any) {
+    console.error('worlds2026 photo save:',error);
+    return res.status(500).json({
+      success:false,error: error?.code === 'EACCES'
+        ? '사진 저장 폴더 접근 권한이 없습니다. backend/uploads/players 소유권을 확인하세요.'
+        : '사진 저장 실패. 서버 로그를 확인해주세요.'
+    });
   }
 });
 

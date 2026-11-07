@@ -20,8 +20,8 @@ export default function Home() {
     {
       icon: <Swords className="w-10 h-10" />,
       title: '전략 대전',
-      description: '5포지션 덱을 구성하여 실시간 대전에 도전하세요',
-      link: '/match',
+      description: '선수 5명과 함께 OVR 가위바위보 3판 2선승제에 도전하세요',
+      link: '/match-select',
       gradient: 'from-red-500 via-rose-600 to-pink-600',
       bgGlow: 'shadow-red-500/50',
     },
@@ -168,7 +168,7 @@ export default function Home() {
                     카드 뽑기
                   </PremiumButton>
                 </Link>
-                <Link to="/match">
+                <Link to="/match-select">
                   <PremiumButton variant="primary" size="lg" icon={<Swords className="w-6 h-6" />}>
                     대전 시작
                   </PremiumButton>

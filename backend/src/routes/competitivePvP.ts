@@ -1,5 +1,6 @@
 import express, {Response} from 'express';
 import pool from '../config/database';
+import {updateMissionProgress} from '../utils/missionTracker';
 import {authMiddleware, AuthRequest} from '../middleware/auth';
 import {
   isStrategy, ownedTeam, parseRoster, teamScore, Strategy
@@ -213,6 +214,21 @@ router.post('/:matchId/choice',async(req:AuthRequest,res:Response)=>{
     );
     const [latest]:any=await conn.query(GET_MATCH+' WHERE m.id=?',[matchId]);
     await conn.commit();
+    if(choice1 && choice2){
+      const first=Number(match.player1_id),second=Number(match.player2_id);
+      const missionEvents=[
+        updateMissionProgress(first,'rank_round',1),
+        updateMissionProgress(second,'rank_round',1)
+      ];
+      if(status==='COMPLETED'){
+        missionEvents.push(
+          updateMissionProgress(first,'rank_match',1),
+          updateMissionProgress(second,'rank_match',1),
+          updateMissionProgress(Number(winnerId),'rank_win',1)
+        );
+      }
+      await Promise.allSettled(missionEvents);
+    }
     return res.json({success:true,data:summarize(latest[0],userId)});
   }catch(error){
     try{await conn.rollback();}catch{}

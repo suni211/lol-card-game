@@ -26,6 +26,8 @@ echo 'Preparing shop, titles, raid and referral compatibility...'
 sudo mariadb < database/migrations/2026_legacy_menu_compat.sql
 echo 'Restoring deck slot columns...'
 sudo mariadb < database/migrations/2026_deck_compat.sql
+echo 'Preparing OVR rock-paper-scissors best-of-three games...'
+sudo mariadb < database/migrations/2026_ranked_bo3.sql
 echo 'Restoring agent cooldown table...'
 sudo mariadb < database/migrations/2026_agent_usage.sql
 echo 'Preparing verified 2026 real coaching staff and 1-5 star scouting...'
@@ -36,10 +38,9 @@ echo "Creating 2026 Worlds LIVE / WR / WRs cards..."
 sudo mariadb < database/migrations/2026_live_worlds.sql
 echo "Adding all 2026 global tier-1 LIVE teams..."
 sudo mariadb < database/migrations/2026_global_tier1_live.sql
-echo "Applying 2026 player nationalities..."
-sudo mariadb < database/migrations/2026_player_nationalities.sql
-echo "Creating RIFT Manager games and draft tables..."
-sudo mariadb < database/migrations/rift_games.sql
+echo "Preparing manually managed ISO player nationality codes..."
+sudo mariadb < database/migrations/2026_iso_country_codes.sql
+# Retired Rift engine migrations are no longer required.
 echo "Removing historical cards seeded by the original schema..."
 sudo mariadb < database/migrations/2026_fresh_only.sql
 echo "Initializing market prices for the 2026 cards..."

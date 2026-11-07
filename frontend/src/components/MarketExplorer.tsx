@@ -50,6 +50,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
   const [grade,setGrade]=useState(0);
   const [sort,setSort]=useState('overall');
   const [teams,setTeams]=useState<string[]>([]);
+  const [classes,setClasses]=useState<string[]>([]);
   const [players,setPlayers]=useState<Player[]>([]);
   const [popular,setPopular]=useState<Player[]>([]);
   const [favorites,setFavorites]=useState<Favorite[]>([]);
@@ -69,13 +70,15 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
     const out=await Promise.allSettled([
       axios.get(API+'/market/popular',{headers}),
       axios.get(API+'/market/teams',{headers}),
+      axios.get(API+'/market/classes',{headers}),
       axios.get(API+'/market/favorites',{headers}),
       axios.get(API+'/market/transactions',{headers})
     ]);
     if(out[0].status==='fulfilled')setPopular(out[0].value.data.data||[]);
     if(out[1].status==='fulfilled')setTeams((out[1].value.data.data||[]).map((r:any)=>String(r.team)));
-    if(out[2].status==='fulfilled')setFavorites(out[2].value.data.data||[]);
-    if(out[3].status==='fulfilled')setTrades(out[3].value.data.data||[]);
+    if(out[2].status==='fulfilled')setClasses((out[2].value.data.data||[]).map((r:any)=>String(r.season)));
+    if(out[3].status==='fulfilled')setFavorites(out[3].value.data.data||[]);
+    if(out[4].status==='fulfilled')setTrades(out[4].value.data.data||[]);
   },[headers]);
   useEffect(()=>{void refreshMeta();},[refreshMeta]);
   useEffect(()=>{
@@ -188,7 +191,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
           <div className="grid grid-cols-2 gap-2 text-sm">
             <label className="space-y-1"><span className="text-xs text-slate-400">클래스</span>
               <select value={season} onChange={e=>setSeason(e.target.value)} className="w-full rounded border border-slate-700 bg-slate-950 p-2">
-                <option value="">전체 클래스</option><option value="26 LIVE">26 LIVE</option><option value="26WR">26WR</option><option value="26WRs">26WRs</option>
+                <option value="">전체 클래스</option>{classes.map(c=><option key={c} value={c}>{c}</option>)}
               </select>
             </label>
             <label className="space-y-1"><span className="text-xs text-slate-400">팀컬러</span>

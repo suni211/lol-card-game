@@ -20,7 +20,7 @@ export default function Home() {
     {
       icon: <Swords className="w-10 h-10" />,
       title: '전략 대전',
-      description: '선수 5명과 함께 OVR 가위바위보 3판 2선승제에 도전하세요',
+      description: '선수 카드 5명으로 경쟁전 3판 2선승제에 도전하세요',
       link: '/match-select',
       gradient: 'from-red-500 via-rose-600 to-pink-600',
       bgGlow: 'shadow-red-500/50',

@@ -1,0 +1,32 @@
+name: Verify game builds
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/src/**'
+      - 'frontend/src/**'
+      - 'backend/package.json'
+      - 'frontend/package.json'
+      - '.github/workflows/verify-game-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify backend TypeScript
+        working-directory: backend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Verify frontend React
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build

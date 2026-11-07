@@ -8,9 +8,11 @@ const path=require('node:path');
 const crypto=require('node:crypto');
 const axios=require('axios');
 const mysql=require('mysql2/promise');
+const {findLeaguepediaPhoto,allowed:leaguepediaImageHost}=require('./leaguepedia-source.cjs');
 require('dotenv').config({path:path.resolve(__dirname,'../.env')});
 const APPLY=process.argv.includes('--apply');
 const OVERWRITE=process.argv.includes('--overwrite');
+const NAMU_FALLBACK=process.argv.includes('--namu-fallback');
 const maxFlag=process.argv.find(a=>a.startsWith('--limit='));
 const LIMIT=maxFlag?Math.max(1,Math.min(1000,parseInt(maxFlag.split('=')[1],10)||1000)):1000;
 const clean=t=>String(t||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9\p{L}\p{N}]/gu,'');
@@ -103,9 +105,9 @@ async function findPhoto(name,team) {
 }
 async function downloadPhoto(source){
   const parsed=new URL(source);
-  if(!photoHosts.has(parsed.hostname)||parsed.protocol!=='https:')throw Error('BAD_IMAGE_HOST');
+  if(!((photoHosts.has(parsed.hostname)&&parsed.protocol==='https:')||leaguepediaImageHost(source)))throw Error('BAD_IMAGE_HOST');
   const response=await axios.get(source,{responseType:'arraybuffer',maxContentLength:5*1024*1024,
-    timeout:16000,maxRedirects:0,headers:{'User-Agent':UA,'Referer':'https://d.namu.moe/'},
+    timeout:16000,maxRedirects:2,headers:{'User-Agent':UA,'Referer':leaguepediaImageHost(source)?'https://lol.fandom.com/':'https://d.namu.moe/'},
     validateStatus:s=>s===200});
   const data=Buffer.from(response.data);
   const ext=fileExt(data);
@@ -118,7 +120,7 @@ async function run(){
     user:process.env.DB_USER||'root',password:process.env.DB_PASSWORD||'',
     database:process.env.DB_NAME||'lol_card_game'
   });
-  let found=0,existing=0,missing=0,errors=0,checked=0;
+  let found=0,existing=0,missing=0,errors=0,checked=0,sourceFailures=0;
   const report=[['player','team','position','status','page','photo_url','note']];
   const destination=path.resolve(__dirname,'../uploads/players');
   try{
@@ -148,17 +150,27 @@ async function run(){
         }
         continue;
       }
-      const match=await findPhoto(p.name,p.team);
+      let match=await findLeaguepediaPhoto(p.name,p.team);
+      if(match.error&&NAMU_FALLBACK&&!match.sourceError){
+        const fallback=await findPhoto(p.name,p.team);
+        if(!fallback.error)match={...fallback,origin:'namuwiki'};
+      }
       if(match.error){
         missing++;
+        sourceFailures=match.sourceError?sourceFailures+1:0;
         report.push([p.name,p.team,p.position,'SKIP','','',match.error]);
         console.log('SKIP '+p.name+' / '+p.team+': '+match.error);
+        if(sourceFailures>=3){
+          console.log('STOP: portrait source unavailable for 3 consecutive players; avoid further failed requests.');
+          break;
+        }
         continue;
       }
+      sourceFailures=0;
       try{
         const result=await downloadPhoto(match.portrait.url);
         const digest=crypto.createHash('sha256').update(result.data).digest('hex').slice(0,16);
-        const filename='namu-'+p.id+'-'+digest+'.'+result.ext;
+        const filename=(match.origin==='leaguepedia'?'leaguepedia-':'namu-')+p.id+'-'+digest+'.'+result.ext;
         const imageUrl='/api/player-images/'+filename;
         if(APPLY){
           await fs.mkdir(destination,{recursive:true});
@@ -182,9 +194,10 @@ async function run(){
       await pause(500);
     }
   }finally{await db.end();}
-  const file=path.resolve(__dirname,'../../namuwiki-photo-report.csv');
+  const file=path.resolve(__dirname,'../../player-photo-report.csv');
   await fs.writeFile(file,report.map(row=>row.map(csv).join(',')).join('\n')+'\n','utf8');
   console.log(JSON.stringify({mode:APPLY?'APPLY':'DRY_RUN',found,existing,missing,errors,report:file},null,2));
   if(!APPLY)console.log('No database changes. Use --apply to save portraits.');
+  console.log('Namu mirror fallback disabled by default due to repeated 404; use --namu-fallback to opt in.');
 }
 run().catch(error=>{console.error('Photo import failed:',error);process.exitCode=1;});

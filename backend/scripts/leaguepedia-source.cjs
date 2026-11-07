@@ -16,6 +16,18 @@ const teamAliases={
  'NAVI':['NAVI'], 'FUR':['FUR'], 'PAIN':['PNG','PAIN'],
  'LR':['LR'], 'VKS':['VKS'], 'SR':['SR']
 };
+// Historical team aliases are limited to players whose team history was
+// verified; a past-team headshot is still the same person.
+const teamByIdentity={
+ 'C9:Tactical':['C9','LG','IMT'],
+ 'DIG:FBI':['DIG','100T','NRG'],
+ 'KT:Effort':['KT','KT.C','BRO'],
+ 'LNG:Sheer':['LNG','FPX','JDG'],
+ 'SEN:Huhi':['SEN','DSG','NRG'],
+ 'DSG:Calime':['DSG','PLS'],
+ 'DSG:KryRa':['DSG','PLS'],
+ 'DSG:Sajed':['DSG','PLS','DZ']
+};
 const aliasByIdentity={
  'NAVI:Hans SamD':['SamD','Hans SamD'],
  'DIG:IgNar':['IgNar','Ignar'],
@@ -25,7 +37,12 @@ const aliasByIdentity={
  'VKS:zekas':['zekas','Zekas'],
  'VKS:scamber':['scamber','Scamber'],
  'FX:cody':['cody','Cody'],
- 'LGD:ycx':['ycx','Ycx']
+ 'LGD:ycx':['ycx','Ycx'],
+ 'DCG:POP9':['Pop9','POP9','665','Lost'],
+ 'DSG:Calime':['Callme','Calime'],
+ 'DSG:Sajed':['Sajed','sajed'],
+ 'VKS:zekas':['zekas','Zekas','ZekaS'],
+ 'SEN:Huhi':['huhi','Huhi']
 };
 function allowed(value){
  try{
@@ -118,7 +135,7 @@ async function allImages(codes,names){
  return found;
 }
 async function findLeaguepediaPhoto(name,team){
- const codes=(teamAliases[team]||[team]).slice(0,3);
+ const codes=(teamByIdentity[team+':'+name]||teamAliases[team]||[team]).slice(0,4);
  const names=(aliasByIdentity[team+':'+name]||[name]).slice(0,3);
  let files=[],failure='';
  // API exact query is already verified to work for most existing 2026 photos.

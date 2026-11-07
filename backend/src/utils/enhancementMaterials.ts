@@ -8,8 +8,12 @@ export function enhancementMaterialMatch(target:{
     || (!!target.player_name&&!!material.player_name&&!!target.team&&!!material.team
       && String(target.player_name).normalize('NFKC').toLowerCase()===String(material.player_name).normalize('NFKC').toLowerCase()
       && String(target.team).normalize('NFKC').toLowerCase()===String(material.team).normalize('NFKC').toLowerCase());
+  // Compare displayed OVR after enhancement, not the unenhanced player OVR.
+  // Different players, seasons and card identities are valid when final OVR matches.
+  const targetOvr = Number(target.overall) + Math.max(0, Math.min(10, Number(target.level) || 0));
+  const materialOvr = Number(material.overall) + Math.max(0, Math.min(10, Number(material.level) || 0));
   return (sameIdentity && Number(target.level)===Number(material.level))
-    || Number(target.overall)===Number(material.overall);
+    || targetOvr===materialOvr;
 }
 export function enhancementMaterialSlots(targetLevel:number,validCount:number):number{
   const each=Number(targetLevel)<4?1.5:1;

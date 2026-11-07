@@ -46,6 +46,7 @@ export default function AdminPlayers() {
   const [overall,setOverall] = useState('90');
   const [nationality,setNationality] = useState('');
   const [applyAll,setApplyAll] = useState(true);
+  const [photoAll,setPhotoAll] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,7 +108,7 @@ export default function AdminPlayers() {
     }
     setBusy(true);
     try {
-      const r=await axios.post(`${API_URL}/admin/worlds2026/photo/${selected.id}`,file,{
+      const r=await axios.post(`${API_URL}/admin/worlds2026/photo/${selected.id}?all=${photoAll?'1':'0'}`,file,{
         headers:{...headers,'Content-Type':file.type}
       });
       const imageUrl = String(r.data.data?.imageUrl || '');
@@ -240,6 +241,10 @@ export default function AdminPlayers() {
                   <ImagePlus size={20}/>PNG / JPG / WebP (최대 5MB)
                   <input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy}
                     className="sr-only" onChange={e=>{void upload(e.target.files?.[0]);e.target.value='';}}/>
+                </label>
+                <label className="mt-2 flex items-center gap-2 text-xs text-slate-300">
+                  <input type="checkbox" checked={photoAll} onChange={e=>setPhotoAll(e.target.checked)}/>
+                  같은 선수·팀·포지션의 모든 2026 시즌에 사진 적용
                 </label>
                 <p className="mt-2 text-xs text-slate-400">저장 후 선수 카드 이미지가 갱신됩니다. 서버 uploads/players 쓰기 권한이 필요합니다.</p>
               </div>

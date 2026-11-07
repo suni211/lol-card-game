@@ -26,7 +26,7 @@ export function getPlayerImageUrl(
   imageUrl?: string
 ): string {
   // Uploaded 2026 portraits served from backend; else try local cut-out portrait.
-  if (imageUrl && /^\/(player-images|players)\/[\w\p{L}. _-]+\.(png|webp)$/u.test(imageUrl)) {
+  if (imageUrl && /^\/(?:api\/player-images|player-images|players)\/[\w\p{L}. _-]+\.(?:png|webp|jpg|jpeg)(?:\?v=\d+)?$/u.test(imageUrl)) {
     return imageUrl;
   }
   const cleanName = playerName.trim().replace(/[^\p{L}\p{N} _-]/gu, '');

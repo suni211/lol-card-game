@@ -26,7 +26,8 @@ const teamByIdentity={
  'SEN:Huhi':['SEN','DSG','NRG'],
  'DSG:Calime':['DSG','PLS'],
  'DSG:KryRa':['DSG','PLS'],
- 'DSG:Sajed':['DSG','PLS','DZ']
+ 'DSG:Sajed':['DSG','PLS','DZ'],
+ 'VKS:zekas':['VKS.A','VKS','STE','SCCP']
 };
 const aliasByIdentity={
  'NAVI:Hans SamD':['SamD','Hans SamD'],
@@ -74,7 +75,7 @@ function imgScore(name,code,gamer){
  if(!whole.startsWith(prefix))return -1;
  const tail=whole.slice(prefix.length);
  // Exclude nicknames prefixed by other players (e.g. "FBI" and "FBIA").
- if(tail&&!/^(?:20(?:2[0-6]|1\d)|split|lck|worlds|msi|cup|season|player|profile|portrait|photo|image|$)/.test(tail))
+ if(tail&&!/^(?:20(?:2[0-6]|1\d)|split|lck|worlds|msi|cup|season|player|profile|portrait|photo|image|cd|lta|$)/.test(tail))
    return -1;
  if(/logo|icon|teamlogo|banner|flag|signature|placeholder|staff|coach/i.test(tail))return -1;
  const year=/2026/.test(tail)?200:/2025/.test(tail)?150:/2024/.test(tail)?110:

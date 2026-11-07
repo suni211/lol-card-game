@@ -579,6 +579,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         uc.user_id,
         uc.player_id,
         uc.level,
+        uc.is_locked,
         uc.created_at,
         p.id as player_id,
         p.name,
@@ -627,6 +628,7 @@ router.get('/my-cards', authMiddleware, async (req: AuthRequest, res) => {
         userId: card.user_id,
         playerId: card.player_id,
         level: card.level,
+        isLocked: Boolean(card.is_locked),
         createdAt: card.created_at,
         player: {
           id: card.player_id,

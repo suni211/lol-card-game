@@ -79,9 +79,9 @@ router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
     const row=rows[0];
     const base=Number(row.base_overall ?? row.overall);
     const nextOverall=base+boost;
-    if (nextOverall > 120) {
+    if (nextOverall > 130) {
       await connection.rollback();
-      return res.status(400).json({success:false,error:'최종 OVR은 120 이하여야 합니다.'});
+      return res.status(400).json({success:false,error:'최종 OVR은 130 이하여야 합니다.'});
     }
     await connection.query(
       `INSERT INTO worlds2026_live_boosts

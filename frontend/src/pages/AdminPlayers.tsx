@@ -289,7 +289,7 @@ export default function AdminPlayers() {
               <div>
                 <label htmlFor="edit-ovr" className="mb-1 block text-sm font-bold">카드 OVR (해당 시즌만 변경)</label>
                 <div className="flex gap-2">
-                  <input id="edit-ovr" type="number" min={50} max={120} step={1} value={overall}
+                  <input id="edit-ovr" type="number" min={50} max={130} step={1} value={overall}
                     onChange={e=>setOverall(e.target.value)}
                     className="w-full min-w-0 rounded border border-slate-600 bg-slate-800 p-3"/>
                   <button disabled={busy} onClick={()=>void saveOverall()}

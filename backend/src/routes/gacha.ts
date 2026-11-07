@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { updateMissionProgress } from '../utils/missionTracker';
+import {enhancementMaterialMatch,enhancementMaterialSlots} from '../utils/enhancementMaterials';
 import { checkAndUpdateAchievements } from '../utils/achievementTracker';
 import { emitPointUpdate } from '../server';
 
@@ -812,7 +813,9 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
       return res.status(400).json({ success: false, error: 'Target card and material cards array are required' });
     }
 
-    if (materialCardIds.length === 0 || materialCardIds.length > 3) {
+    if (materialCardIds.length === 0 || materialCardIds.length > 3 ||
+        new Set(materialCardIds).size !== materialCardIds.length ||
+        materialCardIds.includes(targetCardId)) {
       return res.status(400).json({ success: false, error: 'Must provide 1-3 material cards' });
     }
 
@@ -854,6 +857,9 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     if (targetCard.level >= MAX_ENHANCEMENT_LEVEL) {
       return res.status(400).json({ success: false, error: 'Card is already at maximum enhancement level' });
     }
+    if(materialCards.some((c:any)=>!enhancementMaterialMatch(targetCard,c))){
+      return res.status(400).json({success:false,error:'같은 선수와 강화등급 카드 또는 동일 OVR 카드만 재료로 사용할 수 있습니다.'});
+    }
 
     const baseRate = BASE_ENHANCEMENT_RATES[targetCard.level];
     const materialPlayers = materialCards.map((c: any) => ({ tier: c.tier, overall: c.overall }));
@@ -875,6 +881,9 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
         successRate,
         cost,
         ovrDowngrade,
+        filledSlots: enhancementMaterialSlots(targetCard.level,materialCards.length),
+        totalSlots: 3,
+        slotsPerCard: targetCard.level < 4 ? 1.5 : 1,
         materialCards: materialCards.map((c: any) => ({
           id: c.id,
           isSamePlayer: targetCard.player_id === c.player_id,
@@ -907,7 +916,9 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'Target card and material cards array are required' });
     }
 
-    if (materialCardIds.length === 0 || materialCardIds.length > 3) {
+    if (materialCardIds.length === 0 || materialCardIds.length > 3 ||
+        new Set(materialCardIds).size !== materialCardIds.length ||
+        materialCardIds.includes(targetCardId)) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Must provide 1-3 material cards' });
     }
@@ -979,6 +990,11 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     if (targetCard.level >= MAX_ENHANCEMENT_LEVEL) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Card is already at maximum enhancement level' });
+    }
+
+    if(materialCards.some((c:any)=>!enhancementMaterialMatch(targetCard,c))){
+      await connection.rollback();
+      return res.status(400).json({success:false,error:'같은 선수와 강화등급 카드 또는 동일 OVR 카드만 재료로 사용할 수 있습니다.'});
     }
 
     // Calculate cost
@@ -1141,6 +1157,8 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         cost,
         baseRate,
         successRate,
+        filledSlots: enhancementMaterialSlots(targetCard.level,materialCards.length),
+        totalSlots: 3,
         playerName: targetCard.player_name,
         materialCardNames: materialCards.map((c: any) => c.player_name),
         levelDowngraded,

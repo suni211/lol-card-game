@@ -13,7 +13,7 @@ import {
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-import { getPlayerImageUrl } from '../utils/playerImage';
+import { getPlayerImageUrl, getPlayerPlaceholder } from '../utils/playerImage';
 import { calculateEnhancementBonus, getPositionColor } from '../utils/cardHelpers';
 import { getActiveCoachBuff, calculateTotalOverall } from '../utils/coachBuffs';
 
@@ -27,6 +27,8 @@ interface Player {
   overall: number;
   region: string;
   season?: string;
+  imageUrl?: string | null;
+  image_url?: string | null;
   salary?: number;
   trait1?: string;
 }
@@ -506,11 +508,11 @@ export default function Agent() {
                       >
                         <div className="relative aspect-[3/4] bg-gray-800">
                           <img
-                            src={getPlayerImageUrl(card.player.name, card.player.season)}
+                            src={getPlayerImageUrl(card.player.name, card.player.season, undefined, card.player.imageUrl || card.player.image_url || undefined)}
                             alt={card.player.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              e.currentTarget.src = '/placeholder-player.png';
+                              if (!e.currentTarget.src.endsWith(getPlayerPlaceholder())) e.currentTarget.src = getPlayerPlaceholder();
                             }}
                           />
 
@@ -634,11 +636,11 @@ export default function Agent() {
                     <p className="text-white text-lg mb-2">보상</p>
                     <div className="relative aspect-[3/4] max-w-[200px] mx-auto rounded-lg overflow-hidden">
                       <img
-                        src={getPlayerImageUrl(rewardData.card.player.name, rewardData.card.player.season)}
+                        src={getPlayerImageUrl(rewardData.card.player.name, rewardData.card.player.season, undefined, rewardData.card.player.imageUrl || rewardData.card.player.image_url || undefined)}
                         alt={rewardData.card.player.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = '/placeholder-player.png';
+                          if (!e.currentTarget.src.endsWith(getPlayerPlaceholder())) e.currentTarget.src = getPlayerPlaceholder();
                         }}
                       />
                       <div className="absolute top-2 left-2 bg-black/80 rounded-full px-3 py-1">

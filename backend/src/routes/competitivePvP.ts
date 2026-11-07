@@ -1,5 +1,6 @@
 import express, {Response} from 'express';
 import pool from '../config/database';
+import {io,emitPointUpdate} from '../server';
 import {updateMissionProgress} from '../utils/missionTracker';
 import {authMiddleware, AuthRequest} from '../middleware/auth';
 import {
@@ -214,6 +215,21 @@ router.post('/:matchId/choice',async(req:AuthRequest,res:Response)=>{
     );
     const [latest]:any=await conn.query(GET_MATCH+' WHERE m.id=?',[matchId]);
     await conn.commit();
+    if (status === 'COMPLETED') {
+      // Publish the committed PvP rewards and rankings to online users.
+      try {
+        const participants=[Number(match.player1_id),Number(match.player2_id)];
+        const [updated]:any=await pool.query(
+          'SELECT id,points,level,exp FROM users WHERE id IN (?,?)',participants
+        );
+        for (const user of updated) {
+          emitPointUpdate(Number(user.id),Number(user.points),Number(user.level),Number(user.exp));
+        }
+        io.emit('ranking_update',{updatedAt:Date.now()});
+      } catch (syncError) {
+        console.error('Competitive reward push:',syncError);
+      }
+    }
     if(choice1 && choice2){
       const first=Number(match.player1_id),second=Number(match.player2_id);
       const missionEvents=[

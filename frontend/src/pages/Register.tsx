@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -11,11 +12,13 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 export default function Register() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const [referralCode,setReferralCode] = useState(() => new URLSearchParams(window.location.search).get('ref') || '');
 
   const handleGoogleSignIn = async (response: any) => {
     try {
       const result = await axios.post(`${API_URL}/auth/google`, {
         credential: response.credential,
+        referralCode: referralCode.trim().toUpperCase() || undefined,
       });
 
       if (result.data.success) {
@@ -80,7 +83,7 @@ export default function Register() {
                 🎁 신규 가입 혜택!
               </p>
               <div className="space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
-                <p>✨ 10,000 포인트 지급</p>
+                <p>✨ 기본 10,000P · 초대 코드 사용 시 11,000P</p>
                 <p>🎴 환영 카드팩 5개 지급</p>
                 <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
                   (환영 카드팩은 가챠 페이지에서 확인 가능)
@@ -89,6 +92,7 @@ export default function Register() {
             </div>
           </div>
 
+          <div className="mb-5"><label htmlFor="referral-code" className="block mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">친구 초대 코드 (선택)</label><input id="referral-code" type="text" maxLength={32} autoComplete="off" placeholder="LCG00000001" value={referralCode} onChange={e=>setReferralCode(e.target.value.toUpperCase().replace(/\s/g,''))} className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 text-gray-900 dark:text-white"/><p className="mt-1 text-xs text-gray-600 dark:text-gray-400">신규 Google 가입 시 추천인과 가입자 모두 1,000P 추가 지급</p></div>
           {/* Google Sign-In Button */}
           <div className="mb-6">
             <GoogleSignInButton onCredential={handleGoogleSignIn} text="signup_with" />

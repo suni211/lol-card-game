@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/database';
+import {updateMissionProgress} from '../utils/missionTracker';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { calculateEnhancementSynergy, getEnhancementSynergyDescription } from '../utils/enhancementSynergy';
 
@@ -491,7 +492,7 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
     );
 
     await connection.commit();
-
+    await updateMissionProgress(userId,'deck_save',1).catch(e=>console.error('Deck mission:',e));
     res.json({ success: true, data: { deckId } });
   } catch (error: any) {
     await connection.rollback();

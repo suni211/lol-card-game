@@ -155,4 +155,19 @@ WHERE NOT EXISTS (SELECT 1 FROM missions WHERE type='MONTHLY' AND title='월간 
 INSERT INTO missions (title,description,type,mission_type,requirement,reward,is_active)
 SELECT '월간 강화 성공왕','강화를 10번 성공하세요','MONTHLY','enhance_success',10,3400,1
 WHERE NOT EXISTS (SELECT 1 FROM missions WHERE type='MONTHLY' AND title='월간 강화 성공왕');
+INSERT INTO missions (title,description,type,mission_type,requirement,reward,is_active)
+SELECT '친구와 카드 교환','다른 유저와 카드 교환을 1회 완료하세요','DAILY','trade_complete',1,190,1
+WHERE NOT EXISTS (SELECT 1 FROM missions WHERE type='DAILY' AND title='친구와 카드 교환');
+INSERT INTO missions (title,description,type,mission_type,requirement,reward,is_active)
+SELECT '주간 카드 판매왕','거래소에서 카드 3장 판매를 완료하세요','WEEKLY','market_sell',3,750,1
+WHERE NOT EXISTS (SELECT 1 FROM missions WHERE type='WEEKLY' AND title='주간 카드 판매왕');
+INSERT INTO missions (title,description,type,mission_type,requirement,reward,is_active)
+SELECT '주간 카드 교환','유저 간 카드 교환을 3회 완료하세요','WEEKLY','trade_complete',3,650,1
+WHERE NOT EXISTS (SELECT 1 FROM missions WHERE type='WEEKLY' AND title='주간 카드 교환');
+INSERT INTO missions (title,description,type,mission_type,requirement,reward,is_active)
+SELECT '월간 카드 판매왕','거래소에서 카드 10장 판매를 완료하세요','MONTHLY','market_sell',10,2300,1
+WHERE NOT EXISTS (SELECT 1 FROM missions WHERE type='MONTHLY' AND title='월간 카드 판매왕');
+INSERT INTO missions (title,description,type,mission_type,requirement,reward,is_active)
+SELECT '월간 트레이더','다른 유저와 카드 교환을 10회 완료하세요','MONTHLY','trade_complete',10,2600,1
+WHERE NOT EXISTS (SELECT 1 FROM missions WHERE type='MONTHLY' AND title='월간 트레이더');
 SELECT type,COUNT(*) AS enabled_missions FROM missions WHERE is_active=1 GROUP BY type ORDER BY FIELD(type,'DAILY','WEEKLY','MONTHLY');

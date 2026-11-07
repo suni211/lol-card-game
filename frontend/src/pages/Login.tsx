@@ -19,11 +19,13 @@ export default function Login() {
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [referralCode,setReferralCode] = useState(() => new URLSearchParams(window.location.search).get('ref') || '');
 
   const handleGoogleSignIn = async (response: any) => {
     try {
       const result = await axios.post(`${API_URL}/auth/google`, {
         credential: response.credential,
+        referralCode: referralCode.trim().toUpperCase() || undefined,
       });
 
       if (result.data.success) {
@@ -185,6 +187,7 @@ export default function Login() {
             <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
           </div>
 
+          <div className="mb-5"><label htmlFor="login-referral" className="block mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">친구 초대 코드 (신규 Google 가입자만)</label><input id="login-referral" type="text" maxLength={32} value={referralCode} placeholder="LCG00000001" onChange={e=>setReferralCode(e.target.value.toUpperCase().replace(/\s/g,''))} className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"/><p className="text-xs mt-1 text-gray-500">새 계정 가입 시 양쪽에 1,000P 지급</p></div>
           {/* Google Sign-In Button */}
           <div className="mb-6">
             <GoogleSignInButton onCredential={handleGoogleSignIn} text="signin_with" />

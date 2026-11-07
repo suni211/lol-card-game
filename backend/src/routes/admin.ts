@@ -345,7 +345,7 @@ router.put('/player-nationality/:id', authMiddleware, adminMiddleware, async (re
 router.get('/missing-nationalities', authMiddleware, adminMiddleware, async (_req, res) => {
   try {
     const [players]:any=await pool.query(
-      `SELECT id,name,team,season,position FROM players
+      `SELECT id,name,team,season,position,overall,region,nationality FROM players
        WHERE nationality IS NULL OR nationality=''
        ORDER BY region,team,name,season LIMIT 500`
     );

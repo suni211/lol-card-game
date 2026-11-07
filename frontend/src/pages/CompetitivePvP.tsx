@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Trophy, Users, RefreshCw, ShieldCheck, Swords } from 'lucide-react';
@@ -37,6 +37,7 @@ export default function CompetitivePvP() {
   const {user,token,updateUser} = useAuthStore();
   const headers = useMemo(()=>({Authorization:`Bearer ${token}`}),[token]);
   const [queue,setQueue] = useState<QueueData>({status:'NONE',match:null});
+  const lastMatchId=useRef<number|null>(null);
   const [history,setHistory] = useState<Match[]>([]);
   const [deckSlot,setDeckSlot] = useState(1);
   const [busy,setBusy] = useState(false);
@@ -44,8 +45,12 @@ export default function CompetitivePvP() {
   const [error,setError] = useState('');
   const refresh = useCallback(async()=>{
     try {
-      const r=await axios.get(`${API_URL}/competitive-pvp/status`,{headers});
-      setQueue(r.data.data as QueueData);
+      const r=await axios.get(`${API_URL}/competitive-pvp/status`,{
+        headers,params:{matchId:lastMatchId.current||undefined}
+      });
+      const next=r.data.data as QueueData;
+      if(next.match)lastMatchId.current=next.match.id;
+      setQueue(next);
       setError('');
     }catch(e:any){setError(e.response?.data?.error||'경쟁전 상태를 확인할 수 없습니다.');}
     finally{setLoading(false);}
@@ -67,6 +72,7 @@ export default function CompetitivePvP() {
     try{
       const r=await axios.post(`${API_URL}/competitive-pvp/queue`,{deckSlot},{headers});
       setQueue(r.data.data);
+      if(r.data.data?.match)lastMatchId.current=r.data.data.match.id;
       toast.success(r.data.data?.status==='WAITING'?'상대 유저를 찾는 중입니다.':'상대 유저 매칭 완료!');
     }catch(e:any){toast.error(e.response?.data?.error||'매칭 신청 실패');}
     finally{setBusy(false);}
@@ -75,6 +81,7 @@ export default function CompetitivePvP() {
     setBusy(true);
     try{
       await axios.delete(`${API_URL}/competitive-pvp/queue`,{headers});
+      lastMatchId.current=null;
       setQueue({status:'NONE',match:null});
       toast('매칭을 취소했습니다.');
     }catch(e:any){toast.error(e.response?.data?.error||'매칭 취소 실패');}
@@ -88,6 +95,7 @@ export default function CompetitivePvP() {
       const r=await axios.post(`${API_URL}/competitive-pvp/${match.id}/choice`,
         {strategy,round:match.round},{headers});
       const next=r.data.data as Match;
+      lastMatchId.current=next.id;
       setQueue({status:'MATCHED',match:next});
       if(next.status==='COMPLETED'){
         toast.success(next.winnerId===user?.id?'경쟁전 승리!':'경쟁전 종료');
@@ -161,7 +169,7 @@ export default function CompetitivePvP() {
           </>}
           {match.status==='COMPLETED'&&<div className="rounded-lg bg-slate-800 p-5 text-center">
             <h3 className="text-2xl font-black">{match.winnerId===user?.id?'경쟁전 승리':'경쟁전 패배'}</h3>
-            <button onClick={()=>setQueue({status:'NONE',match:null})}
+            <button onClick={()=>{lastMatchId.current=null;setQueue({status:'NONE',match:null});}}
               className="mt-4 rounded-lg bg-amber-600 px-6 py-3 font-bold">다음 경쟁전</button>
           </div>}
           {match.rounds.length>0&&<div className="mt-5 space-y-2">

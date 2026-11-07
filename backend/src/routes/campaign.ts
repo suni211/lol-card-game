@@ -32,6 +32,7 @@ router.get('/stages', authMiddleware, async (req: AuthRequest, res: Response) =>
       }
       groupedStages[stage.region].push({
         id: stage.id,
+        region: stage.region,
         stageNumber: stage.stage_number,
         difficulty: stage.difficulty,
         requiredPower: stage.required_power,

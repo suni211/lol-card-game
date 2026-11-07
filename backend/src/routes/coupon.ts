@@ -107,8 +107,18 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
       },
     });
   } catch (error: any) {
-    console.error('Create coupon error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+    console.error('Create coupon error:', {code:error?.code,sqlMessage:error?.sqlMessage,message:error?.message});
+    if (error?.code === 'ER_BAD_FIELD_ERROR') {
+      return res.status(500).json({success:false,
+        error:'쿠폰 DB 컬럼이 누락됐습니다. database/migrations/2026_coupon_max_users_fix.sql을 적용하세요.'});
+    }
+    if (error?.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(500).json({success:false,error:'쿠폰 DB 테이블이 없습니다. schema.sql의 coupons 테이블을 확인하세요.'});
+    }
+    if (error?.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(400).json({success:false,error:'쿠폰 보상 선수 ID 또는 생성 계정을 확인하세요.'});
+    }
+    res.status(500).json({ success: false, error: '쿠폰 생성 DB 저장 실패. 서버 로그의 Create coupon error를 확인하세요.' });
   } finally {
     connection.release();
   }

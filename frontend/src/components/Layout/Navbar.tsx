@@ -55,7 +55,7 @@ export default function Navbar() {
     ] },
     { label: '대전', items: [
       { path: '/match-select', label: '대전 선택' },
-      { path: '/ovr-match', label: 'OVR 가위바위보 · 경쟁전' },
+      { path: '/ovr-match', label: '경쟁전' },
       { path: '/campaign', label: '캠페인' },
       { path: '/infinite-challenge', label: '무한도전' },
       { path: '/raid', label: '레이드' },

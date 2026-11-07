@@ -12,7 +12,8 @@ const FILES={
  'TLAW:Josedeodo':['TL_Josedeodo_2026_Split_1.webp'],
  'TLAW:Morgan':['TL_Morgan_2026_Split_1.webp'],
  'TLAW:Quid':['TL_Quid_2026_Split_1.webp'],
- 'TLAW:Yeon':['TL_Yeon_2026_Split_1.webp']
+ 'TLAW:Yeon':['TL_Yeon_2026_Split_1.webp'],
+ 'VKS:zekas':['VKS_Zekas_2026_Split_1.webp']
 };
 const HOSTS=new Set(['i.namu.wiki','file.namu.moe','d.namu.moe','www.namu.moe','namu.moe']);
 const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9\p{L}\p{N}]/gu,'');

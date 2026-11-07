@@ -261,6 +261,58 @@ router.get('/search-players', authMiddleware, adminMiddleware, async (req: AuthR
   }
 });
 
+// Complete player directory for the separate admin card editor.
+// Every row is one exact player-series card; edits never mutate other OVRs.
+router.get('/player-directory', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const page = Math.max(1, Math.min(100000, Number.parseInt(String(req.query.page || '1'),10) || 1));
+    const limit = Math.max(10, Math.min(100, Number.parseInt(String(req.query.limit || '50'),10) || 50));
+    const query = String(req.query.q || '').trim().slice(0,100);
+    const season = String(req.query.season || 'ALL');
+    const region = String(req.query.region || 'ALL');
+    const missingOnly = req.query.missing === '1';
+    if (!['ALL','26 LIVE','26WR','26WRs'].includes(season)) {
+      return res.status(400).json({success:false,error:'시즌 필터가 잘못되었습니다.'});
+    }
+    if (!['ALL','LCK','LPL','LEC','LCS','CBLOL','LCP','LTA'].includes(region)) {
+      return res.status(400).json({success:false,error:'지역 필터가 잘못되었습니다.'});
+    }
+    const where: string[] = [];
+    const params: any[] = [];
+    if (season !== 'ALL') { where.push('p.season=?'); params.push(season); }
+    if (region !== 'ALL') { where.push('p.region=?'); params.push(region); }
+    if (query) {
+      where.push('(p.name LIKE ? OR p.team LIKE ? OR CAST(p.id AS CHAR)=?)');
+      params.push('%'+query+'%','%'+query+'%',query);
+    }
+    if (missingOnly) where.push("(p.nationality IS NULL OR p.nationality='')");
+    const filter = where.length ? 'WHERE '+where.join(' AND ') : '';
+    const [count]:any = await pool.query(
+      `SELECT COUNT(*) as total FROM players p ${filter}`,params
+    );
+    const total = Number(count[0].total);
+    const [rows]:any = await pool.query(
+      `SELECT p.id,p.name,p.team,p.position,p.region,p.season,
+              p.overall,p.nationality,p.image_url
+       FROM players p ${filter}
+       ORDER BY FIELD(p.season,'26WRs','26WR','26 LIVE') DESC,
+                p.region,p.team,p.name,p.position,p.id
+       LIMIT ? OFFSET ?`,
+      [...params,limit,(page-1)*limit]
+    );
+    const [missing]:any = await pool.query(
+      "SELECT COUNT(*) AS total FROM players WHERE nationality IS NULL OR nationality=''"
+    );
+    return res.json({success:true,data:{
+      players:rows,page,limit,total,totalPages:Math.max(1,Math.ceil(total/limit)),
+      missingCount:Number(missing[0].total)
+    }});
+  } catch(error) {
+    console.error('Player directory error:',error);
+    return res.status(500).json({success:false,error:'선수 목록 조회 실패. 국적 컬럼 마이그레이션을 확인하세요.'});
+  }
+});
+
 // Update the OVR of one exact player card series. Never modify a whole name across seasons.
 router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   const playerId = Number(req.params.id);

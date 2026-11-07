@@ -541,6 +541,37 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
   }
 });
 
+// Seller may revise an unsold listing price without cancelling the listing.
+router.patch('/listing/:listingId/price',authMiddleware,async(req:AuthRequest,res)=>{
+  const listingId=Number(req.params.listingId),price=Number(req.body?.price);
+  if(!Number.isSafeInteger(listingId)||listingId<1||!Number.isSafeInteger(price)||price<1)
+    return res.status(400).json({success:false,error:'올바른 매물 번호와 가격을 입력하세요.'});
+  const conn=await pool.getConnection();
+  try{
+    await conn.beginTransaction();
+    const [rows]:any=await conn.query(
+      `SELECT mt.id,mt.seller_id,mt.status,uc.level
+       FROM market_transactions mt
+       JOIN user_cards uc ON uc.id=mt.card_id
+       WHERE mt.id=? FOR UPDATE`,[listingId]);
+    if(!rows.length||rows[0].status!=='LISTED'){
+      await conn.rollback();return res.status(404).json({success:false,error:'판매 중인 매물을 찾을 수 없습니다.'});
+    }
+    if(Number(rows[0].seller_id)!==Number(req.user!.id)){
+      await conn.rollback();return res.status(403).json({success:false,error:'본인의 매물만 가격을 변경할 수 있습니다.'});
+    }
+    const cap=50000*(1+Math.max(0,Math.min(10,Number(rows[0].level)||0)));
+    if(price>cap){
+      await conn.rollback();return res.status(400).json({success:false,error:'이 강화 등급의 가격 상한은 '+cap.toLocaleString()+'P입니다.'});
+    }
+    await conn.query('UPDATE market_transactions SET listing_price=? WHERE id=?',[price,listingId]);
+    await conn.commit();
+    return res.json({success:true,data:{listingId,price},message:'매물 가격을 변경했습니다.'});
+  }catch(e){try{await conn.rollback();}catch{}console.error('Market price edit:',e);
+    return res.status(500).json({success:false,error:'매물 가격 변경 실패'});}
+  finally{conn.release();}
+});
+
 // Cancel listing
 router.delete('/listing/:listingId', authMiddleware, async (req: AuthRequest, res) => {
   const connection = await pool.getConnection();

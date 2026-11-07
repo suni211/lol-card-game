@@ -99,6 +99,13 @@ export default function Gacha() {
         legendary: 1.02,
         gr: 0,
       },
+    {
+      cost: 2000,
+      label: '26WR · 26WRs 전용',
+      description: '26WR / 26WRs 선수 카드만 등장',
+      special: true,
+      probabilities: { icon: 0, common: 100, rare: 0, epic: 0, legendary: 0, gr: 0 },
+    },
     },
 
   ];
@@ -183,6 +190,7 @@ export default function Gacha() {
 
   const gachaTypeFor = (option: GachaOption): string => {
     
+    if (option.label === '26WR · 26WRs 전용') return 'wr_2026';
     if (option.cost === 0) return 'free';
     if (option.cost === 500) return 'basic';
     if (option.cost === 1000) return 'premium';

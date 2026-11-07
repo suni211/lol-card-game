@@ -44,7 +44,6 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
       rewardPlayerId,
       rewardPackType,
       rewardPackCount,
-      maxUses,
       maxUsers,
       expiresAt,
       description,
@@ -89,7 +88,7 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
         rewardPlayerId || null,
         rewardPackType || null,
         rewardPackCount || 1,
-        maxUses || 1,
+        null, // No total redemption cap: each account can redeem a code once.
         maxUsers || null,
         formattedExpiresAt,
         userId,
@@ -103,7 +102,6 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
         code,
         type,
         description,
-        maxUses: maxUses || 1,
       },
     });
   } catch (error: any) {
@@ -141,7 +139,7 @@ router.post('/redeem', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get coupon
     const [coupons]: any = await connection.query(
-      'SELECT * FROM coupons WHERE code = ? AND is_active = TRUE',
+      'SELECT * FROM coupons WHERE code = ? AND is_active = TRUE FOR UPDATE',
       [code.toUpperCase()]
     );
 
@@ -156,12 +154,6 @@ router.post('/redeem', authMiddleware, async (req: AuthRequest, res) => {
     if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Coupon has expired' });
-    }
-
-    // Check max uses
-    if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
-      await connection.rollback();
-      return res.status(400).json({ success: false, error: 'Coupon has reached maximum uses' });
     }
 
     // Check max users (unique user count)

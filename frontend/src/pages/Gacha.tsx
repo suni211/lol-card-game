@@ -8,6 +8,7 @@ import { getPlayerImageUrl, getSeriesLogo } from '../utils/playerImage';
 import axios from 'axios';
 import { playSound } from '../utils/soundEffects';
 import GachaReveal from '../components/GachaReveal';
+import CountryFlag from '../components/CountryFlag';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
@@ -1605,6 +1606,9 @@ export default function Gacha() {
                         </div>
                         <div className="text-sm font-bold text-white mb-1">
                           {card.name}
+                        </div>
+                        <div className="my-2 text-xs text-white">
+                          <CountryFlag code={card.nationality} size="sm" showCode />
                         </div>
                         <div className="text-xs text-white/90">
                           {card.team}

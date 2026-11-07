@@ -13,7 +13,7 @@ interface Coupon {
   reward_player_name: string | null;
   reward_pack_type: string | null;
   reward_pack_count: number;
-  max_uses: number;
+  max_uses: number | null;
   max_users: number | null;
   current_uses: number;
   expires_at: string | null;
@@ -36,7 +36,6 @@ export default function AdminCoupon() {
     rewardPlayerId: '',
     rewardPackType: '',
     rewardPackCount: '1',
-    maxUses: '1',
     maxUsers: '',
     expiresAt: '',
     description: '',
@@ -68,7 +67,6 @@ export default function AdminCoupon() {
     try {
       const body: any = {
         type: createForm.type,
-        maxUses: parseInt(createForm.maxUses) || 1,
         maxUsers: createForm.maxUsers ? parseInt(createForm.maxUsers) : null,
         description: createForm.description || null,
         customCode: createForm.customCode || null,
@@ -106,7 +104,6 @@ export default function AdminCoupon() {
           rewardPlayerId: '',
           rewardPackType: '',
           rewardPackCount: '1',
-          maxUses: '1',
           maxUsers: '',
           expiresAt: '',
           description: '',
@@ -215,7 +212,7 @@ export default function AdminCoupon() {
                     <div className="bg-white/5 rounded-lg p-3">
                       <p className="text-gray-400 dark:text-gray-500 text-sm mb-1">사용 현황</p>
                       <p className="text-white font-bold">
-                        {coupon.current_uses} / {coupon.max_uses || '∞'}
+                        {coupon.current_uses}명 사용 (계정당 1회)
                       </p>
                     </div>
 
@@ -348,19 +345,6 @@ export default function AdminCoupon() {
                     </div>
                   </>
                 )}
-
-                {/* Max Uses */}
-                <div>
-                  <label className="text-white text-sm font-bold mb-2 block">최대 사용 횟수</label>
-                  <input
-                    type="number"
-                    value={createForm.maxUses}
-                    onChange={(e) => setCreateForm({ ...createForm, maxUses: e.target.value })}
-                    className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white"
-                    placeholder="1"
-                  />
-                  <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">총 사용 가능 횟수 (사용자 중복 포함)</p>
-                </div>
 
                 {/* Max Users */}
                 <div>

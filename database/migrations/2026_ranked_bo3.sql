@@ -25,5 +25,5 @@ ALTER TABLE ranked_bo3_series
   ADD COLUMN IF NOT EXISTS mode ENUM('AI','RANKED') NOT NULL DEFAULT 'RANKED',
   ADD COLUMN IF NOT EXISTS roster_json LONGTEXT NULL;
 
-// Existing early installs that already created NOT NULL deck_id must be reviewed
-// manually before altering a foreign-key column. New installs create it NULL.
+-- Existing early installs that already created NOT NULL deck_id must be reviewed
+-- manually before altering a foreign-key column. New installs create it NULL.

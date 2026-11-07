@@ -1,5 +1,5 @@
 name: Collect missing 2026 player portraits
-# Retry with verified former-team aliases and deterministic latest-season selection.
+# Final targeted run with five verified individual portrait sources and ZekaS academy image.
 
 on:
   push:

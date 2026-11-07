@@ -13,6 +13,9 @@ require('dotenv').config({path:path.resolve(__dirname,'../.env')});
 const APPLY=process.argv.includes('--apply');
 const OVERWRITE=process.argv.includes('--overwrite');
 const NAMU_FALLBACK=process.argv.includes('--namu-fallback');
+const ONLY_REMAINING=process.argv.includes('--remaining-39');
+const remainingSet=new Set(require('./remaining-39-player-portraits.cjs')
+  .map(p=>String(p.team).toLowerCase()+'|'+String(p.name).toLowerCase()));
 const nameFlag=process.argv.find(a=>a.startsWith('--player='));
 const teamFlag=process.argv.find(a=>a.startsWith('--team='));
 const maxFlag=process.argv.find(a=>a.startsWith('--limit='));
@@ -138,6 +141,7 @@ async function run(){
     console.log('Roster identities: '+identities.size+' / mode: '+(APPLY?'APPLY':'DRY RUN'));
     for(const cards of identities.values()){
       const p=cards[0];
+      if(ONLY_REMAINING && !remainingSet.has(String(p.team).toLowerCase()+'|'+String(p.name).toLowerCase()))continue;
       if(nameFlag&&clean(p.name)!==clean(nameFlag.slice('--player='.length)))continue;
       if(teamFlag&&clean(p.team)!==clean(teamFlag.slice('--team='.length)))continue;
       if(checked++>=LIMIT)break;
@@ -198,7 +202,8 @@ async function run(){
       await pause(500);
     }
   }finally{await db.end();}
-  const file=path.resolve(__dirname,'../../player-photo-report.csv');
+  const file=path.resolve(__dirname,ONLY_REMAINING?
+    '../../remaining-39-photo-report.csv':'../../player-photo-report.csv');
   await fs.writeFile(file,report.map(row=>row.map(csv).join(',')).join('\n')+'\n','utf8');
   console.log(JSON.stringify({mode:APPLY?'APPLY':'DRY_RUN',found,existing,missing,errors,report:file},null,2));
   if(!APPLY)console.log('No database changes. Use --apply to save portraits.');

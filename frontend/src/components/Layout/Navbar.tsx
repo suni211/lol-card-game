@@ -54,7 +54,8 @@ export default function Navbar() {
       { path: '/packs', label: '팩 인벤토리' },
     ] },
     { label: '대전', items: [
-      { path: '/match-select', label: 'MOBA AI 대전' },
+      { path: '/match-select', label: '대전 선택' },
+      { path: '/ovr-match', label: 'OVR 가위바위보 · 경쟁전' },
       { path: '/campaign', label: '캠페인' },
       { path: '/infinite-challenge', label: '무한도전' },
       { path: '/raid', label: '레이드' },

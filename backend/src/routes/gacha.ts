@@ -858,7 +858,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
       return res.status(400).json({ success: false, error: 'Card is already at maximum enhancement level' });
     }
     if(materialCards.some((c:any)=>!enhancementMaterialMatch(targetCard,c))){
-      return res.status(400).json({success:false,error:'같은 선수와 강화등급 카드 또는 동일 OVR 카드만 재료로 사용할 수 있습니다.'});
+      return res.status(400).json({success:false,error:'같은 선수·같은 강화등급 또는 강화 포함 최종 OVR이 같은 카드만 재료로 사용할 수 있습니다.'});
     }
 
     const baseRate = BASE_ENHANCEMENT_RATES[targetCard.level];
@@ -994,7 +994,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
 
     if(materialCards.some((c:any)=>!enhancementMaterialMatch(targetCard,c))){
       await connection.rollback();
-      return res.status(400).json({success:false,error:'같은 선수와 강화등급 카드 또는 동일 OVR 카드만 재료로 사용할 수 있습니다.'});
+      return res.status(400).json({success:false,error:'같은 선수·같은 강화등급 또는 강화 포함 최종 OVR이 같은 카드만 재료로 사용할 수 있습니다.'});
     }
 
     // Calculate cost

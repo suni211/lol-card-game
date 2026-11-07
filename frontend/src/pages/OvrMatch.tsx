@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { Swords, Bot, Trophy, RefreshCw, Zap, ShieldCheck } from 'lucide-react';
+import { Swords, RefreshCw, Zap, ShieldCheck } from 'lucide-react';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 type Mode = 'AI' | 'RANKED';
@@ -24,9 +24,10 @@ const buttons: {choice:Choice;emoji:string}[] = [
 
 export default function OvrMatch() {
   const [params] = useSearchParams();
+  const {pathname} = useLocation();
   const {token,updateUser} = useAuthStore();
   const headers = useMemo(()=>({Authorization:`Bearer ${token}`}),[token]);
-  const [mode,setMode] = useState<Mode>(params.get('mode') === 'AI' ? 'AI' : 'RANKED');
+  const mode:Mode = pathname === '/ai-match' || pathname === '/ai-battle' || pathname === '/moba-match' || params.get('mode') === 'AI' ? 'AI' : 'RANKED';
   const [deckSlot,setDeckSlot] = useState(1);
   const [preview,setPreview] = useState<Preview|null>(null);
   const [series,setSeries] = useState<Series|null>(null);
@@ -59,7 +60,7 @@ export default function OvrMatch() {
       const r=await axios.post(`${API_URL}/ovr-match/start`,{mode,deckSlot},{headers});
       setSeries(r.data.data);
       if(r.data.resumed) toast('진행 중이던 경기를 이어갑니다.');
-      else toast.success('가위바위보 3판 2선승제 경기 시작!');
+      else toast.success('경기 시작!');
     }catch(e:any){toast.error(e.response?.data?.error||'경기 시작 실패');}
     finally{setBusy(false);}
   };
@@ -90,38 +91,26 @@ export default function OvrMatch() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-3 text-3xl font-black"><Swords className="h-9 w-9 text-sky-400"/>{(series?.status === 'ACTIVE' ? series.mode : mode) === 'RANKED' ? '경쟁전' : 'AI 매치'}</h1>
-          <p className="mt-2 text-sm text-slate-300">선수 카드 5명 · 포지션 제한 없음 · 랜덤 상대 OVR · 최대 3판 2선승제</p>
+          <p className="mt-2 text-sm text-slate-300">3판 2선승제</p>
         </div>
         <button onClick={()=>void load()} disabled={busy} className="flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 disabled:opacity-40"><RefreshCw className="h-4 w-4"/>새로고침</button>
       </header>
       {error&&<p role="alert" className="rounded-lg border border-red-700 bg-red-950 p-4 text-red-200">{error}</p>}
       {loading ? <p className="rounded-lg bg-slate-900 p-6">경기 정보를 불러오는 중...</p> : <>
         {!active&&<section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
-          <h2 className="mb-4 text-xl font-bold">경기 선택</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button onClick={()=>setMode('AI')} aria-pressed={mode==='AI'}
-              className={`rounded-lg border p-4 text-left ${mode==='AI'?'border-sky-400 bg-sky-950':'border-slate-700'}`}>
-              <Bot className="mb-2 h-6 w-6"/>AI 매치
-              <p className="mt-1 text-sm text-slate-300">랜덤 OVR AI · 승리 200P</p>
-            </button>
-            <button onClick={()=>setMode('RANKED')} aria-pressed={mode==='RANKED'}
-              className={`rounded-lg border p-4 text-left ${mode==='RANKED'?'border-amber-400 bg-amber-950':'border-slate-700'}`}>
-              <Trophy className="mb-2 h-6 w-6"/>경쟁전
-              <p className="mt-1 text-sm text-slate-300">랜덤 OVR 경쟁전 · 승리 350P / 랭크 +25</p>
-            </button>
-          </div>
+          <h2 className="mb-4 text-xl font-bold">{mode==='RANKED'?'경쟁전':'AI 매치'}</h2>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <label htmlFor="ovr-deck" className="text-sm font-semibold">우선 적용할 덱</label>
             <select id="ovr-deck" value={deckSlot} onChange={e=>setDeckSlot(Number(e.target.value))}
               className="rounded-lg border border-slate-600 bg-slate-800 p-2">
               {[1,2,3,4,5].map(n=><option key={n} value={n}>덱 {n}</option>)}
             </select>
-            <p className="text-xs text-slate-400">덱에 자리가 비어도 보유 카드로 자동 충원합니다.</p>
+
           </div>
           {teamError&&<p className="mt-3 text-amber-300">{teamError}</p>}
           <button disabled={busy||!preview||!!teamError} onClick={()=>void start()}
             className="mt-5 w-full rounded-lg bg-sky-600 p-4 font-bold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40">
-            {busy?'경기 준비 중...':mode==='RANKED'?'경쟁전 시작 · 3판 2선승':'AI 매치 시작 · 3판 2선승'}
+            {busy?'경기 준비 중...':mode==='RANKED'?'경쟁전 시작':'AI 매치 시작'}
           </button>
         </section>}
         <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
@@ -138,7 +127,7 @@ export default function OvrMatch() {
         {series&&<section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-black">{series.mode==='RANKED'?'경쟁전':'AI 매치'} · {series.wins}승 {series.losses}패</h2>
-            <div className="text-sm text-slate-300">먼저 2승 달성 시 승리</div>
+
           </div>
           <div className="mb-5 grid grid-cols-3 gap-2">
             {[0,1,2].map(i=><div key={i} className={`rounded-lg border p-3 text-center text-sm ${series.rounds[i]?.won?'border-emerald-500 bg-emerald-950':series.rounds[i]?'border-red-500 bg-red-950':'border-slate-700 bg-slate-800'}`}>
@@ -146,7 +135,7 @@ export default function OvrMatch() {
             </div>)}
           </div>
           {active ? <>
-            <p className="mb-3 text-center text-slate-300">가위바위보 승자는 해당 판의 OVR에 +25% 보정, 패자는 -25% 보정됩니다. OVR이 높으면 불리한 가위바위보도 뒤집을 수 있습니다.</p>
+
             <div className="grid grid-cols-3 gap-3">
               {buttons.map(({choice,emoji})=><button key={choice} disabled={busy} onClick={()=>void play(choice)}
                 className="rounded-xl border border-sky-500 bg-sky-900 p-5 text-center font-black hover:bg-sky-700 disabled:opacity-40">
@@ -155,7 +144,7 @@ export default function OvrMatch() {
             </div>
           </> : <div className="rounded-lg bg-slate-800 p-4 text-center">
             <p className="text-2xl font-black">{series.status==='WIN'?'시리즈 승리!':'시리즈 패배'}</p>
-            <p className="mt-2 text-sm text-slate-300">포인트 +{series.pointsReward}P · 랭크 {series.ratingDelta>0?'+':''}{series.ratingDelta}</p>
+            <p className="mt-2 text-sm text-slate-300">+{series.pointsReward}P{series.mode==='RANKED' ? ` · 점수 ${series.ratingDelta>0?'+':''}${series.ratingDelta}` : ''}</p>
             <button onClick={()=>setSeries(null)} className="mt-4 rounded-lg bg-sky-600 px-7 py-3 font-bold">다음 경기</button>
           </div>}
           {!!series.rounds.length&&<div className="mt-5 space-y-2">
@@ -166,7 +155,7 @@ export default function OvrMatch() {
           </div>}
         </section>}
         <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><Zap className="h-5 w-5 text-amber-400"/>최근 대전 기록</h2>
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><Zap className="h-5 w-5 text-amber-400"/>최근 전적</h2>
           {history.length===0?<p className="text-sm text-slate-400">완료된 경기가 없습니다.</p>:<div className="space-y-2">
             {history.map(h=><div key={h.id} className="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-800 p-3 text-sm">
               <span>{h.mode==='RANKED'?'경쟁전':'AI'} · {h.wins}승 {h.losses}패</span>

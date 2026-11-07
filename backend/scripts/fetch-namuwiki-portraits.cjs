@@ -56,6 +56,11 @@ function candidatePortraits(html,pageUrl,name,team) {
     const alt=String(attrs.alt||attrs.title||'');
     let u;
     try{u=new URL(attrs['data-src']||attrs.src||'',pageUrl);}catch{continue;}
+    // Mirror markup can use /file/<sha>, while the actual binary is served
+    // by file.namu.moe (as linked from the rendered Namu mirror).
+    if(u.pathname.startsWith('/file/') && u.hostname.endsWith('namu.moe')){
+      u.hostname='file.namu.moe';
+    }
     if(u.protocol!=='https:'||!photoHosts.has(u.hostname)||!/^\/(file|i)\//.test(u.pathname))continue;
     if(/로고|국기|아이콘|logo|flag|icon|emblem|mark|서명|우승컵|트로피|스폰서|포지션|워드마크/i.test(alt))continue;
     const named=clean(alt).includes(clean(name));
@@ -130,7 +135,19 @@ async function run(){
     for(const cards of identities.values()){
       if(checked++>=LIMIT)break;
       const p=cards[0];
-      if(!OVERWRITE&&cards.some(c=>c.image_url)){existing++;continue;}
+      if(!OVERWRITE&&cards.some(c=>c.image_url)){
+        existing++;
+        if(APPLY){
+          // Reuse an already uploaded portrait for the other series of the
+          // exact same player, with no overwrites.
+          const source=cards.find(c=>c.image_url);
+          await db.query(
+            "UPDATE players SET image_url=? WHERE name=? AND team=? AND position=? AND season IN ('26 LIVE','26WR','26WRs') AND (image_url IS NULL OR image_url='')",
+            [source.image_url,p.name,p.team,p.position]
+          );
+        }
+        continue;
+      }
       const match=await findPhoto(p.name,p.team);
       if(match.error){
         missing++;

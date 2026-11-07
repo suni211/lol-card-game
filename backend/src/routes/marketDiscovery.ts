@@ -146,9 +146,7 @@ router.get('/grade/:playerId/:grade',async(req:AuthRequest,res)=>{
       `SELECT mt.sold_price AS price,mt.sold_at AS date,mt.id
        FROM market_transactions mt
        WHERE mt.player_id=? AND mt.status='SOLD'
-         AND COALESCE(mt.enhancement_level,(
-           SELECT uc.level FROM user_cards uc WHERE uc.id=mt.card_id
-         ))=?
+         AND mt.enhancement_level=?
        ORDER BY mt.sold_at DESC,mt.id DESC LIMIT 40`,[playerId,grade]);
     const sold=history.map((x:any)=>({price:Number(x.price),date:x.date,id:x.id})).reverse();
     return res.json({success:true,data:{
@@ -167,7 +165,7 @@ router.get('/transactions',async(req:AuthRequest,res)=>{
       `SELECT mt.id,mt.player_id,p.name,p.team,p.season,p.overall,
         mt.seller_id,mt.buyer_id,mt.listing_price,mt.sold_price,mt.status,
         mt.listed_at,mt.sold_at,
-        COALESCE(mt.enhancement_level,uc.level) AS enhancement_level,
+        mt.enhancement_level AS enhancement_level,
         seller.username AS seller_username,buyer.username AS buyer_username
        FROM market_transactions mt JOIN players p ON p.id=mt.player_id
        LEFT JOIN user_cards uc ON uc.id=mt.card_id

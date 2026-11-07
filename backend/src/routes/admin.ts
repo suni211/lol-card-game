@@ -271,6 +271,7 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
     const season = String(req.query.season || 'ALL');
     const region = String(req.query.region || 'ALL');
     const missingOnly = req.query.missing === '1';
+    const missingPhotoOnly = req.query.missingPhoto === '1';
     if (!['ALL','26 LIVE','26WR','26WRs'].includes(season)) {
       return res.status(400).json({success:false,error:'시즌 필터가 잘못되었습니다.'});
     }
@@ -286,6 +287,7 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
       params.push('%'+query+'%','%'+query+'%',query);
     }
     if (missingOnly) where.push("(p.nationality IS NULL OR p.nationality='')");
+    if (missingPhotoOnly) where.push("(p.image_url IS NULL OR p.image_url='')");
     const filter = where.length ? 'WHERE '+where.join(' AND ') : '';
     const [count]:any = await pool.query(
       `SELECT COUNT(*) as total FROM players p ${filter}`,params
@@ -309,9 +311,13 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
     const [missing]:any = await pool.query(
       "SELECT COUNT(*) AS total FROM players WHERE nationality IS NULL OR nationality=''"
     );
+    const [missingPhoto]:any = await pool.query(
+      "SELECT COUNT(*) AS total FROM players WHERE season IN ('26 LIVE','26WR','26WRs') AND (image_url IS NULL OR image_url='')"
+    );
     return res.json({success:true,data:{
       players:rows,page,limit,total,totalPages:Math.max(1,Math.ceil(total/limit)),
-      missingCount:Number(missing[0].total)
+      missingCount:Number(missing[0].total),
+      missingPhotoCount:Number(missingPhoto[0].total)
     }});
   } catch(error) {
     console.error('Player directory error:',error);

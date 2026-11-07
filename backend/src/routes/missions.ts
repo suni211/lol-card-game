@@ -12,13 +12,13 @@ router.get('/',async(req:AuthRequest,res)=>{
     const [rows]:any=await pool.query(
       `SELECT mission.id,mission.title,mission.description,mission.type,
               mission.requirement,mission.reward,
-              COALESCE(user.progress,0) AS progress,
-              COALESCE(user.is_completed,0) AS is_completed,
-              COALESCE(user.is_claimed,0) AS is_claimed
+              COALESCE(um.progress,0) AS progress,
+              COALESCE(um.is_completed,0) AS is_completed,
+              COALESCE(um.is_claimed,0) AS is_claimed
        FROM missions mission
-       LEFT JOIN user_missions user ON
-         user.mission_id=mission.id AND user.user_id=?
-         AND user.expires_at=CASE mission.type
+       LEFT JOIN user_missions um ON
+         um.mission_id=mission.id AND um.user_id=?
+         AND um.expires_at=CASE mission.type
            WHEN 'DAILY' THEN ? WHEN 'WEEKLY' THEN ? ELSE ? END
        WHERE mission.is_active=1
        ORDER BY FIELD(mission.type,'DAILY','WEEKLY','MONTHLY'),mission.id`,

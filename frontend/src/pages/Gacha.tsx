@@ -104,9 +104,9 @@ export default function Gacha() {
     {
       cost: 2000,
       label: '26WR · 26WRs 전용',
-      description: '26WR / 26WRs 선수 카드만 등장',
+      description: '26WR / 26WRs 시즌 카드만 균등 랜덤 등장. 등급은 실제 선수 OVR에 따라 결정됩니다.',
       special: true,
-      probabilities: { icon: 0, common: 100, rare: 0, epic: 0, legendary: 0, gr: 0 },
+      probabilities: { icon: 0, common: 0, rare: 0, epic: 0, legendary: 0, gr: 0 },
     },
 
   ];
@@ -441,6 +441,11 @@ export default function Gacha() {
 
                 {/* Probabilities */}
                 <div className="space-y-2 mb-6">
+                  {option.description && (
+                    <p className="rounded-lg bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                      {option.description}
+                    </p>
+                  )}
                   {option.special && option.cost === 2500 && option.label.includes('월즈') && (
                     <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 text-center">

@@ -49,6 +49,18 @@ router.get('/status',async(req:AuthRequest,res:Response)=>{
     const id=req.user!.id;
     const match=await activeMatch(id);
     if(match)return res.json({success:true,data:{status:'MATCHED',match:summarize(match,id)}});
+    // After the second player submits, the match is COMPLETED immediately.
+    // Let the other player retrieve that final result via its known match ID.
+    const knownMatchId=Number(req.query.matchId || 0);
+    if(Number.isSafeInteger(knownMatchId)&&knownMatchId>0){
+      const [completed]:any=await pool.query(
+        GET_MATCH+" WHERE m.id=? AND m.status='COMPLETED' AND (m.player1_id=? OR m.player2_id=?)",
+        [knownMatchId,id,id]
+      );
+      if(completed.length) return res.json({
+        success:true,data:{status:'MATCHED',match:summarize(completed[0],id)}
+      });
+    }
     // A waiting player must still be online to be eligible for pairing.
     await pool.query('UPDATE competitive_queue_v2 SET joined_at=NOW() WHERE user_id=?',[id]);
     const [waiting]:any=await pool.query(

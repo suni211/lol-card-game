@@ -29,7 +29,7 @@ CREATE TABLE players (
     name VARCHAR(50) NOT NULL,
     team VARCHAR(50) NOT NULL,
     position ENUM('TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT') NOT NULL,
-    overall INT NOT NULL CHECK (overall >= 50 AND overall <= 130),
+    overall INT NOT NULL CHECK (overall >= 50 AND overall <= 160),
     region ENUM('LCK', 'LTA', 'LPL', 'LEC', 'LCP', 'LCS', 'CBLOL') NOT NULL,
     tier ENUM('COMMON', 'RARE', 'EPIC', 'LEGENDARY', 'ICON', 'GR') NOT NULL DEFAULT 'COMMON',
     season VARCHAR(20),

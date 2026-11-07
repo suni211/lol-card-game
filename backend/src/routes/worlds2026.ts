@@ -59,11 +59,11 @@ router.post('/nationality/:playerId', async (req: AuthRequest, res: Response) =>
 router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
   const {playerId} = req.params;
   const {boost,achievement,evidenceUrl} = req.body;
-  if (!Number.isInteger(boost) || boost < 0 || boost > 15 ||
+  if (!Number.isInteger(boost) || boost < -15 || boost > 15 ||
       typeof achievement !== 'string' || achievement.length > 255 ||
-      (boost > 0 && achievement.trim().length < 3) ||
+      (boost !== 0 && achievement.trim().length < 3) ||
       (evidenceUrl && (typeof evidenceUrl !== 'string' || evidenceUrl.length > 500 || !/^https:\/\//.test(evidenceUrl)))) {
-    return res.status(400).json({success:false,error:'부스트 0~15, 근거 설명과 HTTPS 자료 URL을 확인하세요.'});
+    return res.status(400).json({success:false,error:'라이브 OVR 변동은 -15부터 +15까지이며, 변경 사유(3자 이상)를 입력하세요.'});
   }
   const connection = await pool.getConnection();
   try {
@@ -79,9 +79,9 @@ router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
     const row=rows[0];
     const base=Number(row.base_overall ?? row.overall);
     const nextOverall=base+boost;
-    if (nextOverall > 160) {
+    if (nextOverall < 50 || nextOverall > 160) {
       await connection.rollback();
-      return res.status(400).json({success:false,error:'최종 OVR은 160 이하여야 합니다.'});
+      return res.status(400).json({success:false,error:'최종 OVR은 50~160 범위여야 합니다.'});
     }
     await connection.query(
       `INSERT INTO worlds2026_live_boosts

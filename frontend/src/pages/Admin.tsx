@@ -5,8 +5,15 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import AdminWorlds2026 from '../components/AdminWorlds2026';
+import CountryFlag, { getCountryName } from '../components/CountryFlag';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+const COUNTRY_OPTIONS = Array.from({ length: 26 * 26 }, (_, index) =>
+  String.fromCharCode(65 + Math.floor(index / 26), 65 + index % 26))
+  .filter(code => getCountryName(code) !== code)
+  .map(code => ({ code, name: getCountryName(code) }))
+  .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
 
 interface AdminLog {
   id: number;
@@ -26,6 +33,7 @@ interface Player {
   tier: string;
   region: string;
   season: string;
+  nationality?: string | null;
 }
 
 export default function Admin() {
@@ -41,6 +49,9 @@ export default function Admin() {
   const [overallCandidates, setOverallCandidates] = useState<Player[]>([]);
   const [overallPlayerId, setOverallPlayerId] = useState<number | null>(null);
   const [countryCode, setCountryCode] = useState('');
+  const [applyCountryAllSeasons, setApplyCountryAllSeasons] = useState(true);
+  const [missingNationalityPlayers, setMissingNationalityPlayers] = useState<Player[]>([]);
+  const [missingNationalitySelectedId, setMissingNationalitySelectedId] = useState<number | null>(null);
   const [missingNationalityCount, setMissingNationalityCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<AdminLog[]>([]);
@@ -261,17 +272,20 @@ export default function Admin() {
   };
 
   const saveNationality = async () => {
-    if (!overallPlayerId || !/^[A-Za-z]{2}$/.test(countryCode)) {
+    const targetId = missingNationalitySelectedId || overallPlayerId;
+    if (!targetId || !/^[A-Za-z]{2}$/.test(countryCode)) {
       toast.error('선수 카드 선택 후 두 글자 국적 코드(KR 등)를 입력해주세요.');
       return;
     }
     try {
-      const r=await axios.put(`${API_URL}/admin/player-nationality/${overallPlayerId}`,
-        {nationality:countryCode.toUpperCase()},{
+      const r=await axios.put(`${API_URL}/admin/player-nationality/${targetId}`,
+        {nationality:countryCode.toUpperCase(), applyToAllSeasons:applyCountryAllSeasons},{
           headers:{Authorization:`Bearer ${token}`},
         });
       toast.success(r.data.message);
       await inspectMissingNationalities();
+      if (overallSearch.trim().length >= 2) await searchOverallCandidates();
+      setMissingNationalitySelectedId(null);
     } catch(e:any) {toast.error(e.response?.data?.error || '국적 저장 실패');}
   };
   const inspectMissingNationalities = async () => {
@@ -280,6 +294,7 @@ export default function Admin() {
         headers:{Authorization:`Bearer ${token}`},
       });
       setMissingNationalityCount(Number(r.data.data?.total || 0));
+      setMissingNationalityPlayers(r.data.data?.players || []);
       toast.success(`국적 미등록 카드 ${r.data.data?.total || 0}개 (전체 시즌 기준)`);
     } catch(e:any) {toast.error(e.response?.data?.error || '국적 현황 조회 실패');}
   };
@@ -335,10 +350,12 @@ export default function Admin() {
                 setOverallPlayerId(id||null);
                 const player=overallCandidates.find(p=>p.id===id);
                 setEditOverall(player?String(player.overall):'');
+                setCountryCode(player?.nationality || '');
+                setMissingNationalitySelectedId(null);
               }}
               className="mt-3 w-full rounded-md border bg-white p-3 text-gray-900">
             <option value="">카드 선택 (팀 / 시즌 / 포지션)</option>
-            {overallCandidates.map(p=><option key={p.id} value={p.id}>{p.name} · {p.team} · {p.season} · {p.position} · 현재 OVR {p.overall}</option>)}
+            {overallCandidates.map(p=><option key={p.id} value={p.id}>{p.name} · {p.team} · {p.season} · {p.position} · OVR {p.overall} · {p.nationality || '국적 미등록'}</option>)}
           </select>}
           <div className="mt-3 flex flex-wrap gap-2">
             <input aria-label="새 OVR" type="number" min={1} max={150} value={editOverall}
@@ -353,16 +370,51 @@ export default function Admin() {
           <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">위에서 정확한 선수·시즌을 선택한 뒤 ISO 두 글자 국적을 기록하세요. 국적을 리그 지역으로 자동 추정하지 않습니다.</p>
           <div className="flex flex-wrap items-center gap-2">
             <input aria-label="ISO 국가 코드" value={countryCode} maxLength={2}
-              onChange={e=>setCountryCode(e.target.value.toUpperCase())}
+              onChange={e=>setCountryCode(e.target.value.toUpperCase())} list="country-code-options"
               placeholder="KR" className="w-24 rounded-md border p-3 text-gray-900"/>
-            <button disabled={!overallPlayerId} onClick={()=>void saveNationality()}
+            <datalist id="country-code-options">
+              {COUNTRY_OPTIONS.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
+            </datalist>
+            <CountryFlag code={countryCode} size="md" showCode showName />
+            <button disabled={!(missingNationalitySelectedId || overallPlayerId)} onClick={()=>void saveNationality()}
               className="rounded-md bg-amber-600 px-5 py-3 font-bold text-white disabled:opacity-50">선수 국적 저장</button>
             <button onClick={()=>void inspectMissingNationalities()}
               className="rounded-md border border-amber-500 px-5 py-3 font-bold text-amber-700 dark:text-amber-300">
               미등록 국적 조회
             </button>
           </div>
-          {missingNationalityCount!==null && <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">국적 미등록 선수 카드: {missingNationalityCount}개</p>}
+          <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input type="checkbox" checked={applyCountryAllSeasons}
+              onChange={e => setApplyCountryAllSeasons(e.target.checked)} />
+            동일 선수 · 동일 팀 · 동일 포지션의 다른 시즌 카드에도 적용
+          </label>
+          {missingNationalitySelectedId && (
+            <p className="mt-3 text-sm font-semibold text-amber-700 dark:text-amber-300">
+              국적 지정 대상: {missingNationalityPlayers.find(p=>p.id===missingNationalitySelectedId)?.name}
+              {' '}· {missingNationalityPlayers.find(p=>p.id===missingNationalitySelectedId)?.team}
+              {' '}· {missingNationalityPlayers.find(p=>p.id===missingNationalitySelectedId)?.season}
+            </p>
+          )}
+          {missingNationalityCount!==null && (
+            <>
+              <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">
+                국적 미등록 카드: {missingNationalityCount}개 · 조회 목록 최대 500개
+              </p>
+              {!!missingNationalityPlayers.length && (
+                <div className="mt-3 max-h-60 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2 dark:border-gray-700">
+                  {missingNationalityPlayers.map(p=>(
+                    <button key={p.id} type="button" onClick={()=>{
+                      setMissingNationalitySelectedId(p.id);
+                      setCountryCode('');
+                    }} className={`flex w-full justify-between gap-2 rounded px-3 py-2 text-left text-xs hover:bg-amber-50 dark:hover:bg-gray-700 ${missingNationalitySelectedId===p.id?'bg-amber-100 dark:bg-gray-700':''}`}>
+                      <span>{p.name} · {p.team} · {p.season} · {p.position}</span>
+                      <span>선택</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className="grid grid-cols-1 gap-8">
           {/* Point Management */}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, TrendingUp, Award, X, Eye, Swords } from 'lucide-react';
+import { Trophy, Medal, TrendingUp, Award, X, Eye, Swords, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { calculateEnhancementBonus } from '../utils/cardHelpers';
@@ -8,7 +8,7 @@ import PremiumButton from '../components/ui/PremiumButton';
 import PremiumCard from '../components/ui/PremiumCard';
 import UserDisplay from '../components/UserDisplay';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface RankingUser {
   rank: number;
@@ -83,12 +83,15 @@ export default function Ranking() {
   const [topDecks, setTopDecks] = useState<any[]>([]);
   const [popularCards, setPopularCards] = useState<any[]>([]);
   const { token } = useAuthStore();
+  const [myRank,setMyRank] = useState<{rank:number;rating:number;tier:string;wins:number;losses:number}|null>(null);
+  const [error,setError] = useState('');
 
   useEffect(() => {
     fetchRankings();
     fetchTopDecks();
     fetchPopularCards();
-  }, []);
+    if(token) void fetchMyRank();
+  }, [token]);
 
   const fetchTopDecks = async () => {
     try {
@@ -113,6 +116,7 @@ export default function Ranking() {
   };
 
   const fetchRankings = async () => {
+    setError('');
     try {
       const response = await axios.get(`${API_URL}/ranking`);
       if (response.data.success) {
@@ -120,9 +124,25 @@ export default function Ranking() {
       }
     } catch (error) {
       console.error('Failed to fetch rankings:', error);
+      setError('플레이어 랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchMyRank=async()=>{
+    if(!token)return;
+    try {
+      const r=await axios.get(`${API_URL}/ranking/me`,{
+        headers:{Authorization:`Bearer ${token}`}
+      });
+      if(r.data.success)setMyRank(r.data.data);
+    }catch(error){console.warn('Own ranking could not be loaded',error);}
+  };
+  const refreshRankings=()=>{
+    setLoading(true);
+    void fetchRankings();
+    if(token)void fetchMyRank();
   };
 
   const fetchUserProfile = async (userId: number) => {
@@ -261,12 +281,28 @@ export default function Ranking() {
             transition={{ duration: 5, repeat: Infinity }}
             className="text-5xl font-black bg-gradient-to-r from-yellow-600 via-orange-600 to-amber-600 dark:from-yellow-400 dark:via-orange-400 dark:to-amber-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
           >
-            글로벌 랭킹
+            플레이어 랭킹
           </motion.h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 font-medium">
-            최고의 플레이어들과 경쟁하세요
+            실제 유저 경쟁전 결과에 따라 랭크 점수와 승패가 반영됩니다.
           </p>
         </motion.div>
+
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+          {myRank && <div className="rounded-xl border border-yellow-500/40 bg-white/90 px-5 py-3 text-sm shadow-sm dark:bg-gray-800 dark:text-white">
+            내 순위 <strong className="text-amber-500">#{myRank.rank}</strong>
+            <span className="mx-2 text-gray-400">·</span>
+            {myRank.rating} RP <span className="mx-2 text-gray-400">·</span>
+            {myRank.wins}승 {myRank.losses}패
+          </div>}
+          <button type="button" onClick={refreshRankings}
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-500/50 bg-white px-4 py-3 text-sm font-bold text-gray-700 hover:bg-amber-50 dark:bg-gray-800 dark:text-white">
+            <RefreshCw className="h-4 w-4"/>랭킹 새로고침
+          </button>
+        </div>
+        {error && <p role="alert" className="mx-auto mb-5 max-w-2xl rounded-lg border border-red-600 bg-red-50 p-3 text-center text-red-700 dark:bg-red-950 dark:text-red-200">
+          {error}
+        </p>}
 
         {/* Tabs */}
         <div className="flex justify-center mb-8 space-x-2">
@@ -314,9 +350,9 @@ export default function Ranking() {
                 아직 랭킹 데이터가 없습니다
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                경기를 플레이하고 랭킹에 올라보세요!
+                경쟁전에 참가하고 랭킹에 올라보세요!
               </p>
-              <a href="/match">
+              <a href="/competitive">
                 <PremiumButton variant="danger" size="lg" icon={<Swords className="w-5 h-5" />}>
                   경기 시작하기
                 </PremiumButton>

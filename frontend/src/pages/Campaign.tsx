@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, Sword, Lock } from 'lucide-react';
 import axios from 'axios';
@@ -34,10 +34,30 @@ const REGION_INFO: Record<string, { name: string; color: string; description: st
 
 export default function Campaign() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [stages, setStages] = useState<RegionStages>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState<string>('LCP');
+  const [selectedRegion, setSelectedRegion] = useState<string>(() => {
+    const region = new URLSearchParams(window.location.search).get('region');
+    if (region && Object.prototype.hasOwnProperty.call(REGION_INFO, region)) return region;
+    try {
+      const saved = window.sessionStorage.getItem('campaign-region');
+      if (saved && Object.prototype.hasOwnProperty.call(REGION_INFO, saved)) return saved;
+    } catch { /* storage disabled */ }
+    return 'LCP';
+  });
+  useEffect(() => {
+    const region = searchParams.get('region');
+    if (region && Object.prototype.hasOwnProperty.call(REGION_INFO, region) && region !== selectedRegion) {
+      setSelectedRegion(region);
+    }
+  }, [searchParams]);
+  const chooseRegion = (region: string) => {
+    setSelectedRegion(region);
+    try { window.sessionStorage.setItem('campaign-region', region); } catch { /* storage disabled */ }
+    setSearchParams({ region }, { replace: true });
+  };
 
   useEffect(() => {
     fetchStages();
@@ -62,7 +82,7 @@ export default function Campaign() {
 
   const handleBattle = (stageId: number) => {
     // Navigate to battle screen
-    navigate(`/campaign/battle/${stageId}`);
+    navigate(`/campaign/battle/${stageId}?region=${encodeURIComponent(selectedRegion)}`);
   };
 
   const renderStars = (stars: number) => {
@@ -125,7 +145,7 @@ export default function Campaign() {
               key={region}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedRegion(region)}
+              onClick={() => chooseRegion(region)}
               className={`p-4 rounded-xl border-2 transition-all ${
                 selectedRegion === region
                   ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'

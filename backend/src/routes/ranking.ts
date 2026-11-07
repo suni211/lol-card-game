@@ -49,7 +49,8 @@ router.get('/', async (req, res) => {
       FROM users u
       LEFT JOIN titles t ON u.equipped_title_id=t.id
       ${pvpStatsJoin}
-      WHERE u.is_admin=FALSE AND u.is_active=TRUE AND u.username NOT LIKE 'AI_%'
+      WHERE u.is_active=TRUE AND u.username NOT LIKE 'AI_%'
+        AND (u.is_admin=FALSE OR COALESCE(pvp.total_matches,0)>0)
       ORDER BY u.rating DESC,u.id ASC
       LIMIT ?`,[limit]);
 
@@ -87,9 +88,14 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
     const user=rows[0];
     // The same deterministic ordering as /ranking: rating DESC, user id ASC.
     const [[rank]]:any=await pool.query(
-      `SELECT COUNT(*)+1 AS rank FROM users
-       WHERE is_admin=FALSE AND is_active=TRUE AND username NOT LIKE 'AI_%'
-         AND (rating>? OR (rating=? AND id<?))`,
+      `SELECT COUNT(*)+1 AS rank FROM users ranked
+       WHERE ranked.is_active=TRUE AND ranked.username NOT LIKE 'AI_%'
+         AND (ranked.is_admin=FALSE OR EXISTS (
+           SELECT 1 FROM competitive_matches_v2 m
+           WHERE m.status='COMPLETED'
+             AND (m.player1_id=ranked.id OR m.player2_id=ranked.id)
+         ))
+         AND (ranked.rating>? OR (ranked.rating=? AND ranked.id<?))`,
       [user.rating,user.rating,id]
     );
     res.setHeader('Cache-Control','no-store');

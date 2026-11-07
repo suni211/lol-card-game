@@ -296,7 +296,7 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
     const [rows]:any = await pool.query(
       `SELECT p.id,p.name,p.team,p.position,p.region,p.season,
               p.overall,p.nationality,p.image_url,
-              COALESCE(wlb.base_overall,p.overall) AS base_overall,
+              (p.overall - COALESCE(wlb.boost_amount,0)) AS base_overall,
               COALESCE(wlb.boost_amount,0) AS live_boost,
               COALESCE(ps.cs,p.overall) AS cs,
               COALESCE(ps.teamfight,p.overall) AS teamfight,

@@ -233,7 +233,7 @@ router.get('/search-players', authMiddleware, adminMiddleware, async (req: AuthR
 
     // 선수 검색 (이름만, 최대 20개)
     const [players]: any = await pool.query(
-      `SELECT id, name, team, position, overall, region, season,
+      `SELECT id, name, team, position, overall, region, season, nationality,
               CASE
                 WHEN name LIKE 'ICON%' THEN 'ICON'
                 WHEN overall <= 80 THEN 'COMMON'
@@ -306,20 +306,35 @@ router.put('/player-nationality/:id', authMiddleware, adminMiddleware, async (re
   const conn=await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [players]:any=await conn.query('SELECT id,name,season,nationality FROM players WHERE id=? FOR UPDATE',[playerId]);
+    const [players]:any=await conn.query(
+      'SELECT id,name,team,position,season,nationality FROM players WHERE id=? FOR UPDATE',
+      [playerId]
+    );
     if(!players.length){
       await conn.rollback();
       return res.status(404).json({success:false,error:'해당 카드를 찾을 수 없습니다.'});
     }
-    await conn.query('UPDATE players SET nationality=? WHERE id=?',[nationality,playerId]);
+    const applyToAllSeasons = req.body?.applyToAllSeasons === true;
+    const [changed]:any = applyToAllSeasons
+      ? await conn.query(
+          'UPDATE players SET nationality=? WHERE name=? AND team=? AND position=?',
+          [nationality, players[0].name, players[0].team, players[0].position]
+        )
+      : await conn.query('UPDATE players SET nationality=? WHERE id=?',[nationality,playerId]);
+    const changedCount = Number(changed.affectedRows) || 0;
     await conn.query(
       'INSERT INTO admin_logs (admin_id,action,target_user_id,details) VALUES (?,?,NULL,?)',
       [req.user!.id,'UPDATE_PLAYER_NATIONALITY',
-        JSON.stringify({playerId,name:players[0].name,season:players[0].season,
-          previous:players[0].nationality,newNationality:nationality})]
+        JSON.stringify({playerId,name:players[0].name,team:players[0].team,
+          position:players[0].position,season:players[0].season,
+          previous:players[0].nationality,newNationality:nationality,
+          applyToAllSeasons,changedCount})]
     );
     await conn.commit();
-    return res.json({success:true,message:`${players[0].name} 국적 ${nationality} 저장 완료`});
+    return res.json({
+      success:true,changedCount,
+      message:`${players[0].name} 국적 ${nationality} 저장 완료 (${changedCount}개 카드)`
+    });
   } catch(error){
     await conn.rollback();
     console.error('Player nationality update error:',error);

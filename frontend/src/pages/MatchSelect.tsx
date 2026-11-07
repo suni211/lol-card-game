@@ -6,7 +6,7 @@ export default function MatchSelect() {
     <div className="mx-auto max-w-4xl space-y-7">
       <header className="text-center">
         <Swords className="mx-auto mb-3 h-12 w-12 text-sky-400"/>
-        <h1 className="text-3xl font-black">OVR 가위바위보 대전</h1>
+        <h1 className="text-3xl font-black">대전 선택</h1>
         <p className="mt-3 text-slate-300">포지션 상관없이 선수 카드 5명만 보유하면 출전 가능 · 랜덤 OVR 상대와 3판 2선승제</p>
       </header>
       <div className="grid gap-4 sm:grid-cols-2">

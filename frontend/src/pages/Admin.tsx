@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Shield, DollarSign, Minus, FileText, AlertCircle, CreditCard } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
@@ -336,6 +337,15 @@ export default function Admin() {
           </p>
         </motion.div>
 
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-500 bg-white p-5 dark:bg-gray-800">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">전체 선수 / OVR / 국적 / 사진 관리</h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">독립된 선수 관리 페이지에서 모든 시즌 카드를 조회하고 개별 수정할 수 있습니다.</p>
+          </div>
+          <Link to="/admin/players" className="rounded-lg bg-sky-600 px-5 py-3 font-bold text-white hover:bg-sky-500">
+            선수 관리 페이지 열기
+          </Link>
+        </div>
         <div className="mb-8 rounded-xl border border-blue-300 bg-white p-6 shadow-lg dark:border-blue-900 dark:bg-gray-800">
           <h2 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">선수 OVR 편집</h2>
           <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">선수명으로 검색한 뒤 팀·시즌·포지션을 확인하고 정확한 카드 하나만 수정합니다.</p>

@@ -24,3 +24,7 @@ CREATE TABLE IF NOT EXISTS ranked_bo3_series (
 ALTER TABLE ranked_bo3_series
   ADD COLUMN IF NOT EXISTS mode ENUM('AI','RANKED') NOT NULL DEFAULT 'RANKED',
   ADD COLUMN IF NOT EXISTS roster_json LONGTEXT NULL;
+
+-- If the preliminary version created a required deck_id, allow 5-card teams
+-- without a saved deck while keeping all existing series rows.
+ALTER TABLE ranked_bo3_series MODIFY COLUMN deck_id INT NULL;

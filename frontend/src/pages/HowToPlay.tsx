@@ -31,7 +31,7 @@ export default function HowToPlay() {
         <header className="text-center">
           <BookOpen className="mx-auto mb-3 h-10 w-10 text-cyan-500" />
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">LOL 카드 게임 안내</h1>
-          <p className="mt-3 text-gray-600 dark:text-gray-300">현재 구현된 2026 시즌 모드를 기준으로 안내합니다.</p>
+          <p className="mt-3 text-gray-600 dark:text-gray-300">2026 시즌 게임 가이드</p>
         </header>
         <div className="grid gap-4">
           {sections.map(section => (
@@ -49,7 +49,7 @@ export default function HowToPlay() {
             <Link to="/deck" className="flex items-center justify-center gap-2 rounded-lg bg-slate-700 p-3 text-center font-semibold text-white hover:bg-slate-600">
               <ShieldCheck className="h-4 w-4" /> 덱 편성
             </Link>
-            <Link to="/match-select" className="flex items-center justify-center gap-2 rounded-lg bg-cyan-600 p-3 text-center font-semibold text-white hover:bg-cyan-500">
+            <Link to="/competitive" className="flex items-center justify-center gap-2 rounded-lg bg-cyan-600 p-3 text-center font-semibold text-white hover:bg-cyan-500">
               <Target className="h-4 w-4" /> 경쟁전
             </Link>
             <Link to="/campaign" className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 p-3 text-center font-semibold text-white hover:bg-indigo-500">

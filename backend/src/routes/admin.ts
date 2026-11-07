@@ -293,8 +293,14 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
     const total = Number(count[0].total);
     const [rows]:any = await pool.query(
       `SELECT p.id,p.name,p.team,p.position,p.region,p.season,
-              p.overall,p.nationality,p.image_url
-       FROM players p ${filter}
+              p.overall,p.nationality,p.image_url,
+              COALESCE(ps.cs,p.overall) AS cs,
+              COALESCE(ps.teamfight,p.overall) AS teamfight,
+              COALESCE(ps.laning,p.overall) AS laning,
+              COALESCE(ps.shotcalling,p.overall) AS shotcalling,
+              COALESCE(ps.mental,p.overall) AS mental,
+              COALESCE(ps.clutch,p.overall) AS clutch
+       FROM players p LEFT JOIN player_stats ps ON ps.player_id=p.id ${filter}
        ORDER BY FIELD(p.season,'26WRs','26WR','26 LIVE') DESC,
                 p.region,p.team,p.name,p.position,p.id
        LIMIT ? OFFSET ?`,
@@ -311,6 +317,50 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
     console.error('Player directory error:',error);
     return res.status(500).json({success:false,error:'선수 목록 조회 실패. 국적 컬럼 마이그레이션을 확인하세요.'});
   }
+});
+
+// Update exactly six player stats. OVR is saved separately per series.
+router.put('/player-six-stats/:id', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+  const playerId=Number(req.params.id);
+  const fields=['cs','teamfight','laning','shotcalling','mental','clutch'] as const;
+  const values=fields.map(key => Number(req.body?.[key]));
+  if(!Number.isSafeInteger(playerId)||playerId<1 ||
+    values.some(value=>!Number.isSafeInteger(value)||value<0||value>100)) {
+    return res.status(400).json({
+      success:false,error:'CS·한타·라인전·오더·멘탈·클러치 6개를 0~100의 정수로 입력해주세요.'
+    });
+  }
+  const conn=await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [players]:any=await conn.query(
+      'SELECT id,name,team,season FROM players WHERE id=? FOR UPDATE',[playerId]
+    );
+    if(!players.length){
+      await conn.rollback();
+      return res.status(404).json({success:false,error:'선수 카드를 찾을 수 없습니다.'});
+    }
+    await conn.query(
+      `INSERT INTO player_stats (player_id,cs,teamfight,laning,shotcalling,mental,clutch)
+       VALUES (?,?,?,?,?,?,?)
+       ON DUPLICATE KEY UPDATE cs=VALUES(cs),teamfight=VALUES(teamfight),
+         laning=VALUES(laning),shotcalling=VALUES(shotcalling),
+         mental=VALUES(mental),clutch=VALUES(clutch)`,
+      [playerId,...values]
+    );
+    await conn.query(
+      'INSERT INTO admin_logs (admin_id,action,target_user_id,details) VALUES (?,?,NULL,?)',
+      [req.user!.id,'UPDATE_PLAYER_SIX_STATS',
+        JSON.stringify({playerId,season:players[0].season,
+          stats:Object.fromEntries(fields.map((key,i)=>[key,values[i]]))})]
+    );
+    await conn.commit();
+    return res.json({success:true,message:`${players[0].name} 선수 능력치 저장 완료`});
+  }catch(error){
+    await conn.rollback();
+    console.error('Admin six-stat update:',error);
+    return res.status(500).json({success:false,error:'능력치 저장 실패. 2026_competitive_pvp_six_stats.sql 적용 여부를 확인하세요.'});
+  }finally{conn.release();}
 });
 
 // Update the OVR of one exact player card series. Never modify a whole name across seasons.

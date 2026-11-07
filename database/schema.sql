@@ -617,6 +617,7 @@ CREATE TABLE IF NOT EXISTS market_transactions (
   buyer_id INT,                      -- NULL = 아직 판매되지 않음
   card_id INT NOT NULL,              -- 거래되는 카드 ID
   listing_price INT NOT NULL,        -- 등록 가격
+  enhancement_level TINYINT UNSIGNED NULL, -- 등록 당시 카드 강화 등급
   sold_price INT,                    -- 실제 판매가 (판매되면 기록)
   status ENUM('LISTED', 'SOLD', 'CANCELLED') DEFAULT 'LISTED',
   listed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

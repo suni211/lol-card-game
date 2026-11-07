@@ -58,7 +58,16 @@ export default function Market() {
     }catch(e:any){setError(e.response?.data?.error||'이적시장을 불러오지 못했습니다.');}
     finally{setLoading(false);}
   },[headers]);
-  useEffect(()=>{void load();},[load]);
+  useEffect(()=>{
+    void load();
+    const refresh = () => { if (document.visibilityState === 'visible') void load(); };
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener('lcg:data-updated', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('lcg:data-updated', refresh);
+    };
+  },[load]);
 
   const activeIds = useMemo(()=>new Set(myListings.filter(m=>m.status==='LISTED').map(m=>m.card_id)),[myListings]);
   const saleCards = myCards.filter(c=>!activeIds.has(c.id));

@@ -39,10 +39,13 @@ router.get('/popular',async(_req,res)=>{
       `SELECT p.id AS player_id,p.name,p.team,p.position,p.season,p.overall,p.image_url,
         COUNT(DISTINCT CASE WHEN mt.status='SOLD' THEN mt.id END) AS sold_count,
         COUNT(DISTINCT CASE WHEN mt.status='LISTED' THEN mt.id END) AS listing_count,
-        COALESCE(MAX(CASE WHEN mt.status='SOLD' THEN mt.sold_at END),NULL) AS last_sold_at
-       FROM players p INNER JOIN market_transactions mt ON mt.player_id=p.id
+        COUNT(DISTINCT uc.id) AS held_count,
+        MAX(CASE WHEN mt.status='SOLD' THEN mt.sold_at END) AS last_sold_at
+       FROM players p
+       LEFT JOIN market_transactions mt ON mt.player_id=p.id
+       LEFT JOIN user_cards uc ON uc.player_id=p.id
        GROUP BY p.id,p.name,p.team,p.position,p.season,p.overall,p.image_url
-       ORDER BY sold_count DESC,listing_count DESC,last_sold_at DESC,p.id ASC
+       ORDER BY sold_count DESC,listing_count DESC,held_count DESC,last_sold_at DESC,p.overall DESC,p.id ASC
        LIMIT 3`);
     res.setHeader('Cache-Control','no-store');
     return res.json({success:true,data:rows});

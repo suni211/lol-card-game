@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { ShoppingCart, Search, RefreshCw, Tag, Trash2 } from 'lucide-react';
+import { ShoppingCart, Search, RefreshCw, Tag, Trash2, UserRound } from 'lucide-react';
+import CountryFlag from '../components/CountryFlag';
+import {getPlayerImageUrl} from '../utils/playerImage';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
@@ -13,7 +15,7 @@ type Listing = {
 };
 type MyCard = {
   id:number; level:number;
-  player: { id:number; name:string; team:string; position:string; overall:number; season?:string };
+  player: { id:number; name:string; team:string; position:string; overall:number; season?:string; nationality?:string|null; image_url?:string|null };
 };
 type OwnListing = Listing & { status:string };
 const maxPrice = (level:number) => 50000 * (1 + Math.max(0, Math.min(10, Number(level)||0)));
@@ -26,6 +28,7 @@ export default function Market() {
   const [myCards,setMyCards] = useState<MyCard[]>([]);
   const [myListings,setMyListings] = useState<OwnListing[]>([]);
   const [search,setSearch] = useState('');
+  const [inventorySearch,setInventorySearch] = useState('');
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState('');
@@ -55,6 +58,8 @@ export default function Market() {
 
   const activeIds = useMemo(()=>new Set(myListings.filter(m=>m.status==='LISTED').map(m=>m.card_id)),[myListings]);
   const saleCards = myCards.filter(c=>!activeIds.has(c.id));
+  const visibleSaleCards = saleCards.filter(c => [c.player.name,c.player.team,c.player.season,c.player.position]
+    .some(v=>String(v||'').toLowerCase().includes(inventorySearch.trim().toLowerCase())));
   const selected = saleCards.find(c=>c.id===sellCard);
   const filtered = listings.filter(l=>[l.name,l.team,l.season,l.position].some(v=>
     String(v||'').toLowerCase().includes(search.trim().toLowerCase())));
@@ -113,22 +118,60 @@ export default function Market() {
         {error}<button className="ml-3 underline" onClick={()=>void load()}>다시 시도</button>
       </div>}
       <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <h2 className="mb-3 flex items-center gap-2 text-xl font-bold"><Tag className="h-5 w-5 text-amber-400"/>내 카드 판매 등록</h2>
-        <p className="mb-4 text-sm text-slate-400">판매가는 직접 설정합니다. 0강 최대 50,000P · 강화 +1당 50,000P 추가 (10강 최대 550,000P).</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <select aria-label="판매 카드" value={sellCard??''}
-            onChange={e=>{setSellCard(Number(e.target.value)||null);setSellPrice(1000);}}
-            className="min-w-[240px] flex-1 rounded-lg border border-slate-600 bg-slate-800 p-3 text-sm">
-            <option value="">보유 카드 선택</option>
-            {saleCards.map(c=><option key={c.id} value={c.id}>{c.player.name} · {c.player.team} · {c.player.season||''} · {c.player.overall} OVR · +{c.level}강 (카드 #{c.id})</option>)}
-          </select>
-          <input aria-label="판매 가격" type="number" min={1} max={selected?maxPrice(selected.level):50000}
-            step={1} value={sellPrice} onChange={e=>setSellPrice(Number(e.target.value))}
-            className="w-40 rounded-lg border border-slate-600 bg-slate-800 p-3 text-sm"/>
+        <h2 className="mb-2 flex items-center gap-2 text-xl font-bold"><Tag className="h-5 w-5 text-amber-400"/>보유 카드 선택</h2>
+        <p className="mb-4 text-sm text-slate-400">판매할 선수를 목록에서 선택하세요. 0강 상한 50,000P, 강화 +1마다 상한 50,000P 증가.</p>
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3">
+          <Search className="h-4 w-4 text-slate-400"/>
+          <input value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}
+            aria-label="보유 카드 검색" placeholder="선수명, 팀, 시즌 검색"
+            className="w-full bg-transparent p-3 text-sm outline-none"/>
+        </div>
+        {visibleSaleCards.length===0?
+          <p className="rounded-lg border border-slate-700 p-5 text-sm text-slate-400">
+            {saleCards.length?'검색된 보유 카드가 없습니다.':'판매할 수 있는 보유 카드가 없습니다.'}
+          </p>:
+          <div className="grid max-h-[32rem] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {visibleSaleCards.map(c=>{
+              const selectedCard = c.id===sellCard;
+              return <button key={c.id} type="button" aria-pressed={selectedCard}
+                onClick={()=>{setSellCard(c.id);setSellPrice(1000);}}
+                className={`overflow-hidden rounded-xl border p-3 text-left transition ${selectedCard?
+                  'border-amber-400 bg-amber-950/40 ring-2 ring-amber-400/60':
+                  'border-slate-700 bg-slate-800 hover:border-slate-500'}`}>
+                <div className="relative mb-2 flex h-28 items-center justify-center overflow-hidden rounded-lg bg-slate-900">
+                  <UserRound className="absolute h-12 w-12 text-slate-600"/>
+                  <img src={getPlayerImageUrl(c.player.name,c.player.season||'26 LIVE',undefined,c.player.image_url||undefined)}
+                    alt={c.player.name} loading="lazy"
+                    onError={e=>{e.currentTarget.style.display='none';}}
+                    className="relative z-10 h-full max-w-full object-contain"/>
+                </div>
+                <div className="mb-1 flex items-center justify-between gap-1">
+                  <span className="truncate text-sm font-black">{c.player.name}</span>
+                  <CountryFlag code={c.player.nationality} size="sm"/>
+                </div>
+                <div className="truncate text-xs text-slate-400">{c.player.team}</div>
+                <div className="mt-1 text-xs text-slate-400">{c.player.season||'26'} · {c.player.position}</div>
+                <div className="mt-2 flex justify-between text-sm font-bold">
+                  <span className="text-sky-300">{c.player.overall} OVR</span>
+                  <span className="text-amber-300">+{c.level}</span>
+                </div>
+              </button>;
+            })}
+          </div>}
+        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+          <div className="min-w-[170px] flex-1">
+            <strong>{selected?selected.player.name:'선택된 선수 없음'}</strong>
+            {selected&&<p className="mt-1 text-xs text-slate-300">+{selected.level}강 · 판매 상한 {points(maxPrice(selected.level))}</p>}
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            판매 가격
+            <input aria-label="판매 가격" type="number" min={1} max={selected?maxPrice(selected.level):50000}
+              step={1} value={sellPrice} onChange={e=>setSellPrice(Number(e.target.value))}
+              className="w-36 rounded-lg border border-slate-600 bg-slate-900 p-3"/>
+          </label>
           <button disabled={busy||!selected} onClick={()=>void list()}
             className="rounded-lg bg-amber-600 px-6 py-3 font-bold hover:bg-amber-500 disabled:opacity-40">판매 등록</button>
         </div>
-        {selected&&<p className="mt-3 text-sm text-amber-300">선택 카드 상한: {points(maxPrice(selected.level))}</p>}
         <p className="mt-2 text-xs text-slate-500">덱에 포함된 카드는 먼저 덱에서 제외해야 판매할 수 있습니다.</p>
       </section>
       <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">

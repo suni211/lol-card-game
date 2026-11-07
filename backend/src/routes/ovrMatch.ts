@@ -33,10 +33,11 @@ async function getTeam(connection: any, userId: number, deckSlot = 1) {
   );
   const byCard = new Map<number, any>(cards.map((card: any) => [Number(card.card_id), card]));
   const result: any[] = [];
-  const seenPlayers = new Set<number>();
+  const seenCardIds = new Set<number>();
   const add = (card: any) => {
-    if (!card || seenPlayers.has(Number(card.player_id)) || result.length >= 5) return;
-    seenPlayers.add(Number(card.player_id));
+    // Distinct owned card copies count separately; never reuse the same inventory ID.
+    if (!card || seenCardIds.has(Number(card.card_id)) || result.length >= 5) return;
+    seenCardIds.add(Number(card.card_id));
     result.push({
       cardId: Number(card.card_id), playerId: Number(card.player_id),
       name: card.name, team: card.team, position: card.position,
@@ -47,7 +48,7 @@ async function getTeam(connection: any, userId: number, deckSlot = 1) {
   selectedIds.forEach(id => add(byCard.get(id)));
   cards.forEach(add);
   if (result.length !== 5) {
-    throw new Error('서로 다른 선수 카드 5장이 필요합니다. 팩을 개봉하고 다시 시도해주세요.');
+    throw new Error('보유 선수 카드 5장이 필요합니다. 팩을 개봉하고 다시 시도해주세요.');
   }
   const power = result.reduce((total, card) => total + card.overall + card.level * 2, 0);
   return { players: result, power, deckId: decks.length ? Number(decks[0].id) : null };

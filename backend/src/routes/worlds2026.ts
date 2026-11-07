@@ -3,6 +3,7 @@ import pool from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import fs from 'fs/promises';
 import path from 'path';
+import { spawn } from 'child_process';
 
 const router = express.Router();
 const SERIES = ['26 LIVE', '26WR', '26WRs'] as const;
@@ -103,6 +104,76 @@ router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
     console.error('worlds2026 boost:',error);
     res.status(500).json({success:false,error:'라이브 부스트 저장 실패'});
   } finally {connection.release();}
+});
+
+// Only authenticated administrators may trigger the protected local import job.
+// It runs on this server and writes assets/DB using the same non-root process
+// identity as the API. Repeated starts cannot fork duplicate import processes.
+type AutoPhotoJob = {
+  running:boolean; startedAt:string|null; finishedAt:string|null;
+  saved:number; skipped:number; failed:number; last:string; error:string|null;
+};
+let autoPhotoJob:AutoPhotoJob = {
+  running:false,startedAt:null,finishedAt:null,
+  saved:0,skipped:0,failed:0,last:'',error:null
+};
+router.get('/photos/auto-status', (_req:AuthRequest,res:Response)=>{
+  return res.json({success:true,data:autoPhotoJob});
+});
+router.post('/photos/auto-import', async (_req:AuthRequest,res:Response)=>{
+  if(autoPhotoJob.running){
+    return res.status(409).json({success:false,error:'선수 사진 자동 등록이 이미 진행 중입니다.',data:autoPhotoJob});
+  }
+  const script=path.resolve(__dirname,'../../scripts/fetch-namuwiki-portraits.cjs');
+  try{
+    await fs.access(script);
+  }catch{
+    return res.status(500).json({success:false,error:'사진 자동 등록 스크립트가 없습니다. 최신 코드를 배포하세요.'});
+  }
+  autoPhotoJob={
+    running:true,startedAt:new Date().toISOString(),finishedAt:null,
+    saved:0,skipped:0,failed:0,last:'시작 중',error:null
+  };
+  try{
+    const child=spawn(process.execPath,[script,'--apply'],{
+      cwd:path.resolve(__dirname,'../..'),env:process.env,
+      stdio:['ignore','pipe','pipe']
+    });
+    let pending='';
+    child.stdout.on('data',(buf:Buffer)=>{
+      pending+=buf.toString('utf8');
+      const lines=pending.split('\n');pending=lines.pop()||'';
+      for(const raw of lines){
+        const line=raw.trim().slice(0,200);
+        if(!line)continue;
+        if(line.startsWith('SAVED '))autoPhotoJob.saved++;
+        else if(line.startsWith('SKIP '))autoPhotoJob.skipped++;
+        else if(line.startsWith('FAILED '))autoPhotoJob.failed++;
+        autoPhotoJob.last=line;
+      }
+    });
+    child.stderr.on('data',(buf:Buffer)=>{
+      const msg=buf.toString('utf8').trim();
+      if(msg)autoPhotoJob.error=msg.slice(-500);
+    });
+    child.on('error',(error:Error)=>{
+      autoPhotoJob.running=false;
+      autoPhotoJob.finishedAt=new Date().toISOString();
+      autoPhotoJob.error=error.message;
+    });
+    child.on('close',(code:number|null)=>{
+      autoPhotoJob.running=false;
+      autoPhotoJob.finishedAt=new Date().toISOString();
+      if(code!==0 && !autoPhotoJob.error){
+        autoPhotoJob.error='자동 수집 종료 코드: '+code;
+      }
+    });
+    return res.json({success:true,message:'선수 사진 자동 등록을 시작했습니다.',data:autoPhotoJob});
+  }catch(error:any){
+    autoPhotoJob.running=false;
+    autoPhotoJob.error=error.message||'실행 실패';
+    return res.status(500).json({success:false,error:'선수 사진 자동 등록을 실행할 수 없습니다.'});
+  }
 });
 
 // Upload binary PNG, JPEG or WebP directly. Base64 JSON previously hit the global

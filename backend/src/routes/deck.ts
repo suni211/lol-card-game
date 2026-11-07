@@ -199,6 +199,8 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         p.region,
         p.season,
         p.salary,
+        p.nationality,
+        p.image_url,
         CASE
           WHEN p.season = 'ICON' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -228,6 +230,8 @@ router.get('/cards', authMiddleware, async (req: AuthRequest, res) => {
         region: card.region,
         season: card.season,
         salary: card.salary,
+        nationality: card.nationality,
+        image_url: card.image_url,
         tier: card.tier
       }
     }));

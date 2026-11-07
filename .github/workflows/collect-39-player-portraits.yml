@@ -1,0 +1,48 @@
+name: Collect missing 2026 player portraits
+
+on:
+  push:
+    paths:
+      - '.github/workflows/collect-39-player-portraits.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --no-audit --no-fund
+      - name: Install image converter without changing package lock
+        working-directory: backend
+        run: npm install --no-save --no-package-lock --no-audit --no-fund sharp
+      - name: Find all 39 missing portraits
+        run: node backend/scripts/collect-remaining-39-static.cjs
+      - name: Upload report and photos as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remaining-39-player-portraits
+          if-no-files-found: warn
+          path: |
+            remaining-39-photo-sources.csv
+            frontend/public/players/26_*.png
+            frontend/public/players/26WR_*.png
+            frontend/public/players/26WRs_*.png
+      - name: Commit verified photos to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/players remaining-39-photo-sources.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: collect verified player portraits for the remaining 39 cards"
+            git push origin HEAD:main
+          fi

@@ -27,11 +27,9 @@ const pvpStatsJoin = `
   ) pvp ON pvp.user_id=u.id
 `;
 
-// Get live player rankings.
-router.get('/', async (req, res) => {
+// Get rankings for every registered user, including users with no PvP history.
+router.get('/', async (_req, res) => {
   try {
-    const requested = Number.parseInt(String(req.query.limit || '100'),10);
-    const limit = Math.max(1, Math.min(Number.isFinite(requested)?requested:100,100));
 
     const [users]: any = await pool.query(`
       SELECT
@@ -49,10 +47,7 @@ router.get('/', async (req, res) => {
       FROM users u
       LEFT JOIN titles t ON u.equipped_title_id=t.id
       ${pvpStatsJoin}
-      WHERE u.is_active=TRUE AND u.username NOT LIKE 'AI_%'
-        AND (u.is_admin=FALSE OR COALESCE(pvp.total_matches,0)>0)
-      ORDER BY u.rating DESC,u.id ASC
-      LIMIT ?`,[limit]);
+      ORDER BY u.rating DESC,u.id ASC`);
 
     res.setHeader('Cache-Control','no-store');
     return res.json({success:true,data:users.map((user:any,index:number)=>({
@@ -74,14 +69,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Current user's leaderboard position, including users outside the top 100.
+// Current user's position uses the same ranking rules as the full leaderboard.
 router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const id=req.user!.id;
     const [rows]:any=await pool.query(
       `SELECT u.id,u.rating,COALESCE(pvp.wins,0) AS wins,
               COALESCE(pvp.losses,0) AS losses
-       FROM users u ${pvpStatsJoin} WHERE u.id=? AND u.is_active=TRUE`,
+       FROM users u ${pvpStatsJoin} WHERE u.id=?`,
       [id]
     );
     if(!rows.length)return res.status(404).json({success:false,error:'사용자를 찾을 수 없습니다.'});
@@ -89,13 +84,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
     // The same deterministic ordering as /ranking: rating DESC, user id ASC.
     const [[rank]]:any=await pool.query(
       `SELECT COUNT(*)+1 AS rank FROM users ranked
-       WHERE ranked.is_active=TRUE AND ranked.username NOT LIKE 'AI_%'
-         AND (ranked.is_admin=FALSE OR EXISTS (
-           SELECT 1 FROM competitive_matches_v2 m
-           WHERE m.status='COMPLETED'
-             AND (m.player1_id=ranked.id OR m.player2_id=ranked.id)
-         ))
-         AND (ranked.rating>? OR (ranked.rating=? AND ranked.id<?))`,
+       WHERE (ranked.rating>? OR (ranked.rating=? AND ranked.id<?))`
       [user.rating,user.rating,id]
     );
     res.setHeader('Cache-Control','no-store');

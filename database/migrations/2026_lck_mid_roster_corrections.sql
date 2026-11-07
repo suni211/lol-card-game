@@ -3,16 +3,13 @@
 -- The C9 Loki card was already seeded in 2026_live_worlds.sql.
 USE lol_card_game;
 
--- Correct the mislabeled existing BRO MID card in place only when there is
--- no correctly assigned BRO Roamer card yet. Keep its player id/inventory links.
-UPDATE players AS legacy
-LEFT JOIN players AS correct
-  ON correct.name='Roamer' AND correct.team='BRO'
-  AND correct.position='MID' AND correct.season='26 LIVE'
-SET legacy.name='Roamer', legacy.image_url=NULL
-WHERE legacy.name='Loki' AND legacy.team='BRO'
-  AND legacy.position='MID' AND legacy.season='26 LIVE'
-  AND correct.id IS NULL;
+-- Correct ALL mislabeled BRO MID cards in place. This still works if a
+-- Roamer record was inserted previously; never leave a BRO Loki behind.
+-- Keep each ID so existing card inventories and histories remain valid.
+UPDATE players
+SET name='Roamer',image_url=NULL
+WHERE name='Loki' AND team='BRO'
+  AND position='MID' AND season='26 LIVE';
 
 -- Also work on databases whose original 2026 seed was never installed.
 INSERT INTO players
@@ -46,5 +43,6 @@ WHERE season='26 LIVE'
   AND (name='Roamer' OR name='Loki')
 ORDER BY team,name,id;
 
--- If BRO Loki still exists alongside BRO Roamer, it is a historical duplicate
--- requiring manual review; this migration never deletes existing player records.
+-- In databases with an already seeded Roamer and an old BRO Loki card,
+-- both IDs may now display Roamer. They are retained to protect ownership;
+-- this migration does not delete or merge player/card records.

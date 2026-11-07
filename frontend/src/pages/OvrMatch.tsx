@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { Swords, Bot, Trophy, RefreshCw, Zap, ShieldCheck } from 'lucide-react';
@@ -22,9 +23,10 @@ const buttons: {choice:Choice;emoji:string}[] = [
 ];
 
 export default function OvrMatch() {
+  const [params] = useSearchParams();
   const {token,updateUser} = useAuthStore();
   const headers = useMemo(()=>({Authorization:`Bearer ${token}`}),[token]);
-  const [mode,setMode] = useState<Mode>('AI');
+  const [mode,setMode] = useState<Mode>(params.get('mode') === 'RANKED' ? 'RANKED' : 'AI');
   const [deckSlot,setDeckSlot] = useState(1);
   const [preview,setPreview] = useState<Preview|null>(null);
   const [series,setSeries] = useState<Series|null>(null);

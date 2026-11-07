@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Trophy, Users, RefreshCw, ShieldCheck, Swords } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
@@ -39,6 +40,7 @@ export default function CompetitivePvP() {
   const [queue,setQueue] = useState<QueueData>({status:'NONE',match:null});
   const lastMatchId=useRef<number|null>(null);
   const [history,setHistory] = useState<Match[]>([]);
+  const [myRank,setMyRank] = useState<{rank:number;rating:number;tier:string;wins:number;losses:number}|null>(null);
   const [deckSlot,setDeckSlot] = useState(1);
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
@@ -55,6 +57,12 @@ export default function CompetitivePvP() {
     }catch(e:any){setError(e.response?.data?.error||'경쟁전 상태를 확인할 수 없습니다.');}
     finally{setLoading(false);}
   },[headers]);
+  const loadMyRank=useCallback(async()=>{
+    try{
+      const r=await axios.get(`${API_URL}/ranking/me`,{headers});
+      if(r.data.success)setMyRank(r.data.data);
+    }catch(e){console.warn('경쟁전 순위 조회 실패',e);}
+  },[headers]);
   const loadHistory=useCallback(async()=>{
     try{
       const r=await axios.get(`${API_URL}/competitive-pvp/history`,{headers});
@@ -62,10 +70,10 @@ export default function CompetitivePvP() {
     }catch(e){console.error('PvP history:',e);}
   },[headers]);
   useEffect(()=>{
-    void refresh(); void loadHistory();
+    void refresh(); void loadHistory(); void loadMyRank();
     const interval=setInterval(()=>{void refresh();},3000);
     return ()=>clearInterval(interval);
-  },[refresh,loadHistory]);
+  },[refresh,loadHistory,loadMyRank]);
   const join=async()=>{
     if(busy)return;
     setBusy(true);
@@ -100,6 +108,7 @@ export default function CompetitivePvP() {
       if(next.status==='COMPLETED'){
         toast.success(next.winnerId===user?.id?'경쟁전 승리!':'경쟁전 종료');
         await loadHistory();
+        await loadMyRank();
         const me=await axios.get(`${API_URL}/auth/me`,{headers});
         if(me.data.success)updateUser(me.data.data);
       }else if(next.ownSubmitted)toast('전술 제출 완료 · 상대 선택을 기다립니다.');
@@ -110,12 +119,16 @@ export default function CompetitivePvP() {
   const match=queue.match;
   return <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
     <div className="mx-auto max-w-5xl space-y-7">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="flex items-center gap-3 text-3xl font-black">
           <Trophy className="h-8 w-8 text-amber-400"/>경쟁전
         </h1><p className="mt-2 text-sm text-slate-300">실제 유저 대전 · 3판 2선승제</p></div>
-        <button onClick={()=>void refresh()} disabled={busy}
-          className="rounded-lg border border-slate-600 px-3 py-2"><RefreshCw size={17}/></button>
+        <div className="flex flex-wrap items-center gap-3">
+          {myRank && <div className="text-sm text-amber-300">내 순위 <strong>#{myRank.rank}</strong> · {myRank.rating} RP · {myRank.wins}승 {myRank.losses}패</div>}
+          <Link to="/ranking" className="rounded-lg border border-amber-600 px-3 py-2 text-sm font-semibold text-amber-300">플레이어 랭킹</Link>
+          <button onClick={()=>{void refresh();void loadMyRank();}} disabled={busy}
+            aria-label="경쟁전 새로고침" className="rounded-lg border border-slate-600 px-3 py-2"><RefreshCw size={17}/></button>
+        </div>
       </header>
       {error&&<p role="alert" className="rounded-lg border border-red-700 p-3 text-red-300">{error}</p>}
       {loading?<p className="rounded-lg bg-slate-900 p-5">불러오는 중...</p>:

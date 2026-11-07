@@ -3,19 +3,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { Player } from '../types';
 import { getPlayerImageUrl, getSeriesLogo, getTeamLogoUrl } from '../utils/playerImage';
 
-const LABELS: Record<string,string> = {
-  KR:'대한민국',CN:'중국',TW:'대만',VN:'베트남',BR:'브라질',US:'미국',CA:'캐나다',
-  FR:'프랑스',DE:'독일',TR:'튀르키예',ES:'스페인',DK:'덴마크',SE:'스웨덴',
-  GR:'그리스',PL:'폴란드',AU:'호주',AR:'아르헨티나',JP:'일본',GB:'영국',
-  BE:'벨기에',CZ:'체코',HR:'크로아티아',SI:'슬로베니아',NO:'노르웨이',
-};
+import CountryFlag, { getCountryName } from './CountryFlag';
+
 const STEPS=['국적','포지션','소속팀','시즌','선수 공개'];
-function flag(code?: string): string {
-  const c=(code||'').toUpperCase();
-  return /^[A-Z]{2}$/.test(c)
-    ? String.fromCodePoint(...Array.from(c).map(x=>0x1F1E6+x.charCodeAt(0)-65))
-    : '🌐';
-}
 export function cardLight(overall: number): 'rainbow' | 'gold' | 'silver' | 'normal' {
   if(overall>=91) return 'rainbow';
   if(overall>=80) return 'gold';
@@ -73,8 +63,8 @@ export default function GachaReveal({
           animate={{opacity:1,scale:1,filter:'blur(0px)'}} exit={{opacity:0,scale:1.2,filter:'blur(12px)'}}
           className="text-center flex flex-col items-center justify-center min-h-[340px]">
           <p className="text-lg font-bold text-sky-200 tracking-[.3em] mb-6">국적</p>
-          <p className="text-8xl mb-7">{flag(nationality)}</p>
-          <p className="font-black text-4xl sm:text-6xl">{LABELS[nationality]||nationality||'국적 미등록'}</p>
+          <div className="mb-7"><CountryFlag code={nationality} size="lg" showCode /></div>
+          <p className="font-black text-4xl sm:text-6xl">{getCountryName(nationality)}</p>
         </motion.div>}
         {step===1&&<motion.div key="position" initial={{opacity:0,y:80,scale:.8}}
           animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-60}}
@@ -106,7 +96,7 @@ export default function GachaReveal({
                 <img src={getSeriesLogo(card.season)} alt={badge} className="w-28 h-12 object-contain"/>
               </div>
               <div className="flex items-center justify-center gap-3 mt-3">
-                <span className="text-2xl">{flag(nationality)}</span>
+                <CountryFlag code={nationality} size="sm" />
                 <span className="text-sm font-bold">{card.position}</span>
                 <img src={getTeamLogoUrl(card.team)} alt={card.team} className="w-10 h-10 object-contain"
                   onError={e=>{e.currentTarget.style.display='none';}}/>

@@ -15,7 +15,7 @@ const FILES={
  'TLAW:Yeon':['TL_Yeon_2026_Split_1.webp'],
  'VKS:zekas':['VKS_Zekas_2026_Split_1.webp']
 };
-const HOSTS=new Set(['i.namu.wiki','file.namu.moe','d.namu.moe','www.namu.moe','namu.moe']);
+const HOSTS=new Set(['i.namu.wiki','file.namu.moe','d.namu.moe','www.namu.moe','m.namu.moe','namu.moe']);
 const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9\p{L}\p{N}]/gu,'');
 const decode=s=>String(s||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"')
   .replace(/&#39;|&apos;/g,"'");
@@ -30,8 +30,18 @@ async function findNamuFilePhoto(name,team){
  if(!filenames)return {error:'NO_VERIFIED_NAMU_FILE'};
  let error='NAMU_FILE_NOT_RETRIEVABLE';
  for(const filename of filenames){
-  for(const base of ['https://www.namu.moe/w/','https://d.namu.moe/w/']){
-   const page=base+encodeURIComponent('파일:'+filename);
+  const pages=['https://www.namu.moe/w/'+encodeURIComponent('파일:'+filename),
+    'https://d.namu.moe/w/'+encodeURIComponent('파일:'+filename)];
+  if(team==='VKS'&&String(name).toLowerCase()==='zekas'){
+    // The actual player biography contains an embedded photo; file-detail
+    // pages often display a broken external preview on Namu mirrors.
+    pages.unshift(
+      'https://www.namu.moe/w/'+encodeURIComponent('세자르 프란사'),
+      'https://m.namu.moe/w/'+encodeURIComponent('세자르 프란사'),
+      'https://www.namu.moe/w/'+encodeURIComponent('Vivo Keyd Stars/리그 오브 레전드')
+    );
+  }
+  for(const page of pages){
    let html;
    try{
     const r=await axios.get(page,{
@@ -42,9 +52,9 @@ async function findNamuFilePhoto(name,team){
    }catch(e){error='NAMU_PAGE_'+String(e.response?.status||e.code||'UNAVAILABLE');continue;}
    for(const tag of html.match(/<img\b[^>]*>/gi)||[]){
     const a=attrs(tag);
-    const alt=a.alt||a.title||'';
+    const alt=a.alt||a.title||a['aria-label']||'';
     if(!norm(alt).includes(norm(filename)))continue;
-    const src=a['data-src']||a.src||a['data-original'];
+    const src=a['data-src']||a['data-original']||a.src;
     if(!src)continue;
     try{
      const u=new URL(src,page);

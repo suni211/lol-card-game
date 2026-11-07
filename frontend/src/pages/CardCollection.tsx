@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
 import CountryFlag from '../components/CountryFlag';
+import LiveBoostTrend,{LiveBoostBadge} from '../components/LiveBoostTrend';
 import {getPlayerImageUrl} from '../utils/playerImage';
 import {
   Book,
@@ -29,6 +30,7 @@ interface Player {
   tier: string;
   season: string;
   image_url: string | null;
+  live_boost?:number;base_overall?:number;
   nationality?: string | null;
   cs?:number;teamfight?:number;laning?:number;shotcalling?:number;mental?:number;clutch?:number;
   collected?: boolean;
@@ -69,6 +71,7 @@ const tierColors: { [key: string]: string } = {
 export default function CardCollection() {
   const { token } = useAuthStore();
   const [cards, setCards] = useState<Player[]>([]);
+  const [trendId,setTrendId]=useState<number|null>(null);
   const [stats, setStats] = useState<CollectionStats>({ collected_count: 0, total_count: 0 });
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [tierProgress, setTierProgress] = useState<Progress[]>([]);
@@ -517,6 +520,10 @@ export default function CardCollection() {
                     </div>
                   </div>
 
+                  {card.season==='26WRs'&&card.collected&&<div className="mt-2 flex flex-col items-start gap-2">
+                    <LiveBoostBadge boost={Number(card.live_boost)||0}/>
+                    <button type="button" onClick={()=>setTrendId(card.id)} className="text-xs font-bold text-sky-300 underline hover:text-sky-200">OVR 변동 그래프</button>
+                  </div>}
                   {card.collected && (
                     <div className="mt-3 grid grid-cols-2 gap-1 border-t border-white/10 pt-2 text-[10px] text-white/70">
                       <span>CS {card.cs ?? '-'}</span>
@@ -644,6 +651,7 @@ export default function CardCollection() {
           </motion.div>
         )}
       </AnimatePresence>
+    {trendId!==null&&<LiveBoostTrend playerId={trendId} onClose={()=>setTrendId(null)}/>}
     </div>
   );
 }

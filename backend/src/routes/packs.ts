@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/database';
+import {updateMissionProgress} from '../utils/missionTracker';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
@@ -66,7 +67,11 @@ router.post('/open', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     await connection.commit();
-
+    await updateMissionProgress(userId,'pack_open',count).catch(e=>console.error('Pack mission:',e));
+    // Card-collect missions receive the actual number of cards opened.
+    // pack_open dispatches one collect event per opened pack, so award extras here.
+    if(cards.length>count) await updateMissionProgress(userId,'card_collect',cards.length-count)
+      .catch(e=>console.error('Card collection mission:',e));
     res.json({
       success: true,
       data: {

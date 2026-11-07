@@ -51,7 +51,8 @@ const isMatchingMaterial=(target:Card,material:Card)=>
     (target.player.name.toLocaleLowerCase()===material.player.name.toLocaleLowerCase() &&
      target.player.team.toLocaleLowerCase()===material.player.team.toLocaleLowerCase()))
     && target.level===material.level) ||
-  target.player.overall===material.player.overall;
+  (target.player.overall + Math.max(0,Math.min(10,target.level))) ===
+  (material.player.overall + Math.max(0,Math.min(10,material.level)));
 
 export default function Enhancement() {
   const { user, token, updateUser } = useAuthStore();
@@ -338,7 +339,7 @@ export default function Enhancement() {
                 강화 안내 (초반 쉬움, 후반 극악)
               </h3>
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
-                <li className="text-purple-600 dark:text-purple-400 font-bold">• 같은 선수 + 동일 강화등급 또는 동일 OVR 카드만 재료로 사용 가능</li>
+                <li className="text-purple-600 dark:text-purple-400 font-bold">• 같은 선수 + 동일 강화등급 또는 강화 포함 최종 OVR이 같은 카드는 다른 선수여도 재료로 사용 가능</li>
                 <li>• +1~+4 도전: 재료 1장당 1.5칸 / +5~+10: 한 장당 1칸</li>
                 <li className="text-green-600 dark:text-green-400 font-bold">• 기본 성공률: +0강 80%, +1강 70%, +2강 60%, +3강 50%, +4강 40%</li>
                 <li className="text-orange-600 dark:text-orange-400">• 후반 성공률: +5강 30%, +6강 15%, +7강 8%, +8강 3%, +9강 1%</li>

@@ -11,11 +11,21 @@ const asInt=(value:unknown,min:number,max:number,fallback:number)=>{
 const fmtSeason=(x:unknown)=>typeof x==='string'?x.trim().slice(0,35):'';
 const fmtSearch=(x:unknown)=>typeof x==='string'?x.trim().slice(0,70):'';
 
+router.get('/classes',async(_req,res)=>{
+  try{
+    const [rows]:any=await pool.query(
+      `SELECT season,COUNT(*) AS cards FROM players
+       WHERE season IS NOT NULL AND season<>'' GROUP BY season
+       ORDER BY FIELD(season,'26 LIVE','26WR','26WRs') DESC,season ASC`);
+    return res.json({success:true,data:rows});
+  }catch(e){console.error('Market classes:',e);return res.status(500).json({success:false,error:'클래스 목록 조회 실패'});}
+});
+
 router.get('/teams',async(_req,res)=>{
   try{
     const [rows]:any=await pool.query(
       `SELECT team,COUNT(*) AS cards FROM players
-       WHERE season IN ('26 LIVE','26WR','26WRs')
+       WHERE team IS NOT NULL AND team<>''
        GROUP BY team ORDER BY team ASC`);
     return res.json({success:true,data:rows});
   }catch(e){console.error('Market teams:',e);return res.status(500).json({success:false,error:'팀컬러 목록 조회 실패'});}
@@ -45,7 +55,7 @@ router.get('/browse',async(req:AuthRequest,res)=>{
   const offset=asInt(req.query.offset,0,100000,0);
   const allowedSort=new Set(['recent','overall','price_asc','price_desc','name','sold']);
   const sort=typeof req.query.sort==='string'&&allowedSort.has(req.query.sort)?req.query.sort:'overall';
-  const where=["p.season IN ('26 LIVE','26WR','26WRs')"];
+  const where=['1=1'];
   const args:any[]=[grade,grade];
   if(name){where.push('(p.name LIKE ? OR p.team LIKE ?)');args.push('%'+name+'%','%'+name+'%');}
   if(team){where.push('p.team=?');args.push(team);}
@@ -84,8 +94,7 @@ router.get('/autocomplete',async(req,res)=>{
   try{
     const [rows]:any=await pool.query(
       `SELECT name,team,season,MIN(id) AS player_id
-       FROM players WHERE season IN ('26 LIVE','26WR','26WRs')
-         AND (name LIKE ? OR team LIKE ?)
+       FROM players WHERE (name LIKE ? OR team LIKE ?)
        GROUP BY name,team,season ORDER BY
          CASE WHEN LOWER(name)=LOWER(?) THEN 0 WHEN LOWER(name) LIKE LOWER(?) THEN 1 ELSE 2 END,
          name ASC LIMIT 12`,

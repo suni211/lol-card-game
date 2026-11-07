@@ -2,6 +2,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import Navbar from './Navbar';
+import FirstTimeTutorial from '../FirstTimeTutorial';
 import Footer from './Footer';
 import ChatPopup from '../Chat/ChatPopup';
 import { Toaster } from 'react-hot-toast';
@@ -157,6 +158,7 @@ export default function Layout() {
         )}
       </AnimatePresence>
 
+      <FirstTimeTutorial />
       <ChatPopup />
       <Toaster
         position={window.innerWidth < 768 ? "bottom-left" : "top-right"}

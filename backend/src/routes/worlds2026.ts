@@ -22,7 +22,7 @@ router.get('/players', async (req, res) => {
   try {
     const [rows]: any = await pool.query(
       `SELECT p.id,p.name,p.team,p.position,p.region,p.season,p.overall,p.image_url,p.nationality,
-          COALESCE(b.base_overall,p.overall) AS base_overall,
+          (p.overall - COALESCE(b.boost_amount,0)) AS base_overall,
           COALESCE(b.boost_amount,0) AS boost_amount,b.achievement,b.evidence_url
        FROM players p LEFT JOIN worlds2026_live_boosts b ON b.player_id=p.id
        WHERE p.season IN ('26 LIVE','26WR','26WRs')
@@ -77,7 +77,8 @@ router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({success:false,error:'26WRs 카드에만 라이브 부스트를 적용할 수 있습니다.'});
     }
     const row=rows[0];
-    const base=Number(row.base_overall ?? row.overall);
+    // players.overall is authoritative; old admin edits may have left stored base_overall stale.
+    const base=Number(row.overall)-Number(row.boost_amount||0);
     const nextOverall=base+boost;
     if (nextOverall < 50 || nextOverall > 160) {
       await connection.rollback();
@@ -87,7 +88,7 @@ router.post('/boost/:playerId', async (req: AuthRequest, res: Response) => {
       `INSERT INTO worlds2026_live_boosts
        (player_id,base_overall,boost_amount,achievement,evidence_url,updated_by)
        VALUES (?,?,?,?,?,?)
-       ON DUPLICATE KEY UPDATE boost_amount=VALUES(boost_amount),
+       ON DUPLICATE KEY UPDATE base_overall=VALUES(base_overall),boost_amount=VALUES(boost_amount),
           achievement=VALUES(achievement),evidence_url=VALUES(evidence_url),
           updated_by=VALUES(updated_by)`,
       [row.id,base,boost,achievement.trim(),evidenceUrl || null,req.user!.id]);

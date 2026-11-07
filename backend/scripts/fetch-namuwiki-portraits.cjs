@@ -9,6 +9,7 @@ const crypto=require('node:crypto');
 const axios=require('axios');
 const mysql=require('mysql2/promise');
 const {findLeaguepediaPhoto,allowed:leaguepediaImageHost}=require('./leaguepedia-source.cjs');
+const {findNamuFilePhoto}=require('./verified-namu-files.cjs');
 require('dotenv').config({path:path.resolve(__dirname,'../.env')});
 const APPLY=process.argv.includes('--apply');
 const OVERWRITE=process.argv.includes('--overwrite');
@@ -159,6 +160,12 @@ async function run(){
         continue;
       }
       let match=await findLeaguepediaPhoto(p.name,p.team);
+      // Verified T1 and Team Liquid filenames on NamuWiki are a second
+      // non-guessing source if Fandom doesn't have a matching headshot.
+      if(match.error){
+        const fromKnownFile=await findNamuFilePhoto(p.name,p.team);
+        if(!fromKnownFile.error)match=fromKnownFile;
+      }
       if(match.error&&NAMU_FALLBACK&&!match.sourceError){
         const fallback=await findPhoto(p.name,p.team);
         if(!fallback.error)match={...fallback,origin:'namuwiki'};

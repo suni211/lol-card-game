@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Trophy, Calendar, CheckCircle, Clock } from 'lucide-react';
+import { Target, Trophy, Calendar, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Mission {
   id: number;
@@ -26,10 +26,11 @@ export default function Missions() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<number | null>(null);
+  const [activePeriod,setActivePeriod] = useState<'DAILY'|'WEEKLY'|'MONTHLY'>('DAILY');
 
   useEffect(() => {
     fetchMissions();
-  }, []);
+  }, [token]);
 
   const fetchMissions = async () => {
     if (!token) {
@@ -182,9 +183,35 @@ export default function Missions() {
             미션
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            미션을 완료하고 보상을 받으세요!
+            일일 · 주간 · 월간 미션을 달성하고 포인트를 획득하세요!
           </p>
         </motion.div>
+
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {(['DAILY','WEEKLY','MONTHLY'] as const).map(type=>{
+              const set=groupedMissions[type];
+              const ready=set.filter(m=>!m.isCompleted&&m.progress>=m.requirement).length;
+              const cleared=set.filter(m=>m.isCompleted).length;
+              return <button key={type} type="button" onClick={()=>setActivePeriod(type)}
+                className={`rounded-xl border px-4 py-3 font-bold transition-colors ${activePeriod===type
+                  ?'border-yellow-400 bg-yellow-100 text-amber-900 dark:bg-amber-950 dark:text-yellow-200'
+                  :'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white'}`}>
+                {getMissionTypeLabel(type)} <span className="ml-1 text-xs opacity-75">{cleared}/{set.length}</span>
+                {ready>0&&<span className="ml-2 rounded-full bg-green-500 px-2 py-0.5 text-xs text-white">수령 가능 {ready}</span>}
+              </button>;
+            })}
+          </div>
+          <button type="button" onClick={()=>void fetchMissions()}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+            <RefreshCw size={16}/>진행도 새로고침
+          </button>
+        </div>
+        {missions.length>0&&<div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          {getMissionTypeLabel(activePeriod)} 미션: {groupedMissions[activePeriod].filter(m=>m.isCompleted).length}개 보상 수령
+          · {groupedMissions[activePeriod].filter(m=>!m.isCompleted&&m.progress>=m.requirement).length}개 수령 가능
+          · {groupedMissions[activePeriod].length}개 전체
+        </div>}
 
         {missions.length === 0 ? (
           /* Empty State */
@@ -204,7 +231,7 @@ export default function Missions() {
         ) : (
           /* Mission Lists */
           <div className="space-y-8">
-            {['DAILY', 'WEEKLY', 'MONTHLY'].map((type) => {
+            {[activePeriod].map((type) => {
               const typeMissions = groupedMissions[type as keyof typeof groupedMissions];
               if (typeMissions.length === 0) return null;
 

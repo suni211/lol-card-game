@@ -91,14 +91,23 @@ async function run(){
    lines.push([p.team,p.name,'EXISTING',(old?.[4]||'').replace(/File%3AFile%3A/i,'File%3A'),old?.[5]||'','']);
    continue;
   }
-  let found=await findLeaguepediaPhoto(p.name,p.team);
-  if(found.error){
-   const fallback=await findNamuFilePhoto(p.name,p.team);
-   if(!fallback.error)found=fallback;
-  }
-  if(found.error&&verifiedPortraits[p.team+':'+p.name]){
-   const options=verifiedPortraits[p.team+':'+p.name];
-   found={page:options[0].page,portrait:{url:options[0].url},alternatives:options};
+  let found;
+  // Explicitly verified official player profile outranks a mirror link
+  // (the latter may resolve yet return HTTP 503 on binary downloads).
+  if(p.team==='VKS'&&p.name==='zekas'){
+   const verified=verifiedPortraits['VKS:zekas'];
+   found={page:verified[0].page,
+      portrait:{url:verified[0].url},alternatives:verified};
+  }else{
+   found=await findLeaguepediaPhoto(p.name,p.team);
+   if(found.error){
+    const fallback=await findNamuFilePhoto(p.name,p.team);
+    if(!fallback.error)found=fallback;
+   }
+   if(found.error&&verifiedPortraits[p.team+':'+p.name]){
+    const options=verifiedPortraits[p.team+':'+p.name];
+    found={page:options[0].page,portrait:{url:options[0].url},alternatives:options};
+   }
   }
   if(found.error){
    missing++;

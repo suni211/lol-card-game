@@ -230,9 +230,14 @@ export default function Navbar() {
                 </Link>
 
                 {user.isAdmin && (
-                  <Link to="/admin" className="rounded-lg px-2 py-1.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700">
-                    관리자
-                  </Link>
+                  <div className="flex flex-wrap gap-1">
+                    <Link to="/admin" className="rounded-lg px-2 py-1.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700">
+                      관리자
+                    </Link>
+                    <Link to="/admin/players" className="rounded-lg px-2 py-1.5 text-sm font-bold text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-gray-700">
+                      선수 관리
+                    </Link>
+                  </div>
                 )}
                 {/* Profile */}
                 <Link

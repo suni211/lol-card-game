@@ -264,13 +264,17 @@ function App() {
       console.log('[App] Points update:', data);
       updateUser({
         points: data.points,
-        level: data.level,
-        exp: data.exp,
+        ...(data.level !== undefined ? {level:data.level} : {}),
+        ...(data.exp !== undefined ? {exp:data.exp} : {}),
       });
     });
 
     // Other players can list, buy and cancel cards while this tab is open.
     socket.on('market_update', () => {
+      window.dispatchEvent(new Event('lcg:data-updated'));
+    });
+    socket.on('ranking_update', () => {
+      window.dispatchEvent(new Event('lcg:ranking-updated'));
       window.dispatchEvent(new Event('lcg:data-updated'));
     });
 
@@ -310,6 +314,7 @@ function App() {
       socket.off('online_users');
       socket.off('pointsUpdate');
       socket.off('market_update');
+      socket.off('ranking_update');
       socket.off('user_update');
       socket.off('moba_match_notification');
 

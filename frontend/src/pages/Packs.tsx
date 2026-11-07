@@ -4,6 +4,7 @@ import { Package, Sparkles, Gift, X, Trophy } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
+import CountryFlag from '../components/CountryFlag';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
@@ -21,6 +22,7 @@ interface OpenedCard {
   position: string;
   overall: number;
   season: string;
+  nationality?: string | null;
   tier: string;
   level: number;
 }
@@ -187,7 +189,7 @@ export default function Packs() {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
-            쿠폰으로 받은 팩을 개봉하여 카드를 획득하세요!
+            가입 보상이나 쿠폰으로 받은 팩을 열어 선수 5장과 국기를 확인하세요!
           </p>
         </motion.div>
 
@@ -334,6 +336,9 @@ export default function Packs() {
                       )}
                     </motion.h2>
 
+                    <div className="mb-4 flex justify-center text-gray-700 dark:text-gray-200">
+                      <CountryFlag code={bestCard.nationality} size="lg" showCode showName />
+                    </div>
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -430,6 +435,9 @@ export default function Packs() {
                       </div>
                       <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                         {card.name}
+                      </div>
+                      <div className="my-2 flex justify-center text-xs text-gray-700 dark:text-white">
+                        <CountryFlag code={card.nationality} size="sm" showCode />
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                         {card.team}

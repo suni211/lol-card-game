@@ -87,10 +87,16 @@ export default function Ranking() {
   const [error,setError] = useState('');
 
   useEffect(() => {
-    fetchRankings();
-    fetchTopDecks();
-    fetchPopularCards();
+    void fetchRankings();
+    void fetchTopDecks();
+    void fetchPopularCards();
     if(token) void fetchMyRank();
+    // Rankings are based on committed competitive matches. Avoid stale tabs.
+    const refresh=window.setInterval(()=>{
+      void fetchRankings();
+      if(token) void fetchMyRank();
+    },20000);
+    return ()=>window.clearInterval(refresh);
   }, [token]);
 
   const fetchTopDecks = async () => {
@@ -118,7 +124,7 @@ export default function Ranking() {
   const fetchRankings = async () => {
     setError('');
     try {
-      const response = await axios.get(`${API_URL}/ranking`);
+      const response = await axios.get(`${API_URL}/ranking`,{params:{t:Date.now()},headers:{'Cache-Control':'no-cache'}});
       if (response.data.success) {
         setRankings(response.data.data);
       }
@@ -134,7 +140,8 @@ export default function Ranking() {
     if(!token)return;
     try {
       const r=await axios.get(`${API_URL}/ranking/me`,{
-        headers:{Authorization:`Bearer ${token}`}
+        headers:{Authorization:`Bearer ${token}`},
+        params:{t:Date.now()}
       });
       if(r.data.success)setMyRank(r.data.data);
     }catch(error){console.warn('Own ranking could not be loaded',error);}

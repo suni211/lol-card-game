@@ -5,6 +5,10 @@ import {authMiddleware,AuthRequest} from '../middleware/auth';
 import {ownedTeam,parseRoster,teamScore,isStrategy,STRATEGY_KEYS,Strategy} from '../utils/competitiveStats';
 
 const router=express.Router();
+const DAILY_AI_MATCH_LIMIT=30;
+const dailyAiCountSql = `SELECT COUNT(*) AS used FROM ranked_bo3_series
+  WHERE user_id=? AND mode='AI'
+    AND DATE(DATE_ADD(created_at, INTERVAL 9 HOUR)) = DATE(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 9 HOUR))`;
 router.use(authMiddleware);
 const parsed=(value:any,fallback:any=[])=>{
   if(value==null)return fallback;
@@ -31,7 +35,10 @@ router.get('/current',async(req:AuthRequest,res:Response)=>{
       const roster=await ownedTeam(pool,req.user!.id,Number.isInteger(slot)&&slot>=1&&slot<=5?slot:1);
       preview={players:roster,power:Math.round(teamScore(roster,'MACRO')),deckId:null};
     }catch(error:any){teamError=error?.message||'카드 5장을 확인해주세요.';}
-    return res.json({success:true,data:{series:publicMatch(games[0]),preview,teamError}});
+    const [counts]:any=await pool.query(dailyAiCountSql,[req.user!.id]);
+    const dailyUsed=Number(counts[0]?.used||0);
+    return res.json({success:true,data:{series:publicMatch(games[0]),preview,teamError,
+      dailyLimit:DAILY_AI_MATCH_LIMIT,dailyUsed,dailyRemaining:Math.max(0,DAILY_AI_MATCH_LIMIT-dailyUsed)}});
   }catch(error){console.error('AI match status:',error);
     return res.status(500).json({success:false,error:'AI 매치를 불러오지 못했습니다.'});
   }
@@ -52,6 +59,11 @@ router.post('/start',async(req:AuthRequest,res:Response)=>{
       "SELECT * FROM ranked_bo3_series WHERE user_id=? AND mode='AI' AND status='ACTIVE' ORDER BY id DESC LIMIT 1 FOR UPDATE",[id]
     );
     if(active.length){await conn.commit();return res.json({success:true,resumed:true,data:publicMatch(active[0])});}
+    const [counts]:any=await conn.query(dailyAiCountSql,[id]);
+    if(Number(counts[0]?.used||0)>=DAILY_AI_MATCH_LIMIT){
+      await conn.rollback();
+      return res.status(429).json({success:false,error:'AI 매치는 하루 최대 30판입니다. 내일 오전 0시(KST) 이후 다시 이용할 수 있습니다.'});
+    }
     const roster=await ownedTeam(conn,id,slot);
     const overallPower=Math.round(teamScore(roster,'MACRO'));
     const opponentPower=340+Math.floor(Math.random()*191);

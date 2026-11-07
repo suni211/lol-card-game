@@ -822,7 +822,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
     // Get all cards with player info
     const allCardIds = [targetCardId, ...materialCardIds];
     const [cards]: any = await pool.query(
-      `SELECT uc.*, p.name as player_name,
+      `SELECT uc.*, p.name as player_name,p.team AS team,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -931,7 +931,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
     // Get all cards with player info
     const allCardIds = [targetCardId, ...materialCardIds];
     const [cards]: any = await connection.query(
-      `SELECT uc.*, p.name as player_name,
+      `SELECT uc.*, p.name as player_name,p.team AS team,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'

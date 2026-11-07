@@ -1,4 +1,5 @@
 name: Collect missing 2026 player portraits
+# Final run: add official LoL Esports VKS Zekas portrait.
 # Last-targeted run: use named ZekaS portrait embedded in the VKS biography.
 
 on:

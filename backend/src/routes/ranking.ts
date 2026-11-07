@@ -1,76 +1,106 @@
 import express from 'express';
 import pool from '../config/database';
+import {authMiddleware,AuthRequest} from '../middleware/auth';
 import { calculateTier } from '../utils/rankTier';
 
 const router = express.Router();
 
-// Get leaderboard
+// Competitive leaderboard: wins/losses come exclusively from completed real PvP
+// matches. Ranked rating is the users.rating value updated by PvP results.
+// AI and campaign matches do not count toward the competitive win percentage.
+const pvpStatsJoin = `
+  LEFT JOIN (
+    SELECT records.user_id,
+           SUM(records.is_win) AS wins,
+           COUNT(*) - SUM(records.is_win) AS losses,
+           COUNT(*) AS total_matches
+    FROM (
+      SELECT player1_id AS user_id,
+             IF(winner_id=player1_id,1,0) AS is_win
+      FROM competitive_matches_v2 WHERE status='COMPLETED'
+      UNION ALL
+      SELECT player2_id AS user_id,
+             IF(winner_id=player2_id,1,0) AS is_win
+      FROM competitive_matches_v2 WHERE status='COMPLETED'
+    ) records
+    GROUP BY records.user_id
+  ) pvp ON pvp.user_id=u.id
+`;
+
+// Get live player rankings.
 router.get('/', async (req, res) => {
   try {
-    const { region, limit = 100 } = req.query;
+    const requested = Number.parseInt(String(req.query.limit || '100'),10);
+    const limit = Math.max(1, Math.min(Number.isFinite(requested)?requested:100,100));
 
-    let query = `
+    const [users]: any = await pool.query(`
       SELECT
-        u.id,
-        u.username,
-        u.tier,
-        u.rating,
-        t.id as title_id,
-        t.name as title_name,
-        t.color as title_color,
-        t.icon as title_icon,
-        t.rarity as title_rarity,
-        COALESCE(MAX(s.wins), 0) as wins,
-        COALESCE(MAX(s.losses), 0) as losses,
-        COALESCE(MAX(s.total_matches), 0) as total_matches,
-        COALESCE(MAX(s.current_streak), 0) as current_streak,
-        COALESCE(MAX(s.longest_win_streak), 0) as longest_win_streak,
-        ROUND((COALESCE(MAX(s.wins), 0) / NULLIF(COALESCE(MAX(s.total_matches), 0), 0)) * 100, 1) as win_rate,
-        (SELECT COUNT(*) FROM user_cards uc WHERE uc.user_id = u.id) as total_cards,
-        (SELECT COUNT(*) FROM user_cards uc JOIN players p ON uc.player_id = p.id WHERE uc.user_id = u.id AND p.name NOT LIKE 'ICON%' AND p.overall > 100) as legendary_cards
+        u.id,u.username,u.tier,u.rating,
+        t.id AS title_id,t.name AS title_name,t.color AS title_color,
+        t.icon AS title_icon,t.rarity AS title_rarity,
+        COALESCE(pvp.wins,0) AS wins,
+        COALESCE(pvp.losses,0) AS losses,
+        COALESCE(pvp.total_matches,0) AS total_matches,
+        ROUND(100 * COALESCE(pvp.wins,0) /
+          NULLIF(COALESCE(pvp.total_matches,0),0),1) AS win_rate,
+        (SELECT COUNT(*) FROM user_cards uc WHERE uc.user_id=u.id) AS total_cards,
+        (SELECT COUNT(*) FROM user_cards uc JOIN players p ON uc.player_id=p.id
+         WHERE uc.user_id=u.id AND p.season<>'ICON' AND p.overall>100) AS legendary_cards
       FROM users u
-      LEFT JOIN user_stats s ON u.id = s.user_id
-      LEFT JOIN titles t ON u.equipped_title_id = t.id
-      WHERE u.is_admin = FALSE AND u.is_active = TRUE AND u.username NOT LIKE 'AI_%'
-      GROUP BY u.id, u.username, u.tier, u.rating, t.id, t.name, t.color, t.icon, t.rarity
-    `;
+      LEFT JOIN titles t ON u.equipped_title_id=t.id
+      ${pvpStatsJoin}
+      WHERE u.is_admin=FALSE AND u.is_active=TRUE AND u.username NOT LIKE 'AI_%'
+      ORDER BY u.rating DESC,u.id ASC
+      LIMIT ?`,[limit]);
 
-    const params: any[] = [];
+    res.setHeader('Cache-Control','no-store');
+    return res.json({success:true,data:users.map((user:any,index:number)=>({
+      rank:index+1,userId:Number(user.id),username:user.username,
+      tier:calculateTier(Number(user.rating)),rating:Number(user.rating),
+      wins:Number(user.wins)||0,losses:Number(user.losses)||0,
+      totalMatches:Number(user.total_matches)||0,
+      winRate:Number(user.win_rate)||0,
+      currentStreak:0,longestWinStreak:0,
+      totalCards:Number(user.total_cards)||0,
+      legendaryCards:Number(user.legendary_cards)||0,
+      title_id:user.title_id||null,title_name:user.title_name||null,
+      title_color:user.title_color||null,title_icon:user.title_icon||null,
+      title_rarity:user.title_rarity||null
+    }))});
+  }catch(error:any){
+    console.error('Competitive leaderboard error:',error);
+    return res.status(500).json({success:false,error:'플레이어 랭킹을 불러올 수 없습니다. PvP DB 마이그레이션을 확인해주세요.'});
+  }
+});
 
-    if (region && region !== 'ALL') {
-      // TODO: Add region filter if needed
-    }
-
-    query += ' ORDER BY u.rating DESC LIMIT ?';
-    params.push(parseInt(limit as string));
-
-    const [users]: any = await pool.query(query, params);
-
-    const leaderboard = users.map((user: any, index: number) => ({
-      rank: index + 1,
-      userId: user.id,
-      username: user.username,
-      tier: calculateTier(user.rating),
-      rating: user.rating,
-      wins: user.wins || 0,
-      losses: user.losses || 0,
-      totalMatches: user.total_matches || 0,
-      currentStreak: user.current_streak || 0,
-      longestWinStreak: user.longest_win_streak || 0,
-      winRate: user.win_rate || 0,
-      totalCards: user.total_cards || 0,
-      legendaryCards: user.legendary_cards || 0,
-      title_id: user.title_id || null,
-      title_name: user.title_name || null,
-      title_color: user.title_color || null,
-      title_icon: user.title_icon || null,
-      title_rarity: user.title_rarity || null,
-    }));
-
-    res.json({ success: true, data: leaderboard });
-  } catch (error: any) {
-    console.error('Get leaderboard error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+// Current user's leaderboard position, including users outside the top 100.
+router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const id=req.user!.id;
+    const [rows]:any=await pool.query(
+      `SELECT u.id,u.rating,COALESCE(pvp.wins,0) AS wins,
+              COALESCE(pvp.losses,0) AS losses
+       FROM users u ${pvpStatsJoin} WHERE u.id=? AND u.is_active=TRUE`,
+      [id]
+    );
+    if(!rows.length)return res.status(404).json({success:false,error:'사용자를 찾을 수 없습니다.'});
+    const user=rows[0];
+    // The same deterministic ordering as /ranking: rating DESC, user id ASC.
+    const [[rank]]:any=await pool.query(
+      `SELECT COUNT(*)+1 AS rank FROM users
+       WHERE is_admin=FALSE AND is_active=TRUE AND username NOT LIKE 'AI_%'
+         AND (rating>? OR (rating=? AND id<?))`,
+      [user.rating,user.rating,id]
+    );
+    res.setHeader('Cache-Control','no-store');
+    return res.json({success:true,data:{
+      rank:Number(rank.rank),rating:Number(user.rating),
+      tier:calculateTier(Number(user.rating)),wins:Number(user.wins)||0,
+      losses:Number(user.losses)||0
+    }});
+  }catch(error){
+    console.error('Own competitive rank error:',error);
+    return res.status(500).json({success:false,error:'내 경쟁전 순위를 불러올 수 없습니다.'});
   }
 });
 

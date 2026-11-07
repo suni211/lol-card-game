@@ -140,7 +140,7 @@ router.post('/photo/:playerId', uploadParser, async (req: AuthRequest, res: Resp
   const extension = png ? 'png' : webp ? 'webp' : 'jpg';
   try {
     const [players]:any = await pool.query(
-      'SELECT id FROM players WHERE id=?', [playerId]
+      'SELECT id,name,team,position FROM players WHERE id=?', [playerId]
     );
     if (!players.length) return res.status(404).json({
       success: false, error: '선수를 찾을 수 없습니다.'
@@ -152,8 +152,16 @@ router.post('/photo/:playerId', uploadParser, async (req: AuthRequest, res: Resp
     // /api/ is already reverse proxied to this Express backend by Nginx.
     // A versioned path busts browser cache after replacing the same image.
     const imageUrl = `/api/player-images/${filename}?v=${Date.now()}`;
-    await pool.query('UPDATE players SET image_url=? WHERE id=?',[imageUrl,playerId]);
-    return res.json({success:true,data:{imageUrl}});
+    const applyAllSeasons = req.query.all === '1';
+    if (applyAllSeasons) {
+      await pool.query(
+        "UPDATE players SET image_url=? WHERE name=? AND team=? AND position=? AND season IN ('26 LIVE','26WR','26WRs')",
+        [imageUrl, players[0].name, players[0].team, players[0].position]
+      );
+    } else {
+      await pool.query('UPDATE players SET image_url=? WHERE id=?',[imageUrl,playerId]);
+    }
+    return res.json({success:true,data:{imageUrl,applyAllSeasons}});
   } catch(error:any) {
     console.error('worlds2026 photo save:',error);
     return res.status(500).json({

@@ -13,7 +13,7 @@ router.get('/:playerId',async(req:AuthRequest,res)=>{
   try{
     const [players]:any=await pool.query(
       `SELECT p.id,p.name,p.team,p.season,p.overall,
-        COALESCE(b.base_overall,p.overall) AS base_overall,
+        (p.overall - COALESCE(b.boost_amount,0)) AS base_overall,
         COALESCE(b.boost_amount,0) AS boost_amount,
         b.achievement,b.evidence_url,b.updated_at
        FROM players p

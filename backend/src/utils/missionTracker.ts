@@ -39,9 +39,16 @@ export async function updateMissionProgress(
           (user_id,mission_id,progress,is_completed,is_claimed,expires_at)
          VALUES (?,?,?,?,FALSE,?)
          ON DUPLICATE KEY UPDATE
-           progress=IF(is_claimed,progress,LEAST(?,progress+?)),
-           is_completed=IF(is_claimed,is_completed,IF(progress>=?,TRUE,FALSE))`,
-        [userId,m.id,step,step>=goal,end,goal,increment,goal]
+           progress=IF(is_claimed,progress,LEAST(?,progress+?))`,
+        [userId,m.id,step,step>=goal,end,goal,increment]
+      );
+      // Re-evaluate against the stored progress in a separate statement to
+      // avoid differences in UPDATE assignment evaluation across MySQL/MariaDB.
+      await conn.query(
+        `UPDATE user_missions SET is_completed=(progress>=?)
+         WHERE user_id=? AND mission_id=? AND expires_at=?
+           AND is_claimed=FALSE`,
+        [goal,userId,m.id,end]
       );
     }
     await conn.commit();

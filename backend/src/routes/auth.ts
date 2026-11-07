@@ -119,10 +119,15 @@ router.post('/google', async (req, res) => {
           const username = ('google_' + googleSub.replace(/[^a-zA-Z0-9]/g, '').slice(-22)).slice(0, 50);
           const randomPassword = await bcrypt.hash(require('crypto').randomBytes(32).toString('hex'), 10);
           const [inserted]: any = await connection.query(
-            'INSERT INTO users (username,email,password,points,tier,rating,google_sub,welcome_packs_remaining) VALUES (?,?,?,10000,\'IRON\',1000,?,5)',
+            'INSERT INTO users (username,email,password,points,tier,rating,google_sub,welcome_packs_remaining) VALUES (?,?,?,10000,\'IRON\',1000,?,0)',
             [username, email, randomPassword, googleSub]
           );
           userId = inserted.insertId;
+          await connection.query(
+            `INSERT INTO user_packs (user_id, pack_type, quantity) VALUES (?, 'STANDARD', 1)
+             ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
+            [userId]
+          );
           await connection.query('INSERT INTO user_stats (user_id) VALUES (?)', [userId]);
         }
       }

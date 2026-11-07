@@ -34,5 +34,5 @@ export function getPlayerImageUrl(
   return `/players/${prefix}_${cleanName}.png`;
 }
 export function getPlayerPlaceholder(): string {
-  return '/players/placeholder.png';
+  return '/players/placeholder.svg';
 }

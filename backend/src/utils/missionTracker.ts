@@ -1,78 +1,53 @@
 import pool from '../config/database';
+import {MissionPeriod,periodEnd} from './missionPeriod';
 
-type MissionType = 'ai_battle' | 'rank_match' | 'gacha';
-type PeriodType = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+export type MissionEvent =
+  'gacha'|'card_collect'|'pack_open'|
+  'ai_round'|'ai_battle'|'ai_win'|
+  'rank_round'|'rank_match'|'rank_win'|
+  'deck_save'|'market_list'|'market_buy'|'market_sell'|
+  'enhance_attempt'|'enhance_success'|'trade_complete';
 
+// Every event is awarded only after a committed server-side action.
+// The unique (user_id,mission_id,expires_at) index makes this safe against
+// concurrent game results, and is_claimed stops post-claim progress edits.
 export async function updateMissionProgress(
-  userId: number,
-  missionType: MissionType,
-  increment: number = 1
-): Promise<void> {
-  const connection = await pool.getConnection();
-
-  try {
-    await connection.beginTransaction();
-
-    // Get all missions of this type
-    const [missions]: any = await connection.query(
-      'SELECT id, type, requirement FROM missions WHERE mission_type = ?',
-      [missionType]
+  userId:number,missionType:MissionEvent,increment:number=1
+):Promise<void>{
+  if(!Number.isSafeInteger(userId)||userId<1||
+     !Number.isSafeInteger(increment)||increment<1||increment>500)return;
+  const conn=await pool.getConnection();
+  try{
+    await conn.beginTransaction();
+    const events:MissionEvent[]=missionType==='gacha'
+      ?['gacha','card_collect']
+      :missionType==='pack_open'
+      ?['pack_open','card_collect']
+      :[missionType];
+    const keys=events.map(()=>'?').join(',');
+    const [missions]:any=await conn.query(
+      `SELECT id,type,requirement FROM missions
+       WHERE is_active=1 AND mission_type IN (${keys})`,events
     );
-
-    for (const mission of missions) {
-      // Calculate expiry date based on mission type
-      let expiresAt: Date;
-      const now = new Date();
-
-      if (mission.type === 'DAILY') {
-        expiresAt = new Date(now);
-        expiresAt.setHours(23, 59, 59, 999);
-      } else if (mission.type === 'WEEKLY') {
-        expiresAt = new Date(now);
-        const daysUntilSunday = 7 - now.getDay();
-        expiresAt.setDate(now.getDate() + daysUntilSunday);
-        expiresAt.setHours(23, 59, 59, 999);
-      } else {
-        // MONTHLY
-        expiresAt = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      }
-
-      // Check if user has this mission
-      const [existing]: any = await connection.query(
-        'SELECT id, progress, is_completed FROM user_missions WHERE user_id = ? AND mission_id = ? AND expires_at > NOW()',
-        [userId, mission.id]
+    const now=new Date();
+    for(const m of missions){
+      const end=periodEnd(m.type as MissionPeriod,now);
+      const goal=Number(m.requirement);
+      const step=Math.min(goal,increment);
+      await conn.query(
+        `INSERT INTO user_missions
+          (user_id,mission_id,progress,is_completed,is_claimed,expires_at)
+         VALUES (?,?,?,?,FALSE,?)
+         ON DUPLICATE KEY UPDATE
+           progress=IF(is_claimed,progress,LEAST(?,progress+?)),
+           is_completed=IF(is_claimed,is_completed,IF(progress>=?,TRUE,FALSE))`,
+        [userId,m.id,step,step>=goal,end,goal,increment,goal]
       );
-
-      if (existing.length > 0) {
-        // Update existing mission
-        const userMission = existing[0];
-
-        if (!userMission.is_completed) {
-          const newProgress = userMission.progress + increment;
-          const isCompleted = newProgress >= mission.requirement;
-
-          await connection.query(
-            'UPDATE user_missions SET progress = ?, is_completed = ? WHERE id = ?',
-            [newProgress, isCompleted, userMission.id]
-          );
-        }
-      } else {
-        // Create new user mission
-        const isCompleted = increment >= mission.requirement;
-
-        await connection.query(
-          'INSERT INTO user_missions (user_id, mission_id, progress, is_completed, expires_at) VALUES (?, ?, ?, ?, ?)',
-          [userId, mission.id, increment, isCompleted, expiresAt]
-        );
-      }
     }
-
-    await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    console.error('Update mission progress error:', error);
+    await conn.commit();
+  }catch(error){
+    await conn.rollback();
+    console.error('Mission progress tracking error:',error);
     throw error;
-  } finally {
-    connection.release();
-  }
+  }finally{conn.release();}
 }

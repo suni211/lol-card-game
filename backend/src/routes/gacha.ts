@@ -774,35 +774,28 @@ const MAX_ENHANCEMENT_LEVEL = 10;
 const OVR_DOWNGRADE_RATES = [0, 0, 0, 0, 0, 1, 2, 3, 5, 7]; // 0→1 ~ 4→5 실패 시 OVR 하락 없음, 이후 1~7 하락
 
 // Calculate success rate based on material cards quality (up to 5 materials)
+// The material gauge controls the actual probability, not merely its visual fill.
+// At five filled slots, use the full level rate plus quality bonuses.
+// Partial fill scales the ENTIRE rate by the fraction of five slots filled.
+// Keep the same function for preview and the final roll.
 function calculateEnhancementRate(
   baseRate: number,
   targetCard: any,
   materialCards: any[],
-  targetPlayer: any,
+  _targetPlayer: any,
   materialPlayers: any[]
 ): number {
-  let successRate = baseRate;
-
-  // Process each material card
-  materialCards.forEach((materialCard, index) => {
+  const bonus = materialCards.reduce((total: number, materialCard: any, index: number) => {
     const materialPlayer = materialPlayers[index];
-
-    // Same player bonus: +5% per same player material
-    if (targetCard.player_id === materialCard.player_id) {
-      successRate += 5;
-    }
-
-    // Overall bonus: 오버롤에 비례 (60 이상부터 시작)
-    // 60: 0%, 70: +1%, 80: +2%, 90: +3%, 100: +4%, 110: +5%, 120: +6%
-    const overallBonus = Math.floor(Math.max(0, materialPlayer.overall - 60) / 10);
-    successRate += overallBonus;
-
-    // Enhancement level of material: each level = +0.3%
-    successRate += materialCard.level * 0.3;
-  });
-
-  // Cap at 70% max, 2% min
-  return Math.min(70, Math.max(2, successRate));
+    const samePlayerBonus = Number(targetCard.player_id) === Number(materialCard.player_id) ? 5 : 0;
+    const overallBonus = Math.floor(Math.max(0, Number(materialPlayer.overall) - 60) / 10);
+    const levelBonus = Math.max(0, Number(materialCard.level) || 0) * 0.3;
+    return total + samePlayerBonus + overallBonus + levelBonus;
+  }, 0);
+  const filledSlots = enhancementMaterialSlots(Number(targetCard.level),materialCards.length);
+  const fillRatio = filledSlots / 5;
+  const fullGaugeRate = Math.min(100, Math.max(0, baseRate + bonus));
+  return Math.round(fullGaugeRate * fillRatio * 100) / 100;
 }
 
 // Get enhancement rate (for preview before enhance)
@@ -881,6 +874,8 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
       data: {
         baseRate,
         successRate,
+        fillRatio: enhancementMaterialSlots(targetCard.level,materialCards.length) / 5,
+        fullGaugeRate: Math.min(100, Math.round(successRate * 5 / Math.max(0.001,enhancementMaterialSlots(targetCard.level,materialCards.length)) * 100) / 100),
         cost,
         ovrDowngrade,
         filledSlots: enhancementMaterialSlots(targetCard.level,materialCards.length),

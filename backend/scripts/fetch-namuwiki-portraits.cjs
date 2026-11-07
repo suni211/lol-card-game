@@ -13,6 +13,8 @@ require('dotenv').config({path:path.resolve(__dirname,'../.env')});
 const APPLY=process.argv.includes('--apply');
 const OVERWRITE=process.argv.includes('--overwrite');
 const NAMU_FALLBACK=process.argv.includes('--namu-fallback');
+const nameFlag=process.argv.find(a=>a.startsWith('--player='));
+const teamFlag=process.argv.find(a=>a.startsWith('--team='));
 const maxFlag=process.argv.find(a=>a.startsWith('--limit='));
 const LIMIT=maxFlag?Math.max(1,Math.min(1000,parseInt(maxFlag.split('=')[1],10)||1000)):1000;
 const clean=t=>String(t||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9\p{L}\p{N}]/gu,'');
@@ -135,8 +137,10 @@ async function run(){
     }
     console.log('Roster identities: '+identities.size+' / mode: '+(APPLY?'APPLY':'DRY RUN'));
     for(const cards of identities.values()){
-      if(checked++>=LIMIT)break;
       const p=cards[0];
+      if(nameFlag&&clean(p.name)!==clean(nameFlag.slice('--player='.length)))continue;
+      if(teamFlag&&clean(p.team)!==clean(teamFlag.slice('--team='.length)))continue;
+      if(checked++>=LIMIT)break;
       if(!OVERWRITE&&cards.some(c=>c.image_url)){
         existing++;
         if(APPLY){

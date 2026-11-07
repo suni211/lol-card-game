@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/database';
+import {updateMissionProgress} from '../utils/missionTracker';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
@@ -305,6 +306,10 @@ router.post('/:tradeId/accept', authMiddleware, async (req: AuthRequest, res) =>
     );
 
     await connection.commit();
+    await Promise.allSettled([
+      updateMissionProgress(Number(trade.sender_id),'trade_complete',1),
+      updateMissionProgress(Number(trade.receiver_id),'trade_complete',1)
+    ]);
 
     res.json({ success: true, message: 'Trade accepted' });
   } catch (error: any) {

@@ -14,4 +14,10 @@ CREATE TABLE IF NOT EXISTS market_favorites (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ALTER TABLE market_transactions
   ADD COLUMN IF NOT EXISTS enhancement_level TINYINT UNSIGNED NULL;
+-- For still-active offers, the card's current enhancement level is authoritative.
+-- Do not guess historical grades on already sold cards.
+UPDATE market_transactions mt
+JOIN user_cards uc ON uc.id=mt.card_id
+SET mt.enhancement_level=uc.level
+WHERE mt.status='LISTED' AND mt.enhancement_level IS NULL;
 CREATE INDEX IF NOT EXISTS idx_market_transactions_grade ON market_transactions (player_id,status,enhancement_level,sold_at);

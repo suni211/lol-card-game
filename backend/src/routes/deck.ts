@@ -395,7 +395,7 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
 
     if (cardIds.length > 0) {
       const [userCards]: any = await connection.query(
-        `SELECT uc.id, uc.player_id, p.salary
+        `SELECT uc.id, uc.player_id, p.name AS player_name, p.salary
          FROM user_cards uc
          JOIN players p ON uc.player_id = p.id
          WHERE uc.id IN (?) AND uc.user_id = ?`,
@@ -407,13 +407,17 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
         return res.status(400).json({ success: false, error: '일부 카드가 소유하지 않은 카드입니다.' });
       }
 
-      // Check for duplicate players (same player in multiple positions)
-      const playerIds = userCards.map((card: any) => card.player_id);
-      const uniquePlayerIds = new Set(playerIds);
-
-      if (playerIds.length !== uniquePlayerIds.size) {
+      // One real player per deck, regardless of card class, series or enhancement grade.
+      // Different player IDs can refer to the same player across 26 LIVE / 26WR / 26WRs.
+      const playerNames = userCards.map((card: any) =>
+        String(card.player_name || '').normalize('NFKC').trim().toLocaleLowerCase()
+      );
+      if (new Set(playerNames).size !== playerNames.length) {
         await connection.rollback();
-        return res.status(400).json({ success: false, error: '같은 선수를 여러 포지션에 배치할 수 없습니다.' });
+        return res.status(400).json({
+          success: false,
+          error: '같은 선수는 클래스나 강화 등급이 달라도 한 덱에 2장 이상 편성할 수 없습니다.'
+        });
       }
 
       // Check total salary (salary cap = 115)
@@ -804,7 +808,7 @@ router.post('/preset', authMiddleware, async (req: AuthRequest, res) => {
 
     if (cardIds.length > 0) {
       const [userCards]: any = await connection.query(
-        `SELECT uc.id, uc.player_id, p.salary
+        `SELECT uc.id, uc.player_id, p.name AS player_name, p.salary
          FROM user_cards uc
          JOIN players p ON uc.player_id = p.id
          WHERE uc.id IN (?) AND uc.user_id = ?`,
@@ -816,13 +820,17 @@ router.post('/preset', authMiddleware, async (req: AuthRequest, res) => {
         return res.status(400).json({ success: false, error: '일부 카드가 소유하지 않은 카드입니다.' });
       }
 
-      // Check for duplicate players
-      const playerIds = userCards.map((card: any) => card.player_id);
-      const uniquePlayerIds = new Set(playerIds);
-
-      if (playerIds.length !== uniquePlayerIds.size) {
+      // One real player per deck, regardless of card class, series or enhancement grade.
+      // Different player IDs can refer to the same player across 26 LIVE / 26WR / 26WRs.
+      const playerNames = userCards.map((card: any) =>
+        String(card.player_name || '').normalize('NFKC').trim().toLocaleLowerCase()
+      );
+      if (new Set(playerNames).size !== playerNames.length) {
         await connection.rollback();
-        return res.status(400).json({ success: false, error: '같은 선수를 여러 포지션에 배치할 수 없습니다.' });
+        return res.status(400).json({
+          success: false,
+          error: '같은 선수는 클래스나 강화 등급이 달라도 한 덱에 2장 이상 편성할 수 없습니다.'
+        });
       }
 
       // Check total salary (salary cap = 115)

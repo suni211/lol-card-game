@@ -26,7 +26,7 @@ export default function OvrMatch() {
   const [params] = useSearchParams();
   const {token,updateUser} = useAuthStore();
   const headers = useMemo(()=>({Authorization:`Bearer ${token}`}),[token]);
-  const [mode,setMode] = useState<Mode>(params.get('mode') === 'RANKED' ? 'RANKED' : 'AI');
+  const [mode,setMode] = useState<Mode>(params.get('mode') === 'AI' ? 'AI' : 'RANKED');
   const [deckSlot,setDeckSlot] = useState(1);
   const [preview,setPreview] = useState<Preview|null>(null);
   const [series,setSeries] = useState<Series|null>(null);
@@ -89,7 +89,7 @@ export default function OvrMatch() {
     <div className="mx-auto max-w-5xl space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="flex items-center gap-3 text-3xl font-black"><Swords className="h-9 w-9 text-sky-400"/>OVR 가위바위보 대전</h1>
+          <h1 className="flex items-center gap-3 text-3xl font-black"><Swords className="h-9 w-9 text-sky-400"/>{(series?.status === 'ACTIVE' ? series.mode : mode) === 'RANKED' ? '경쟁전' : 'AI 매치'}</h1>
           <p className="mt-2 text-sm text-slate-300">선수 카드 5명 · 포지션 제한 없음 · 랜덤 상대 OVR · 최대 3판 2선승제</p>
         </div>
         <button onClick={()=>void load()} disabled={busy} className="flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 disabled:opacity-40"><RefreshCw className="h-4 w-4"/>새로고침</button>

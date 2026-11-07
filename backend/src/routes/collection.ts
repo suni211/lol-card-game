@@ -99,10 +99,14 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     }
     const where = filters.length ? 'WHERE ' + filters.join(' AND ') : '';
     const [cards]: any = await pool.query(
-      `SELECT p.id,p.name,p.team,p.position,p.overall,p.tier,p.season,p.image_url,
+      `SELECT p.id,p.name,p.team,p.position,p.overall,p.tier,p.season,p.image_url,p.nationality,
+        COALESCE(ps.cs,p.overall) AS cs,COALESCE(ps.teamfight,p.overall) AS teamfight,
+        COALESCE(ps.laning,p.overall) AS laning,COALESCE(ps.shotcalling,p.overall) AS shotcalling,
+        COALESCE(ps.mental,p.overall) AS mental,COALESCE(ps.clutch,p.overall) AS clutch,
         (uc.player_id IS NOT NULL) AS collected,uc.first_obtained_at,
         COALESCE(uc.total_obtained,0) AS total_obtained
-        FROM players p LEFT JOIN user_collected_cards uc
+        FROM players p LEFT JOIN player_stats ps ON ps.player_id=p.id
+        LEFT JOIN user_collected_cards uc
           ON uc.player_id=p.id AND uc.user_id=?
         ${where} ORDER BY p.overall DESC,p.name ASC`, args);
     const [[total]]: any = await pool.query('SELECT COUNT(*) AS n FROM players');

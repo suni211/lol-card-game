@@ -28,6 +28,8 @@ echo 'Restoring deck slot columns...'
 sudo mariadb < database/migrations/2026_deck_compat.sql
 echo 'Preparing OVR rock-paper-scissors best-of-three games...'
 sudo mariadb < database/migrations/2026_ranked_bo3.sql
+echo 'Preparing six-stat real-user competitive PvP...'
+sudo mariadb < database/migrations/2026_competitive_pvp_six_stats.sql
 echo 'Restoring agent cooldown table...'
 sudo mariadb < database/migrations/2026_agent_usage.sql
 echo 'Preparing verified 2026 real coaching staff and 1-5 star scouting...'

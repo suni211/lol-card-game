@@ -578,7 +578,7 @@ export default function CardCollection() {
                   <input
                     type="range"
                     min="50"
-                    max="130"
+                    max="160"
                     value={deleteThreshold}
                     onChange={(e) => {
                       const value = parseInt(e.target.value);

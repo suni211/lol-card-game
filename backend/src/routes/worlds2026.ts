@@ -140,7 +140,7 @@ router.post('/photos/auto-import', async (_req:AuthRequest,res:Response)=>{
       stdio:['ignore','pipe','pipe']
     });
     let pending='';
-    child.stdout.on('data',(buf:Buffer)=>{
+    child.stdout?.on('data',(buf:Buffer)=>{
       pending+=buf.toString('utf8');
       const lines=pending.split('\n');pending=lines.pop()||'';
       for(const raw of lines){
@@ -152,7 +152,7 @@ router.post('/photos/auto-import', async (_req:AuthRequest,res:Response)=>{
         autoPhotoJob.last=line;
       }
     });
-    child.stderr.on('data',(buf:Buffer)=>{
+    child.stderr?.on('data',(buf:Buffer)=>{
       const msg=buf.toString('utf8').trim();
       if(msg)autoPhotoJob.error=msg.slice(-500);
     });

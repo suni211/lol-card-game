@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import type { ReferralInfo } from '../types';
 import { Gift, Users, TrendingUp, Copy, Check } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 const Referral: React.FC = () => {
   const { token } = useAuthStore();
@@ -152,7 +152,7 @@ const Referral: React.FC = () => {
             <Gift className="w-6 h-6 text-purple-500" />
             <h3 className="text-lg font-semibold">가입 보너스</h3>
           </div>
-          <p className="text-3xl font-bold text-purple-600">5,000P</p>
+          <p className="text-3xl font-bold text-purple-600">1,000P</p>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             양측 모두 획득
           </p>
@@ -293,9 +293,9 @@ const Referral: React.FC = () => {
           <li>1. 위의 추천 코드를 복사하여 친구에게 전달하세요.</li>
           <li>2. 친구가 회원가입 시 추천 코드를 입력합니다.</li>
           <li>3. 가입 즉시 양측 모두 5,000P를 받습니다!</li>
-          <li>4. 친구가 게임을 플레이할 때마다 추가 보너스를 받습니다.</li>
+          <li>4. 가입 보너스는 신규 Google 가입이 완료되면 지급됩니다.</li>
           <li className="text-red-600 dark:text-red-400 font-semibold">
-            ⚠ 주의: 동일한 IP에서는 추천 코드를 사용할 수 없습니다.
+            ⚠ 신규 Google 계정 가입 시 1회 지급되며 기존 계정은 중복 지급되지 않습니다.
           </li>
         </ol>
       </motion.div>

@@ -17,7 +17,7 @@ type SixStats = Record<StatKey,number>;
 const initialStats:SixStats = {cs:50,teamfight:50,laning:50,shotcalling:50,mental:50,clutch:50};
 type Player = {
   id: number; name: string; team: string; position: string; region: string;
-  season: string; overall: number; nationality: string | null; image_url: string | null;
+  season: string; overall: number; base_overall?: number; live_boost?: number; nationality: string | null; image_url: string | null;
   cs:number;teamfight:number;laning:number;shotcalling:number;mental:number;clutch:number;
 };
 type PhotoImportJob = {
@@ -104,7 +104,7 @@ export default function AdminPlayers() {
 
   const choose = (p:Player) => {
     setSelected(p);
-    setOverall(String(p.overall));
+    setOverall(String(p.season === '26WRs' ? (p.base_overall ?? p.overall) : p.overall));
     setStats(Object.fromEntries(statInputs.map(x=>[x.key,Number(p[x.key])])) as SixStats);
     setNationality(p.nationality || '');
   };
@@ -121,7 +121,7 @@ export default function AdminPlayers() {
     setBusy(true);
     try {
       const r=await axios.put(`${API_URL}/admin/player-overall/${selected.id}`,{overall:value},{headers});
-      reloadSelection({...selected,overall:value});
+      reloadSelection({...selected,overall:Number(r.data.data?.overall ?? value),base_overall:value,live_boost:Number(r.data.data?.boost ?? 0)});
       toast.success(r.data.message || 'OVR 저장 완료');
       await load();
     } catch(e:any){toast.error(apiError(e,'OVR 저장 실패'));}
@@ -287,7 +287,7 @@ export default function AdminPlayers() {
             </div>
             <div className="space-y-5">
               <div>
-                <label htmlFor="edit-ovr" className="mb-1 block text-sm font-bold">카드 OVR (해당 시즌만 변경)</label>
+                <label htmlFor="edit-ovr" className="mb-1 block text-sm font-bold">{selected.season === '26WRs' ? '기준 OVR (라이브 부스트 제외)' : '카드 OVR (해당 시즌만 변경)'}</label>
                 <div className="flex gap-2">
                   <input id="edit-ovr" type="number" min={50} max={160} step={1} value={overall}
                     onChange={e=>setOverall(e.target.value)}
@@ -295,6 +295,7 @@ export default function AdminPlayers() {
                   <button disabled={busy} onClick={()=>void saveOverall()}
                     className="inline-flex items-center gap-1 rounded bg-sky-600 px-4 font-bold disabled:opacity-50"><Save size={16}/>저장</button>
                 </div>
+                {selected.season === '26WRs' && <p className="mt-2 text-xs text-amber-300">현재 라이브 {Number(selected.live_boost || 0) > 0 ? '+' : ''}{Number(selected.live_boost || 0)} / 최종 OVR {Number(overall || 0) + Number(selected.live_boost || 0)}</p>}
               </div>
               <div>
                 <p className="mb-3 text-sm font-bold">6가지 선수 능력치 (해당 시즌)</p>

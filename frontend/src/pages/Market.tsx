@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { ShoppingCart, Search, RefreshCw, Tag, Trash2, UserRound } from 'lucide-react';
 import CountryFlag from '../components/CountryFlag';
+import LiveBoostTrend,{LiveBoostBadge} from '../components/LiveBoostTrend';
 import {getPlayerImageUrl} from '../utils/playerImage';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
@@ -12,10 +13,11 @@ type Listing = {
   listing_id: number; player_id:number; card_id:number; seller_id:number;
   name:string; team:string; position:string; season:string;
   overall:number; level:number; listing_price:number; seller_username:string;
+  live_boost?:number;base_overall?:number;
 };
 type MyCard = {
   id:number; level:number;
-  player: { id:number; name:string; team:string; position:string; overall:number; season?:string; nationality?:string|null; image_url?:string|null };
+  player: { id:number; name:string; team:string; position:string; overall:number; season?:string; nationality?:string|null; image_url?:string|null; live_boost?:number; };
 };
 type OwnListing = Listing & { status:string };
 const maxPrice = (level:number) => 50000 * (1 + Math.max(0, Math.min(10, Number(level)||0)));
@@ -33,6 +35,7 @@ export default function Market() {
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState('');
   const [sellCard,setSellCard] = useState<number|null>(null);
+  const [trendId,setTrendId] = useState<number|null>(null);
   const [sellPrice,setSellPrice] = useState(1000);
 
   const load = useCallback(async()=>{
@@ -155,12 +158,15 @@ export default function Market() {
                   <span className="text-sky-300">{c.player.overall} OVR</span>
                   <span className="text-amber-300">+{c.level}</span>
                 </div>
+                {c.player.season==='26WRs'&&<LiveBoostBadge boost={Number(c.player.live_boost)||0}/>}
               </button>;
             })}
           </div>}
         <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/60 p-4">
           <div className="min-w-[170px] flex-1">
             <strong>{selected?selected.player.name:'선택된 선수 없음'}</strong>
+            {selected?.player.season==='26WRs'&&<button type="button" onClick={()=>setTrendId(selected.player.id)}
+              className="ml-3 text-xs font-bold text-sky-300 underline">OVR 변동 그래프</button>}
             {selected&&<p className="mt-1 text-xs text-slate-300">+{selected.level}강 · 판매 상한 {points(maxPrice(selected.level))}</p>}
           </div>
           <label className="flex items-center gap-2 text-sm">
@@ -194,8 +200,10 @@ export default function Market() {
                 </div>
                 <div className="text-right"><strong className="text-xl text-sky-300">{l.overall}</strong>
                   <p className="text-xs text-slate-400">OVR · +{l.level}강</p>
+                  {l.season==='26WRs'&&<LiveBoostBadge boost={Number(l.live_boost)||0}/>}
                 </div>
               </div>
+              {l.season==='26WRs'&&<button type="button" onClick={()=>setTrendId(l.player_id)} className="mt-3 rounded border border-sky-500/40 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-950">OVR 변동 그래프 보기</button>}
               <div className="mt-4 flex items-center justify-between gap-2">
                 <span className="text-lg font-black text-amber-300">{points(l.listing_price)}</span>
                 <button disabled={busy||Number(l.seller_id)===Number(user?.id)}
@@ -217,5 +225,6 @@ export default function Market() {
           </div>)}</div>}
       </section>
     </div>
+    {trendId!==null&&<LiveBoostTrend playerId={trendId} onClose={()=>setTrendId(null)}/>}
   </main>;
 }

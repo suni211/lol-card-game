@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
 import CountryFlag from '../components/CountryFlag';
+import {getPlayerImageUrl} from '../utils/playerImage';
 import {
   Book,
   Search,
@@ -477,10 +478,19 @@ export default function CardCollection() {
                     </div>
                   )}
 
-                  {/* Card Image Placeholder */}
-                  <div className="aspect-square bg-white/5 rounded-lg mb-2 flex items-center justify-center">
+                  {/* Portraits use the same stored image URL as pack reveals and decks. */}
+                  <div className="relative aspect-square overflow-hidden rounded-lg bg-white/5 mb-2 flex items-center justify-center">
                     {card.collected ? (
-                      <Star className="w-12 h-12 text-yellow-400" />
+                      <>
+                        <Star className="absolute h-12 w-12 text-yellow-400/60" />
+                        <img
+                          src={getPlayerImageUrl(card.name,card.season,card.tier,card.image_url || undefined)}
+                          alt={card.name}
+                          loading="lazy"
+                          onError={e=>{e.currentTarget.style.display='none';}}
+                          className="relative h-full w-full object-contain"
+                        />
+                      </>
                     ) : (
                       <Circle className="w-12 h-12 text-white/20" />
                     )}

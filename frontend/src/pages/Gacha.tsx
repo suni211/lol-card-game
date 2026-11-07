@@ -102,7 +102,7 @@ export default function Gacha() {
       },
     },
     {
-      cost: 2000,
+      cost: 5000,
       label: '26WR · 26WRs 전용',
       description: '26WR / 26WRs 시즌 카드만 균등 랜덤 등장. ',
       special: true,

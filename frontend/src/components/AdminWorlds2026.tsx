@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { getSeriesLogo } from '../utils/playerImage';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 type Series = '26 LIVE' | '26WR' | '26WRs';
 interface RosterCard {
   id:number; name:string; team:string; position:string; region:string; season:Series;
@@ -67,21 +67,20 @@ export default function AdminWorlds2026() {
   }
   async function uploadPhoto(file:File) {
     if(!current) return;
-    if(!['image/png','image/webp'].includes(file.type)||file.size>2*1024*1024) {
-      toast.error('2MB 이하 투명 PNG 또는 WebP를 선택하세요.');return;
+    if(!['image/png','image/webp','image/jpeg'].includes(file.type)||file.size>5*1024*1024) {
+      toast.error('5MB 이하 PNG, JPG 또는 WebP 이미지를 선택하세요.');return;
     }
-    const reader=new FileReader();
-    reader.onload=async()=>{
-      try {
-        setBusy(true);
-        const dataUrl=String(reader.result);
-        await axios.post(`${API_URL}/admin/worlds2026/photo/${current.id}`,{dataUrl},{headers});
-        toast.success('선수 사진 등록 완료');
-        await refresh();
-      }catch(e:any){toast.error(e.response?.data?.error||'사진 저장 실패');}
-      finally{setBusy(false);}
-    };
-    reader.readAsDataURL(file);
+    try {
+      setBusy(true);
+      // Send the original bytes; do not base64-encode into a JSON body.
+      await axios.post(`${API_URL}/admin/worlds2026/photo/${current.id}`,file,{
+        headers:{...headers,'Content-Type':file.type}
+      });
+      toast.success('선수 사진 등록 완료');
+      await refresh();
+    } catch(e:any) {
+      toast.error(e.response?.data?.error || '사진 업로드 실패. 서버 권한 및 API 연결을 확인하세요.');
+    } finally {setBusy(false);}
   }
   return <section className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-cyan-500/30 text-gray-900 dark:text-gray-100">
     <h2 className="text-2xl font-bold mb-3">2026 시즌 · 월즈 LIVE 운영</h2>
@@ -123,8 +122,8 @@ export default function AdminWorlds2026() {
             </div>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">리그 국적이 아닌 선수 본인 국적입니다. 모든 2026 시리즈 카드에 동일하게 적용됩니다.</p>
           </div>
-          <label className="block mt-4 mb-2 text-sm font-bold">배경 투명 선수 사진 (PNG/WebP, 최대 2MB)</label>
-          <input type="file" accept="image/png,image/webp" disabled={busy} onChange={e=>e.target.files?.[0]&&uploadPhoto(e.target.files[0])} className="text-sm w-full"/>
+          <label className="block mt-4 mb-2 text-sm font-bold">선수 사진 (PNG/JPG/WebP, 최대 5MB)</label>
+          <input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={e=>e.target.files?.[0]&&uploadPhoto(e.target.files[0])} className="text-sm w-full"/>
           {current.season==='26WRs'&&<>
             <label className="block mt-4 text-sm">라이브 부스트 (+0 ~ +15)</label>
             <input type="number" min="0" max="15" value={boost} onChange={e=>setBoost(Number(e.target.value))} className="w-full border p-2 rounded text-black"/>

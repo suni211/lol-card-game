@@ -49,7 +49,6 @@ import InfiniteChallengeBattle from './pages/InfiniteChallengeBattle';
 import Coach from './pages/Coach';
 import CoachEnhancement from './pages/CoachEnhancement';
 import CardCollection from './pages/CardCollection';
-import Champions from './pages/Champions';
 import Settings from './pages/Settings';
 import Friendly from './pages/Friendly';
 import Titles from './pages/Titles';
@@ -60,7 +59,6 @@ import Campaign from './pages/Campaign';
 import CampaignBattle from './pages/CampaignBattle';
 import Agent from './pages/Agent';
 import Lottery from './pages/Lottery';
-import HowToPlay from './pages/HowToPlay';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -311,7 +309,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/notices" element={<Notices />} />
           <Route path="/ranking" element={<Ranking />} />
-          <Route path="/how-to-play" element={<HowToPlay />} />
+          <Route path="/how-to-play" element={<Navigate to="/" replace />} />
 
           {/* Auth Routes */}
           <Route
@@ -551,14 +549,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/champions"
-            element={
-              <ProtectedRoute>
-                <Champions />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/champions" element={<Navigate to="/" replace />} />
           <Route
             path="/settings"
             element={

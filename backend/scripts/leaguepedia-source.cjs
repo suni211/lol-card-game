@@ -19,7 +19,13 @@ const teamAliases={
 const aliasByIdentity={
  'NAVI:Hans SamD':['SamD','Hans SamD'],
  'DIG:IgNar':['IgNar','Ignar'],
- 'LR:Thebausffs':['Thebausffs','TheBausffs']
+ 'LR:Thebausffs':['Thebausffs','TheBausffs'],
+ 'KRX:Ucal':['UCal','Ucal'],
+ 'PAIN:Cariok':['CarioK','Cariok'],
+ 'VKS:zekas':['zekas','Zekas'],
+ 'VKS:scamber':['scamber','Scamber'],
+ 'FX:cody':['cody','Cody'],
+ 'LGD:ycx':['ycx','Ycx']
 };
 function allowed(value){
  try{

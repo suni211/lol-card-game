@@ -51,8 +51,8 @@ const isMatchingMaterial=(target:Card,material:Card)=>
     (target.player.name.toLocaleLowerCase()===material.player.name.toLocaleLowerCase() &&
      target.player.team.toLocaleLowerCase()===material.player.team.toLocaleLowerCase()))
     && target.level===material.level) ||
-  (target.player.overall + Math.max(0,Math.min(10,target.level))) ===
-  (material.player.overall + Math.max(0,Math.min(10,material.level)));
+  (Number(target.player.overall) + Math.max(0,Math.min(10,Number(target.level) || 0))) ===
+  (Number(material.player.overall) + Math.max(0,Math.min(10,Number(material.level) || 0)));
 
 export default function Enhancement() {
   const { user, token, updateUser } = useAuthStore();
@@ -69,7 +69,7 @@ export default function Enhancement() {
     if (user && token) {
       fetchCards();
     }
-  }, [user, token]);
+  }, [token]);
 
   useEffect(() => {
     if (targetCard && materialCards.length > 0) {
@@ -237,7 +237,7 @@ export default function Enhancement() {
   };
 
   const CardDisplay = ({ card, onClick, selected, disabled, label }: any) => {
-    const cardOverall = card.player.overall + card.level;
+    const cardOverall = Number(card.player.overall) + Number(card.level || 0);
 
     return (
       <motion.div
@@ -533,8 +533,8 @@ export default function Enhancement() {
               {cards.map((card) => {
                 const isTarget = targetCard?.id === card.id;
                 const isMaterial = materialCards.some(m => m.id === card.id);
-                const isDisabled = (targetCard && card.id === targetCard.id) ||
-                                   (targetCard && !isMaterial && !isTarget && (!isMatchingMaterial(targetCard,card)||materialCards.length>=3));
+                // Keep cards clickable for deselection and explicit validation errors.
+                const isDisabled = enhancing;
 
                 return (
                   <CardDisplay
@@ -553,13 +553,16 @@ export default function Enhancement() {
                       } else if (isMaterial) {
                         setMaterialCards(materialCards.filter(m => m.id !== card.id));
                       } else if (!targetCard) {
+                        if (card.isLocked) { toast.error('잠긴 카드는 강화 대상으로 사용할 수 없습니다.'); return; }
                         setTargetCard(card);
                       } else if (targetCard && materialCards.length < 3 && card.id !== targetCard.id) {
                         if(!isMatchingMaterial(targetCard,card)){
-                           toast.error('동일 선수·강화등급 또는 동일 OVR 카드만 재료로 사용 가능합니다.');
+                           toast.error(`재료 OVR이 맞지 않습니다. 대상 ${Number(targetCard.player.overall) + Number(targetCard.level)} / 재료 ${Number(card.player.overall) + Number(card.level)} · 같은 선수 동일 강화 등급 또는 강화 포함 OVR이 같아야 합니다.`);
                            return;
                          }
                          setMaterialCards([...materialCards, card]);
+                      } else if (materialCards.length >= 3) {
+                        toast.error('강화 재료는 최대 3장입니다.');
                       }
                     }}
                     selected={isTarget || isMaterial}

@@ -73,6 +73,11 @@ const loginSchema = Joi.object({
 // Keep the stable Google subject bound to a user; do not trust a posted email alone.
 router.post('/google', async (req, res) => {
   const { credential } = req.body || {};
+  const referralCode = typeof req.body?.referralCode === 'string'
+    ? req.body.referralCode.trim().toUpperCase() : '';
+  if (referralCode && !/^LCG[0-9]{8,}$/.test(referralCode)) {
+    return res.status(400).json({ success: false, error: '추천 코드 형식이 올바르지 않습니다.' });
+  }
   if (typeof credential !== 'string' || credential.length < 100 || credential.length > 10000) {
     return res.status(400).json({ success: false, error: 'Google 로그인 인증 정보가 없습니다.' });
   }
@@ -102,6 +107,14 @@ router.post('/google', async (req, res) => {
     let isNewUser = false;
     try {
       await connection.beginTransaction();
+      // Validate a provided code inside the transaction. Existing accounts do not receive signup rewards.
+      const [referrers]: any = referralCode ? await connection.query(
+        'SELECT id FROM users WHERE referral_code=? FOR UPDATE', [referralCode]
+      ) : [[]];
+      if (referralCode && !referrers.length) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, error: '존재하지 않는 친구 초대 코드입니다.' });
+      }
       const [bySub]: any = await connection.query('SELECT id FROM users WHERE google_sub=? FOR UPDATE', [googleSub]);
       if (bySub.length) {
         userId = bySub[0].id;
@@ -123,6 +136,27 @@ router.post('/google', async (req, res) => {
             [username, email, randomPassword, googleSub]
           );
           userId = inserted.insertId;
+          await connection.query(
+            "UPDATE users SET referral_code=CONCAT('LCG', LPAD(id, 8, '0')) WHERE id=?", [userId]
+          );
+          if (referrers.length) {
+            const referrerId = Number(referrers[0].id);
+            if (referrerId === Number(userId)) throw new Error('Self-referral blocked');
+            // UNIQUE(referred_id) guarantees a signup can only be rewarded once.
+            await connection.query(
+              'INSERT INTO referrals (referrer_id,referred_id,signup_bonus_points) VALUES (?,?,1000)',
+              [referrerId,userId]
+            );
+            await connection.query(
+              "INSERT INTO referral_bonuses (referrer_id,referred_id,bonus_type,referrer_bonus,referred_bonus,match_count) VALUES (?,?,'SIGNUP',1000,1000,0)",
+              [referrerId,userId]
+            );
+            await connection.query(
+              'UPDATE users SET points=points+1000, total_referrals=total_referrals+1, total_referral_bonus=total_referral_bonus+1000 WHERE id=?',
+              [referrerId]
+            );
+            await connection.query('UPDATE users SET points=points+1000 WHERE id=?', [userId]);
+          }
           await connection.query(
             `INSERT INTO user_packs (user_id, pack_type, quantity) VALUES (?, 'STANDARD', 1)
              ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
@@ -150,7 +184,7 @@ router.post('/google', async (req, res) => {
     );
     return res.json({
       success: true,
-      message: isNewUser ? 'Google 회원가입 성공!' : 'Google 로그인 성공!',
+      message: isNewUser ? (referralCode ? '친구 초대 보너스 1,000P가 지급되었습니다!' : 'Google 회원가입 성공!') : 'Google 로그인 성공!',
       data: { token, user: {
         id: user.id, username: user.username, email: user.email,
         points: user.points, tier: user.tier, rating: user.rating,

@@ -10,10 +10,11 @@ const router = express.Router();
 // Gacha probabilities (ICON 티어는 모든 팩에서 0.000001% 확률로 등장 - 극악의 희귀도)
 const GACHA_OPTIONS = {
   free: { cost: 0, probabilities: { icon: 0, legendary: 0.02, epic: 0.1, rare: 5, common: 94.88 } },
-  basic: { cost: 500, probabilities: { icon: 0.000001, legendary: 0.06, epic: 0.5, rare: 10, common: 89.44 } },
-  premium: { cost: 1000, probabilities: { icon: 0.000001, legendary: 0.22, epic: 3, rare: 18, common: 78.78 } },
-  ultra: { cost: 1500, probabilities: { icon: 0.000001, legendary: 0.52, epic: 6, rare: 25, common: 68.48 } },
-  mega: { cost: 2000, probabilities: { icon: 0.000001, legendary: 1.02, epic: 10, rare: 30, common: 58.98 } },
+  basic: { cost: 500, probabilities: { icon: 0, legendary: 0.06, epic: 0.5, rare: 10, common: 89.44 } },
+  premium: { cost: 1000, probabilities: { icon: 0, legendary: 0.22, epic: 3, rare: 18, common: 78.78 } },
+  ultra: { cost: 1500, probabilities: { icon: 0, legendary: 0.52, epic: 6, rare: 25, common: 68.48 } },
+  mega: { cost: 2000, probabilities: { icon: 0, legendary: 1.02, epic: 10, rare: 30, common: 58.98 } },
+  wr_2026: { cost: 2000, probabilities: { icon: 0, legendary: 0, epic: 0, rare: 0, common: 100 }, special: 'WR_2026' },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5.01, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
 };
 
@@ -125,7 +126,16 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get random player of that tier
     let players: any;
-    if ((option as any).special === 'WORLDS') {
+    if ((option as any).special === 'WR_2026') {
+      [players] = await connection.query(
+        `SELECT *, CASE
+          WHEN overall <= 80 THEN 'COMMON'
+          WHEN overall <= 90 THEN 'RARE'
+          WHEN overall <= 100 THEN 'EPIC' ELSE 'LEGENDARY' END as tier
+         FROM players WHERE season IN ('26WR','26WRs')
+         ORDER BY RAND() LIMIT 1`
+      );
+    } else if ((option as any).special === 'WORLDS') {
       // WORLDS pack is now CLOSED - no more 25WW/25WUD cards available
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
@@ -362,7 +372,16 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
 
       // Get random player
       let players: any;
-      if ((option as any).special === 'WORLDS') {
+      if ((option as any).special === 'WR_2026') {
+      [players] = await connection.query(
+        `SELECT *, CASE
+          WHEN overall <= 80 THEN 'COMMON'
+          WHEN overall <= 90 THEN 'RARE'
+          WHEN overall <= 100 THEN 'EPIC' ELSE 'LEGENDARY' END as tier
+         FROM players WHERE season IN ('26WR','26WRs')
+         ORDER BY RAND() LIMIT 1`
+      );
+    } else if ((option as any).special === 'WORLDS') {
         await connection.rollback();
         return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });
       } else {

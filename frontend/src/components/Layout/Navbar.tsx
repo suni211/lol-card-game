@@ -82,8 +82,6 @@ export default function Navbar() {
     { label: '더보기', items: [
       { path: '/lottery', label: '럭키드로우' },
       { path: '/coupon', label: '쿠폰' },
-      { path: '/champions', label: '챔피언 소개' },
-      { path: '/how-to-play', label: '게임 가이드' },
       { path: '/settings', label: '설정' },
     ] },
   ];

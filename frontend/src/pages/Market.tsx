@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { ShoppingCart, Search, RefreshCw, Tag, Trash2, UserRound } from 'lucide-react';
 import CountryFlag from '../components/CountryFlag';
 import LiveBoostTrend,{LiveBoostBadge} from '../components/LiveBoostTrend';
+import MarketExplorer from '../components/MarketExplorer';
 import {getPlayerImageUrl} from '../utils/playerImage';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
@@ -120,6 +121,7 @@ export default function Market() {
       {error&&<div role="alert" className="rounded-lg border border-red-700 bg-red-950 p-4 text-red-200">
         {error}<button className="ml-3 underline" onClick={()=>void load()}>다시 시도</button>
       </div>}
+      <MarketExplorer onPurchased={()=>{void load();}}/>
       <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
         <h2 className="mb-2 flex items-center gap-2 text-xl font-bold"><Tag className="h-5 w-5 text-amber-400"/>보유 카드 선택</h2>
         <p className="mb-4 text-sm text-slate-400">판매할 선수를 목록에서 선택하세요. 0강 상한 50,000P, 강화 +1마다 상한 50,000P 증가.</p>
@@ -180,7 +182,9 @@ export default function Market() {
         </div>
         <p className="mt-2 text-xs text-slate-500">덱에 포함된 카드는 먼저 덱에서 제외해야 판매할 수 있습니다.</p>
       </section>
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <details className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+        <summary className="cursor-pointer text-sm font-bold text-slate-300">전체 매물 빠른 보기 (기존 목록)</summary>
+        <div className="mt-4">      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold">판매 중인 카드 <span className="text-sky-300">{filtered.length}개</span></h2>
           <label className="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3">
@@ -214,6 +218,8 @@ export default function Market() {
             </article>)}
           </div>}
       </section>
+        </div>
+      </details>
       <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
         <h2 className="mb-3 text-xl font-bold">내 판매 중인 카드 ({activeOwn.length})</h2>
         {activeOwn.length===0?<p className="text-sm text-slate-400">현재 판매 중인 카드가 없습니다.</p>:

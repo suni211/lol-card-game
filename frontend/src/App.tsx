@@ -21,7 +21,7 @@ import Register from './pages/Register';
 import Gacha from './pages/Gacha';
 import Collection from './pages/Collection';
 import Deck from './pages/Deck';
-import RiftPrep from './pages/RiftPrep';
+import OvrMatch from './pages/OvrMatch';
 import Ranking from './pages/Ranking';
 import Missions from './pages/Missions';
 import Trade from './pages/Trade';
@@ -375,7 +375,7 @@ function App() {
             path="/ai-battle"
             element={
               <ProtectedRoute>
-                <RiftPrep />
+                <OvrMatch />
               </ProtectedRoute>
             }
           />
@@ -629,10 +629,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/rift-prep"
-            element={<ProtectedRoute><RiftPrep /></ProtectedRoute>}
-          />
+          <Route path="/rift-prep" element={<Navigate to="/ovr-match" replace />} />
+          <Route path="/ovr-match" element={<ProtectedRoute><OvrMatch /></ProtectedRoute>} />
           <Route
             path="/match-select"
             element={
@@ -645,7 +643,7 @@ function App() {
             path="/moba-match"
             element={
               <ProtectedRoute>
-                <RiftPrep />
+                <OvrMatch />
               </ProtectedRoute>
             }
           />

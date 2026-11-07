@@ -1613,7 +1613,7 @@ export default function Gacha() {
                           {card.name}
                         </div>
                         <div className="my-2 text-xs text-white">
-                          <CountryFlag code={card.nationality} size="sm" showCode />
+                          <CountryFlag code={card.nationality} size="sm" />
                         </div>
                         <div className="text-xs text-white/90">
                           {card.team}

@@ -234,7 +234,12 @@ export default function Deck() {
     if (!selectedPosition) return [];
 
     return myCards
-      .filter((card) => !deckSlots.some((s) => s.card?.id === card.id))
+      .filter((card) => !deckSlots.some((slot) =>
+        slot.position !== selectedPosition &&
+        (slot.card?.id === card.id ||
+          slot.card?.player.name.normalize('NFKC').trim().toLocaleLowerCase() ===
+          card.player.name.normalize('NFKC').trim().toLocaleLowerCase())
+      ))
       .filter((card) => seasonFilter === 'ALL' || card.player.season === seasonFilter)
       .sort((a, b) => {
         // 포지션 매치 우선, 그 다음 OVR 높은 순
@@ -360,9 +365,14 @@ export default function Deck() {
   const handleCardSelect = (card: UserCard) => {
     if (!selectedPosition) return;
 
-    const alreadyInDeck = deckSlots.some((slot) => slot.card?.id === card.id);
-    if (alreadyInDeck) {
-      toast.error('이 카드는 이미 덱에 있습니다');
+    const duplicatePlayer = deckSlots.some((slot) =>
+      slot.position !== selectedPosition && slot.card &&
+      (slot.card.id === card.id ||
+       slot.card.player.name.normalize('NFKC').trim().toLocaleLowerCase() ===
+       card.player.name.normalize('NFKC').trim().toLocaleLowerCase())
+    );
+    if (duplicatePlayer) {
+      toast.error('같은 선수는 클래스·강화 등급이 달라도 한 덱에 1장만 편성할 수 있습니다.');
       return;
     }
 
@@ -390,6 +400,11 @@ export default function Deck() {
   };
 
   const handleSaveDeck = async () => {
+    const names=deckSlots.filter(s=>s.card).map(s=>s.card!.player.name.normalize('NFKC').trim().toLocaleLowerCase());
+    if (new Set(names).size !== names.length) {
+      toast.error('동일 선수를 한 덱에 2장 이상 저장할 수 없습니다.');
+      return;
+    }
     try {
       setSaving(true);
 

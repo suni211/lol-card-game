@@ -7,43 +7,8 @@ const router = express.Router();
 
 // 자동 가격 계산 함수
 function calculateAutoPrice(overall: number, season: string): { floor: number; ceiling: number; current: number } {
-  let basePrice = 0;
-
-  // 오버롤 기반 기본 가격
-  if (overall >= 115) {
-    basePrice = 500000;
-  } else if (overall >= 110) {
-    basePrice = 200000;
-  } else if (overall >= 105) {
-    basePrice = 80000;
-  } else if (overall >= 100) {
-    basePrice = 30000;
-  } else if (overall >= 95) {
-    basePrice = 10000;
-  } else if (overall >= 90) {
-    basePrice = 5000;
-  } else if (overall >= 85) {
-    basePrice = 2000;
-  } else if (overall >= 80) {
-    basePrice = 1000;
-  } else {
-    basePrice = 500;
-  }
-
-  // ICON 시즌은 가격 3배
-  if (season === 'ICON') {
-    basePrice *= 3;
-  }
-
-  // 가격 범위 설정 (±50%)
-  const floor = Math.floor(basePrice * 0.5);
-  const ceiling = Math.floor(basePrice * 1.5);
-
-  return {
-    floor,
-    ceiling,
-    current: basePrice
-  };
+  const current = Math.min(50000, Math.max(1000, Math.round(overall * overall * 3)));
+  return { floor: 1, ceiling: 50000, current };
 }
 
 // 선수의 시세 정보 가져오기 (없으면 자동 생성)
@@ -277,7 +242,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     const { cardId, price } = req.body;
 
     if (!Number.isSafeInteger(Number(cardId)) || Number(cardId) < 1 ||
-        !Number.isSafeInteger(Number(price)) || Number(price) < 1 || Number(price) > 1000000000) {
+        !Number.isSafeInteger(Number(price)) || Number(price) < 1 || Number(price) > 550000) {
       await connection.rollback();
       return res.status(400).json({
         success: false,
@@ -311,6 +276,14 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const card = cards[0];
+    // Max 50,000P unenhanced, +50,000P per enhancement level (+10 => 550,000P).
+    const maxListingPrice = 50000 * (1 + Math.max(0, Math.min(10, Number(card.level) || 0)));
+    if (Number(price) > maxListingPrice) {
+      await connection.rollback();
+      return res.status(400).json({
+        success:false,error:`이 카드의 판매 상한은 ${maxListingPrice.toLocaleString()}P입니다.`
+      });
+    }
 
     // Seller chooses their own price (1..1,000,000,000 P).
     // Displayed market price is a reference, not a mandatory limit.
@@ -352,116 +325,9 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     const listingId = result.insertId;
 
-    // Check for price alerts and auto-purchase
-    const [priceAlerts]: any = await connection.query(
-      `SELECT pa.*, u.points, u.username
-      FROM price_alerts pa
-      JOIN users u ON pa.user_id = u.id
-      WHERE pa.player_id = ? AND pa.is_active = TRUE AND pa.max_price >= ?
-      ORDER BY pa.created_at ASC
-      LIMIT 1`,
-      [card.player_id, price]
-    );
-
+    // Legacy price alerts are intentionally not executed. Listing is user-controlled.
     let autoSold = false;
-    let buyerUsername = null;
-
-    if (priceAlerts.length > 0) {
-      const alert = priceAlerts[0];
-
-      // Check if buyer has enough points and is not the seller
-      if (alert.user_id !== userId && alert.points >= price) {
-        // Transfer card ownership
-        await connection.query(
-          'UPDATE user_cards SET user_id = ? WHERE id = ?',
-          [alert.user_id, cardId]
-        );
-
-        // Calculate fee (30%)
-        const fee = Math.floor(price * 0.3);
-        const sellerReceives = price - fee;
-
-        // Update buyer points
-        await connection.query(
-          'UPDATE users SET points = points - ? WHERE id = ?',
-          [price, alert.user_id]
-        );
-
-        // Update seller points
-        await connection.query(
-          'UPDATE users SET points = points + ? WHERE id = ?',
-          [sellerReceives, userId]
-        );
-
-        // Update listing status
-        await connection.query(
-          `UPDATE market_transactions
-          SET status = 'SOLD', buyer_id = ?, sold_price = ?, sold_at = NOW()
-          WHERE id = ?`,
-          [alert.user_id, price, listingId]
-        );
-
-        // Update player market price
-        const [recentTrades]: any = await connection.query(
-          `SELECT sold_price, sold_at FROM market_transactions
-          WHERE player_id = ? AND status = 'SOLD'
-          ORDER BY sold_at DESC
-          LIMIT 10`,
-          [card.player_id]
-        );
-
-        if (recentTrades.length > 0) {
-          let weightedSum = 0;
-          let weightSum = 0;
-          recentTrades.forEach((trade: any, index: number) => {
-            const weight = 10 - index;
-            weightedSum += trade.sold_price * weight;
-            weightSum += weight;
-          });
-          const weightedAvgPrice = Math.round(weightedSum / weightSum);
-
-          const [currentPriceInfo]: any = await connection.query(
-            'SELECT current_price, price_floor, price_ceiling FROM player_market_prices WHERE player_id = ?',
-            [card.player_id]
-          );
-
-          if (currentPriceInfo.length > 0) {
-            const currentPrice = currentPriceInfo[0].current_price;
-            const priceFloor = currentPriceInfo[0].price_floor;
-            const priceCeiling = currentPriceInfo[0].price_ceiling;
-
-            const maxIncrease = Math.round(currentPrice * 1.2);
-            const maxDecrease = Math.round(currentPrice * 0.8);
-
-            let newPrice = Math.min(maxIncrease, Math.max(maxDecrease, weightedAvgPrice));
-            newPrice = Math.min(priceCeiling, Math.max(priceFloor, newPrice));
-
-            await connection.query(
-              `UPDATE player_market_prices
-              SET current_price = ?, total_volume = total_volume + 1, last_traded_price = ?, last_traded_at = NOW()
-              WHERE player_id = ?`,
-              [newPrice, price, card.player_id]
-            );
-
-            await connection.query(
-              'INSERT INTO price_history (player_id, price, transaction_id) VALUES (?, ?, ?)',
-              [card.player_id, newPrice, listingId]
-            );
-          }
-        }
-
-        // Deactivate the price alert after successful purchase
-        await connection.query(
-          'UPDATE price_alerts SET is_active = FALSE WHERE id = ?',
-          [alert.id]
-        );
-
-        autoSold = true;
-        buyerUsername = alert.username;
-
-        console.log(`Auto-purchased: ${card.player_name} by ${alert.username} at ${price}P (price alert)`);
-      }
-    }
+    let buyerUsername: string | null = null;
 
     await connection.commit();
 

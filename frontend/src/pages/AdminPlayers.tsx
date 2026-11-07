@@ -7,9 +7,18 @@ import { useAuthStore } from '../store/authStore';
 import CountryFlag from '../components/CountryFlag';
 
 const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+const statInputs = [
+  {key:'cs',label:'CS'}, {key:'teamfight',label:'한타'},
+  {key:'laning',label:'라인전'}, {key:'shotcalling',label:'오더'},
+  {key:'mental',label:'멘탈'}, {key:'clutch',label:'클러치'}
+] as const;
+type StatKey = typeof statInputs[number]['key'];
+type SixStats = Record<StatKey,number>;
+const initialStats:SixStats = {cs:50,teamfight:50,laning:50,shotcalling:50,mental:50,clutch:50};
 type Player = {
   id: number; name: string; team: string; position: string; region: string;
   season: string; overall: number; nationality: string | null; image_url: string | null;
+  cs:number;teamfight:number;laning:number;shotcalling:number;mental:number;clutch:number;
 };
 type Directory = {
   players: Player[]; page: number; total: number; totalPages: number;
@@ -45,6 +54,7 @@ export default function AdminPlayers() {
   const [page,setPage] = useState(1);
   const [selected,setSelected] = useState<Player|null>(null);
   const [overall,setOverall] = useState('90');
+  const [stats,setStats] = useState<SixStats>(initialStats);
   const [nationality,setNationality] = useState('');
   const [applyAll,setApplyAll] = useState(true);
   const [photoAll,setPhotoAll] = useState(true);
@@ -66,6 +76,7 @@ export default function AdminPlayers() {
   const choose = (p:Player) => {
     setSelected(p);
     setOverall(String(p.overall));
+    setStats(Object.fromEntries(statInputs.map(x=>[x.key,Number(p[x.key])])) as SixStats);
     setNationality(p.nationality || '');
   };
   const reloadSelection = (p:Player) => {
@@ -87,6 +98,21 @@ export default function AdminPlayers() {
     } catch(e:any){toast.error(apiError(e,'OVR 저장 실패'));}
     finally{setBusy(false);}
   };
+  const saveSixStats=async()=>{
+    if(!selected)return;
+    if(statInputs.some(x=>!Number.isSafeInteger(stats[x.key]) || stats[x.key]<0 || stats[x.key]>100)){
+      return toast.error('6가지 능력치는 0~100 사이 정수로 입력해주세요.');
+    }
+    setBusy(true);
+    try{
+      const r=await axios.put(`${API_URL}/admin/player-six-stats/${selected.id}`,stats,{headers});
+      reloadSelection({...selected,...stats});
+      toast.success(r.data.message||'능력치 저장 완료');
+      await load();
+    }catch(e:any){toast.error(apiError(e,'능력치 저장 실패'));}
+    finally{setBusy(false);}
+  };
+
   const saveNationality = async () => {
     if(!selected)return;
     const code = nationality.trim().toUpperCase();
@@ -128,7 +154,7 @@ export default function AdminPlayers() {
             <ArrowLeft size={15}/>관리자 패널
           </Link>
           <h1 className="text-3xl font-black">전체 선수 카드 관리</h1>
-          <p className="mt-2 text-sm text-slate-400">전체 선수 목록 · 시리즈별 OVR 개별 수정 · 국적 자동 국기 · 선수 사진 업로드</p>
+          <p className="mt-2 text-sm text-slate-400">전체 선수 목록 · OVR 및 6스탯 수정 · 국적 및 선수 사진 관리</p>
         </div>
         <button onClick={()=>void load()} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 hover:bg-slate-800">
           <RefreshCw size={16}/>새로고침
@@ -219,6 +245,22 @@ export default function AdminPlayers() {
                   <button disabled={busy} onClick={()=>void saveOverall()}
                     className="inline-flex items-center gap-1 rounded bg-sky-600 px-4 font-bold disabled:opacity-50"><Save size={16}/>저장</button>
                 </div>
+              </div>
+              <div>
+                <p className="mb-3 text-sm font-bold">6가지 선수 능력치 (해당 시즌)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {statInputs.map(item=><label key={item.key} className="text-sm text-slate-300">
+                    <span className="mb-1 block">{item.label}</span>
+                    <input aria-label={item.label} type="number" min={0} max={100} step={1}
+                      value={stats[item.key]}
+                      onChange={e=>setStats(prev=>({...prev,[item.key]:Number(e.target.value)}))}
+                      className="w-full rounded border border-slate-600 bg-slate-800 p-2 text-white"/>
+                  </label>)}
+                </div>
+                <button onClick={()=>void saveSixStats()} disabled={busy}
+                  className="mt-3 inline-flex items-center gap-2 rounded bg-violet-600 px-4 py-3 font-bold disabled:opacity-50">
+                  <Save size={16}/>6스탯 저장
+                </button>
               </div>
               <div>
                 <label htmlFor="edit-nationality" className="mb-1 block text-sm font-bold">국적 코드</label>

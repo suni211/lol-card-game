@@ -299,7 +299,8 @@ router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: A
 // Explicit nationality editing: nationality must reflect the actual player, not the league region.
 router.put('/player-nationality/:id', authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
   const playerId=Number(req.params.id);
-  const nationality=String(req.body?.nationality || '').trim().toUpperCase();
+  const rawCountryCode=String(req.body?.nationality || '').trim().toUpperCase();
+  const nationality=rawCountryCode === 'UK' ? 'GB' : rawCountryCode;
   if(!Number.isSafeInteger(playerId)||playerId<1||!/^[A-Z]{2}$/.test(nationality)) {
     return res.status(400).json({success:false,error:'선수 ID와 두 글자 국적 코드(예: KR)를 입력하세요.'});
   }

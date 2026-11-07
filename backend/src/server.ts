@@ -23,6 +23,7 @@ import fusionRoutes from './routes/fusion';
 import achievementsRoutes from './routes/achievements';
 import adminRoutes, { setSocketIOForAdmin } from './routes/admin';
 import worlds2026Routes from './routes/worlds2026';
+import liveBoostRoutes from './routes/liveBoost';
 import marketRoutes from './routes/market';
 import couponRoutes, { setSocketIOForCoupon } from './routes/coupon';
 import packsRoutes from './routes/packs';
@@ -130,6 +131,7 @@ app.use('/api/fusion', fusionRoutes);
 app.use('/api/achievements', achievementsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/worlds2026', worlds2026Routes);
+app.use('/api/live-boost', liveBoostRoutes);
 // Python Rift simulation assets are no longer served or required.
 app.use('/api/player-images', express.static(path.resolve(__dirname, '../uploads/players'), { fallthrough: false, maxAge: '1d' }));
 app.use('/player-images', express.static(path.resolve(__dirname, '../uploads/players'), { fallthrough: false }));

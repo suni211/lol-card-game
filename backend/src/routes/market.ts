@@ -1,5 +1,6 @@
 import express from 'express';
 import pool from '../config/database';
+import {updateMissionProgress} from '../utils/missionTracker';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { calculateEnhancementBonus } from '../utils/enhancement';
 
@@ -330,6 +331,7 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
     let buyerUsername: string | null = null;
 
     await connection.commit();
+    await updateMissionProgress(userId,'market_list',1).catch(e=>console.error('Market listing mission:',e));
 
     if (autoSold) {
       res.json({
@@ -514,6 +516,10 @@ router.post('/buy/:listingId', authMiddleware, async (req: AuthRequest, res) => 
     }
 
     await connection.commit();
+    await Promise.allSettled([
+      updateMissionProgress(userId,'market_buy',1),
+      updateMissionProgress(Number(listing.seller_id),'market_sell',1)
+    ]);
 
     res.json({
       success: true,

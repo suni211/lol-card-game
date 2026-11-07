@@ -1,5 +1,6 @@
 import express, { Response } from 'express';
 import pool from '../config/database';
+import {updateMissionProgress} from '../utils/missionTracker';
 import {authMiddleware,AuthRequest} from '../middleware/auth';
 import {ownedTeam,parseRoster,teamScore,isStrategy,STRATEGY_KEYS,Strategy} from '../utils/competitiveStats';
 
@@ -117,6 +118,12 @@ router.post('/:id/play',async(req:AuthRequest,res:Response)=>{
     }
     const [updated]:any=await conn.query('SELECT * FROM ranked_bo3_series WHERE id=?',[id]);
     await conn.commit();
+    // A completed series counts once; played rounds count separately.
+    await Promise.allSettled([
+      updateMissionProgress(req.user!.id,'ai_round',1),
+      ...(finished ? [updateMissionProgress(req.user!.id,'ai_battle',1)] : []),
+      ...(finished&&wins===2 ? [updateMissionProgress(req.user!.id,'ai_win',1)] : [])
+    ]);
     return res.json({success:true,data:publicMatch(updated[0])});
   }catch(error){await conn.rollback();console.error('AI tactic:',error);
     return res.status(500).json({success:false,error:'AI 매치 판정 실패'});

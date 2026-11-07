@@ -46,13 +46,8 @@ interface EnhancementPreview {
   }>;
 }
 
-const isMatchingMaterial=(target:Card,material:Card)=>
-  (((target.playerId===material.playerId)||
-    (target.player.name.toLocaleLowerCase()===material.player.name.toLocaleLowerCase() &&
-     target.player.team.toLocaleLowerCase()===material.player.team.toLocaleLowerCase()))
-    && target.level===material.level) ||
-  (Number(target.player.overall) + Math.max(0,Math.min(10,Number(target.level) || 0))) ===
-  (Number(material.player.overall) + Math.max(0,Math.min(10,Number(material.level) || 0)));
+// Any other owned player card can be a material, regardless of name, class or OVR.
+const isMatchingMaterial=(target:Card,material:Card)=>target.id!==material.id;
 
 export default function Enhancement() {
   const { user, token, updateUser } = useAuthStore();
@@ -339,7 +334,7 @@ export default function Enhancement() {
                 강화 안내 (초반 쉬움, 후반 극악)
               </h3>
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
-                <li className="text-purple-600 dark:text-purple-400 font-bold">• 같은 선수 + 동일 강화등급 또는 강화 포함 최종 OVR이 같은 카드는 다른 선수여도 재료로 사용 가능</li>
+                <li className="text-purple-600 dark:text-purple-400 font-bold">• 다른 선수·다른 클래스·다른 OVR 카드도 강화 재료로 사용 가능 (최대 5장)</li>
                 <li>• +1~+4 도전: 재료 1장당 1.5칸 / +5~+10: 한 장당 1칸</li>
                 <li className="text-green-600 dark:text-green-400 font-bold">• 기본 성공률: +0강 80%, +1강 70%, +2강 60%, +3강 50%, +4강 40%</li>
                 <li className="text-orange-600 dark:text-orange-400">• 후반 성공률: +5강 30%, +6강 15%, +7강 8%, +8강 3%, +9강 1%</li>
@@ -379,7 +374,7 @@ export default function Enhancement() {
           {/* Material Card Selection */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              2. 재료 카드 선택 (최대 3개)
+              2. 재료 카드 선택 (최대 5개)
             </h2>
             <div className="space-y-3">
               {materialCards.length > 0 ? (
@@ -393,9 +388,9 @@ export default function Enhancement() {
                       label={`재료 ${index + 1} (소멸됨)`}
                     />
                   ))}
-                  {materialCards.length < 3 && (
+                  {materialCards.length < 5 && (
                     <div className="text-center py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">추가 재료 선택 ({materialCards.length}/3)</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">추가 재료 선택 ({materialCards.length}/5)</p>
                     </div>
                   )}
                 </>
@@ -486,10 +481,10 @@ export default function Enhancement() {
 
                 <div className="mb-4 rounded-xl border border-cyan-400/30 bg-cyan-900/10 p-3">
                   <div className="mb-2 flex justify-between text-sm font-bold text-gray-900 dark:text-white">
-                    <span>강화 재료 게이지</span><span>{preview.filledSlots}/3칸 (재료당 {preview.slotsPerCard}칸)</span>
+                    <span>강화 재료 게이지</span><span>{preview.filledSlots}/5칸 (재료당 {preview.slotsPerCard}칸)</span>
                   </div>
                   <div className="flex h-6 overflow-hidden rounded-lg border border-slate-600 bg-slate-800">
-                    {[0,1,2].map(slot=><div key={slot} className="relative flex-1 border-r border-slate-900 last:border-0">
+                    {[0,1,2,3,4].map(slot=><div key={slot} className="relative flex-1 border-r border-slate-900 last:border-0">
                       <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{width:`${Math.max(0,Math.min(1,preview.filledSlots-slot))*100}%`}}/>
                     </div>)}
                   </div>
@@ -555,14 +550,14 @@ export default function Enhancement() {
                       } else if (!targetCard) {
                         if (card.isLocked) { toast.error('잠긴 카드는 강화 대상으로 사용할 수 없습니다.'); return; }
                         setTargetCard(card);
-                      } else if (targetCard && materialCards.length < 3 && card.id !== targetCard.id) {
+                      } else if (targetCard && materialCards.length < 5 && card.id !== targetCard.id) {
                         if(!isMatchingMaterial(targetCard,card)){
-                           toast.error(`재료 OVR이 맞지 않습니다. 대상 ${Number(targetCard.player.overall) + Number(targetCard.level)} / 재료 ${Number(card.player.overall) + Number(card.level)} · 같은 선수 동일 강화 등급 또는 강화 포함 OVR이 같아야 합니다.`);
+                           toast.error('강화 대상 카드 자체는 재료로 사용할 수 없습니다.');
                            return;
                          }
                          setMaterialCards([...materialCards, card]);
-                      } else if (materialCards.length >= 3) {
-                        toast.error('강화 재료는 최대 3장입니다.');
+                      } else if (materialCards.length >= 5) {
+                        toast.error('강화 재료는 최대 5장입니다.');
                       }
                     }}
                     selected={isTarget || isMaterial}
@@ -676,7 +671,7 @@ export default function Enhancement() {
             ) : (
               <>
                 <Zap className="w-6 h-6" />
-                <span>강화하기 ({materialCards.length}/3)</span>
+                <span>강화하기 ({materialCards.length}/5)</span>
               </>
             )}
           </button>

@@ -104,7 +104,7 @@ export default function Gacha() {
     {
       cost: 2000,
       label: '26WR · 26WRs 전용',
-      description: '26WR / 26WRs 시즌 카드만 균등 랜덤 등장. 등급은 실제 선수 OVR에 따라 결정됩니다.',
+      description: '26WR / 26WRs 시즌 카드만 균등 랜덤 등장. ',
       special: true,
       probabilities: { icon: 0, common: 0, rare: 0, epic: 0, legendary: 0, gr: 0 },
     },

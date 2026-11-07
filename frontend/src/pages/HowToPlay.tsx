@@ -7,20 +7,20 @@ const sections = [
     content: '선수 카드 시리즈는 26 LIVE(2026 시즌), 26WR(월즈 참가), 26WRs(월즈 8강)로 나뉩니다. 카드 뽑기에서 선수 카드를 얻고 덱에 넣을 수 있습니다.',
   },
   {
-    title: '2. 포지션별로 덱 편성하기',
-    content: '탑, 정글, 미드, 원딜, 서포터 선수 카드를 한 장씩 배치해 5인 덱을 완성하세요. 대전 시작 전에 다섯 포지션이 모두 채워졌는지 확인합니다.',
+    title: '2. 선수 카드 5명 모으기',
+    content: '포지션에 관계없이 서로 다른 선수 카드 5명이 있으면 AI 매치와 경쟁전을 시작할 수 있습니다. 덱을 편성해두면 해당 카드를 우선 출전시키고, 비어 있는 자리는 보유 카드로 자동 충원됩니다.',
   },
   {
-    title: '3. AI MOBA 매치와 전술',
-    content: '현재 MOBA 매치 화면에서는 AI 상대를 선택합니다. 라인 운영(안정적/압박/후반 성장), 한타 전술(보호/선제 교전/거리 유지), 운영 목표(오브젝트/시야/사이드 운영)를 결정하고 챔피언 밴픽을 진행합니다.',
+    title: '3. AI 매치와 경쟁전 · OVR 가위바위보',
+    content: 'AI 매치 또는 경쟁전을 선택하고 매 판 가위·바위·보를 냅니다. 서버가 무작위로 상대 선택을 정하며, 먼저 2승을 거두면 최종 승리합니다. 최대 3판 진행합니다.',
   },
   {
-    title: '4. 경기 결과와 오버롤',
-    content: 'MOBA 경기는 서버의 리프트 시뮬레이션 엔진에서 진행됩니다. 높은 오버롤은 갱킹·한타·운영의 좋은 기회를 포착할 가능성을 높이지만 체력이나 공격 피해량에 직접 더해지지는 않습니다.',
+    title: '4. OVR 판정과 보상',
+    content: '출전 선수 5명의 OVR과 카드 강화 수치를 합산해 전력을 정합니다. 가위바위보 승자는 해당 판의 전력에 25% 보너스, 패자는 25% 페널티를 받습니다. 이후 서버 무작위 보정이 더해져 높은 OVR로 불리한 가위바위보 결과도 뒤집을 수 있습니다. 경쟁전은 시리즈 종료 후 랭크 점수에 반영됩니다.',
   },
   {
     title: '5. 캠페인과 무한도전',
-    content: '캠페인은 지역별 단계를 순서대로 클리어하는 별도의 진행 모드입니다. 무한도전은 단계마다 강해지는 AI를 상대합니다. 두 모드는 MOBA 리프트 시뮬레이션과 별개의 기존 전투 규칙을 사용합니다.',
+    content: '캠페인과 무한도전은 별도의 게임 모드입니다. OVR 가위바위보 매치는 AI 매치와 경쟁전에만 적용됩니다.',
   },
 ] as const;
 
@@ -50,7 +50,7 @@ export default function HowToPlay() {
               <ShieldCheck className="h-4 w-4" /> 덱 편성
             </Link>
             <Link to="/match-select" className="flex items-center justify-center gap-2 rounded-lg bg-cyan-600 p-3 text-center font-semibold text-white hover:bg-cyan-500">
-              <Target className="h-4 w-4" /> AI MOBA 전술
+              <Target className="h-4 w-4" / > OVR 가위바위보 대전
             </Link>
             <Link to="/campaign" className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 p-3 text-center font-semibold text-white hover:bg-indigo-500">
               <Trophy className="h-4 w-4" /> 캠페인

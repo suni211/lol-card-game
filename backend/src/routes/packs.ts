@@ -41,7 +41,7 @@ router.post('/open', authMiddleware, async (req: AuthRequest, res) => {
 
     // Check if user has enough packs
     const [userPacks]: any = await connection.query(
-      'SELECT quantity FROM user_packs WHERE user_id = ? AND pack_type = ?',
+      'SELECT quantity FROM user_packs WHERE user_id = ? AND pack_type = ? FOR UPDATE',
       [userId, packType]
     );
 
@@ -118,67 +118,55 @@ function getPackConfig(packType: string) {
 // Open a single pack
 async function openSinglePack(connection: any, userId: number, config: any) {
   const cards = [];
-
+  const drawnPlayers: number[] = [];
+  const validSeasons = ['26 LIVE','26WR','26WRs'];
   for (let i = 0; i < config.cardCount; i++) {
-    let players: any;
+    let minOverall = config.minOverall;
+    let maxOverall = config.maxOverall;
+    if (i === 0 && config.guaranteedEpic) { minOverall=91; maxOverall=999; }
+    else if (i === 0 && config.guaranteedRare) { minOverall=81; maxOverall=100; }
 
-    // ICON pack - get random ICON card
-    if (config.iconOnly) {
-      [players] = await connection.query(
-        `SELECT * FROM players
-         WHERE season = '26WRs'
-         ORDER BY RAND()
-         LIMIT 1`
-      );
-    } else {
-      let minOverall = config.minOverall;
-      let maxOverall = config.maxOverall;
-
-      // Guarantee specific tier on certain cards
-      if (i === 0 && config.guaranteedEpic) {
-        minOverall = 91;
-        maxOverall = 999;
-      } else if (i === 0 && config.guaranteedRare) {
-        minOverall = 81;
-        maxOverall = 100;
+    // Prefer the advertised OVR interval and unique players within one pack.
+    const search = async (bounded: boolean, unique: boolean) => {
+      const conditions = ["season IN ('26 LIVE','26WR','26WRs')"];
+      const params: any[] = [];
+      if (bounded) {
+        conditions.push('overall>=? AND overall<=?');
+        params.push(minOverall,maxOverall);
       }
-
-      // Get random card
-      [players] = await connection.query(
-        `SELECT * FROM players
-         WHERE overall >= ?
-           AND overall <= ?
-           AND season IN ('26 LIVE','26WR','26WRs')
-         ORDER BY RAND()
-         LIMIT 1`,
-        [minOverall, maxOverall]
+      if (unique && drawnPlayers.length) {
+        conditions.push('id NOT IN (?)');
+        params.push(drawnPlayers);
+      }
+      const [rows]: any = await connection.query(
+        `SELECT * FROM players WHERE ${conditions.join(' AND ')} ORDER BY RAND() LIMIT 1`,params
       );
+      return rows;
+    };
+    let players = await search(true,true);
+    if (!players.length) players = await search(false,true);
+    if (!players.length) players = await search(true,false);
+    if (!players.length) players = await search(false,false);
+    if (!players.length) {
+      throw new Error('26 시즌 팩에서 뽑을 선수 정보가 없습니다. 선수 DB를 확인해주세요.');
     }
-
-    if (players.length > 0) {
-      const player = players[0];
-
-      // Add card to user
-      const [result]: any = await connection.query(
-        'INSERT INTO user_cards (user_id, player_id, level) VALUES (?, ?, 0)',
-        [userId, player.id]
-      );
-
-      cards.push({
-        id: result.insertId,
-        player_id: player.id,
-        name: player.name,
-        team: player.team,
-        position: player.position,
-        overall: player.overall,
-        season: player.season,
-        salary: player.salary,
-        tier: calculateTier(player.overall, player.season),
-        level: 0,
-      });
-    }
+    const player=players[0];
+    drawnPlayers.push(Number(player.id));
+    const [result]: any = await connection.query(
+      'INSERT INTO user_cards (user_id,player_id,level) VALUES (?,?,0)',
+      [userId,player.id]
+    );
+    await connection.query(
+      `INSERT INTO user_collected_cards (user_id,player_id,total_obtained) VALUES (?,?,1)
+       ON DUPLICATE KEY UPDATE total_obtained=total_obtained+1`,
+      [userId,player.id]
+    );
+    cards.push({
+      id:result.insertId,player_id:player.id,name:player.name,team:player.team,
+      position:player.position,overall:player.overall,season:player.season,
+      salary:player.salary,tier:calculateTier(player.overall,player.season),level:0
+    });
   }
-
   return cards;
 }
 

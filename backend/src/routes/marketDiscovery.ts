@@ -154,12 +154,21 @@ router.get('/grade/:playerId/:grade',async(req:AuthRequest,res)=>{
        JOIN users u ON u.id=mt.seller_id
        WHERE mt.player_id=? AND mt.status='LISTED' AND uc.level=?
        ORDER BY mt.listing_price ASC,mt.id ASC LIMIT 70`,[playerId,grade]);
-    const [history]:any=await pool.query(
-      `SELECT mt.sold_price AS price,mt.sold_at AS date,mt.id
-       FROM market_transactions mt
-       WHERE mt.player_id=? AND mt.status='SOLD'
-         AND mt.enhancement_level=?
-       ORDER BY mt.sold_at DESC,mt.id DESC LIMIT 40`,[playerId,grade]);
+    let history:any[] = [];
+    try {
+      const [rows]:any=await pool.query(
+        `SELECT mt.sold_price AS price,mt.sold_at AS date,mt.id
+         FROM market_transactions mt
+         WHERE mt.player_id=? AND mt.status='SOLD'
+           AND mt.enhancement_level=?
+         ORDER BY mt.sold_at DESC,mt.id DESC LIMIT 40`,[playerId,grade]);
+      history=rows;
+    } catch (historyError:any) {
+      // Legacy databases may not yet have enhancement_level. Showing actual
+      // listings is preferable to a 500; never invent historical trade grades.
+      if (historyError?.code !== 'ER_BAD_FIELD_ERROR') throw historyError;
+      console.warn('Market grade history unavailable: apply 2026_market_favorites_grade.sql');
+    }
     const sold=history.map((x:any)=>({price:Number(x.price),date:x.date,id:x.id})).reverse();
     return res.json({success:true,data:{
       player:players[0],grade,listings,history:sold,

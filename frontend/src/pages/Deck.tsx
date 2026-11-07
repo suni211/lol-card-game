@@ -96,7 +96,8 @@ const calculateTeamSynergy = (slots: DeckSlot[]) => {
 
   slots.forEach(slot => {
     if (slot.card) {
-      const power = slot.card.player.overall + slot.card.level;
+      const power = slot.card.player.overall + calculateEnhancementBonus(slot.card.level)
+        - (slot.card.player.position.toUpperCase() === slot.position.toUpperCase() ? 0 : 10);
       totalPower += power;
 
       // Debug: Log team info
@@ -217,7 +218,7 @@ export default function Deck() {
   const { totalPower, synergyBonus, synergyDetails } = calculateTeamSynergy(deckSlots);
 
   // Helper function to calculate card OVR with position penalty
-  const calculateCardOVR = (card: UserCard, _position: string) => {
+  const calculateCardOVR = (card: UserCard, assignedPosition: string) => {
     const enhancementBonus = calculateEnhancementBonus(card.level);
     const cardData = {
       position: card.player.position,
@@ -226,7 +227,7 @@ export default function Deck() {
       level: card.level
     };
     const baseStat = calculateTotalOverall(card.player.overall, enhancementBonus, cardData, coachBuff);
-    return baseStat;
+    return baseStat - (card.player.position.toUpperCase() === assignedPosition.toUpperCase() ? 0 : 10);
   };
 
   // 필터링 및 정렬된 카드 목록을 미리 계산 (성능 최적화)
@@ -783,7 +784,7 @@ export default function Deck() {
                             </p>
                             {slot.card.player.position !== slot.position && (
                               <span className="text-xs text-orange-600 dark:text-orange-400 font-bold bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">
-                                포지션 자유
+                                포지션 불일치 -10 OVR
                               </span>
                             )}
                           </div>
@@ -1079,7 +1080,7 @@ export default function Deck() {
                                 </span>
                                 {!positionMatch && (
                                   <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
-                                    포지션 자유
+                                    포지션 불일치 -10 OVR
                                   </span>
                                 )}
                               </div>

@@ -773,7 +773,7 @@ const MAX_ENHANCEMENT_LEVEL = 10;
 // OVR downgrade amounts on failure (based on enhancement level)
 const OVR_DOWNGRADE_RATES = [0, 0, 0, 0, 0, 1, 2, 3, 5, 7]; // 0→1 ~ 4→5 실패 시 OVR 하락 없음, 이후 1~7 하락
 
-// Calculate success rate based on material cards quality (up to 3 materials)
+// Calculate success rate based on material cards quality (up to 5 materials)
 function calculateEnhancementRate(
   baseRate: number,
   targetCard: any,
@@ -815,10 +815,10 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
       return res.status(400).json({ success: false, error: 'Target card and material cards array are required' });
     }
 
-    if (materialCardIds.length === 0 || materialCardIds.length > 3 ||
+    if (materialCardIds.length === 0 || materialCardIds.length > 5 ||
         new Set(materialCardIds).size !== materialCardIds.length ||
         materialCardIds.includes(targetCardId)) {
-      return res.status(400).json({ success: false, error: 'Must provide 1-3 material cards' });
+      return res.status(400).json({ success: false, error: 'Must provide 1-5 material cards' });
     }
 
     // Get all cards with player info
@@ -884,7 +884,7 @@ router.post('/enhance/preview', authMiddleware, async (req: AuthRequest, res) =>
         cost,
         ovrDowngrade,
         filledSlots: enhancementMaterialSlots(targetCard.level,materialCards.length),
-        totalSlots: 3,
+        totalSlots: 5,
         slotsPerCard: targetCard.level < 4 ? 1.5 : 1,
         materialCards: materialCards.map((c: any) => ({
           id: c.id,
@@ -918,11 +918,11 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ success: false, error: 'Target card and material cards array are required' });
     }
 
-    if (materialCardIds.length === 0 || materialCardIds.length > 3 ||
+    if (materialCardIds.length === 0 || materialCardIds.length > 5 ||
         new Set(materialCardIds).size !== materialCardIds.length ||
         materialCardIds.includes(targetCardId)) {
       await connection.rollback();
-      return res.status(400).json({ success: false, error: 'Must provide 1-3 material cards' });
+      return res.status(400).json({ success: false, error: 'Must provide 1-5 material cards' });
     }
 
     if (materialCardIds.includes(targetCardId)) {
@@ -1160,7 +1160,7 @@ router.post('/enhance', authMiddleware, async (req: AuthRequest, res) => {
         baseRate,
         successRate,
         filledSlots: enhancementMaterialSlots(targetCard.level,materialCards.length),
-        totalSlots: 3,
+        totalSlots: 5,
         playerName: targetCard.player_name,
         materialCardNames: materialCards.map((c: any) => c.player_name),
         levelDowngraded,

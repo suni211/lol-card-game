@@ -164,6 +164,7 @@ async function openSinglePack(connection: any, userId: number, config: any) {
     cards.push({
       id:result.insertId,player_id:player.id,name:player.name,team:player.team,
       position:player.position,overall:player.overall,season:player.season,
+      nationality: player.nationality || null,
       salary:player.salary,tier:calculateTier(player.overall,player.season),level:0
     });
   }

@@ -80,11 +80,10 @@ function choose(files,codes,names){
   if(best<0)continue;
   matched.push({title,info,score:best});
  }
+ // All candidates already passed the strict TEAM+gamer filename prefix.
+ // Different seasonal portraits of that same identity are safe to rank.
  matched.sort((a,b)=>b.score-a.score||a.title.localeCompare(b.title));
- if(!matched.length)return null;
- if(matched.length>1&&matched[0].score===matched[1].score&&
-    matched[0].info.url!==matched[1].info.url) return {error:'AMBIGUOUS_SOURCE_IMAGES'};
- return matched[0];
+ return matched[0]||null;
 }
 async function exact2026(codes,names){
  const titles=[];

@@ -296,13 +296,17 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
     const [rows]:any = await pool.query(
       `SELECT p.id,p.name,p.team,p.position,p.region,p.season,
               p.overall,p.nationality,p.image_url,
+              COALESCE(wlb.base_overall,p.overall) AS base_overall,
+              COALESCE(wlb.boost_amount,0) AS live_boost,
               COALESCE(ps.cs,p.overall) AS cs,
               COALESCE(ps.teamfight,p.overall) AS teamfight,
               COALESCE(ps.laning,p.overall) AS laning,
               COALESCE(ps.shotcalling,p.overall) AS shotcalling,
               COALESCE(ps.mental,p.overall) AS mental,
               COALESCE(ps.clutch,p.overall) AS clutch
-       FROM players p LEFT JOIN player_stats ps ON ps.player_id=p.id ${filter}
+       FROM players p
+       LEFT JOIN player_stats ps ON ps.player_id=p.id
+       LEFT JOIN worlds2026_live_boosts wlb ON wlb.player_id=p.id ${filter}
        ORDER BY FIELD(p.season,'26WRs','26WR','26 LIVE') DESC,
                 p.region,p.team,p.name,p.position,p.id
        LIMIT ? OFFSET ?`,

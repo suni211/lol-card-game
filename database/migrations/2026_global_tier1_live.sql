@@ -32,7 +32,7 @@ INSERT INTO tmp_2026_global_live (name,team,position,overall,region,season) VALU
 ('Kellin','BFX','SUPPORT',79,'LCK','26 LIVE'),
 ('Casting','BRO','TOP',71,'LCK','26 LIVE'),
 ('GIDEON','BRO','JUNGLE',71,'LCK','26 LIVE'),
-('Loki','BRO','MID',71,'LCK','26 LIVE'),
+('Roamer','BRO','MID',71,'LCK','26 LIVE'),
 ('Teddy','BRO','ADC',71,'LCK','26 LIVE'),
 ('Namgung','BRO','SUPPORT',71,'LCK','26 LIVE'),
 ('DuDu','DNS','TOP',77,'LCK','26 LIVE'),

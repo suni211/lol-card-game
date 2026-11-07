@@ -159,41 +159,6 @@ const Referral: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Reward Milestones */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8"
-      >
-        <h2 className="text-2xl font-bold mb-4">매치 보너스 마일스톤</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          추천한 친구가 게임을 플레이할 때마다 양측 모두 보너스를 받습니다!
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {[
-            { matches: 1, bonus: 100 },
-            { matches: 5, bonus: 250 },
-            { matches: 10, bonus: 500 },
-            { matches: 20, bonus: 1000 },
-            { matches: 50, bonus: 2500 },
-            { matches: 100, bonus: 5000 },
-          ].map((milestone) => (
-            <div
-              key={milestone.matches}
-              className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4 text-center"
-            >
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-                {milestone.matches}경기
-              </p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {milestone.bonus}P
-              </p>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
       {/* Referred Users */}
       {referralInfo && referralInfo.referrals.length > 0 && (
         <motion.div
@@ -293,7 +258,7 @@ const Referral: React.FC = () => {
           <li>1. 위의 추천 코드를 복사하여 친구에게 전달하세요.</li>
           <li>2. 친구가 회원가입 시 추천 코드를 입력합니다.</li>
           <li>3. 가입 즉시 양측 모두 5,000P를 받습니다!</li>
-          <li>4. 가입 보너스는 신규 Google 가입이 완료되면 지급됩니다.</li>
+          <li>4. 가입 보너스는 신규 Google 가입이 완료되면 각 1회 지급됩니다.</li>
           <li className="text-red-600 dark:text-red-400 font-semibold">
             ⚠ 신규 Google 계정 가입 시 1회 지급되며 기존 계정은 중복 지급되지 않습니다.
           </li>

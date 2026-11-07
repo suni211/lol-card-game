@@ -140,13 +140,20 @@ async function findLeaguepediaPhoto(name,team){
     encodeURIComponent(best.title.replace(/ /g,'_')),
     portrait:{url:best.info.url,alt:best.title},origin:'leaguepedia'};
   // Filename-index lookup searches historical years, JPG and WebP as well.
-  const indexed=await allImages(codes,names);
+  let indexed=[];
+  try {indexed=await allImages(codes,names);}
+  catch(e) {
+    // Some Fandom instances disable the allimages listing. Exact file
+    // lookups remain available and should continue even in that case.
+    console.warn('Leaguepedia photo index unavailable for '+team+' '+name+': '+
+      String(e.response?.status||e.code||e.message));
+  }
   best=choose(indexed,codes,names);
   if(best?.info)return {page:'https://lol.fandom.com/wiki/'+
     encodeURIComponent(('File:'+best.title).replace(/ /g,'_')),
     portrait:{url:best.info.url,alt:best.title},origin:'leaguepedia'};
   if(best?.error)return {error:best.error,sourceError:false};
-  // Some Fandom wikis disallow allimages API. Try known title variants.
+  // Try known JPG/WebP and 2025 file title variants even when the index fails.
   const exact=await exact2026(codes,names);
   best=choose(exact,codes,names);
   if(best?.info)return {page:'https://lol.fandom.com/wiki/'+

@@ -246,6 +246,12 @@ io.on('connection', (socket) => {
       const decoded: any = jwt.verify(data.token, jwtSecret);
 
       // Add or update user in online users map
+      const previousAuthenticatedId = socket.data.authenticatedUserId;
+      if (previousAuthenticatedId && previousAuthenticatedId !== decoded.id) {
+        socket.leave(`user:${previousAuthenticatedId}`);
+      }
+      socket.data.authenticatedUserId = decoded.id;
+      socket.join(`user:${decoded.id}`);
       onlineUsers.set(decoded.id, {
         userId: decoded.id,
         socketId: socket.id,
@@ -387,15 +393,12 @@ httpServer.listen(PORT, () => {
 
 // Helper function to emit point updates to a specific user
 function emitPointUpdate(userId: number, newPoints: number, newLevel?: number, newExp?: number) {
-  const user = onlineUsers.get(userId);
-  if (user) {
-    io.to(user.socketId).emit('pointsUpdate', {
-      points: newPoints,
-      level: newLevel,
-      exp: newExp,
-    });
-    console.log(`[Points] Sent update to user ${userId} (${user.username}): ${newPoints}P`);
-  }
+  // A user may be connected from multiple tabs or devices.
+  io.to(`user:${userId}`).emit('pointsUpdate', {
+    points: newPoints,
+    ...(newLevel !== undefined ? {level: newLevel} : {}),
+    ...(newExp !== undefined ? {exp: newExp} : {}),
+  });
 }
 
 export default app;

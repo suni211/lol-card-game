@@ -3,6 +3,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
+import CountryFlag from '../components/CountryFlag';
 import {
   Book,
   Search,
@@ -27,6 +28,8 @@ interface Player {
   tier: string;
   season: string;
   image_url: string | null;
+  nationality?: string | null;
+  cs?:number;teamfight?:number;laning?:number;shotcalling?:number;mental?:number;clutch?:number;
   collected?: boolean;
   first_obtained_at?: string;
   total_obtained?: number;
@@ -491,6 +494,9 @@ export default function CardCollection() {
                     <p className="text-white/60 text-xs mb-1">
                       {card.collected ? card.team : '???'}
                     </p>
+                    {card.collected && <div className="mb-2 flex items-center gap-2">
+                      <CountryFlag code={card.nationality} size="sm" showCode/>
+                    </div>}
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">{card.position}</span>
                       {card.collected && (
@@ -501,6 +507,16 @@ export default function CardCollection() {
                     </div>
                   </div>
 
+                  {card.collected && (
+                    <div className="mt-3 grid grid-cols-2 gap-1 border-t border-white/10 pt-2 text-[10px] text-white/70">
+                      <span>CS {card.cs ?? '-'}</span>
+                      <span>한타 {card.teamfight ?? '-'}</span>
+                      <span>라인전 {card.laning ?? '-'}</span>
+                      <span>오더 {card.shotcalling ?? '-'}</span>
+                      <span>멘탈 {card.mental ?? '-'}</span>
+                      <span>클러치 {card.clutch ?? '-'}</span>
+                    </div>
+                  )}
                   {/* Collection Count */}
                   {card.collected && card.total_obtained && card.total_obtained > 1 && (
                     <div className="mt-2 text-center bg-white/10 rounded py-1">

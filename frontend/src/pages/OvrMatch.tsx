@@ -153,7 +153,7 @@ export default function OvrMatch() {
             </div>
           </> : <div className="rounded-lg bg-slate-800 p-4 text-center">
             <p className="text-2xl font-black">{series.status==='WIN'?'시리즈 승리!':'시리즈 패배'}</p>
-            <p className="mt-2 text-sm text-slate-300">+{series.pointsReward}P{series.mode==='RANKED' ? ` · 점수 ${series.ratingDelta>0?'+':''}${series.ratingDelta}` : ''}</p>
+            <p className="mt-2 text-sm text-slate-300">+{series.pointsReward}P</p>
             <button onClick={()=>setSeries(null)} className="mt-4 rounded-lg bg-sky-600 px-7 py-3 font-bold">다음 경기</button>
           </div>}
           {!!series.rounds.length&&<div className="mt-5 space-y-2">

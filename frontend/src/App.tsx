@@ -59,7 +59,6 @@ import Campaign from './pages/Campaign';
 import CampaignBattle from './pages/CampaignBattle';
 import Agent from './pages/Agent';
 import Lottery from './pages/Lottery';
-import MatchSelect from './pages/MatchSelect';
 import HowToPlay from './pages/HowToPlay';
 
 // Protected Route Component
@@ -631,16 +630,11 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/rift-prep" element={<Navigate to="/ovr-match" replace />} />
+          <Route path="/rift-prep" element={<Navigate to="/ai-match" replace />} />
           <Route path="/ovr-match" element={<ProtectedRoute><OvrMatch /></ProtectedRoute>} />
-          <Route
-            path="/match-select"
-            element={
-              <ProtectedRoute>
-                <MatchSelect />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/match-select" element={<Navigate to="/competitive" replace />} />
+          <Route path="/competitive" element={<ProtectedRoute><OvrMatch /></ProtectedRoute>} />
+          <Route path="/ai-match" element={<ProtectedRoute><OvrMatch /></ProtectedRoute>} />
           <Route
             path="/moba-match"
             element={

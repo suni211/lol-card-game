@@ -63,7 +63,7 @@ export default function GachaReveal({
           animate={{opacity:1,scale:1,filter:'blur(0px)'}} exit={{opacity:0,scale:1.2,filter:'blur(12px)'}}
           className="text-center flex flex-col items-center justify-center min-h-[340px]">
           <p className="text-lg font-bold text-sky-200 tracking-[.3em] mb-6">국적</p>
-          <div className="mb-7"><CountryFlag code={nationality} size="lg" showCode /></div>
+          <div className="mb-7"><CountryFlag code={nationality} size="lg" /></div>
           <p className="font-black text-4xl sm:text-6xl">{getCountryName(nationality)}</p>
         </motion.div>}
         {step===1&&<motion.div key="position" initial={{opacity:0,y:80,scale:.8}}

@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD?'/api':(import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Card {
   id: number;
@@ -31,6 +31,9 @@ interface Card {
 interface EnhancementPreview {
   baseRate: number;
   successRate: number;
+  filledSlots:number;
+  totalSlots:number;
+  slotsPerCard:number;
   cost: number;
   ovrDowngrade: number;
   materialCards: Array<{
@@ -42,6 +45,10 @@ interface EnhancementPreview {
     name: string;
   }>;
 }
+
+const isMatchingMaterial=(target:Card,material:Card)=>
+  (target.playerId===material.playerId&&target.level===material.level) ||
+  target.player.overall===material.player.overall;
 
 export default function Enhancement() {
   const { user, token, updateUser } = useAuthStore();
@@ -328,7 +335,8 @@ export default function Enhancement() {
                 강화 안내 (초반 쉬움, 후반 극악)
               </h3>
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
-                <li className="text-purple-600 dark:text-purple-400 font-bold">• 재료 카드를 최대 3개까지 사용 가능! (보너스 합산)</li>
+                <li className="text-purple-600 dark:text-purple-400 font-bold">• 같은 선수 + 동일 강화등급 또는 동일 OVR 카드만 재료로 사용 가능</li>
+                <li>• +1~+4 도전: 재료 1장당 1.5칸 / +5~+10: 한 장당 1칸</li>
                 <li className="text-green-600 dark:text-green-400 font-bold">• 기본 성공률: +0강 80%, +1강 70%, +2강 60%, +3강 50%, +4강 40%</li>
                 <li className="text-orange-600 dark:text-orange-400">• 후반 성공률: +5강 30%, +6강 15%, +7강 8%, +8강 3%, +9강 1%</li>
                 <li>• 같은 선수 카드 사용 시: 각 재료당 +5%</li>
@@ -472,6 +480,16 @@ export default function Enhancement() {
                   </div>
                 </div>
 
+                <div className="mb-4 rounded-xl border border-cyan-400/30 bg-cyan-900/10 p-3">
+                  <div className="mb-2 flex justify-between text-sm font-bold text-gray-900 dark:text-white">
+                    <span>강화 재료 게이지</span><span>{preview.filledSlots}/3칸 (재료당 {preview.slotsPerCard}칸)</span>
+                  </div>
+                  <div className="flex h-6 overflow-hidden rounded-lg border border-slate-600 bg-slate-800">
+                    {[0,1,2].map(slot=><div key={slot} className="relative flex-1 border-r border-slate-900 last:border-0">
+                      <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{width:`${Math.max(0,Math.min(1,preview.filledSlots-slot))*100}%`}}/>
+                    </div>)}
+                  </div>
+                </div>
                 <button
                   onClick={handleEnhance}
                   disabled={enhancing || !user || user.points < preview.cost}
@@ -512,7 +530,7 @@ export default function Enhancement() {
                 const isTarget = targetCard?.id === card.id;
                 const isMaterial = materialCards.some(m => m.id === card.id);
                 const isDisabled = (targetCard && card.id === targetCard.id) ||
-                                   (targetCard && card.level >= 10 && !isTarget);
+                                   (targetCard && !isMaterial && !isTarget && (!isMatchingMaterial(targetCard,card)||materialCards.length>=3));
 
                 return (
                   <CardDisplay
@@ -527,12 +545,17 @@ export default function Enhancement() {
 
                       if (isTarget) {
                         setTargetCard(null);
+                        setMaterialCards([]);
                       } else if (isMaterial) {
                         setMaterialCards(materialCards.filter(m => m.id !== card.id));
                       } else if (!targetCard) {
                         setTargetCard(card);
                       } else if (targetCard && materialCards.length < 3 && card.id !== targetCard.id) {
-                        setMaterialCards([...materialCards, card]);
+                        if(!isMatchingMaterial(targetCard,card)){
+                           toast.error('동일 선수·강화등급 또는 동일 OVR 카드만 재료로 사용 가능합니다.');
+                           return;
+                         }
+                         setMaterialCards([...materialCards, card]);
                       }
                     }}
                     selected={isTarget || isMaterial}

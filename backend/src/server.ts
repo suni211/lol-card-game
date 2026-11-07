@@ -129,6 +129,7 @@ app.use('/api/achievements', achievementsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/worlds2026', worlds2026Routes);
 // Python Rift simulation assets are no longer served or required.
+app.use('/api/player-images', express.static(path.resolve(__dirname, '../uploads/players'), { fallthrough: false, maxAge: '1d' }));
 app.use('/player-images', express.static(path.resolve(__dirname, '../uploads/players'), { fallthrough: false }));
 app.use('/api/coupon', couponRoutes);
 app.use('/api/packs', packsRoutes);

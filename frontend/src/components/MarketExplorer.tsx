@@ -160,7 +160,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-600/25 text-xl font-black text-amber-300">{i+1}</span>
         <img src={getPlayerImageUrl(p.name,p.season,undefined,p.image_url||undefined)} alt="" className="h-14 w-12 shrink-0 object-contain"/>
         <div className="min-w-0"><div className="flex items-center gap-2"><Medal size={14} className="text-amber-300"/><strong className="truncate">{p.name}</strong></div>
-          <p className="text-xs text-slate-400">{p.team} · {p.overall} OVR</p>
+          <p className="text-xs text-slate-400">{p.team} · {Number(p.overall) + grade} OVR</p>
           <p className="text-xs text-sky-300">체결 {p.sold_count||0}건 · 매물 {p.listing_count||0}건</p></div>
       </button>)}
     </div>
@@ -230,7 +230,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
             <div className="min-w-0"><strong className="block truncate">{p.name}</strong><span className="text-xs text-slate-400">{p.season} · {p.team} · +{grade}</span>
               {p.season==='26WRs'&&<LiveBoostBadge boost={Number(p.live_boost)||0}/>}
             </div>
-            <div className="text-right"><strong className="text-sky-300">{p.overall}</strong><p className="text-xs text-amber-300">{formatP(p.lowest_price)}</p><p className="text-xs text-slate-500">{p.listing_count||0}매물</p></div>
+            <div className="text-right"><strong className="text-sky-300">{Number(p.overall) + grade}</strong><p className="text-xs text-amber-300">{formatP(p.lowest_price)}</p><p className="text-xs text-slate-500">{p.listing_count||0}매물</p></div>
           </button>)):favorites.map(f=><button key={f.player_id+'-'+f.enhancement_level}
             type="button" onClick={()=>choose({...f,id:f.player_id},Number(f.enhancement_level))}
             className="flex w-full items-center justify-between border-b border-slate-800 p-3 text-left text-sm hover:bg-slate-800">
@@ -248,7 +248,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
             <div className="min-w-0 flex-1">
               <h3 className="text-xl font-black">{selected.name}</h3>
               <p className="text-sm text-slate-400">{selected.team} · {selected.position} · {selected.season}</p>
-              <p className="mt-2 text-xl font-bold text-sky-300">{selected.overall} OVR <span className="text-sm text-amber-300">+{grade}강</span></p>
+              <p className="mt-2 text-xl font-bold text-sky-300">{Number(detail?.player?.overall ?? selected.overall) + grade} OVR <span className="text-sm text-amber-300">+{grade}강</span></p>
               {selected.season==='26WRs'&&<LiveBoostBadge boost={Number(detail?.player?.live_boost??selected.live_boost)||0}/>}
               <div className="mt-2 flex flex-wrap gap-2">
                 <button disabled={busy} onClick={()=>void favorite()} className="rounded-lg border border-amber-500/50 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-950">

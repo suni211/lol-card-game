@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Swords, Trophy, Star, ArrowLeft, Zap } from 'lucide-react';
 import axios from 'axios';
@@ -17,6 +17,11 @@ interface RoundResult {
 export default function CampaignBattle() {
   const navigate = useNavigate();
   const { stageId } = useParams();
+  const [searchParams] = useSearchParams();
+  const goBack = (region?: string) => {
+    const selected = region || stage?.region || searchParams.get('region');
+    navigate(selected ? `/campaign?region=${encodeURIComponent(selected)}` : '/campaign');
+  };
 
   const [loading, setLoading] = useState(true);
   const [battling, setBattling] = useState(false);
@@ -44,7 +49,7 @@ export default function CampaignBattle() {
 
         if (!foundStage) {
           toast.error('스테이지를 찾을 수 없습니다');
-          navigate('/campaign');
+          goBack();
           return;
         }
 
@@ -53,7 +58,7 @@ export default function CampaignBattle() {
     } catch (error: any) {
       console.error('Load battle error:', error);
       toast.error('전투 로드 실패: ' + (error.response?.data?.error || error.message));
-      navigate('/campaign');
+      goBack();
     } finally {
       setLoading(false);
     }

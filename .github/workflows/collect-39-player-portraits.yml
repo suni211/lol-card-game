@@ -1,5 +1,5 @@
 name: Collect missing 2026 player portraits
-# Final targeted run with five verified individual portrait sources and ZekaS academy image.
+# Last-targeted run: use named ZekaS portrait embedded in the VKS biography.
 
 on:
   push:

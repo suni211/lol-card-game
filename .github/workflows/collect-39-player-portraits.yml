@@ -1,4 +1,5 @@
 name: Collect missing 2026 player portraits
+# Retry with verified former-team aliases and deterministic latest-season selection.
 
 on:
   push:

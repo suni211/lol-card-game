@@ -41,12 +41,25 @@ async function download(url){
 async function run(){
  let saved=0,existing=0,missing=0,failed=0;
  const lines=[['team','player','status','source_page','image_url','note']];
+ const prior=new Map();
+ try{
+  const previous=await fs.readFile(reportPath,'utf8');
+  for(const line of previous.trim().split('\n').slice(1)){
+   const m=line.match(/^"([^"]*)","([^"]*)","([^"]*)","([^"]*)","([^"]*)","([^"]*)"/);
+   if(m)prior.set(m[1]+'|'+m[2],m);
+  }
+ }catch{};
  for(const p of players){
   const name=String(p.name).replace(/[^\p{L}\p{N} _-]/gu,'').trim();
   const names=['26_'+name+'.png','26WR_'+name+'.png','26WRs_'+name+'.png'];
   let already=true;
   for(const file of names)try{await fs.access(path.join(outDir,file));}catch{already=false;}
-  if(already){existing++;lines.push([p.team,p.name,'EXISTING','','','']);continue;}
+  if(already){
+   existing++;
+   const old=prior.get(p.team+'|'+p.name);
+   lines.push([p.team,p.name,'EXISTING',old?.[4]||'',old?.[5]||'','']);
+   continue;
+  }
   let found=await findLeaguepediaPhoto(p.name,p.team);
   if(found.error){
    const fallback=await findNamuFilePhoto(p.name,p.team);

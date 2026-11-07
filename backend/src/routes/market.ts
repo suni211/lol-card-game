@@ -68,6 +68,8 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
+        COALESCE(wlb.boost_amount,0) AS live_boost,
+        COALESCE(wlb.base_overall,p.overall) AS base_overall,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -85,6 +87,7 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
       JOIN user_cards uc ON mt.card_id = uc.id
       JOIN users u ON mt.seller_id = u.id
       LEFT JOIN player_market_prices pmp ON p.id = pmp.player_id
+      LEFT JOIN worlds2026_live_boosts wlb ON wlb.player_id=p.id
       WHERE mt.status = 'LISTED'
     `;
 
@@ -612,6 +615,8 @@ router.get('/my-listings', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
+        COALESCE(wlb.boost_amount,0) AS live_boost,
+        COALESCE(wlb.base_overall,p.overall) AS base_overall,
         CASE
           WHEN p.season = 'ICON' OR p.team = 'ICON' OR p.name LIKE '[ICON]%' OR p.name LIKE 'ICON%' THEN 'ICON'
           WHEN p.overall <= 80 THEN 'COMMON'
@@ -625,6 +630,7 @@ router.get('/my-listings', authMiddleware, async (req: AuthRequest, res) => {
       JOIN players p ON mt.player_id = p.id
       JOIN user_cards uc ON mt.card_id = uc.id
       LEFT JOIN users u ON mt.buyer_id = u.id
+      LEFT JOIN worlds2026_live_boosts wlb ON wlb.player_id=p.id
       WHERE mt.seller_id = ?
       ORDER BY mt.listed_at DESC
       LIMIT 50`,

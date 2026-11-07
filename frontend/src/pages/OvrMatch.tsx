@@ -37,6 +37,8 @@ export default function OvrMatch() {
   const [series,setSeries] = useState<Series|null>(null);
   const [teamError,setTeamError] = useState('');
   const [history,setHistory] = useState<History[]>([]);
+  const [dailyUsed,setDailyUsed] = useState(0);
+  const [dailyLimit,setDailyLimit] = useState(30);
   const [busy,setBusy] = useState(false);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState('');
@@ -51,6 +53,8 @@ export default function OvrMatch() {
       setSeries(current.data.data?.series ?? null);
       setPreview(current.data.data?.preview ?? null);
       setTeamError(current.data.data?.teamError || '');
+      setDailyUsed(Number(current.data.data?.dailyUsed ?? 0));
+      setDailyLimit(Number(current.data.data?.dailyLimit ?? 30));
       setHistory(prev.data.data || []);
     } catch(e:any) {
       setError(e.response?.data?.error || '대전 정보를 불러오지 못했습니다. DB 테이블 적용을 확인하세요.');
@@ -64,7 +68,7 @@ export default function OvrMatch() {
       const r=await axios.post(`${API_URL}/ovr-match/start`,{mode,deckSlot},{headers});
       setSeries(r.data.data);
       if(r.data.resumed) toast('진행 중이던 경기를 이어갑니다.');
-      else toast.success('경기 시작!');
+      else { toast.success('경기 시작!'); setDailyUsed(n=>n+1); }
     }catch(e:any){toast.error(e.response?.data?.error||'경기 시작 실패');}
     finally{setBusy(false);}
   };
@@ -95,7 +99,8 @@ export default function OvrMatch() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-3 text-3xl font-black"><Swords className="h-9 w-9 text-sky-400"/>AI 매치</h1>
-          <p className="mt-2 text-sm text-slate-300">3판 2선승제</p>
+          <p className="mt-2 text-sm text-slate-300">3판 2선승제 · 하루 최대 30경기 (한국시간 00:00 초기화)</p>
+          <p className="mt-2 text-sm font-bold text-amber-300">오늘 {dailyUsed}/{dailyLimit}경기 · 남은 {Math.max(0,dailyLimit-dailyUsed)}경기</p>
         </div>
         <button onClick={()=>void load()} disabled={busy} className="flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 disabled:opacity-40"><RefreshCw className="h-4 w-4"/>새로고침</button>
       </header>
@@ -112,9 +117,9 @@ export default function OvrMatch() {
 
           </div>
           {teamError&&<p className="mt-3 text-amber-300">{teamError}</p>}
-          <button disabled={busy||!preview||!!teamError} onClick={()=>void start()}
+          <button disabled={busy||!preview||!!teamError||dailyUsed>=dailyLimit} onClick={()=>void start()}
             className="mt-5 w-full rounded-lg bg-sky-600 p-4 font-bold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40">
-            {busy?'경기 준비 중...':'AI 매치 시작'}
+            {busy?'경기 준비 중...':dailyUsed>=dailyLimit?'오늘 AI 매치 30판 완료':'AI 매치 시작'}
           </button>
         </section>}
         <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">

@@ -322,9 +322,9 @@ router.post('/list', authMiddleware, async (req: AuthRequest, res) => {
 
     // Create listing
     const [result]: any = await connection.query(
-      `INSERT INTO market_transactions (player_id, seller_id, card_id, listing_price)
-      VALUES (?, ?, ?, ?)`,
-      [card.player_id, userId, cardId, price]
+      `INSERT INTO market_transactions (player_id, seller_id, card_id, listing_price,enhancement_level)
+      VALUES (?, ?, ?, ?,?)`,
+      [card.player_id, userId, cardId, price,Number(card.level)||0]
     );
 
     const listingId = result.insertId;

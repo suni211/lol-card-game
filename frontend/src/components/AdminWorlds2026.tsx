@@ -103,7 +103,7 @@ export default function AdminWorlds2026() {
         {filtered.map(c=><button type="button" key={c.id} onClick={()=>choose(c)}
           className={`w-full text-left p-2 border-b flex justify-between gap-2 hover:bg-cyan-100 dark:hover:bg-slate-700 ${selected===c.id?'bg-cyan-100 dark:bg-slate-700':''}`}>
           <span>{c.team} · {c.name} <small>({c.position})</small></span>
-          <span className="text-xs shrink-0">{c.season} / {c.overall}{c.boost_amount>0?` (+${c.boost_amount})`:''}</span>
+          <span className="text-xs shrink-0">{c.season} / {c.overall}{c.boost_amount!==0?` (${c.boost_amount>0?'+':''}${c.boost_amount})`:''}</span>
         </button>)}
       </div>
       <div className="border rounded p-4">
@@ -125,13 +125,13 @@ export default function AdminWorlds2026() {
           <label className="block mt-4 mb-2 text-sm font-bold">선수 사진 (PNG/JPG/WebP, 최대 5MB)</label>
           <input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={e=>e.target.files?.[0]&&uploadPhoto(e.target.files[0])} className="text-sm w-full"/>
           {current.season==='26WRs'&&<>
-            <label className="block mt-4 text-sm">라이브 부스트 (+0 ~ +15)</label>
-            <input type="number" min="0" max="15" value={boost} onChange={e=>setBoost(Number(e.target.value))} className="w-full border p-2 rounded text-black"/>
+            <label className="block mt-4 text-sm">라이브 OVR 변동 (-15 ~ +15)</label>
+            <input type="number" min="-15" max="15" value={boost} onChange={e=>setBoost(Number(e.target.value))} className="w-full border p-2 rounded text-black"/>
             <label className="block mt-3 text-sm">실제 대회 성적 · 적용 사유</label>
             <textarea value={achievement} onChange={e=>setAchievement(e.target.value)} className="w-full border p-2 rounded text-black" rows={2} placeholder="예: 월즈 8강 MVP, 3세트 연속 우수한 경기력"/>
             <label className="block mt-3 text-sm">근거 링크 (HTTPS, 선택)</label>
             <input type="url" value={evidenceUrl} onChange={e=>setEvidenceUrl(e.target.value)} className="w-full border p-2 rounded text-black" placeholder="https://..."/>
-            <p className="text-xs text-gray-500 my-3">기본 OVR {current.base_overall} + 라이브 부스트 {boost} = {current.base_overall+boost}</p>
+            <p className="text-xs text-gray-500 my-3">기본 OVR {current.base_overall} / 조정 {boost>0?'+':''}{boost} = {current.base_overall+boost}</p>
             <button disabled={busy} onClick={saveBoost} className="rounded bg-blue-700 text-white px-5 py-2 disabled:opacity-40">라이브 부스트 저장</button>
           </>}
         </>}

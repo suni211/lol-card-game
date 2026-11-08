@@ -37,7 +37,11 @@ def read_roster():
     return roster
 
 def read_url(url, maxbytes=6_000_000):
-    req = urllib.request.Request(url, headers=HEADERS)
+    headers = dict(HEADERS)
+    host = urllib.parse.urlparse(url).netloc.lower()
+    if "wikia" in host or "fandom" in host:
+        headers["Referer"] = "https://lol.fandom.com/"
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=16) as res:
         if res.status != 200:
             raise RuntimeError("HTTP %s" % res.status)
@@ -119,9 +123,10 @@ def main():
                     updates.append("UPDATE players SET image_url=%s WHERE season='12WR' AND name=%s AND team=%s AND position=%s;"
                                    % tuple(map(sql_quote, (relative, name, player["team"], player["position"]))))
             except (OSError, ValueError, urllib.error.URLError, RuntimeError) as exc:
-                record.update(status="download_failed", error=str(exc))
+                record.update(status="download_failed", error=f"{type(exc).__name__}: {exc}")
         results.append(record)
-        print("[%02d/60] %-17s %-15s %s" % (i, player["team"], name, record["status"]), flush=True)
+        print("[%02d/60] %-17s %-15s %s%s" % (i, player["team"], name, record["status"],
+              (" | " + record["error"][:180]) if "error" in record else ""), flush=True)
     report_path = Path(args.report)
     report_path.write_text(json.dumps({"total":60, "downloaded":sum(x["status"]=="ready" for x in results),
                                        "missing":sum(x["status"] not in ("ready", "candidate") for x in results),

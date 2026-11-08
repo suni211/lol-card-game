@@ -71,6 +71,8 @@ router.get('/listings', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
+        p.salary,
+        p.image_url,
         COALESCE(wlb.boost_amount,0) AS live_boost,
         COALESCE(wlb.base_overall,p.overall) AS base_overall,
         CASE
@@ -680,6 +682,8 @@ router.get('/my-listings', authMiddleware, async (req: AuthRequest, res) => {
         p.team,
         p.position,
         p.overall,
+        p.salary,
+        p.image_url,
         COALESCE(wlb.boost_amount,0) AS live_boost,
         COALESCE(wlb.base_overall,p.overall) AS base_overall,
         CASE

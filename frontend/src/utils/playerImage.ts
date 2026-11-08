@@ -31,6 +31,8 @@ export function getPlayerImageUrl(
   if (imageUrl && /^\/(?:api\/player-images|player-images|players)\/[\w\p{L}. _-]+\.(?:png|webp|jpg|jpeg)(?:\?v=\d+)?$/u.test(imageUrl)) {
     return imageUrl;
   }
+  // Historical 12WR portraits are not bundled: use a safe silhouette until uploaded.
+  if (season === '12WR') return getPlayerPlaceholder();
   const cleanName = playerName.trim().replace(/[^\p{L}\p{N} _-]/gu, '');
   const prefix = season === '12WR' ? '12WR' : season === '26WRs' ? '26WRs' : season === '26WR' ? '26WR' : '26';
   return `/players/${prefix}_${cleanName}.png`;

@@ -225,15 +225,23 @@ router.post('/photo/:playerId', uploadParser, async (req: AuthRequest, res: Resp
     // A versioned path busts browser cache after replacing the same image.
     const imageUrl = `/api/player-images/${filename}?v=${Date.now()}`;
     const applyAllSeasons = req.query.all === '1';
-    if (applyAllSeasons) {
-      await pool.query(
-        "UPDATE players SET image_url=? WHERE name=? AND team=? AND position=? AND season IN ('26 LIVE','26WR','26WRs')",
-        [imageUrl, players[0].name, players[0].team, players[0].position]
-      );
-    } else {
-      await pool.query('UPDATE players SET image_url=? WHERE id=?',[imageUrl,playerId]);
+    // Always update the selected player, even for historical series (12WR etc.).
+    // This prevents the UI from reporting success while the selected row stays NULL.
+    // The all-seasons checkbox explicitly shares the image only between an identical
+    // nickname + team + position; it never affects an unrelated player.
+    const [updated]:any = applyAllSeasons
+      ? await pool.query(
+          'UPDATE players SET image_url=? WHERE id=? OR (name=? AND team=? AND position=?)',
+          [imageUrl,playerId,players[0].name,players[0].team,players[0].position]
+        )
+      : await pool.query('UPDATE players SET image_url=? WHERE id=?',[imageUrl,playerId]);
+    const [verified]:any = await pool.query(
+      'SELECT image_url FROM players WHERE id=?',[playerId]
+    );
+    if (!verified.length || verified[0].image_url !== imageUrl) {
+      throw new Error('Image URL was not persisted to the selected player');
     }
-    return res.json({success:true,data:{imageUrl,applyAllSeasons}});
+    return res.json({success:true,data:{imageUrl,applyAllSeasons,updatedCount:Number(updated.affectedRows||0)}});
   } catch(error:any) {
     console.error('worlds2026 photo save:',error);
     return res.status(500).json({

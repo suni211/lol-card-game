@@ -168,8 +168,10 @@ export default function AdminPlayers() {
         headers:{...headers,'Content-Type':file.type}
       });
       const imageUrl = String(r.data.data?.imageUrl || '');
+      if (!imageUrl) throw new Error('서버가 이미지 저장 경로를 반환하지 않았습니다.');
       reloadSelection({...selected,image_url:imageUrl});
       toast.success('선수 사진 저장 완료');
+      // Refresh directory rows from DB to avoid showing transient, unsaved images.
       await load();
     } catch(e:any){toast.error(apiError(e,'사진 업로드 실패. 서버 폴더 권한을 확인하세요.'));}
     finally{setBusy(false);}
@@ -338,7 +340,7 @@ export default function AdminPlayers() {
                 </label>
                 <label className="mt-2 flex items-center gap-2 text-xs text-slate-300">
                   <input type="checkbox" checked={photoAll} onChange={e=>setPhotoAll(e.target.checked)}/>
-                  같은 선수·팀·포지션의 모든 2026 시즌에 사진 적용
+                  같은 선수·팀·포지션의 모든 시즌에 사진 적용 (12WR 포함)
                 </label>
                 <p className="mt-2 text-xs text-slate-400">저장 후 선수 카드 이미지가 갱신됩니다. 서버 uploads/players 쓰기 권한이 필요합니다.</p>
               </div>

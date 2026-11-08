@@ -104,7 +104,7 @@ export default function Gacha() {
     {
       cost: 5000,
       label: '12WR · 시즌2 월즈',
-      description: '2012 시즌2 월드 챔피언십 12개 팀 · 60명 선수 전용 뽑기. OVR 74~98.',
+      description: '2012 시즌2 월드 챔피언십 12개 팀 · 60명 선수 전용 뽑기. OVR 70~98.',
       special: true,
       probabilities: { icon: 0, common: 0, rare: 0, epic: 0, legendary: 0, gr: 0 },
     },

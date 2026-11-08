@@ -3,13 +3,15 @@
  * Place custom PNG/WebP files in frontend/public/players and frontend/public/teams.
  * Season badges are intentionally just flat rectangles: 26 / 26WR / 26WRs.
  */
-export type Series2026 = '26 LIVE' | '26WR' | '26WRs';
+export type Series2026 = '26 LIVE' | '26WR' | '26WRs' | '12WR';
 export function getSeriesLabel(season?: string): string {
+  if (season === '12WR') return '12WR';
   if (season === '26WRs') return '26WRs';
   if (season === '26WR') return '26WR';
   return '26';
 }
 export function getSeriesLogo(season?: string): string {
+  if (season === '12WR') return '/series/12-wr.svg';
   if (season === '26WRs') return '/series/26-wrs.svg';
   if (season === '26WR') return '/series/26-wr.svg';
   return '/series/26-live.svg';
@@ -30,7 +32,7 @@ export function getPlayerImageUrl(
     return imageUrl;
   }
   const cleanName = playerName.trim().replace(/[^\p{L}\p{N} _-]/gu, '');
-  const prefix = season === '26WRs' ? '26WRs' : season === '26WR' ? '26WR' : '26';
+  const prefix = season === '12WR' ? '12WR' : season === '26WRs' ? '26WRs' : season === '26WR' ? '26WR' : '26';
   return `/players/${prefix}_${cleanName}.png`;
 }
 export function getPlayerPlaceholder(): string {

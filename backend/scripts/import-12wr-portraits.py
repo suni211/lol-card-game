@@ -56,7 +56,8 @@ def clean(s):
     return re.sub("[^a-z0-9]", "", s.casefold())
 
 def likely_player_portrait(url, nickname):
-    filename = urllib.parse.unquote(urllib.parse.urlparse(url).path).split("/")[-1]
+    path = urllib.parse.unquote(urllib.parse.urlparse(url).path)
+    filename = path.split("/revision/")[0].split("/")[-1]
     # Some wikis store variants in filename; do not use ambiguous generic images.
     fname = clean(filename)
     nick = clean(nickname)

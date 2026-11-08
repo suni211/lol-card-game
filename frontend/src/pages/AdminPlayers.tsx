@@ -28,7 +28,7 @@ type Directory = {
   players: Player[]; page: number; total: number; totalPages: number;
   limit: number; missingCount: number; missingPhotoCount: number;
 };
-const seasons = ['ALL','26 LIVE','26WR','26WRs'];
+const seasons = ['ALL','26 LIVE','26WR','26WRs','12WR'];
 const regions = ['ALL','LCK','LPL','LEC','LCS','CBLOL','LCP','LTA'];
 const countryOptions = [
   ['KR','대한민국'],['CN','중국'],['TW','대만'],['VN','베트남'],['JP','일본'],

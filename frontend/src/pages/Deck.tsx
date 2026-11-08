@@ -259,7 +259,7 @@ export default function Deck() {
     }, 0);
   }, [deckSlots]);
 
-  const SALARY_CAP = 115;
+  const SALARY_CAP = 50;
   const isOverSalaryCap = totalSalary > SALARY_CAP;
 
   useEffect(() => {

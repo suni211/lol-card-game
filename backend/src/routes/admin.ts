@@ -272,7 +272,7 @@ router.get('/player-directory', authMiddleware, adminMiddleware, async (req: Aut
     const region = String(req.query.region || 'ALL');
     const missingOnly = req.query.missing === '1';
     const missingPhotoOnly = req.query.missingPhoto === '1';
-    if (!['ALL','26 LIVE','26WR','26WRs'].includes(season)) {
+    if (!['ALL','26 LIVE','26WR','26WRs','12WR'].includes(season)) {
       return res.status(400).json({success:false,error:'시즌 필터가 잘못되었습니다.'});
     }
     if (!['ALL','LCK','LPL','LEC','LCS','CBLOL','LCP','LTA'].includes(region)) {
@@ -394,6 +394,10 @@ router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: A
     if (!players.length) {
       await connection.rollback();
       return res.status(404).json({success:false,error:'선수 카드를 찾을 수 없습니다.'});
+    }
+    if (players[0].season === '12WR' && (overall < 70 || overall > 98)) {
+      await connection.rollback();
+      return res.status(400).json({success:false,error:'12WR 시즌은 OVR 70~98만 설정할 수 있습니다.'});
     }
     // For 26WRs the number entered by the admin is the NEW BASE OVR.
     // The active boost is preserved and added on top of the edited base.

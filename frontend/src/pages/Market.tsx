@@ -13,12 +13,12 @@ const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL ||
 type Listing = {
   listing_id: number; player_id:number; card_id:number; seller_id:number;
   name:string; team:string; position:string; season:string;
-  overall:number; level:number; listing_price:number; seller_username:string;
+  overall:number; salary:number; image_url?:string|null; level:number; listing_price:number; seller_username:string;
   live_boost?:number;base_overall?:number;
 };
 type MyCard = {
   id:number; level:number;
-  player: { id:number; name:string; team:string; position:string; overall:number; season?:string; nationality?:string|null; image_url?:string|null; live_boost?:number; };
+  player: { id:number; name:string; team:string; position:string; overall:number; salary?:number; season?:string; nationality?:string|null; image_url?:string|null; live_boost?:number; };
 };
 type OwnListing = Listing & { status:string };
 const maxPrice = (level:number) => 50000 * (1 + Math.max(0, Math.min(10, Number(level)||0)));
@@ -181,7 +181,7 @@ export default function Market() {
                 <div className="truncate text-xs text-slate-400">{c.player.team}</div>
                 <div className="mt-1 text-xs text-slate-400">{c.player.season||'26'} · {c.player.position}</div>
                 <div className="mt-2 flex justify-between text-sm font-bold">
-                  <span className="text-sky-300">{c.player.overall} OVR</span>
+                  <span className="text-sky-300">{c.player.overall} OVR · 급여 {c.player.salary ?? '—'}</span>
                   <span className="text-amber-300">+{c.level}</span>
                 </div>
                 {c.player.season==='26WRs'&&<LiveBoostBadge boost={Number(c.player.live_boost)||0}/>}
@@ -193,7 +193,7 @@ export default function Market() {
             <strong>{selected?selected.player.name:'선택된 선수 없음'}</strong>
             {selected?.player.season==='26WRs'&&<button type="button" onClick={()=>setTrendId(selected.player.id)}
               className="ml-3 text-xs font-bold text-sky-300 underline">OVR 변동 그래프</button>}
-            {selected&&<p className="mt-1 text-xs text-slate-300">+{selected.level}강 · 판매 상한 {points(maxPrice(selected.level))}</p>}
+            {selected&&<p className="mt-1 text-xs text-slate-300">+{selected.level}강 · 급여 {selected.player.salary ?? '—'} · 판매 상한 {points(maxPrice(selected.level))}</p>}
           </div>
           <label className="flex items-center gap-2 text-sm">
             판매 가격
@@ -224,7 +224,7 @@ export default function Market() {
               <div className="flex items-start justify-between gap-3">
                 <div><strong className="text-lg">{l.name}</strong>
                   <p className="mt-1 text-xs text-slate-300">{l.team} · {l.position} · {l.season}</p>
-                  <p className="mt-2 text-xs text-slate-400">판매자: {l.seller_username}</p>
+                  <p className="mt-2 text-xs text-slate-400">급여 {l.salary ?? '—'} · 판매자: {l.seller_username}</p>
                 </div>
                 <div className="text-right"><strong className="text-xl text-sky-300">{l.overall}</strong>
                   <p className="text-xs text-slate-400">OVR · +{l.level}강</p>
@@ -248,7 +248,7 @@ export default function Market() {
         <h2 className="mb-3 text-xl font-bold">내 판매 중인 카드 ({activeOwn.length})</h2>
         {activeOwn.length===0?<p className="text-sm text-slate-400">현재 판매 중인 카드가 없습니다.</p>:
           <div className="space-y-2">{activeOwn.map(l=><div key={l.listing_id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-800 p-3 text-sm">
-            <span>{l.name} · {l.overall} OVR · +{l.level}강</span>
+            <span>{l.name} · {l.overall} OVR · 급여 {l.salary ?? '—'} · +{l.level}강</span>
             <div className="flex items-center gap-3"><strong className="text-amber-300">{points(l.listing_price)}</strong>
               <button onClick={()=>void editPrice(l)} disabled={busy} className="rounded bg-sky-700 px-3 py-2 disabled:opacity-40">가격 수정</button>
               <button onClick={()=>void cancel(l.listing_id)} disabled={busy} className="flex items-center gap-1 rounded bg-red-800 px-3 py-2 disabled:opacity-40">

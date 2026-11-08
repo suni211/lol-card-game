@@ -222,9 +222,14 @@ export default function Market() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map(l=><article key={l.listing_id} className="rounded-xl border border-slate-700 bg-slate-800 p-4">
               <div className="flex items-start justify-between gap-3">
-                <div><strong className="text-lg">{l.name}</strong>
+                <div className="flex min-w-0 items-center gap-3">
+                  <img src={getPlayerImageUrl(l.name,l.season,undefined,l.image_url||undefined)}
+                    alt={l.name} loading="lazy" className="h-16 w-12 rounded bg-slate-950 object-contain"
+                    onError={e=>{e.currentTarget.style.display='none';}}/>
+                  <div><strong className="text-lg">{l.name}</strong>
                   <p className="mt-1 text-xs text-slate-300">{l.team} · {l.position} · {l.season}</p>
                   <p className="mt-2 text-xs text-slate-400">급여 {l.salary ?? '—'} · 판매자: {l.seller_username}</p>
+                  </div>
                 </div>
                 <div className="text-right"><strong className="text-xl text-sky-300">{l.overall}</strong>
                   <p className="text-xs text-slate-400">OVR · +{l.level}강</p>

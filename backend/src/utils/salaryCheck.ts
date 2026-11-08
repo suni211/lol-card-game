@@ -1,10 +1,10 @@
 /**
  * Salary Cap System
- * Maximum salary per deck: 115
- * Salary range: 5-26 based on player overall rating
+ * Maximum salary per deck: 50
+ * Salary range: 5-22 based on player overall rating
  */
 
-const SALARY_CAP = 115;
+const SALARY_CAP = 50;
 
 /**
  * Check if a deck's total salary is within the cap

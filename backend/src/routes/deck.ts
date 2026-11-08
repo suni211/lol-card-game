@@ -420,13 +420,13 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
         });
       }
 
-      // Check total salary (salary cap = 115)
+      // Check total salary (salary cap = 50)
       const totalSalary = userCards.reduce((sum: number, card: any) => sum + (card.salary || 0), 0);
-      if (totalSalary > 115) {
+      if (totalSalary > 50) {
         await connection.rollback();
         return res.status(400).json({
           success: false,
-          error: `급여 한도 초과 (${totalSalary}/115). 급여가 더 낮은 선수를 배치하세요.`
+          error: `급여 한도 초과 (${totalSalary}/50). 급여가 더 낮은 선수를 배치하세요.`
         });
       }
     }
@@ -833,13 +833,13 @@ router.post('/preset', authMiddleware, async (req: AuthRequest, res) => {
         });
       }
 
-      // Check total salary (salary cap = 115)
+      // Check total salary (salary cap = 50)
       const totalSalary = userCards.reduce((sum: number, card: any) => sum + (card.salary || 0), 0);
-      if (totalSalary > 115) {
+      if (totalSalary > 50) {
         await connection.rollback();
         return res.status(400).json({
           success: false,
-          error: `급여 한도 초과 (${totalSalary}/115). 급여가 더 낮은 선수를 배치하세요.`
+          error: `급여 한도 초과 (${totalSalary}/50). 급여가 더 낮은 선수를 배치하세요.`
         });
       }
     }

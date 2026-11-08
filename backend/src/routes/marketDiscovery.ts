@@ -36,7 +36,7 @@ router.get('/popular',async(_req,res)=>{
     // Count real completed purchases; listing activity is a secondary tie break.
     // Never invent purchase volume for players with no trades.
     const [rows]:any=await pool.query(
-      `SELECT p.id AS player_id,p.name,p.team,p.position,p.season,p.overall,p.image_url,
+      `SELECT p.id AS player_id,p.name,p.team,p.position,p.season,p.overall,p.salary,p.image_url,
         COUNT(DISTINCT CASE WHEN mt.status='SOLD' THEN mt.id END) AS sold_count,
         COUNT(DISTINCT CASE WHEN mt.status='LISTED' THEN mt.id END) AS listing_count,
         COUNT(DISTINCT uc.id) AS held_count,
@@ -44,7 +44,7 @@ router.get('/popular',async(_req,res)=>{
        FROM players p
        LEFT JOIN market_transactions mt ON mt.player_id=p.id
        LEFT JOIN user_cards uc ON uc.player_id=p.id
-       GROUP BY p.id,p.name,p.team,p.position,p.season,p.overall,p.image_url
+       GROUP BY p.id,p.name,p.team,p.position,p.season,p.overall,p.salary,p.image_url
        ORDER BY sold_count DESC,listing_count DESC,held_count DESC,last_sold_at DESC,p.overall DESC,p.id ASC
        LIMIT 3`);
     res.setHeader('Cache-Control','no-store');
@@ -71,7 +71,7 @@ router.get('/browse',async(req:AuthRequest,res)=>{
   };
   try{
     const [rows]:any=await pool.query(
-      `SELECT p.id,p.name,p.team,p.position,p.season,p.overall,p.image_url,
+      `SELECT p.id,p.name,p.team,p.position,p.season,p.overall,p.salary,p.image_url,
           COALESCE(b.boost_amount,0) AS live_boost,
           (SELECT MIN(mt.listing_price) FROM market_transactions mt
            JOIN user_cards uc ON uc.id=mt.card_id
@@ -110,7 +110,7 @@ router.get('/favorites',async(req:AuthRequest,res)=>{
   try{
     const [rows]:any=await pool.query(
       `SELECT f.player_id,f.enhancement_level,f.created_at,
-        p.name,p.team,p.position,p.overall,p.season,p.image_url
+        p.name,p.team,p.position,p.overall,p.season,p.salary,p.image_url
        FROM market_favorites f JOIN players p ON p.id=f.player_id
        WHERE f.user_id=? ORDER BY f.created_at DESC,f.id DESC LIMIT 300`,[req.user!.id]);
     return res.json({success:true,data:rows});
@@ -143,7 +143,7 @@ router.get('/grade/:playerId/:grade',async(req:AuthRequest,res)=>{
   if(!playerId||grade<0)return res.status(400).json({success:false,error:'올바른 선수 또는 등급이 아닙니다.'});
   try{
     const [players]:any=await pool.query(
-      `SELECT p.id,p.name,p.team,p.position,p.season,p.overall,p.image_url,
+      `SELECT p.id,p.name,p.team,p.position,p.season,p.overall,p.salary,p.image_url,
         COALESCE(b.boost_amount,0) AS live_boost
        FROM players p LEFT JOIN worlds2026_live_boosts b ON b.player_id=p.id WHERE p.id=?`,[playerId]);
     if(!players.length)return res.status(404).json({success:false,error:'선수를 찾을 수 없습니다.'});

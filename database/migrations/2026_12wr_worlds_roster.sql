@@ -71,7 +71,7 @@ INSERT INTO tmp_12wr_roster (name,team,position,overall,region,nationality) VALU
 ('Violet','SAJ','JUNGLE',76,'LCP','VN'),
 ('NIXWATER','SAJ','MID',80,'LCP','VN'),
 ('Archie','SAJ','ADC',79,'LCP','VN'),
-('Junie','SAJ','SUPPORT',74,'LCP','VN');
+('Junie','SAJ','SUPPORT',70,'LCP','VN');
 
 INSERT INTO players (name,team,position,overall,region,tier,season,nationality,salary,image_url)
 SELECT s.name,s.team,s.position,s.overall,s.region,

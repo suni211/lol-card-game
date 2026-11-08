@@ -103,6 +103,13 @@ export default function Gacha() {
     },
     {
       cost: 5000,
+      label: '12WR · 시즌2 월즈',
+      description: '2012 시즌2 월드 챔피언십 12개 팀 · 60명 선수 전용 뽑기. OVR 74~98.',
+      special: true,
+      probabilities: { icon: 0, common: 0, rare: 0, epic: 0, legendary: 0, gr: 0 },
+    },
+    {
+      cost: 5000,
       label: '26WR · 26WRs 전용',
       description: '26WR / 26WRs 시즌 카드만 균등 랜덤 등장. ',
       special: true,
@@ -192,6 +199,7 @@ export default function Gacha() {
   const gachaTypeFor = (option: GachaOption): string => {
     
     if (option.label === '26WR · 26WRs 전용') return 'wr_2026';
+    if (option.label === '12WR · 시즌2 월즈') return 'wr_2012';
     if (option.cost === 0) return 'free';
     if (option.cost === 500) return 'basic';
     if (option.cost === 1000) return 'premium';

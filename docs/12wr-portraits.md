@@ -2,6 +2,14 @@
 
 기존 12WR 선수 등록 마이그레이션(`database/migrations/2026_12wr_worlds_roster.sql`)에 있는 **정확히 60명**의 닉네임과 팀을 자동 읽습니다. 잘못된 선수 사진이 배정되지 않도록 Leaguepedia 원본 이미지의 **파일명에 선수 닉네임이 포함된 경우**만 자동 후보로 채택합니다. 자동 검색에 없는 선수는 `frontend/12wr-portrait-sources.json`에 이름과 승인된 HTTPS 원본 이미지 URL을 추가하세요.
 
+## 한 번에 실행하기 (권장)
+`hisam` 계정에서, 12WR 선수 60명 DB 마이그레이션 적용 후:
+```bash
+cd /home/hisam/lol-card-game
+bash backend/scripts/deploy-12wr-portraits.sh
+```
+DB 백업 → 60명 이미지 수집/검증 → 성공한 이미지 URL DB 등록 → 프론트 빌드 → `/var/www/lcg` 배포 순으로 진행합니다. 실패한 선수는 보고서에 `missing`으로 남고 실루엣 상태가 유지됩니다. **100% 이미지를 확보했음을 의미하지 않습니다.**
+
 ## 명령어
 ```bash
 cd /home/hisam/lol-card-game

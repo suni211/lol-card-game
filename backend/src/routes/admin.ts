@@ -412,16 +412,21 @@ router.put('/player-overall/:id', authMiddleware, adminMiddleware, async (req: A
         [playerId,overall,boost,req.user!.id]
       );
     }
-    await connection.query('UPDATE players SET overall=? WHERE id=?',[finalOverall,playerId]);
+    // Salary follows the admin-edited base OVR (exclude transient live boosts).
+    const salary = overall <= 74 ? 5 : overall <= 79 ? 6 : overall <= 84 ? 8
+      : overall <= 89 ? 10 : overall <= 94 ? 12 : overall <= 99 ? 14
+      : overall <= 104 ? 16 : overall <= 109 ? 17 : overall <= 119 ? 19
+      : overall <= 129 ? 20 : 22;
+    await connection.query('UPDATE players SET overall=?,salary=? WHERE id=?',[finalOverall,salary,playerId]);
     await connection.query(
       'INSERT INTO admin_logs (admin_id,action,target_user_id,details) VALUES (?,?,NULL,?)',
       [req.user!.id,'UPDATE_PLAYER_OVERALL',
        JSON.stringify({playerId,name:players[0].name,team:players[0].team,
          season:players[0].season,oldOverall:players[0].overall,
-         newBaseOverall:overall,liveBoost:boost,newOverall:finalOverall})]
+         newBaseOverall:overall,liveBoost:boost,newOverall:finalOverall,newSalary:salary})]
     );
     await connection.commit();
-    return res.json({success:true,message:`${players[0].name} ${players[0].season} 기준 OVR ${overall} + 라이브 ${boost} = ${finalOverall} 적용 완료`,data:{overall:finalOverall,baseOverall:overall,boost}});
+    return res.json({success:true,message:`${players[0].name} ${players[0].season} 기준 OVR ${overall} + 라이브 ${boost} = ${finalOverall} 적용 완료`,data:{overall:finalOverall,baseOverall:overall,boost,salary}});
   } catch(error) {
     await connection.rollback();
     console.error('Admin update player overall error:',error);

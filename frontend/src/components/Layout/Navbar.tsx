@@ -29,6 +29,15 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     // On phones, dismiss expanded navigation after moving to another page.
     setClickedDropdown(null);
     setActiveDropdown(null);
@@ -295,7 +304,7 @@ export default function Navbar() {
         </div>
 
         {/* Thumb-friendly navigation stays visible at the bottom, independent of page scrolling. */}
-        {isAuthenticated && <div className="fixed inset-x-0 bottom-0 z-[60] border-t border-gray-200 bg-white/95 shadow-xl backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95 lg:hidden"
+        {isAuthenticated && <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 shadow-xl backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95 lg:hidden"
           style={{paddingBottom:'env(safe-area-inset-bottom, 0px)'}}>
           <div className="grid grid-cols-5">
             {[

@@ -1,3 +1,4 @@
+import { calculateEnhancementBonus } from '../utils/enhancement';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Sparkles, AlertCircle, TrendingUp, TrendingDown, Lock, Unlock } from 'lucide-react';
@@ -232,7 +233,7 @@ export default function Enhancement() {
   };
 
   const CardDisplay = ({ card, onClick, selected, disabled, label }: any) => {
-    const cardOverall = Number(card.player.overall) + Number(card.level || 0);
+    const cardOverall = Number(card.player.overall) + calculateEnhancementBonus(Number(card.level || 0));
 
     return (
       <motion.div

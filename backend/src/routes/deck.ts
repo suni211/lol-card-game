@@ -3,6 +3,7 @@ import pool from '../config/database';
 import {updateMissionProgress} from '../utils/missionTracker';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { calculateEnhancementSynergy, getEnhancementSynergyDescription } from '../utils/enhancementSynergy';
+import { calculateEnhancementBonus } from '../utils/enhancement';
 
 const router = express.Router();
 
@@ -33,13 +34,14 @@ router.get('/all', authMiddleware, async (req: AuthRequest, res) => {
 
       if (cardIds.length > 0) {
         const [cards]: any = await pool.query(`
-          SELECT SUM(p.overall + (uc.level * 2)) as total
+          SELECT p.overall, uc.level
           FROM user_cards uc
           JOIN players p ON uc.player_id = p.id
           WHERE uc.id IN (?)
         `, [cardIds]);
 
-        total_overall = cards[0]?.total || 0;
+        total_overall = cards.reduce((sum: number, card: any) =>
+          sum + Number(card.overall) + calculateEnhancementBonus(Number(card.level)), 0);
       }
 
       return {

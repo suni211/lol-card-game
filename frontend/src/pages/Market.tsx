@@ -132,7 +132,7 @@ export default function Market() {
   };
 
   return <main className="min-h-screen bg-gray-950 px-4 py-8 text-white">
-    <div className="mx-auto max-w-6xl space-y-7">
+    <div className="mx-auto max-w-6xl min-w-0 space-y-5 sm:space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-3 text-3xl font-black"><ShoppingCart className="h-8 w-8 text-sky-400"/>이적시장</h1>
@@ -159,7 +159,7 @@ export default function Market() {
           <p className="rounded-lg border border-slate-700 p-5 text-sm text-slate-400">
             {saleCards.length?'검색된 보유 카드가 없습니다.':'판매할 수 있는 보유 카드가 없습니다.'}
           </p>:
-          <div className="grid max-h-[32rem] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid max-h-[60dvh] grid-cols-2 gap-2 overflow-y-auto overscroll-contain pr-1 sm:max-h-[32rem] sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5">
             {visibleSaleCards.map(c=>{
               const selectedCard = c.id===sellCard;
               return <button key={c.id} type="button" aria-pressed={selectedCard}
@@ -188,7 +188,7 @@ export default function Market() {
               </button>;
             })}
           </div>}
-        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+        <div className="mt-5 flex flex-col gap-3 rounded-lg border border-slate-700 bg-slate-800/60 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:p-4">
           <div className="min-w-[170px] flex-1">
             <strong>{selected?selected.player.name:'선택된 선수 없음'}</strong>
             {selected?.player.season==='26WRs'&&<button type="button" onClick={()=>setTrendId(selected.player.id)}
@@ -199,10 +199,10 @@ export default function Market() {
             판매 가격
             <input aria-label="판매 가격" type="number" min={1} max={selected?maxPrice(selected.level):50000}
               step={1} value={sellPrice} onChange={e=>setSellPrice(Number(e.target.value))}
-              className="w-36 rounded-lg border border-slate-600 bg-slate-900 p-3"/>
+              className="w-full min-w-0 rounded-lg border border-slate-600 bg-slate-900 p-3 text-base sm:w-36"/>
           </label>
           <button disabled={busy||!selected} onClick={()=>void list()}
-            className="rounded-lg bg-amber-600 px-6 py-3 font-bold hover:bg-amber-500 disabled:opacity-40">판매 등록</button>
+            className="min-h-12 w-full rounded-lg bg-amber-600 px-6 py-3 font-bold hover:bg-amber-500 disabled:opacity-40 sm:w-auto">판매 등록</button>
         </div>
         <p className="mt-2 text-xs text-slate-500">덱에 포함된 카드는 먼저 덱에서 제외해야 판매할 수 있습니다.</p>
       </section>
@@ -214,7 +214,7 @@ export default function Market() {
           <label className="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3">
             <Search className="h-4 w-4 text-slate-400"/>
             <input aria-label="선수 검색" value={search} onChange={e=>setSearch(e.target.value)}
-              placeholder="선수명 / 팀 / 시즌 검색" className="min-w-[160px] bg-transparent p-3 text-sm outline-none"/>
+              placeholder="선수명 / 팀 / 시즌 검색" className="w-full min-w-0 bg-transparent p-3 text-base outline-none sm:min-w-[160px] sm:text-sm"/>
           </label>
         </div>
         {loading?<p className="text-slate-400">판매 목록을 불러오는 중...</p>:
@@ -240,7 +240,7 @@ export default function Market() {
               <div className="mt-4 flex items-center justify-between gap-2">
                 <span className="text-lg font-black text-amber-300">{points(l.listing_price)}</span>
                 <button disabled={busy||Number(l.seller_id)===Number(user?.id)}
-                  onClick={()=>void buy(l)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-bold disabled:opacity-40">
+                  onClick={()=>void buy(l)} className="min-h-11 rounded-lg bg-sky-600 px-4 py-2 text-sm font-bold disabled:opacity-40">
                   {Number(l.seller_id)===Number(user?.id)?'내 매물':'구매'}
                 </button>
               </div>

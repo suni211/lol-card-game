@@ -454,7 +454,7 @@ export default function Deck() {
   const filledSlots = deckSlots.filter(s => s.card).length;
 
   return (
-    <div className="min-h-screen relative overflow-hidden py-8 px-4">
+    <div className="min-h-screen relative overflow-hidden py-4 px-3 sm:py-8 sm:px-4">
       {/* Animated Background */}
       <div
         className="absolute inset-0 bg-gradient-to-br from-gray-50 via-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900/20 dark:via-purple-900/20 dark:to-gray-900 bg-[length:200%_200%]"
@@ -477,12 +477,12 @@ export default function Deck() {
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div
-          className="mb-8"
+          className="mb-5 sm:mb-8"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <h1
-                className="text-4xl font-bold bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 dark:from-primary-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-2"
+                className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 dark:from-primary-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-2"
               >
                 덱 편성
               </h1>
@@ -546,7 +546,7 @@ export default function Deck() {
           </div>
 
           {/* Deck Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">총 파워</p>
@@ -695,7 +695,7 @@ export default function Deck() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
           {/* Deck Slots */}
           <div className="lg:col-span-2 space-y-6">
             {/* Cards */}
@@ -980,7 +980,7 @@ export default function Deck() {
 
           {/* Card Selection Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 sticky top-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 lg:sticky lg:top-4">
               <div className="p-6">
                 <h2
                   className="text-xl font-bold bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 dark:from-yellow-400 dark:via-orange-400 dark:to-red-400 bg-clip-text text-transparent bg-[length:200%_100%] mb-4"
@@ -1140,7 +1140,7 @@ export default function Deck() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDetailCard(null)}>
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-3 sm:p-6 max-w-2xl w-full max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-6">

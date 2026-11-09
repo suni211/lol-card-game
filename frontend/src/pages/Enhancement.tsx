@@ -337,6 +337,7 @@ export default function Enhancement() {
               <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
                 <li className="text-purple-600 dark:text-purple-400 font-bold">• 다른 선수·다른 클래스·다른 OVR 카드도 강화 재료로 사용 가능 (최대 5장)</li>
                 <li>• +1~+4 도전: 재료 1장당 1.5칸 / +5~+10: 한 장당 1칸</li>
+                <li className="font-bold text-sky-700 dark:text-sky-300">• OVR 상승: +1~+4강 단계당 +1 / +5~+7강 단계당 +2 / +8~+10강 단계당 +4 (10강 총 +22)</li>
                 <li className="text-green-600 dark:text-green-400 font-bold">• 기본 성공률: +0강 80%, +1강 70%, +2강 60%, +3강 50%, +4강 40%</li>
                 <li className="text-orange-600 dark:text-orange-400">• 후반 성공률: +5강 30%, +6강 15%, +7강 8%, +8강 3%, +9강 1%</li>
                 <li>• 같은 선수 카드 사용 시: 각 재료당 +5%</li>

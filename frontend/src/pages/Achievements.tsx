@@ -172,7 +172,7 @@ export default function Achievements() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-gray-900 dark:via-yellow-900/20 dark:to-orange-900/20 py-5 px-3 sm:py-12 sm:px-4">
+    <div className="min-h-0 bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-gray-900 dark:via-yellow-900/20 dark:to-orange-900/20 py-5 px-3 sm:py-12 sm:px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div

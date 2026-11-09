@@ -16,7 +16,6 @@ const GACHA_OPTIONS = {
   ultra: { cost: 1500, probabilities: { icon: 0, legendary: 0.52, epic: 6, rare: 25, common: 68.48 } },
   mega: { cost: 2000, probabilities: { icon: 0, legendary: 1.02, epic: 10, rare: 30, common: 58.98 } },
   wr_2026: { cost: 5000, probabilities: { icon: 0, legendary: 0, epic: 0, rare: 0, common: 100 }, special: 'WR_2026' },
-  wr_2012: { cost: 5000, probabilities: { icon: 0, legendary: 0, epic: 0, rare: 0, common: 100 }, special: 'WR_2012' },
   worlds_winner: { cost: 2500, probabilities: { legendary: 5.01, epic: 25, rare: 69.99, common: 0 }, special: 'WORLDS' }, // 25WW, 25WUD, and Rare+ cards (레어 이상 확정)
 };
 
@@ -137,12 +136,7 @@ router.post('/draw', authMiddleware, async (req: AuthRequest, res) => {
          FROM players WHERE season IN ('26WR','26WRs')
          ORDER BY RAND() LIMIT 1`
       );
-    } else if ((option as any).special === 'WR_2012') {
-      [players] = await connection.query(
-        `SELECT *, CASE WHEN overall<=80 THEN 'COMMON'
-          WHEN overall<=90 THEN 'RARE' ELSE 'EPIC' END AS tier
-         FROM players WHERE season='12WR' ORDER BY RAND() LIMIT 1`
-      );
+
     } else if ((option as any).special === 'WORLDS') {
       // WORLDS pack is now CLOSED - no more 25WW/25WUD cards available
       await connection.rollback();
@@ -389,12 +383,7 @@ router.post('/draw-10', authMiddleware, async (req: AuthRequest, res) => {
          FROM players WHERE season IN ('26WR','26WRs')
          ORDER BY RAND() LIMIT 1`
       );
-    } else if ((option as any).special === 'WR_2012') {
-      [players] = await connection.query(
-        `SELECT *, CASE WHEN overall<=80 THEN 'COMMON'
-          WHEN overall<=90 THEN 'RARE' ELSE 'EPIC' END AS tier
-         FROM players WHERE season='12WR' ORDER BY RAND() LIMIT 1`
-      );
+
     } else if ((option as any).special === 'WORLDS') {
         await connection.rollback();
         return res.status(400).json({ success: false, error: 'This gacha pack is no longer available' });

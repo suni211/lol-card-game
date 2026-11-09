@@ -294,7 +294,7 @@ export default function Gacha() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20 py-5 px-3 sm:py-12 sm:px-4">
+    <div className="min-h-0 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20 py-5 px-3 sm:py-12 sm:px-4">
       <div className="max-w-6xl mx-auto min-w-0">
         {/* Header */}
         <motion.div

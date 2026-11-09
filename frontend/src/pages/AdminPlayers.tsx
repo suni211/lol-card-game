@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -58,6 +58,7 @@ export default function AdminPlayers() {
   const [missingPhotoOnly,setMissingPhotoOnly] = useState(false);
   const [page,setPage] = useState(1);
   const [selected,setSelected] = useState<Player|null>(null);
+  const editorRef = useRef<HTMLElement|null>(null);
   const [overall,setOverall] = useState('90');
   const [stats,setStats] = useState<SixStats>(initialStats);
   const [nationality,setNationality] = useState('');
@@ -107,6 +108,9 @@ export default function AdminPlayers() {
     setOverall(String(p.season === '26WRs' ? (p.base_overall ?? p.overall) : p.overall));
     setStats(Object.fromEntries(statInputs.map(x=>[x.key,Number(p[x.key])])) as SixStats);
     setNationality(p.nationality || '');
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      window.requestAnimationFrame(() => editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));
+    }
   };
   const reloadSelection = (p:Player) => {
     setSelected(p);
@@ -177,14 +181,14 @@ export default function AdminPlayers() {
     finally{setBusy(false);}
   };
 
-  return <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+  return <main className="min-h-screen bg-slate-950 px-3 py-4 text-white sm:px-4 sm:py-8">
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link to="/admin" className="mb-2 inline-flex items-center gap-2 text-sm text-sky-300 hover:underline">
             <ArrowLeft size={15}/>관리자 패널
           </Link>
-          <h1 className="text-3xl font-black">전체 선수 카드 관리</h1>
+          <h1 className="text-2xl font-black sm:text-3xl">전체 선수 카드 관리</h1>
           <p className="mt-2 text-sm text-slate-400">전체 선수 목록 · OVR 및 6스탯 수정 · 국적 및 선수 사진 관리</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -209,7 +213,7 @@ export default function AdminPlayers() {
         <p className="mt-2 text-xs text-slate-400">사진이 확인되지 않은 선수는 기존 이미지 그대로 남습니다. 작업 종료 후 새로고침하세요.</p>
       </div>}
       {error && <p role="alert" className="rounded-lg border border-red-700 bg-red-950 p-4 text-red-200">{error}</p>}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">전체 검색 결과</p><p className="mt-1 text-2xl font-black">{data?.total?.toLocaleString() ?? '-'}</p></div>
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">국적 미등록 카드</p><p className="mt-1 text-2xl font-black text-amber-300">{data?.missingCount?.toLocaleString() ?? '-'}</p></div>
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-4"><p className="text-xs text-slate-400">사진 미등록 카드</p><p className="mt-1 text-2xl font-black text-rose-300">{data?.missingPhotoCount?.toLocaleString() ?? '-'}</p></div>
@@ -218,7 +222,7 @@ export default function AdminPlayers() {
       <section className="rounded-xl border border-slate-700 bg-slate-900 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <ListFilter className="text-sky-400" size={20}/>
-          <form onSubmit={e=>{e.preventDefault();setPage(1);setQuery(searchDraft.trim());}} className="flex min-w-[240px] flex-1 gap-2">
+          <form onSubmit={e=>{e.preventDefault();setPage(1);setQuery(searchDraft.trim());}} className="flex min-w-0 basis-full flex-1 gap-2 sm:basis-auto">
             <input aria-label="선수, 팀, ID 검색" value={searchDraft}
               onChange={e=>setSearchDraft(e.target.value)} placeholder="선수명 / 팀 / 카드 ID 검색"
               className="w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-sm"/>
@@ -227,11 +231,11 @@ export default function AdminPlayers() {
             </button>
           </form>
           <select aria-label="시즌" value={season} onChange={e=>{setSeason(e.target.value);setPage(1);}}
-            className="rounded-lg border border-slate-600 bg-slate-800 p-3 text-sm">
+            className="min-w-0 flex-1 rounded-lg border border-slate-600 bg-slate-800 p-3 text-base sm:text-sm">
             {seasons.map(s=><option value={s} key={s}>{s==='ALL'?'모든 시즌':s}</option>)}
           </select>
           <select aria-label="리그" value={region} onChange={e=>{setRegion(e.target.value);setPage(1);}}
-            className="rounded-lg border border-slate-600 bg-slate-800 p-3 text-sm">
+            className="min-w-0 flex-1 rounded-lg border border-slate-600 bg-slate-800 p-3 text-base sm:flex-none sm:text-sm">
             {regions.map(r=><option value={r} key={r}>{r==='ALL'?'모든 리그':r}</option>)}
           </select>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 px-3 py-3 text-xs">
@@ -266,7 +270,23 @@ export default function AdminPlayers() {
               </tbody>
             </table>
           </div>
-          <footer className="flex items-center justify-between border-t border-slate-700 p-4 text-sm">
+          <div className="grid gap-2 p-3 md:hidden" aria-label="모바일 선수 목록">
+            {loading?<p className="p-4 text-slate-300">선수 목록 불러오는 중...</p>:
+              !data?.players.length?<p className="p-4 text-slate-300">검색 결과가 없습니다.</p>:
+              data.players.map(p=><button key={p.id} type="button" onClick={()=>choose(p)}
+                className={`flex min-h-20 w-full items-center justify-between gap-3 rounded-xl border p-3 text-left active:scale-[0.99] ${selected?.id===p.id?'border-sky-400 bg-sky-950/60':'border-slate-700 bg-slate-800'}`}>
+                <div className="min-w-0 flex-1">
+                  <strong className="block truncate text-base">{p.name}</strong>
+                  <span className="block truncate text-xs text-slate-300">{p.team} · {p.season} · {p.position}</span>
+                  <span className="text-xs text-slate-400">#{p.id} · {p.region}</span>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="block text-lg font-black text-sky-300">{p.overall} OVR</span>
+                  <span className="text-xs font-semibold text-sky-300">편집하기 ›</span>
+                </div>
+              </button>)}
+          </div>
+          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700 p-3 text-sm sm:p-4">
             <span className="text-slate-400">{data?.total?.toLocaleString() ?? 0}개 중 {data?.players.length ?? 0}개 표시</span>
             <div className="flex gap-2">
               <button disabled={page<=1 || loading} onClick={()=>setPage(p=>Math.max(1,p-1))}
@@ -278,8 +298,13 @@ export default function AdminPlayers() {
             </div>
           </footer>
         </section>
-        <aside className="rounded-xl border border-slate-700 bg-slate-900 p-5 lg:sticky lg:top-24">
+        <aside ref={editorRef} className="scroll-mt-28 rounded-xl border border-slate-700 bg-slate-900 p-4 sm:p-5 lg:sticky lg:top-24">
           {!selected?<p className="text-sm text-slate-400">왼쪽 선수 목록에서 <strong>수정</strong>을 누르면 OVR·국적·사진 편집창이 열립니다.</p>:<>
+            <div className="mb-3 flex items-center justify-between gap-2 lg:hidden">
+              <strong className="text-sm text-sky-300">선수 편집</strong>
+              <button type="button" onClick={()=>{setSelected(null);window.scrollTo({top:0,behavior:'smooth'});}}
+                className="min-h-11 rounded-lg border border-slate-600 px-4 text-sm">목록으로</button>
+            </div>
             <p className="text-xs text-sky-300">{selected.team} / {selected.region} / {selected.season}</p>
             <h2 className="my-2 text-xl font-black">{selected.name} <span className="text-sm font-normal text-slate-400">{selected.position}</span></h2>
             <div className="mb-4 flex items-center gap-3"><CountryFlag code={selected.nationality} showCode showName /></div>
@@ -295,7 +320,7 @@ export default function AdminPlayers() {
                     onChange={e=>setOverall(e.target.value)}
                     className="w-full min-w-0 rounded border border-slate-600 bg-slate-800 p-3"/>
                   <button disabled={busy} onClick={()=>void saveOverall()}
-                    className="inline-flex items-center gap-1 rounded bg-sky-600 px-4 font-bold disabled:opacity-50"><Save size={16}/>저장</button>
+                    className="inline-flex min-h-12 items-center gap-1 rounded bg-sky-600 px-4 font-bold disabled:opacity-50"><Save size={16}/>저장</button>
                 </div>
                 {selected.season === '26WRs' && <p className="mt-2 text-xs text-amber-300">현재 라이브 {Number(selected.live_boost || 0) > 0 ? '+' : ''}{Number(selected.live_boost || 0)} / 최종 OVR {Number(overall || 0) + Number(selected.live_boost || 0)}</p>}
               </div>
@@ -324,7 +349,7 @@ export default function AdminPlayers() {
                     placeholder="KR" className="w-full min-w-0 rounded border border-slate-600 bg-slate-800 p-3"/>
                   <datalist id="directory-country-codes">{countryOptions.map(([c,n])=><option key={c} value={c}>{n}</option>)}</datalist>
                   <button disabled={busy} onClick={()=>void saveNationality()}
-                    className="inline-flex items-center gap-1 rounded bg-amber-600 px-4 font-bold disabled:opacity-50"><Save size={16}/>저장</button>
+                    className="inline-flex min-h-12 items-center gap-1 rounded bg-amber-600 px-4 font-bold disabled:opacity-50"><Save size={16}/>저장</button>
                 </div>
                 <label className="mt-2 flex items-center gap-2 text-xs text-slate-300">
                   <input type="checkbox" checked={applyAll} onChange={e=>setApplyAll(e.target.checked)}/>

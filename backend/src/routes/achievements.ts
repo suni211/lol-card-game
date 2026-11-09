@@ -31,7 +31,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
         ua.expires_at
       FROM achievements a
       LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ?
-      WHERE (ua.id IS NULL OR (ua.expires_at > NOW() AND ua.is_claimed = FALSE))
+      -- Permanent milestones remain visible after reward claim or original expiry.
       ORDER BY a.difficulty DESC, a.category, a.id
     `, [userId]);
 
@@ -50,6 +50,40 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   } catch (error: any) {
     console.error('Get achievements error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Claim all completed goals in one atomic operation, suitable for 600+ milestones.
+router.post('/claim-all', authMiddleware, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const userId = req.user!.id;
+    const [claimable]:any = await connection.query(
+      `SELECT ua.id, a.reward FROM user_achievements ua
+       JOIN achievements a ON a.id = ua.achievement_id
+       WHERE ua.user_id=? AND ua.is_completed=TRUE AND ua.is_claimed=FALSE
+       FOR UPDATE`, [userId]
+    );
+    if (!claimable.length) {
+      await connection.commit();
+      return res.json({success:true,data:{count:0,reward:0}});
+    }
+    const ids = claimable.map((row:any)=>Number(row.id));
+    const reward = claimable.reduce((sum:number,row:any)=>sum + Number(row.reward || 0),0);
+    await connection.query(
+      'UPDATE user_achievements SET is_claimed=TRUE, claimed_at=NOW() WHERE id IN (?) AND is_claimed=FALSE',
+      [ids]
+    );
+    await connection.query('UPDATE users SET points=points+? WHERE id=?',[reward,userId]);
+    await connection.commit();
+    return res.json({success:true,data:{count:ids.length,reward}});
+  } catch (error) {
+    await connection.rollback();
+    console.error('Claim all achievements error:',error);
+    return res.status(500).json({success:false,error:'일괄 업적 보상 수령에 실패했습니다.'});
+  } finally {
+    connection.release();
   }
 });
 

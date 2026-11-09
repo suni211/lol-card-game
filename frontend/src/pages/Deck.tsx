@@ -454,7 +454,7 @@ export default function Deck() {
   const filledSlots = deckSlots.filter(s => s.card).length;
 
   return (
-    <div className="min-h-screen relative overflow-hidden py-4 px-3 sm:py-8 sm:px-4">
+    <div className="min-h-0 relative overflow-hidden py-4 px-3 sm:py-8 sm:px-4">
       {/* Animated Background */}
       <div
         className="absolute inset-0 bg-gradient-to-br from-gray-50 via-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900/20 dark:via-purple-900/20 dark:to-gray-900 bg-[length:200%_200%]"

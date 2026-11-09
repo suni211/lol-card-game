@@ -3,6 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   body {
     @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
     margin: 0;
@@ -14,7 +25,7 @@
   }
 
   #root {
-    min-height: 100vh;
+    min-height: 100dvh;
     min-width: 0;
   }
 
@@ -22,6 +33,14 @@
   @media (max-width: 767px) {
     html {
       -webkit-text-size-adjust: 100%;
+    }
+
+    /* Allow vertical scrolling only for actual content; prevent side rubber-banding. */
+    body {
+      overscroll-behavior-x: none;
+    }
+    img, video, canvas {
+      max-width: 100%;
     }
     input:not([type="checkbox"]):not([type="radio"]),
     select,

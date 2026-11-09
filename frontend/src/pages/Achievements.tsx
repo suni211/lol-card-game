@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
 interface Achievement {
   id: number;
@@ -30,6 +30,8 @@ export default function Achievements() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<string>('ALL');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('ALL');
+  const [visibleCount,setVisibleCount] = useState(36);
+  const [claimingAll,setClaimingAll] = useState(false);
 
   useEffect(() => {
     if (user && token) {
@@ -79,42 +81,21 @@ export default function Achievements() {
   };
 
   const handleClaimAll = async () => {
-    const claimable = achievements.filter((a) => a.is_completed && !a.is_claimed);
-
-    if (claimable.length === 0) {
-      toast.error('받을 수 있는 보상이 없습니다');
-      return;
-    }
-
-    let totalReward = 0;
-    let successCount = 0;
-
-    for (const achievement of claimable) {
-      try {
-        const response = await axios.post(
-          `${API_URL}/achievements/claim`,
-          { achievementId: achievement.id },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (response.data.success) {
-          totalReward += response.data.data.reward;
-          successCount++;
-        }
-      } catch (error) {
-        console.error('Claim error:', error);
-      }
-    }
-
-    if (successCount > 0) {
-      toast.success(`${successCount}개 업적 보상 획득! 총 ${totalReward.toLocaleString()}P`);
-
-      // Update user points
-      const updatedUser = { ...user!, points: user!.points + totalReward };
-      useAuthStore.setState({ user: updatedUser });
-
-      fetchAchievements(); // Refresh
-    }
+    if (claimingAll) return;
+    setClaimingAll(true);
+    try {
+      const response = await axios.post(`${API_URL}/achievements/claim-all`,{},
+        {headers:{Authorization:`Bearer ${token}`}});
+      const count = Number(response.data.data?.count || 0);
+      const reward = Number(response.data.data?.reward || 0);
+      if(count) {
+        toast.success(`${count}개 업적 보상 획득! 총 ${reward.toLocaleString()}P`);
+        if(user)useAuthStore.setState({user:{...user,points:user.points+reward}});
+        await fetchAchievements();
+      } else toast('받을 수 있는 보상이 없습니다.');
+    } catch(error:any) {
+      toast.error(error.response?.data?.error || '일괄 보상 수령에 실패했습니다.');
+    } finally {setClaimingAll(false);}
   };
 
   const getCategoryIcon = (category: string) => {
@@ -178,6 +159,7 @@ export default function Achievements() {
     (a) => !a.is_completed || a.is_claimed
   );
 
+  const visibleAchievements = otherAchievements.slice(0,visibleCount);
   const stats = {
     total: achievements.length,
     completed: achievements.filter((a) => a.is_completed).length,
@@ -188,18 +170,18 @@ export default function Achievements() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-gray-900 dark:via-yellow-900/20 dark:to-orange-900/20 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-gray-900 dark:via-yellow-900/20 dark:to-orange-900/20 py-5 px-3 sm:py-12 sm:px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-6 sm:mb-12"
         >
           <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mb-4">
             <Trophy className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:text-4xl sm:mb-4">
             업적
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -211,9 +193,9 @@ export default function Achievements() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 sm:gap-4 sm:mb-8"
         >
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center sm:p-6">
             <div className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
               {stats.total}
             </div>
@@ -265,6 +247,7 @@ export default function Achievements() {
                     <span>모두 받기</span>
                   </button>
                 </div>
+                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">미수령·진행 중 업적 ${otherAchievements.length.toLocaleString()}개 중 ${visibleAchievements.length.toLocaleString()}개 표시</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {claimableAchievements.map((achievement) => {
                     return (
@@ -292,7 +275,7 @@ export default function Achievements() {
                                 achievement.difficulty
                               )} rounded text-xs font-bold`}
                             >
-                              {achievement.difficulty === 'EASY' ? '쉬움' : '어려움'}
+                              {achievement.difficulty === 'EASY' ? '쉬움' : achievement.difficulty === 'MEDIUM' ? '보통' : '어려움'}
                             </div>
                           </div>
                           <h3 className="font-bold text-lg">{achievement.title}</h3>
@@ -357,7 +340,7 @@ export default function Achievements() {
                 )}
 
                 {/* Filters */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 mb-6 sm:p-6">
                   <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -384,7 +367,7 @@ export default function Achievements() {
                         난이도
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {['ALL', 'EASY', 'HARD'].map((diff) => (
+                        {['ALL', 'EASY', 'MEDIUM', 'HARD'].map((diff) => (
                           <button
                             key={diff}
                             onClick={() => setDifficultyFilter(diff)}
@@ -394,7 +377,7 @@ export default function Achievements() {
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            {diff === 'ALL' ? '전체' : diff === 'EASY' ? '쉬움' : '어려움'}
+                            {diff === 'ALL' ? '전체' : diff === 'EASY' ? '쉬움' : diff === 'MEDIUM' ? '보통' : '어려움'}
                           </button>
                         ))}
                       </div>
@@ -402,7 +385,7 @@ export default function Achievements() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {otherAchievements.map((achievement) => {
+                  {visibleAchievements.map((achievement) => {
               const progressPercent = Math.min(
                 (achievement.progress / achievement.requirement_value) * 100,
                 100

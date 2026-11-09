@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMatchNotificationStore } from '../../store/matchNotificationStore';
 import { Swords, XCircle } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
 
 const SOCKET_URL = import.meta.env.PROD ? window.location.origin : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
 
@@ -22,6 +23,7 @@ interface NoticePopup {
 
 export default function Layout() {
   const layoutType = 'navbar';
+  const {isAuthenticated} = useAuthStore();
   const navigate = useNavigate();
   const { notification: matchNotification, setNotification } = useMatchNotificationStore();
   const [noticePopup, setNoticePopup] = useState<NoticePopup | null>(null);
@@ -110,7 +112,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex min-h-screen min-w-0 flex-col">
+      <div className={`flex min-h-screen min-w-0 flex-col ${isAuthenticated ? 'pb-[calc(60px+env(safe-area-inset-bottom,0px))] lg:pb-0' : ''}`}>
         <Navbar />
         <main className="min-w-0 flex-1">
           <Outlet />

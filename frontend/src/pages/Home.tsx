@@ -101,7 +101,7 @@ export default function Home() {
         ))}
 
         {/* Content */}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-24 lg:py-32">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -118,7 +118,7 @@ export default function Home() {
                 duration: 6,
                 repeat: Infinity,
               }}
-              className="inline-flex items-center justify-center mb-8"
+              className="inline-flex items-center justify-center mb-4 sm:mb-8"
             >
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-pink-500 blur-3xl opacity-50 animate-pulse" />
@@ -135,7 +135,7 @@ export default function Home() {
                 ],
               }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="text-5xl sm:text-7xl font-black text-white mb-4"
+              className="text-4xl sm:text-7xl font-black text-white mb-3 sm:mb-4"
             >
               LCG
             </motion.h1>
@@ -143,7 +143,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-2xl sm:text-4xl font-bold text-white/90 mb-6"
+              className="text-xl sm:text-4xl font-bold text-white/90 mb-4 sm:mb-6"
             >
               LOL Trading Card Game
             </motion.div>
@@ -151,7 +151,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-xl sm:text-2xl text-white/80 mb-12 drop-shadow-lg"
+              className="text-base sm:text-2xl text-white/80 mb-6 sm:mb-12 drop-shadow-lg"
             >
               전세계 프로 선수 카드를 수집하고 최강 팀을 만들어보세요!
             </motion.p>
@@ -200,7 +200,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.9 }}
-                className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto"
+                className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:mt-16 sm:gap-6 max-w-3xl mx-auto"
               >
                 {[
                   { label: '보유 포인트', value: user.points.toLocaleString(), gradient: 'gold' },
@@ -223,7 +223,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
+      <section className="py-10 px-3 sm:py-20 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -246,7 +246,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}

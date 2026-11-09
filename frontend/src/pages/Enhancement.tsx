@@ -303,18 +303,18 @@ export default function Enhancement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 py-5 px-3 sm:py-12 sm:px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-6 sm:mb-12"
         >
           <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-4">
             <Zap className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
             카드 강화
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -326,7 +326,7 @@ export default function Enhancement() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-8"
+          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 sm:p-6 mb-5 sm:mb-8"
         >
           <div className="flex items-start space-x-3">
             <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -353,7 +353,7 @@ export default function Enhancement() {
         </motion.div>
 
         {/* Enhancement Panel */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8 mb-6 sm:mb-8">
           {/* Target Card Selection */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
@@ -526,7 +526,7 @@ export default function Enhancement() {
         ) : (
           <>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">내 카드</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
               {cards.map((card) => {
                 const isTarget = targetCard?.id === card.id;
                 const isMaterial = materialCards.some(m => m.id === card.id);
@@ -650,12 +650,12 @@ export default function Enhancement() {
 
       {/* Floating Enhancement Button */}
       {targetCard && materialCards.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-bounce-once">
+        <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,0px))] lg:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm lg:w-auto">
           <button
             onClick={handleEnhance}
             disabled={enhancing}
             className={`
-              flex items-center gap-3 px-8 py-4 rounded-full
+              flex w-full items-center justify-center gap-3 px-5 py-4 lg:px-8 rounded-full
               shadow-2xl backdrop-blur-sm
               transition-all duration-300 transform hover:scale-105
               ${enhancing

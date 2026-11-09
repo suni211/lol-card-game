@@ -104,7 +104,7 @@ router.post('/claim', authMiddleware, async (req: AuthRequest, res) => {
 
     // Get user achievement
     const [userAchievements]: any = await connection.query(
-      'SELECT * FROM user_achievements WHERE user_id = ? AND achievement_id = ?',
+      'SELECT * FROM user_achievements WHERE user_id = ? AND achievement_id = ? FOR UPDATE',
       [userId, achievementId]
     );
 
@@ -135,7 +135,7 @@ router.post('/claim', authMiddleware, async (req: AuthRequest, res) => {
 
     // Update user achievement
     await connection.query(
-      'UPDATE user_achievements SET is_claimed = TRUE, claimed_at = NOW() WHERE id = ?',
+      'UPDATE user_achievements SET is_claimed = TRUE, claimed_at = NOW() WHERE id = ? AND is_claimed=FALSE',
       [userAchievement.id]
     );
 

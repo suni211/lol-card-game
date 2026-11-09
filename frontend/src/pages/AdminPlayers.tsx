@@ -181,7 +181,7 @@ export default function AdminPlayers() {
     finally{setBusy(false);}
   };
 
-  return <main className="min-h-screen bg-slate-950 px-3 py-4 text-white sm:px-4 sm:py-8">
+  return <main className="min-h-0 bg-slate-950 px-3 py-4 text-white sm:px-4 sm:py-8">
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>

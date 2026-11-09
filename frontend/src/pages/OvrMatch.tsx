@@ -96,7 +96,7 @@ export default function OvrMatch() {
 
   const active=series?.status==='ACTIVE';
   const roster=active?series.roster:preview?.players||[];
-  return <div className="min-h-screen bg-slate-950 px-3 py-4 text-white sm:px-4 sm:py-8">
+  return <div className="min-h-0 bg-slate-950 px-3 py-4 text-white sm:px-4 sm:py-8">
     <div className="mx-auto max-w-5xl min-w-0 space-y-5 sm:space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>

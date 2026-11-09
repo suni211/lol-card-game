@@ -132,7 +132,7 @@ export default function Market() {
     finally{setBusy(false);}
   };
 
-  return <main className="min-h-screen bg-gray-950 px-4 py-8 text-white">
+  return <main className="min-h-screen bg-gray-950 px-3 py-4 text-white sm:px-4 sm:py-8">
     <div className="mx-auto max-w-6xl min-w-0 space-y-5 sm:space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -147,14 +147,14 @@ export default function Market() {
         {error}<button className="ml-3 underline" onClick={()=>void load()}>다시 시도</button>
       </div>}
       <MarketExplorer onPurchased={()=>{void load();}}/>
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <section className="min-w-0 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:p-5">
         <h2 className="mb-2 flex items-center gap-2 text-xl font-bold"><Tag className="h-5 w-5 text-amber-400"/>보유 카드 선택</h2>
         <p className="mb-4 text-sm text-slate-400">판매할 선수를 목록에서 선택하세요. 0강 상한 50,000P, 강화 +1마다 상한 50,000P 증가.</p>
         <div className="mb-3 flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3">
           <Search className="h-4 w-4 text-slate-400"/>
           <input value={inventorySearch} onChange={e=>setInventorySearch(e.target.value)}
             aria-label="보유 카드 검색" placeholder="선수명, 팀, 시즌 검색"
-            className="w-full bg-transparent p-3 text-sm outline-none"/>
+            className="w-full bg-transparent p-3 text-base outline-none sm:text-sm"/>
         </div>
         {visibleSaleCards.length===0?
           <p className="rounded-lg border border-slate-700 p-5 text-sm text-slate-400">
@@ -209,7 +209,7 @@ export default function Market() {
       </section>
       <details className="rounded-xl border border-slate-700 bg-slate-900 p-4">
         <summary className="cursor-pointer text-sm font-bold text-slate-300">전체 매물 빠른 보기 (기존 목록)</summary>
-        <div className="mt-4">      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div className="mt-4">      <section className="min-w-0 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold">판매 중인 카드 <span className="text-sky-300">{filtered.length}개</span></h2>
           <label className="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3">
@@ -250,7 +250,7 @@ export default function Market() {
       </section>
         </div>
       </details>
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <section className="min-w-0 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:p-5">
         <h2 className="mb-3 text-xl font-bold">내 판매 중인 카드 ({activeOwn.length})</h2>
         {activeOwn.length===0?<p className="text-sm text-slate-400">현재 판매 중인 카드가 없습니다.</p>:
           <div className="space-y-2">{activeOwn.map(l=><div key={l.listing_id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-800 p-3 text-sm">

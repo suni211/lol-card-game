@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {useAuthStore} from '../store/authStore';
@@ -57,6 +57,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
   const [trades,setTrades]=useState<Trade[]>([]);
   const [suggestions,setSuggestions]=useState<Player[]>([]);
   const [selected,setSelected]=useState<Player|null>(null);
+  const detailRef=useRef<HTMLDivElement|null>(null);
   const [detail,setDetail]=useState<GradeData|null>(null);
   const [trendId,setTrendId]=useState<number|null>(null);
   const [loading,setLoading]=useState(false);
@@ -72,6 +73,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
   },[]);
   const choose=(p:Player,nextGrade:number=grade)=>{
     setSelected(p);setGrade(nextGrade);setDetail(null);setDetailError('');
+    if(window.innerWidth<1024)window.requestAnimationFrame(()=>detailRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));
   };
   const refreshMeta=useCallback(async()=>{
     const out=await Promise.allSettled([
@@ -241,7 +243,7 @@ export default function MarketExplorer({onPurchased}:{onPurchased?:()=>void}){
           {tab==='interest'&&favorites.length===0&&<p className="p-5 text-center text-slate-400">등록한 관심 선수가 없습니다.</p>}
         </div>
       </div>
-      <div className="min-w-0 space-y-4 rounded-xl border border-slate-700 bg-slate-900 p-4">
+      <div ref={detailRef} className="min-w-0 scroll-mt-28 space-y-4 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:p-4">
         {!selected?<div className="flex min-h-80 flex-col items-center justify-center gap-3 text-slate-400"><TrendingUp size={34}/><p>왼쪽에서 선수를 선택하면 시세·매물·그래프가 나옵니다.</p></div>:<>
           <div className="flex gap-4">
             <img src={getPlayerImageUrl(selected.name,selected.season,undefined,selected.image_url||undefined)} alt={selected.name} className="h-28 w-24 rounded-xl bg-slate-950 object-contain"/>

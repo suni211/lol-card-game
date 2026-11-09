@@ -1,58 +1,40 @@
 import pool from '../config/database';
 
+/**
+ * Bulk update for hundreds of milestones without one SELECT/UPDATE per achievement.
+ * Never revoke earned or claimed achievements when card inventories or points shrink.
+ * Milestone rows are one-time goals; new records get a long-lived expiry.
+ */
 export async function updateAchievementProgress(
   userId: number,
   requirementType: string,
   currentValue: number
 ): Promise<void> {
+  const value = Math.max(0, Math.floor(Number(currentValue) || 0));
   const connection = await pool.getConnection();
-
   try {
     await connection.beginTransaction();
-
-    // Get all achievements of this type
-    const [achievements]: any = await connection.query(
-      'SELECT id, requirement_value FROM achievements WHERE requirement_type = ?',
-      [requirementType]
+    await connection.query(
+      `UPDATE user_achievements ua
+       JOIN achievements a ON a.id = ua.achievement_id
+       SET ua.progress = GREATEST(ua.progress, LEAST(?, a.requirement_value)),
+           ua.completed_at = CASE WHEN ua.is_completed = 0 AND ? >= a.requirement_value THEN NOW() ELSE ua.completed_at END,
+           ua.is_completed = IF(? >= a.requirement_value, TRUE, ua.is_completed)
+       WHERE ua.user_id = ? AND a.requirement_type = ? AND ua.is_claimed = FALSE`,
+      [value, value, value, userId, requirementType]
     );
-
-    for (const achievement of achievements) {
-      // Calculate expiry date (1 year from now)
-      const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
-      // Check if user has this achievement
-      const [existing]: any = await connection.query(
-        'SELECT id, progress, is_completed FROM user_achievements WHERE user_id = ? AND achievement_id = ? AND expires_at > NOW()',
-        [userId, achievement.id]
-      );
-
-      const isCompleted = currentValue >= achievement.requirement_value;
-
-      if (existing.length > 0) {
-        // Update existing achievement
-        const userAchievement = existing[0];
-
-        if (!userAchievement.is_completed && isCompleted) {
-          await connection.query(
-            'UPDATE user_achievements SET progress = ?, is_completed = TRUE, completed_at = NOW() WHERE id = ?',
-            [currentValue, userAchievement.id]
-          );
-        } else if (!userAchievement.is_completed) {
-          await connection.query(
-            'UPDATE user_achievements SET progress = ? WHERE id = ?',
-            [currentValue, userAchievement.id]
-          );
-        }
-      } else {
-        // Create new user achievement
-        await connection.query(
-          'INSERT INTO user_achievements (user_id, achievement_id, progress, is_completed, completed_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
-          [userId, achievement.id, currentValue, isCompleted, isCompleted ? new Date() : null, expiresAt]
-        );
-      }
-    }
-
+    await connection.query(
+      `INSERT INTO user_achievements
+         (user_id, achievement_id, progress, is_completed, completed_at, expires_at)
+       SELECT ?, a.id, LEAST(?, a.requirement_value),
+              IF(? >= a.requirement_value, TRUE, FALSE),
+              IF(? >= a.requirement_value, NOW(), NULL),
+              DATE_ADD(NOW(), INTERVAL 20 YEAR)
+       FROM achievements a
+       LEFT JOIN user_achievements ua ON ua.user_id = ? AND ua.achievement_id = a.id
+       WHERE a.requirement_type = ? AND ua.id IS NULL`,
+      [userId, value, value, value, userId, requirementType]
+    );
     await connection.commit();
   } catch (error) {
     await connection.rollback();
@@ -172,6 +154,9 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
       if (tierMap[tier]) {
         await updateAchievementProgress(userId, tierMap[tier], 1);
       }
+
+      // One-time points balance milestones (retain the highest previously achieved progress).
+      await updateAchievementProgress(userId, 'points_balance', points);
 
       // Points achievements
       if (points >= 1000) await updateAchievementProgress(userId, 'points_owned_1000', 1);

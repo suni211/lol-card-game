@@ -46,16 +46,18 @@ export default function OvrMatch() {
   const load = useCallback(async()=>{
     try {
       setError('');
-      const [current,prev] = await Promise.all([
+      // History is optional: a failing history request must not block entering AI battle.
+      const [current,prev] = await Promise.allSettled([
         axios.get(`${API_URL}/ovr-match/current`,{headers,params:{deckSlot}}),
         axios.get(`${API_URL}/ovr-match/history`,{headers})
       ]);
-      setSeries(current.data.data?.series ?? null);
-      setPreview(current.data.data?.preview ?? null);
-      setTeamError(current.data.data?.teamError || '');
-      setDailyUsed(Number(current.data.data?.dailyUsed ?? 0));
-      setDailyLimit(Number(current.data.data?.dailyLimit ?? 30));
-      setHistory(prev.data.data || []);
+      if(current.status==='rejected')throw current.reason;
+      setSeries(current.value.data.data?.series ?? null);
+      setPreview(current.value.data.data?.preview ?? null);
+      setTeamError(current.value.data.data?.teamError || '');
+      setDailyUsed(Number(current.value.data.data?.dailyUsed ?? 0));
+      setDailyLimit(Number(current.value.data.data?.dailyLimit ?? 30));
+      setHistory(prev.status==='fulfilled'?(prev.value.data.data || []):[]);
     } catch(e:any) {
       setError(e.response?.data?.error || '대전 정보를 불러오지 못했습니다. DB 테이블 적용을 확인하세요.');
     } finally {setLoading(false);}
@@ -94,24 +96,24 @@ export default function OvrMatch() {
 
   const active=series?.status==='ACTIVE';
   const roster=active?series.roster:preview?.players||[];
-  return <div className="min-h-screen bg-slate-950 px-4 py-8 text-white">
-    <div className="mx-auto max-w-5xl space-y-7">
+  return <div className="min-h-screen bg-slate-950 px-3 py-4 text-white sm:px-4 sm:py-8">
+    <div className="mx-auto max-w-5xl min-w-0 space-y-5 sm:space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="flex items-center gap-3 text-3xl font-black"><Swords className="h-9 w-9 text-sky-400"/>AI 매치</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-black sm:gap-3 sm:text-3xl"><Swords className="h-9 w-9 text-sky-400"/>AI 매치</h1>
           <p className="mt-2 text-sm text-slate-300">3판 2선승제 · 하루 최대 30경기 (한국시간 00:00 초기화)</p>
           <p className="mt-2 text-sm font-bold text-amber-300">오늘 {dailyUsed}/{dailyLimit}경기 · 남은 {Math.max(0,dailyLimit-dailyUsed)}경기</p>
         </div>
-        <button onClick={()=>void load()} disabled={busy} className="flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 disabled:opacity-40"><RefreshCw className="h-4 w-4"/>새로고침</button>
+        <button onClick={()=>void load()} disabled={busy} className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 disabled:opacity-40"><RefreshCw className="h-4 w-4"/>새로고침</button>
       </header>
       {error&&<p role="alert" className="rounded-lg border border-red-700 bg-red-950 p-4 text-red-200">{error}</p>}
       {loading ? <p className="rounded-lg bg-slate-900 p-6">경기 정보를 불러오는 중...</p> : <>
-        {!active&&<section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+        {!active&&<section className="min-w-0 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:p-5">
           <h2 className="mb-4 text-xl font-bold">AI 매치</h2>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <label htmlFor="ovr-deck" className="text-sm font-semibold">우선 적용할 덱</label>
             <select id="ovr-deck" value={deckSlot} onChange={e=>setDeckSlot(Number(e.target.value))}
-              className="rounded-lg border border-slate-600 bg-slate-800 p-2">
+              className="min-h-11 min-w-28 rounded-lg border border-slate-600 bg-slate-800 p-2 text-base">
               {[1,2,3,4,5].map(n=><option key={n} value={n}>덱 {n}</option>)}
             </select>
 
@@ -124,7 +126,7 @@ export default function OvrMatch() {
         </section>}
         <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
           <h2 className="mb-3 flex items-center gap-2 text-xl font-bold"><ShieldCheck className="h-5 w-5 text-emerald-400"/>출전 선수 5명</h2>
-          <div className="grid gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             {roster.map(c=><div key={c.cardId} className="rounded-lg bg-slate-800 p-3 text-sm">
               <div className="font-bold">{c.name}</div>
               <div className="mt-1 text-xs text-slate-400">{c.season} · {c.position}</div>
@@ -150,9 +152,9 @@ export default function OvrMatch() {
           </div>
           {active ? <>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {buttons.map(({choice,label})=><button key={choice} disabled={busy} onClick={()=>void play(choice)}
-                className="rounded-xl border border-sky-500 bg-sky-900 p-5 text-center font-black hover:bg-sky-700 disabled:opacity-40">
+                className="min-h-16 rounded-xl border border-sky-500 bg-sky-900 p-2 text-center font-black hover:bg-sky-700 disabled:opacity-40 sm:p-5">
                 <span className="block text-lg">{label}</span>
               </button>)}
             </div>

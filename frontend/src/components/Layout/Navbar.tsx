@@ -120,9 +120,9 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-14 items-center justify-between gap-2 py-2 sm:min-h-16 sm:gap-3">
+    <nav className="sticky top-0 z-50 w-full min-w-0 max-w-full bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+      <div className="mx-auto w-full min-w-0 max-w-full px-3 sm:px-6 lg:px-8">
+        <div className="flex min-h-14 min-w-0 items-center justify-between gap-2 py-2 sm:min-h-16 sm:gap-3">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
             <div className="flex items-center space-x-2">

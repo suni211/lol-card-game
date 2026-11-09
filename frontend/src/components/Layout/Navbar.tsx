@@ -292,14 +292,16 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* One-tap access to the three most-used mobile destinations. */}
-        {isAuthenticated && <div className="grid grid-cols-3 gap-2 pb-2 lg:hidden">
+        {/* Keep AI matches directly accessible on phones without opening nested menus. */}
+        {isAuthenticated && <div className="grid grid-cols-4 gap-1.5 pb-2 sm:gap-2 lg:hidden">
           {[
             {path:'/deck',label:'덱 편성'},
             {path:'/gacha',label:'선수 뽑기'},
+            {path:'/ai-match',label:'AI 대전'},
             {path:'/market',label:'이적시장'}
-          ].map(link=><Link key={link.path} to={link.path} onClick={()=>setClickedDropdown(null)}
-            className={`flex min-h-11 items-center justify-center rounded-lg border px-2 text-sm font-bold ${isActive(link.path)?'border-primary-500 bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-100':'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}>{link.label}</Link>)}
+          ].map(link=><Link key={link.path} to={link.path} onClick={()=>{setClickedDropdown(null);setActiveDropdown(null);}}
+            aria-current={isActive(link.path)?'page':undefined}
+            className={`flex min-h-12 min-w-0 items-center justify-center rounded-lg border px-1 text-center text-xs font-bold sm:px-2 sm:text-sm ${isActive(link.path)?'border-primary-500 bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-100':'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}>{link.label}</Link>)}
         </div>}
         {/* Mobile Navigation: only top-level groups, no dozens of scrolling tabs */}
         <div className="lg:hidden pb-2">

@@ -15,6 +15,24 @@
 
   #root {
     min-height: 100vh;
+    min-width: 0;
+  }
+
+  /* Mobile: keep forms readable and prevent iOS from zooming on focus. */
+  @media (max-width: 767px) {
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+    button,
+    a,
+    label {
+      touch-action: manipulation;
+    }
   }
 }
 

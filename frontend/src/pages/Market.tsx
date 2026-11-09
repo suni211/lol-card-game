@@ -132,7 +132,7 @@ export default function Market() {
     finally{setBusy(false);}
   };
 
-  return <main className="min-h-screen bg-gray-950 px-3 py-4 text-white sm:px-4 sm:py-8">
+  return <main className="min-h-0 bg-gray-950 px-3 py-4 text-white sm:px-4 sm:py-8">
     <div className="mx-auto max-w-6xl min-w-0 space-y-5 sm:space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>

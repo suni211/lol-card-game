@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Trophy, User as UserIcon, LogOut, Users, ChevronDown, Gift } from 'lucide-react';
+import { Moon, Sun, Trophy, User as UserIcon, LogOut, Users, ChevronDown, Gift, House, Layers, Swords, Store, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -13,6 +13,7 @@ export default function Navbar() {
   const location = useLocation();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [clickedDropdown, setClickedDropdown] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function Navbar() {
     // On phones, dismiss expanded navigation after moving to another page.
     setClickedDropdown(null);
     setActiveDropdown(null);
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   const isActive = (path: string) => location.pathname === path;
@@ -111,7 +113,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-14 flex-wrap items-center justify-between gap-2 py-2 sm:min-h-16 sm:gap-3">
+        <div className="flex min-h-14 items-center justify-between gap-2 py-2 sm:min-h-16 sm:gap-3">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
             <div className="flex items-center space-x-2">
@@ -227,7 +229,7 @@ export default function Navbar() {
                 {/* Referral */}
                 <Link
                   to="/referral"
-                  className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg relative"
+                  className="hidden p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg relative lg:inline-flex"
                   title="친구 추천"
                 >
                   <Gift className="w-5 h-5" />
@@ -246,7 +248,7 @@ export default function Navbar() {
                 {/* Profile */}
                 <Link
                   to="/profile"
-                  className="flex items-center space-x-1 px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  className="hidden items-center space-x-1 px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg lg:flex"
                 >
                   <UserIcon className="w-4 h-4" />
                   <span className="hidden lg:inline text-sm font-medium">
@@ -262,7 +264,7 @@ export default function Navbar() {
                 {/* Logout */}
                 <button
                   onClick={logout}
-                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  className="hidden p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg lg:inline-flex"
                   title="로그아웃"
                 >
                   <LogOut className="w-4 h-4" />
@@ -292,45 +294,54 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Keep AI matches directly accessible on phones without opening nested menus. */}
-        {isAuthenticated && <div className="grid grid-cols-4 gap-1.5 pb-2 sm:gap-2 lg:hidden">
-          {[
-            {path:'/deck',label:'덱 편성'},
-            {path:'/gacha',label:'선수 뽑기'},
-            {path:'/ai-match',label:'AI 대전'},
-            {path:'/market',label:'이적시장'}
-          ].map(link=><Link key={link.path} to={link.path} onClick={()=>{setClickedDropdown(null);setActiveDropdown(null);}}
-            aria-current={isActive(link.path)?'page':undefined}
-            className={`flex min-h-12 min-w-0 items-center justify-center rounded-lg border px-1 text-center text-xs font-bold sm:px-2 sm:text-sm ${isActive(link.path)?'border-primary-500 bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-100':'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}>{link.label}</Link>)}
-        </div>}
-        {/* Mobile Navigation: only top-level groups, no dozens of scrolling tabs */}
-        <div className="lg:hidden pb-2">
-          <div className="flex gap-2 overflow-x-auto overscroll-x-contain py-1 scrollbar-hide">
-            {navStructure.map(item => 'items' in item ? (
-              <button
-                key={item.label}
-                type="button"
-                aria-expanded={clickedDropdown===item.label}
-                onClick={()=>setClickedDropdown(clickedDropdown===item.label?null:item.label)}
-                className={`flex min-h-11 flex-shrink-0 items-center rounded-md px-4 py-2 text-sm font-semibold ${isDropdownActive(item.items)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
-                {item.label} <ChevronDown className="inline h-3 w-3" />
-              </button>
-            ) : (
-              <Link key={item.path} to={item.path} onClick={()=>setClickedDropdown(null)}
-                className="flex min-h-11 flex-shrink-0 items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{item.label}</Link>
-            ))}
+        {/* Thumb-friendly navigation stays visible at the bottom, independent of page scrolling. */}
+        {isAuthenticated && <div className="fixed inset-x-0 bottom-0 z-[60] border-t border-gray-200 bg-white/95 shadow-xl backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95 lg:hidden"
+          style={{paddingBottom:'env(safe-area-inset-bottom, 0px)'}}>
+          <div className="grid grid-cols-5">
+            {[
+              {path:'/',label:'홈',Icon:House},
+              {path:'/deck',label:'내 덱',Icon:Layers},
+              {path:'/ai-match',label:'AI 대전',Icon:Swords},
+              {path:'/market',label:'이적시장',Icon:Store}
+            ].map(({path,label,Icon})=><Link key={path} to={path} onClick={()=>setMobileMenuOpen(false)}
+              aria-current={isActive(path)?'page':undefined}
+              className={`flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg px-0.5 text-[11px] font-semibold ${isActive(path)?'text-primary-700 dark:text-primary-300':'text-gray-600 dark:text-gray-300'}`}>
+              <Icon aria-hidden="true" className="h-5 w-5"/>{label}
+            </Link>)}
+            <button type="button" aria-haspopup="dialog" aria-expanded={mobileMenuOpen}
+              onClick={()=>setMobileMenuOpen(open=>!open)}
+              className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg px-0.5 text-[11px] font-semibold text-gray-700 dark:text-gray-200">
+              <Menu aria-hidden="true" className="h-5 w-5"/>전체 메뉴
+            </button>
           </div>
-          {navStructure.filter((item): item is NavDropdown => 'items' in item && item.label===clickedDropdown).map(group=>(
-            <div key={group.label} className="mt-2 grid max-h-[55dvh] grid-cols-2 gap-2 overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-              {group.items.map(sub=>(
-                <Link key={sub.path} to={sub.path} onClick={()=>setClickedDropdown(null)}
-                  className={`flex min-h-12 items-center rounded-md px-3 py-2 text-sm ${isActive(sub.path)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>
-                  {sub.label}
-                </Link>
-              ))}
+        </div>}
+        {isAuthenticated && mobileMenuOpen && <div className="fixed inset-0 z-[70] lg:hidden">
+          <button type="button" aria-label="전체 메뉴 닫기" className="absolute inset-0 w-full bg-black/60"
+            onClick={()=>setMobileMenuOpen(false)}/>
+          <section role="dialog" aria-modal="true" aria-label="전체 게임 메뉴"
+            className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto overscroll-contain rounded-t-3xl bg-white px-4 pt-4 text-gray-900 shadow-2xl dark:bg-gray-900 dark:text-white"
+            style={{paddingBottom:'calc(1.5rem + env(safe-area-inset-bottom, 0px))'}}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-black">전체 메뉴</h2>
+              <button type="button" onClick={()=>setMobileMenuOpen(false)} aria-label="닫기"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800"><X size={23}/></button>
             </div>
-          ))}
-        </div>
+            {navStructure.map((group,index)=>'items' in group?(
+              <div key={group.label} className="mb-4">
+                <h3 className="mb-2 text-sm font-black text-primary-700 dark:text-primary-300">{group.label}</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {group.items.map(item=><Link key={item.path} to={item.path} onClick={()=>setMobileMenuOpen(false)}
+                    className={`flex min-h-12 items-center justify-center rounded-xl border px-2 text-center text-xs font-semibold ${isActive(item.path)?'border-primary-500 bg-primary-50 dark:bg-primary-900':'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'}`}>{item.label}</Link>)}
+                </div>
+              </div>
+            ):index===0?null:<Link key={group.path} to={group.path} onClick={()=>setMobileMenuOpen(false)}>{group.label}</Link>)}
+            <div className="mt-2 grid grid-cols-2 gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
+              <Link to="/profile" onClick={()=>setMobileMenuOpen(false)} className="flex min-h-12 items-center justify-center rounded-xl bg-gray-100 text-sm dark:bg-gray-800">내 프로필</Link>
+              {user?.isAdmin?<Link to="/admin/players" onClick={()=>setMobileMenuOpen(false)} className="flex min-h-12 items-center justify-center rounded-xl bg-gray-100 text-sm dark:bg-gray-800">관리자 선수 관리</Link>:<Link to="/settings" onClick={()=>setMobileMenuOpen(false)} className="flex min-h-12 items-center justify-center rounded-xl bg-gray-100 text-sm dark:bg-gray-800">설정</Link>}
+              <button type="button" onClick={()=>{setMobileMenuOpen(false);logout();}} className="col-span-2 min-h-12 rounded-xl border border-red-400 text-sm text-red-500">로그아웃</button>
+            </div>
+          </section>
+        </div>}
       </div>
     </nav>
   );

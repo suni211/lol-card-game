@@ -247,8 +247,8 @@ export default function Achievements() {
                     <span>모두 받기</span>
                   </button>
                 </div>
-                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">미수령·진행 중 업적 ${otherAchievements.length.toLocaleString()}개 중 ${visibleAchievements.length.toLocaleString()}개 표시</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">미수령·진행 중 업적 {otherAchievements.length.toLocaleString()}개 중 {visibleAchievements.length.toLocaleString()}개 표시</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                   {claimableAchievements.map((achievement) => {
                     return (
                       <motion.div
@@ -480,6 +480,11 @@ export default function Achievements() {
               );
             })}
                 </div>
+                {visibleCount < otherAchievements.length && <button type="button"
+                  onClick={()=>setVisibleCount(count=>count+36)}
+                  className="mt-5 min-h-12 w-full rounded-xl bg-primary-600 px-5 py-3 font-bold text-white hover:bg-primary-700">
+                  더 보기 ({Math.min(36,otherAchievements.length-visibleCount)}개)
+                </button>}
               </div>
             )}
           </>

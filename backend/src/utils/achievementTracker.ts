@@ -64,25 +64,19 @@ export async function checkAndUpdateAchievements(userId: number): Promise<void> 
       await updateAchievementProgress(userId, 'total_matches', total_matches);
     }
 
-    // Get AI wins
+    // Current AI matches use ranked_bo3_series, not legacy user_stats_history.
     const [aiStats]: any = await connection.query(
-      'SELECT COUNT(*) as ai_wins FROM user_stats_history WHERE user_id = ? AND battle_type = "AI" AND result = "WIN"',
+      "SELECT COUNT(*) AS ai_wins FROM ranked_bo3_series WHERE user_id=? AND mode='AI' AND status='WIN'",
       [userId]
     );
-    if (aiStats.length > 0) {
-      await updateAchievementProgress(userId, 'ai_wins', aiStats[0].ai_wins);
-    }
+    await updateAchievementProgress(userId, 'ai_wins', Number(aiStats[0]?.ai_wins || 0));
 
-    // Get ranked wins (match_history only tracks ranked matches)
+    // Current human competitive matches use competitive_matches_v2.
     const [rankedStats]: any = await connection.query(
-      'SELECT COUNT(*) as ranked_wins FROM match_history WHERE user_id = ? AND result = "WIN"',
+      "SELECT COUNT(*) AS ranked_wins FROM competitive_matches_v2 WHERE winner_id=? AND status='COMPLETED'",
       [userId]
     );
-    if (rankedStats.length > 0) {
-      await updateAchievementProgress(userId, 'ranked_wins', rankedStats[0].ranked_wins);
-    }
-
-    // Note: Practice wins are not tracked in match_history, only in socket matchmaking
+    await updateAchievementProgress(userId, 'ranked_wins', Number(rankedStats[0]?.ranked_wins || 0));
     // For practice wins achievements, we would need a separate tracking table
 
     // Get card count

@@ -27,6 +27,12 @@ export default function Navbar() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    // On phones, dismiss expanded navigation after moving to another page.
+    setClickedDropdown(null);
+    setActiveDropdown(null);
+  }, [location.pathname]);
+
   const isActive = (path: string) => location.pathname === path;
 
   type NavItem = {
@@ -105,7 +111,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-2">
+        <div className="flex min-h-14 flex-wrap items-center justify-between gap-2 py-2 sm:min-h-16 sm:gap-3">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
             <div className="flex items-center space-x-2">
@@ -185,7 +191,7 @@ export default function Navbar() {
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-2 flex-shrink-0">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {/* Online Users */}
             <div className="hidden lg:flex items-center space-x-1 px-3 py-1.5 bg-green-100 dark:bg-green-900 rounded-lg">
               <Users className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -228,7 +234,7 @@ export default function Navbar() {
                 </Link>
 
                 {user.isAdmin && (
-                  <div className="flex flex-wrap gap-1">
+                  <div className="hidden flex-wrap gap-1 sm:flex">
                     <Link to="/admin" className="rounded-lg px-2 py-1.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700">
                       관리자
                     </Link>
@@ -286,28 +292,37 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* One-tap access to the three most-used mobile destinations. */}
+        {isAuthenticated && <div className="grid grid-cols-3 gap-2 pb-2 lg:hidden">
+          {[
+            {path:'/deck',label:'덱 편성'},
+            {path:'/gacha',label:'선수 뽑기'},
+            {path:'/market',label:'이적시장'}
+          ].map(link=><Link key={link.path} to={link.path} onClick={()=>setClickedDropdown(null)}
+            className={`flex min-h-11 items-center justify-center rounded-lg border px-2 text-sm font-bold ${isActive(link.path)?'border-primary-500 bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-100':'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}>{link.label}</Link>)}
+        </div>}
         {/* Mobile Navigation: only top-level groups, no dozens of scrolling tabs */}
-        <div className="lg:hidden pb-3">
-          <div className="flex gap-2 overflow-x-auto py-1">
+        <div className="lg:hidden pb-2">
+          <div className="flex gap-2 overflow-x-auto overscroll-x-contain py-1 scrollbar-hide">
             {navStructure.map(item => 'items' in item ? (
               <button
                 key={item.label}
                 type="button"
                 aria-expanded={clickedDropdown===item.label}
                 onClick={()=>setClickedDropdown(clickedDropdown===item.label?null:item.label)}
-                className={`flex-shrink-0 rounded-md px-3 py-2 text-sm font-semibold ${isDropdownActive(item.items)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
+                className={`flex min-h-11 flex-shrink-0 items-center rounded-md px-4 py-2 text-sm font-semibold ${isDropdownActive(item.items)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
                 {item.label} <ChevronDown className="inline h-3 w-3" />
               </button>
             ) : (
               <Link key={item.path} to={item.path} onClick={()=>setClickedDropdown(null)}
-                className="flex-shrink-0 rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{item.label}</Link>
+                className="flex min-h-11 flex-shrink-0 items-center rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{item.label}</Link>
             ))}
           </div>
           {navStructure.filter((item): item is NavDropdown => 'items' in item && item.label===clickedDropdown).map(group=>(
-            <div key={group.label} className="mt-2 grid max-h-[45dvh] grid-cols-2 gap-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            <div key={group.label} className="mt-2 grid max-h-[55dvh] grid-cols-2 gap-2 overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
               {group.items.map(sub=>(
                 <Link key={sub.path} to={sub.path} onClick={()=>setClickedDropdown(null)}
-                  className={`rounded-md px-3 py-2 text-sm ${isActive(sub.path)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>
+                  className={`flex min-h-12 items-center rounded-md px-3 py-2 text-sm ${isActive(sub.path)?'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300':'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>
                   {sub.label}
                 </Link>
               ))}

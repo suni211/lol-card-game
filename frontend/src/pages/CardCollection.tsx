@@ -244,7 +244,7 @@ export default function CardCollection() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-3">
@@ -378,7 +378,7 @@ export default function CardCollection() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
@@ -458,7 +458,7 @@ export default function CardCollection() {
           <p className="text-white/60">도감 로딩 중...</p>
         </div>
       ) : (
-        <motion.div layout className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <motion.div layout className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
           <AnimatePresence mode="popLayout">
             {filteredCards.map((card) => (
               <motion.div

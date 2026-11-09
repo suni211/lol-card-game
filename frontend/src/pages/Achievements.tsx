@@ -31,6 +31,7 @@ export default function Achievements() {
   const [filter, setFilter] = useState<string>('ALL');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('ALL');
   const [visibleCount,setVisibleCount] = useState(36);
+  const [visibleClaimableCount,setVisibleClaimableCount] = useState(12);
   const [claimingAll,setClaimingAll] = useState(false);
 
   useEffect(() => {
@@ -160,6 +161,7 @@ export default function Achievements() {
   );
 
   const visibleAchievements = otherAchievements.slice(0,visibleCount);
+  const visibleClaimableAchievements = claimableAchievements.slice(0,visibleClaimableCount);
   const stats = {
     total: achievements.length,
     completed: achievements.filter((a) => a.is_completed).length,
@@ -241,21 +243,21 @@ export default function Achievements() {
                   </div>
                   <button
                     onClick={handleClaimAll}
+                    disabled={claimingAll}
                     className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-lg transition-all transform hover:scale-105 flex items-center space-x-2"
                   >
                     <Gift className="w-5 h-5" />
                     <span>모두 받기</span>
                   </button>
                 </div>
-                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">미수령·진행 중 업적 {otherAchievements.length.toLocaleString()}개 중 {visibleAchievements.length.toLocaleString()}개 표시</p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-                  {claimableAchievements.map((achievement) => {
+                  {visibleClaimableAchievements.map((achievement) => {
                     return (
                       <motion.div
                         key={achievement.id}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg ring-4 ring-green-500 animate-pulse"
+                        className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg ring-2 ring-green-500"
                       >
                         {/* Header */}
                         <div
@@ -324,6 +326,11 @@ export default function Achievements() {
                     );
                   })}
                 </div>
+                {visibleClaimableCount < claimableAchievements.length && <button type="button"
+                  onClick={()=>setVisibleClaimableCount(count=>count+12)}
+                  className="mt-4 min-h-12 w-full rounded-xl border border-green-500 bg-green-50 px-4 py-3 font-bold text-green-800 dark:bg-green-950 dark:text-green-300">
+                  수령 가능한 업적 더 보기 ({Math.min(12,claimableAchievements.length-visibleClaimableCount)}개)
+                </button>}
               </div>
             )}
 
@@ -384,6 +391,7 @@ export default function Achievements() {
                     </div>
                   </div>
                 </div>
+                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">진행 중·수령 완료 업적 {otherAchievements.length.toLocaleString()}개 중 {visibleAchievements.length.toLocaleString()}개 표시</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {visibleAchievements.map((achievement) => {
               const progressPercent = Math.min(

@@ -111,10 +111,10 @@ export default function Layout() {
   }, [matchNotification, setNotification]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className={`flex min-h-screen min-w-0 flex-col ${isAuthenticated ? 'pb-[calc(60px+env(safe-area-inset-bottom,0px))] lg:pb-0' : ''}`}>
+    <div className="min-h-[100dvh] w-full min-w-0 max-w-full overflow-x-clip bg-gray-50 dark:bg-gray-900">
+      <div className={`flex min-h-[100dvh] w-full min-w-0 max-w-full flex-col ${isAuthenticated ? 'pb-[calc(60px+env(safe-area-inset-bottom,0px))] lg:pb-0' : ''}`}>
         <Navbar />
-        <main className="min-w-0 flex-1">
+        <main className="w-full min-w-0 max-w-full flex-1 overflow-x-clip">
           <Outlet />
         </main>
         <Footer />
@@ -179,7 +179,7 @@ export default function Layout() {
             exit={{ x: layoutType === 'navbar' ? 0 : 300, y: layoutType === 'navbar' ? -100 : 0, opacity: 0 }}
             className={`fixed z-50 ${
               layoutType === 'navbar' 
-                ? 'top-20 left-1/2 -translate-x-1/2 max-w-md w-full mx-4' 
+                ? 'top-20 inset-x-3 mx-auto w-auto max-w-md sm:inset-x-4' 
                 : 'top-4 right-72 w-64'
             }`}
           >

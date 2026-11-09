@@ -3,7 +3,7 @@ import pool from '../config/database';
 /**
  * Bulk update for hundreds of milestones without one SELECT/UPDATE per achievement.
  * Never revoke earned or claimed achievements when card inventories or points shrink.
- * Milestone rows are one-time goals; new records get a long-lived expiry.
+ * Milestone rows are one-time goals; new records use a five-year timestamp; claims remain visible after expiry.
  */
 export async function updateAchievementProgress(
   userId: number,
@@ -29,7 +29,7 @@ export async function updateAchievementProgress(
        SELECT ?, a.id, LEAST(?, a.requirement_value),
               IF(? >= a.requirement_value, TRUE, FALSE),
               IF(? >= a.requirement_value, NOW(), NULL),
-              DATE_ADD(NOW(), INTERVAL 20 YEAR)
+              DATE_ADD(NOW(), INTERVAL 5 YEAR)
        FROM achievements a
        LEFT JOIN user_achievements ua ON ua.user_id = ? AND ua.achievement_id = a.id
        WHERE a.requirement_type = ? AND ua.id IS NULL`,

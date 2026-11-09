@@ -1,3 +1,4 @@
+import { calculateEnhancementBonus } from './enhancement';
 // LoL card competition: six stats, no rock-paper-scissors dominance.
 export const STRATEGY_KEYS = ['MACRO','TEAMFIGHT','OBJECTIVE'] as const;
 export type Strategy = typeof STRATEGY_KEYS[number];
@@ -33,7 +34,7 @@ export function teamScore(cards: MatchCard[], strategy: Strategy): number {
     const attributes = sixKeys.reduce(
       (subtotal, stat) => subtotal + (Number(card.stats[stat]) || 50) * WEIGHTS[strategy][stat], 0
     );
-    return sum + attributes * .75 + (Number(card.overall) + Number(card.level) * 2) * .25;
+    return sum + attributes * .75 + (Number(card.overall) + calculateEnhancementBonus(Number(card.level))) * .25;
   }, 0);
 }
 export function getMatchRoster(records: any[]): MatchCard[] {

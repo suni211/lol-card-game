@@ -294,18 +294,18 @@ export default function Gacha() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20 py-5 px-3 sm:py-12 sm:px-4">
+      <div className="max-w-6xl mx-auto min-w-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-6 sm:mb-12"
         >
           <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-primary-500 to-purple-500 rounded-full mb-4">
             <Sparkles className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
             카드 뽑기
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -405,7 +405,7 @@ export default function Gacha() {
         )}
 
         {/* Gacha Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
           {gachaOptions.map((option, index) => (
             <motion.div
               key={index}
@@ -431,7 +431,7 @@ export default function Gacha() {
                 </div>
               )}
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <h3 className={`text-2xl font-bold mb-2 ${option.special ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-900 dark:text-white'}`}>
                   {option.label}
                 </h3>
@@ -577,7 +577,7 @@ export default function Gacha() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-2 sm:p-4"
           >
             <div className="text-center relative">
               {/* Epic, Legendary, and ICON particle effects - shown from the start */}
@@ -1178,7 +1178,7 @@ export default function Gacha() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-2 sm:p-4"
             onClick={closeResult}
           >
             <motion.div
@@ -1583,7 +1583,7 @@ export default function Gacha() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-2 sm:p-4"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}

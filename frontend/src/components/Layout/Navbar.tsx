@@ -245,7 +245,7 @@ export default function Navbar() {
                 </Link>
 
                 {user.isAdmin && (
-                  <div className="hidden flex-wrap gap-1 sm:flex">
+                  <div className="hidden flex-wrap gap-1 lg:flex">
                     <Link to="/admin" className="rounded-lg px-2 py-1.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700">
                       관리자
                     </Link>
